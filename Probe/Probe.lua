@@ -25,6 +25,10 @@ local APIS = {
     "GetQuestItemLink", "GetNumQuestChoices",
     "C_Traits.GetNodeInfo", "C_Traits.GetEntryInfo", "C_Traits.GetDefinitionInfo",
     "C_Spell.GetSpellName", "GetSpellInfo",
+    "C_Item.GetItemInfo", "C_Item.GetItemInfoInstant", "GetItemInfo",
+    "C_Container.GetContainerItemLink", "GetContainerItemLink", "ContainerFrame_Update",
+    "TooltipDataProcessor.AddTooltipPostCall", "TooltipUtil.GetDisplayedItem",
+    "C_Texture.GetAtlasInfo",
 }
 
 local function Has(path)
@@ -221,6 +225,20 @@ function Probe:Run()
 
     local spec, why = Weights:CurrentSpec()
     Line("judged as", spec and (spec .. " (" .. why .. ")") or "no weights for this class")
+
+    if ns.BagIcons then
+        local frames, hooks = ns.BagIcons:Describe()
+        Line("bag windows", frames)
+        Line("bag hooks", hooks)
+        Line("arrows showing", ns.BagIcons.lastShown or "bags not looked at yet")
+    end
+    if ns.Tooltip and ns.Tooltip.fired then
+        local parts = {}
+        for source, count in pairs(ns.Tooltip.fired) do
+            parts[#parts + 1] = ("%s %d"):format(source, count)
+        end
+        Line("tooltip lines added", #parts > 0 and table.concat(parts, ", ") or "none yet")
+    end
 
     if not Has("GetInventoryItemLink") then return end
 

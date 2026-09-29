@@ -12,8 +12,9 @@ LibStub, matching
 and [Blackthornes Farmer](https://github.com/Blackthornes/Blackthornes_Farmer).
 The three share a palette and a framework on purpose.
 
-This is the starting skeleton: the framework, checks, tests and release
-pipeline are in place, and the gear scoring comes next.
+So far it judges the gear in your bags: hovering a piece says on its tooltip
+whether it beats what you wear and by how much, and an upgrade you can wear
+now gets a green arrow on its icon in the bags. Quest rewards come next.
 
 ## Install
 
@@ -58,6 +59,7 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq help       list every command
 /beq spec       show the spec your gear is judged for
 /beq spec mm    judge it as Marksmanship instead (bm, mm, sv, or auto to go back)
+/beq bags       list every piece of gear in your bags with its verdict
 /beq probe      check what this client supports; it only reads
 /beq settings   open the settings window (so does clicking the minimap button)
 /beq minimap    show or hide the minimap button
@@ -69,6 +71,12 @@ On WoW: Forever a hunter's spec is the one with the most talent points spent
 in it (all three share one talent tree, side by side). Until level 10 there are none, so gear is judged as Beast Mastery unless
 you pick otherwise. Only hunters have stat weights so far.
 
+Each item gets one score (every stat times what it is worth to your spec)
+and is measured against what you wear in its slot. Rings and trinkets are
+measured against the weaker of your two, and a two-hander against both hands.
+Anything within 1% is called the same. The tooltip line and the bag arrows
+can each be switched off in the settings.
+
 `/equipment` works too.
 
 ## Layout
@@ -77,8 +85,8 @@ you pick otherwise. Only hunters have stat weights so far.
 |---|---|
 | `Core/` | Namespace, module registry, event dispatch, slash commands, saved variables |
 | `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats |
-| `Logic/` | Stat weights per class and spec (`Weights.lua`), and scoring an item against what is worn |
-| `UI/` | Theme, widgets, the minimap button and the settings window; later the tooltip and quest-reward hints |
+| `Logic/` | Stat weights per class and spec (`Weights.lua`), and judging an item against what is worn (`Compare.lua`) |
+| `UI/` | Theme, widgets, the minimap button, the settings window, the tooltip line and the bag arrows; later the quest-reward hints |
 | `Probe/` | `/beq probe`, which checks what the running game actually supports instead of guessing |
 | `tools/` | Checks, tests and the link script. Not shipped to the client |
 | `docs/` | What the Forever client actually does, found with `/beq probe`. Not shipped |

@@ -43,6 +43,14 @@ local function Stub(fields)
 
     function frame:SetScript(script, fn) self._scripts[script] = fn end
     function frame:GetScript(script) return self._scripts[script] end
+    -- Runs after whatever script was there, as the game's HookScript does.
+    function frame:HookScript(script, fn)
+        local before = self._scripts[script]
+        self._scripts[script] = function(...)
+            if before then before(...) end
+            return fn(...)
+        end
+    end
 
     function frame:GetPoint()
         local p = self._point
@@ -96,11 +104,17 @@ function env.InstallClient()
     _G.Minimap = Stub({ _width = 140, _cx = 500, _cy = 500 })
     _G.GetCursorPosition = function() return 600, 500 end
 
-    _G.GameTooltip = Stub({
-        _lines = {},
-        SetOwner = function(self) self._lines = {} end,
-        AddLine = function(self, text) self._lines[#self._lines + 1] = text end,
-    })
+    local function Tooltip()
+        return Stub({
+            _lines = {},
+            SetOwner = function(self) self._lines = {} end,
+            AddLine = function(self, text) self._lines[#self._lines + 1] = text end,
+            NumLines = function(self) return #self._lines end,
+            ClearLines = function(self) self._lines = {} end,
+        })
+    end
+    _G.GameTooltip = Tooltip()
+    _G.ItemRefTooltip = Tooltip()
 
     -- Timers run straight away: a test has nothing to wait for.
     _G.C_Timer = {
@@ -144,6 +158,85 @@ function env.InstallClient()
     _G.C_Spell = nil
     _G.GetSpellInfo = nil
     _G.C_SpecializationInfo = nil
+    _G.C_Container = nil
+    _G.GetContainerItemLink = nil
+    _G.GetItemInfo = nil
+    _G.GetItemInfoInstant = nil
+    _G.TooltipDataProcessor = nil
+    _G.TooltipUtil = nil
+    _G.Enum = nil
+    _G.C_Texture = nil
+    _G.hooksecurefunc = nil
+    _G.ContainerFrame_Update = nil
+    _G.ContainerFrameCombinedBags = nil
+    _G.NUM_CONTAINER_FRAMES = nil
+    for i = 1, 13 do _G["ContainerFrame" .. i] = nil end
+end
+
+--------------------------------------------------------------------------------
+-- Items
+--------------------------------------------------------------------------------
+
+--- A pretend item cache, worn gear and bags, answered through the C_Item and
+--- C_Container calls Forever has.
+--
+--   items    [link] = { loc, class, subclass, minLevel, stats }
+--   worn     [inventory slot] = link
+--   bags     [bag] = { [slot] = link }
+--   level    the player's level
+function env.InstallItems(items, worn, bags, level)
+    env.items, env.worn, env.bags = items, worn or {}, bags or {}
+
+    _G.UnitLevel = function() return level or 20 end
+    _G.GetInventoryItemLink = function(_, slot) return env.worn[slot] end
+
+    local function Known(link)
+        return env.items[link]
+    end
+
+    _G.C_Item = {
+        GetItemInfoInstant = function(link)
+            local item = Known(link)
+            if not item then return nil end
+            return 1, "Armor", "Leather", item.loc, "icon", item.class, item.subclass
+        end,
+        GetItemInfo = function(link)
+            local item = Known(link)
+            if not item then return nil end
+            return "Item", link, 2, 10, item.minLevel or 1, "Armor", "Leather", 1,
+                item.loc, "icon", 100, item.class, item.subclass
+        end,
+        GetItemStats = function(link)
+            local item = Known(link)
+            return item and item.stats or nil
+        end,
+    }
+
+    _G.C_Container = {
+        GetContainerItemLink = function(bag, slot)
+            return env.bags[bag] and env.bags[bag][slot] or nil
+        end,
+        GetContainerNumSlots = function(bag)
+            if not env.bags[bag] then return 0 end
+            local most = 0
+            for slot in pairs(env.bags[bag]) do most = math.max(most, slot) end
+            return most
+        end,
+    }
+end
+
+--- A hooksecurefunc that runs the hook after the original, as the game's does.
+function env.InstallHooks()
+    _G.hooksecurefunc = function(a, b, c)
+        local owner, name, hook = _G, a, b
+        if type(a) == "table" then owner, name, hook = a, b, c end
+        local original = owner[name]
+        owner[name] = function(...)
+            local result = { original(...) }
+            hook(...)
+            return unpack(result)
+        end
+    end
 end
 
 --------------------------------------------------------------------------------

@@ -77,6 +77,14 @@ suite.check("/beq minimap ticks it again", minimapBox:GetChecked())
 controls.debug:GetScript("OnClick")(controls.debug)
 suite.check("the debug box sets debug", ns.db.debug == true)
 
+-- The verdict switches.
+suite.check("the tooltip box starts ticked", controls.tooltip:GetChecked())
+suite.check("so does the bag arrows box", controls.arrows:GetChecked())
+controls.arrows:GetScript("OnClick")(controls.arrows)
+suite.check("unticking it switches the arrows off", ns.db.bagArrows == false, ns.db.bagArrows)
+controls.tooltip:GetScript("OnClick")(controls.tooltip)
+suite.check("and the tooltip line", ns.db.tooltipLine == false, ns.db.tooltipLine)
+
 -- Position.
 ns.db.settingsX = 400
 SettingsUI:ResetPositions()

@@ -25,7 +25,7 @@ local COLUMN_WIDTH = 330
 local CONTROL_X = 150
 
 local WIDTH = COLUMN_WIDTH + PADDING * 2
-local HEIGHT = 420
+local HEIGHT = 530
 
 local ROW_HEIGHT = 50
 local ROW_GAP = -6
@@ -107,6 +107,7 @@ function SettingsUI:SetSpec(key)
         ns.charDB.spec = key
     end
     self:Refresh()
+    if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
 end
 
 --- What the spec row's description says: which spec is in use, and why.
@@ -235,7 +236,24 @@ function SettingsUI:BuildColumn()
     controls.spec:SetPoint("TOPLEFT", CONTROL_X, 0)
     self.specRow = specRow
 
-    local windows = CreateSection(frame, "WINDOWS", { anchor = specRow })
+    local tooltipRow = CreateRow(frame, specRow, "Tooltip line",
+        "Says on a piece of gear's tooltip whether it beats what you wear.")
+
+    controls.tooltip = Widgets.CreateCheckbox(tooltipRow, "Show it", function(checked)
+        ns.db.tooltipLine = checked
+    end, true)
+    controls.tooltip:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    local arrowRow = CreateRow(frame, tooltipRow, "Bag arrows",
+        "A green arrow on gear in your bags that is an upgrade you can wear now.")
+
+    controls.arrows = Widgets.CreateCheckbox(arrowRow, "Show them", function(checked)
+        ns.db.bagArrows = checked
+        if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
+    end, true)
+    controls.arrows:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    local windows = CreateSection(frame, "WINDOWS", { anchor = arrowRow })
 
     local minimapRow = CreateRow(frame, windows, "Minimap button",
         "Click it for this page. Drag it round the edge to move it. Same as /beq minimap.")
@@ -278,6 +296,8 @@ function SettingsUI:Refresh()
     local controls = self.controls
     controls.minimap:SetChecked(not ns.db.minimapHidden)
     controls.debug:SetChecked(ns.db.debug == true)
+    controls.tooltip:SetChecked(ns.db.tooltipLine ~= false)
+    controls.arrows:SetChecked(ns.db.bagArrows ~= false)
 
     local choices = self:SpecChoices()
     local picked = ns.charDB and ns.charDB.spec

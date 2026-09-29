@@ -37,6 +37,28 @@ local SPECS = {
         -- Lightning Reflexes, which sits far out at 102800). Read with
         -- /beq probe on 2026-09-29; see docs/FOREVER_API_FINDINGS.md.
         columns = { 4000, 8000 },
+        -- What a hunter can equip, by the client's item subclass, and the
+        -- level each opens at (0 for any level). Classic rules: mail from 40,
+        -- no plate, shields, maces or wands. Not yet checked on Forever; if it
+        -- differs, the tooltip will say "can't use" on something a hunter can
+        -- wear.
+        armor = {
+            [0] = 0,    -- miscellaneous: rings, necks, trinkets
+            [1] = 0,    -- cloth (cloaks are cloth)
+            [2] = 0,    -- leather
+            [3] = 40,   -- mail
+        },
+        weapons = {
+            [0] = 0, [1] = 0,       -- one- and two-handed axes
+            [2] = 0, [3] = 0,       -- bows, guns
+            [6] = 0,                -- polearms
+            [7] = 0, [8] = 0,       -- one- and two-handed swords
+            [10] = 0,               -- staves
+            [13] = 0,               -- fist weapons
+            [15] = 0,               -- daggers
+            [16] = 0,               -- thrown
+            [18] = 0,               -- crossbows
+        },
         beast = {
             name = "Beast Mastery",
             weights = {
@@ -230,6 +252,29 @@ function Weights:ForPlayer()
     local spec, _, class = self:CurrentSpec()
     if not spec then return nil end
     return SPECS[class][spec].weights, spec
+end
+
+-- The client's item classes that `armor` and `weapons` above describe.
+local CLASS_WEAPON, CLASS_ARMOR = 2, 4
+
+--- Can this class equip an item of this kind?
+-- @return false if never; else true and the level it opens at, or nil when
+--         it is open from the start
+function Weights:CanUse(class, classID, subclassID)
+    local specs = class and SPECS[class]
+    local list
+    if classID == CLASS_ARMOR then
+        list = specs and specs.armor
+    elseif classID == CLASS_WEAPON then
+        list = specs and specs.weapons
+    end
+    -- Anything else that goes in a slot (a shirt, a quiver) is not judged by
+    -- class, and a class with no list yet is not second-guessed.
+    if not list then return true end
+
+    local level = list[subclassID]
+    if not level then return false, nil end
+    return true, level > 0 and level or nil
 end
 
 --- Turn a spec a player typed into its key, or nil.

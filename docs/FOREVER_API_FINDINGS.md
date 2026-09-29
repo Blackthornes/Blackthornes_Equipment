@@ -52,3 +52,13 @@ The 52 nodes sit in columns by `posX`, each named here by its top talent:
 
 So `Weights` splits at 4000 and 8000 (`SPECS.HUNTER.columns`) and counts the
 ranks bought in each part. Re-check this if Forever reshapes the tree.
+
+## Still to check: bags and tooltips
+
+The upgrade arrows and the tooltip line are built for both retail's and
+classic's bag windows, because which one Forever draws is not known yet.
+`/beq probe` now prints `bag windows` (each window and whether its buttons
+are listed or named), `bag hooks`, `arrows showing` and `tooltip lines added`.
+Tradeskills measured that item tooltips fire through `TooltipDataProcessor`.
+The hunter's armour and weapon rules in `Weights.lua` (mail from 40, no
+shields, maces or wands) are classic's and are not checked on Forever either.
