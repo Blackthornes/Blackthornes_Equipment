@@ -15,8 +15,9 @@ suite.check("character settings exist", type(ns.charDB) == "table")
 suite.check("no spec is picked until the player picks one", ns.charDB.spec == nil)
 
 ns.HandleSlash("")
-suite.check("a bare /beq with no window shows help",
-    env.ChatText():find("/beq help", 1, true), env.ChatText())
+suite.check("a bare /beq opens the gear window", ns.UI.frame and ns.UI.frame:IsShown())
+ns.HandleSlash("")
+suite.check("and a second one closes it", not ns.UI.frame:IsShown())
 
 env.chat = {}
 ns.HandleSlash("  HELP  ")

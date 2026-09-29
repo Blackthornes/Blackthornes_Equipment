@@ -28,10 +28,9 @@ suite.check("it does not start on top of Farmer's and Tradeskills'",
 local click = button:GetScript("OnClick")
 suite.check("settings start closed", not (SettingsUI.frame and SettingsUI.frame:IsShown()))
 click(button, "LeftButton")
-suite.check("a click opens the settings while there is no main window",
-    SettingsUI.frame:IsShown())
+suite.check("a click opens the gear window", ns.UI.frame:IsShown())
 click(button, "LeftButton")
-suite.check("a second click closes them", not SettingsUI.frame:IsShown())
+suite.check("a second click closes it", not ns.UI.frame:IsShown())
 click(button, "RightButton")
 suite.check("a right-click opens them too", SettingsUI.frame:IsShown())
 SettingsUI:Hide()
@@ -42,7 +41,8 @@ local lines = GameTooltip._lines
 suite.check("the tooltip names the addon", lines[1] == "Blackthornes Equipment", lines[1])
 suite.check("and says which spec gear is judged as",
     lines[2] == "Judging gear as Beast Mastery", lines[2])
-suite.check("and what a click does", lines[3] == "Click for settings", lines[3])
+suite.check("and what a click does", lines[3] == "Click to open", lines[3])
+suite.check("and a right-click", lines[4] == "Right-click for settings", lines[4])
 
 _G.UnitClass = function() return "Mage", "MAGE" end
 button:GetScript("OnEnter")(button)

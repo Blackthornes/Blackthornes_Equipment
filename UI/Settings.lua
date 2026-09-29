@@ -108,6 +108,7 @@ function SettingsUI:SetSpec(key)
     end
     self:Refresh()
     if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
+    if ns.UI then pcall(ns.UI.Refresh, ns.UI) end
 end
 
 --- What the spec row's description says: which spec is in use, and why.
@@ -257,7 +258,7 @@ function SettingsUI:BuildColumn()
     local windows = CreateSection(frame, "WINDOWS", { anchor = arrowRow })
 
     local minimapRow = CreateRow(frame, windows, "Minimap button",
-        "Click it for this page. Drag it round the edge to move it. Same as /beq minimap.")
+        "Click it for the gear window, right-click for this page. Drag it to move it.")
 
     controls.minimap = Widgets.CreateCheckbox(minimapRow, "Show it", function(checked)
         ns.db.minimapHidden = not checked

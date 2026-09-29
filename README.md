@@ -16,7 +16,8 @@ So far it judges the gear in your bags: hovering a piece says on its tooltip
 whether it beats what you wear and by how much, and an upgrade you can wear
 now gets a green arrow on its icon in the bags. When a quest lets you choose a
 reward, the biggest upgrade among them gets the same arrow, and chat names it
-when you hand the quest in.
+when you hand the quest in. The gear window lists every slot with what you
+wear and the biggest upgrade for it in your bags.
 
 ## Install
 
@@ -57,13 +58,13 @@ inside it. If they differ, the client ignores the folder and says nothing.
 ## Use
 
 ```
-/beq            open the window (help, until the window exists)
+/beq            open the gear window (so does clicking the minimap button)
 /beq help       list every command
 /beq spec       show the spec your gear is judged for
 /beq spec mm    judge it as Marksmanship instead (bm, mm, sv, or auto to go back)
 /beq bags       list every piece of gear in your bags with its verdict
 /beq probe      check what this client supports; it only reads
-/beq settings   open the settings window (so does clicking the minimap button)
+/beq settings   open the settings window (so does right-clicking the minimap button)
 /beq minimap    show or hide the minimap button
 ```
 
@@ -90,7 +91,7 @@ switched off in the settings.
 | `Core/` | Namespace, module registry, event dispatch, slash commands, saved variables |
 | `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats |
 | `Logic/` | Stat weights per class and spec (`Weights.lua`), and judging an item against what is worn (`Compare.lua`) |
-| `UI/` | Theme, widgets, the minimap button, the settings window, the tooltip line, the bag arrows and the quest-reward arrow |
+| `UI/` | Theme, widgets, the minimap button, the gear window, the settings window, the tooltip line, the bag arrows and the quest-reward arrow |
 | `Probe/` | `/beq probe`, which checks what the running game actually supports instead of guessing |
 | `tools/` | Checks, tests and the link script. Not shipped to the client |
 | `docs/` | What the Forever client actually does, found with `/beq probe`. Not shipped |
