@@ -7,8 +7,8 @@
 -- an assumed one, because a fixed radius only clears the ring on a default
 -- 140px minimap.
 --
--- There is no main window yet, so a left-click opens the settings page too.
--- The tooltip says which spec gear is being judged for.
+-- A left-click opens the gear window, a right-click the settings. The
+-- tooltip says which spec gear is being judged for.
 
 local _, ns = ...
 

@@ -55,6 +55,9 @@ local SAME_WITHIN = 1
 
 Compare.SLOTS = SLOTS
 
+-- The backpack and the four bags beside it.
+local FIRST_BAG, LAST_BAG = 0, 4
+
 --- One item's score for these weights, or nil if its stats cannot be read.
 function Compare:ScoreOf(link, weights)
     local raw = Items:Stats(link)
@@ -67,7 +70,8 @@ end
 
 --- What is worn where this item would go, and the score to beat.
 -- @return against (number), empty (true when every slot it could go in is
---         empty), equipped (true when this very item is already worn)
+--         empty), equipped (true when this very item is already worn), and
+--         the slot it would go in (the weaker of a pair)
 function Compare:Against(link, equipLoc, weights)
     local slots = SLOTS[equipLoc]
 
@@ -83,17 +87,17 @@ function Compare:Against(link, equipLoc, weights)
         end
     end
 
-    local weakest, empty = nil, true
+    local weakest, weakestSlot, empty = nil, slots[1], true
     for _, slot in ipairs(slots) do
         local worn = Items:Equipped(slot)
-        if worn == link then return 0, false, true end
+        if worn == link then return 0, false, true, slot end
 
         local score = 0
         if worn then
             empty = false
             score = self:ScoreOf(worn, weights) or 0
         end
-        if not weakest or score < weakest then weakest = score end
+        if not weakest or score < weakest then weakest, weakestSlot = score, slot end
     end
 
     -- A two-hander replaces the off hand too.
@@ -116,7 +120,7 @@ function Compare:Against(link, equipLoc, weights)
         end
     end
 
-    return weakest or 0, empty, false
+    return weakest or 0, empty, false, weakestSlot
 end
 
 --- The verdict on one item for this character.
@@ -162,7 +166,8 @@ function Compare:Judge(link)
     local score = self:ScoreOf(link, weights)
     if not score then return nil end
 
-    local against, empty, equipped = self:Against(link, info.equipLoc, weights)
+    local against, empty, equipped, slot = self:Against(link, info.equipLoc, weights)
+    result.slot = slot
     if equipped then
         result.verdict = "equipped"
         return result
@@ -190,6 +195,33 @@ function Compare:Judge(link)
     end
 
     return result
+end
+
+--- The biggest upgrade in the bags for each slot, that can be worn now.
+-- @return { [inventory slot] = { link, result } }
+function Compare:BestInBags()
+    local best = {}
+    for bag = FIRST_BAG, LAST_BAG do
+        for bagSlot = 1, Items:BagSize(bag) do
+            local link = Items:InBag(bag, bagSlot)
+            local ok, result = pcall(self.Judge, self, link)
+            if ok and result and result.verdict == "upgrade" and not result.level and result.slot then
+                local gain = (result.score or 0) - (result.against or 0)
+                local held = best[result.slot]
+                if not held or gain > held.gain then
+                    best[result.slot] = { link = link, result = result, gain = gain }
+                end
+            end
+        end
+    end
+    return best
+end
+
+--- How much better, in words: "+14%", "fills an empty slot" or "better stats".
+function Compare:HowMuch(result)
+    if result.empty then return "fills an empty slot" end
+    if result.percent then return ("%+d%%"):format(math.floor(result.percent + 0.5)) end
+    return "better stats"
 end
 
 --- Should this item get the upgrade arrow in the bags? Only a real upgrade
@@ -232,9 +264,6 @@ end
 --------------------------------------------------------------------------------
 -- /beq bags
 --------------------------------------------------------------------------------
-
--- The backpack and the four bags beside it.
-local FIRST_BAG, LAST_BAG = 0, 4
 
 function Compare:ReportBags()
     local weights, spec = Weights:ForPlayer()

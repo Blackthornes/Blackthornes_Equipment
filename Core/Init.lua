@@ -365,6 +365,9 @@ function ns.HandleSlash(input)
     if ns.BagIcons then
         pcall(ns.BagIcons.Refresh, ns.BagIcons)
     end
+    if ns.UI then
+        pcall(ns.UI.Refresh, ns.UI)
+    end
 
     if not ok then
         ns.Warn(("/beq %s failed: %s"):format(keyword, tostring(err)))
