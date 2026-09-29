@@ -86,11 +86,18 @@ from 40, no shields, maces or wands) are classic's.
 
 ## 2026-09-29, seventh probe: a level 20 warlock
 
-The first class other than the hunter. The warlock's talents sit in the one
-trait tree the same way: Improved Bane of Agony and Malediction at x 1020 and
-Improved Corruption at x 2220, all left of 4000. `points per spec` read
-11 / 0 / 0 and `judged as affliction (talents)`, so Affliction is the first
-column, as classic's tab order and `CLASSIC_COLUMNS` assume.
+The first class other than the hunter, and its layout matches the split
+exactly. The probe's `columns` line puts the talents it sampled at:
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Improved Life Tap, Suppression, Improved Corruption, Pandemic | Affliction (below 4000) |
+| 5020 to 6820 | Improved Health Funnel, Improved Imp, Demonic Embrace, Unholy Power | Demonology (4000 to 8000) |
+| 9080 to 10280 | Destructive Reach, Improved Shadow Bolt, Bane | Destruction (above 8000) |
+
+The tree is one tree (`type 4`, 52 nodes, 11 of 11 spent). `points per spec`
+read 11 / 0 / 0 and `judged as affliction (talents)`, so the tab order and
+`CLASSIC_COLUMNS` are right for the warlock.
 
 The same probe read the main hand's stats as `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`,
 `ITEM_MOD_INTELLECT_SHORT`, `ITEM_MOD_MANA_REGENERATION_SHORT`,
@@ -99,5 +106,4 @@ The same probe read the main hand's stats as `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`,
 items carry spell power and mp5 under the retail keys `Weights.lua` already
 reads.
 
-Still unchecked: where the warlock's Demonology and Destruction columns
-start (no points there yet), and the other seven classes.
+Still unchecked: the other seven classes' layouts.

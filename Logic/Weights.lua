@@ -99,7 +99,7 @@ local SPECS = {
 
     ----------------------------------------------------------------------------
     -- The other eight classic classes. Only the warlock's talent tree has
-    -- been probed on Forever (Affliction in the first column, as assumed);
+    -- been probed on Forever (split at 4000 and 8000 in classic's order, as assumed);
     -- the rest are assumed to sit side by side like the hunter's, in classic's tab order, split at the same columns. /beq probe
     -- on a character of the class shows its layout, and CLASSIC_COLUMNS is
     -- replaced per class once that is known. Equip rules are classic's too.
