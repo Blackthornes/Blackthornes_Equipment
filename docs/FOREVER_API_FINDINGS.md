@@ -53,12 +53,19 @@ The 52 nodes sit in columns by `posX`, each named here by its top talent:
 So `Weights` splits at 4000 and 8000 (`SPECS.HUNTER.columns`) and counts the
 ranks bought in each part. Re-check this if Forever reshapes the tree.
 
-## Still to check: bags and tooltips
+## 2026-09-29, fifth probe: bags and tooltips
 
-The upgrade arrows and the tooltip line are built for both retail's and
-classic's bag windows, because which one Forever draws is not known yet.
-`/beq probe` now prints `bag windows` (each window and whether its buttons
-are listed or named), `bag hooks`, `arrows showing` and `tooltip lines added`.
-Tradeskills measured that item tooltips fire through `TooltipDataProcessor`.
-The hunter's armour and weapon rules in `Weights.lua` (mail from 40, no
-shields, maces or wands) are classic's and are not checked on Forever either.
+| Question | Answer | What it means here |
+|---|---|---|
+| Bag windows | **Retail's**: `ContainerFrameCombinedBags` and `ContainerFrame1`-`7`, buttons listed through `EnumerateValidItems`; `ContainerFrame_Update` and `GetContainerItemLink` are **absent** | `UI/BagIcons.lua` hooks each window's `UpdateItems`. The classic path stays as a fallback. |
+| Bag slots | `C_Container.GetContainerItemLink` present | Bag items are read through `C_Container`. |
+| Upgrade arrow | Seen in game on a bought Stiletto in the combined backpack | The arrow is drawn and placed right. |
+| Tooltip line | "Upgrade for Beast Mastery: +62%" on a vendor's Stiletto, through `TooltipDataProcessor` | Matches Tradeskills' finding. |
+| Item info | `C_Item.GetItemInfo` and `C_Item.GetItemInfoInstant` present, the old `GetItemInfo` global absent | `Data/Items.lua` asks `C_Item` first. |
+
+Still unchecked: the quest window. `UI/QuestRewards.lua` hooks
+`QuestInfo_Display` and finds the choice buttons through
+`QuestInfoRewardsFrame.RewardButtons`, falling back to classic's named
+`QuestInfoRewardsFrameQuestInfoItem<n>`; `/beq probe` lists whether
+`QuestInfo_Display` exists. Also unchecked: the hunter's armour and weapon rules in `Weights.lua` (mail
+from 40, no shields, maces or wands) are classic's.

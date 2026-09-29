@@ -119,6 +119,13 @@ local function HasAtlas(name)
     return ok and found ~= nil
 end
 
+--- The arrow already made for a button, or nil; never makes one.
+function BagIcons:ExistingArrow(button)
+    return arrows[button]
+end
+
+--- The arrow for a button, made the first time it is asked for. The quest
+--- reward buttons use it too.
 function BagIcons:Arrow(button)
     local arrow = arrows[button]
     if arrow then return arrow end

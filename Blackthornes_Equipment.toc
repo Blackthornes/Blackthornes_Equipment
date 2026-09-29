@@ -27,5 +27,6 @@ UI\Minimap.lua
 UI\Settings.lua
 UI\Tooltip.lua
 UI\BagIcons.lua
+UI\QuestRewards.lua
 
 Probe\Probe.lua
