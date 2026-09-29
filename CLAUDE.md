@@ -80,9 +80,9 @@ commented out and no release has been made.
   talent-tab calls: each class has one trait tree (`C_ClassTalents`,
   `C_Traits`) holding all its specs side by side, so `Weights:TraitPoints`
   counts ranks by column, split where `SPECS.<CLASS>.columns` says. Only
-  the hunter's layout has been probed; the other eight classes assume the
-  same split (`CLASSIC_COLUMNS`) and classic's tab order until `/beq probe`
-  on one of them says otherwise.
+  the hunter's and warlock's layouts have been probed; the other seven
+  classes assume the same split (`CLASSIC_COLUMNS`) and classic's tab order
+  until `/beq probe` on one of them says otherwise.
 - **The client is WoW: Forever, a retail engine** (`## Interface: 16001`,
   modern Lua), not 1.12. Instances hand addons secret values that raise when
   compared, concatenated or formatted, so read client values inside a pcall.
