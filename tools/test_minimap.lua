@@ -44,10 +44,10 @@ suite.check("and says which spec gear is judged as",
 suite.check("and what a click does", lines[3] == "Click to open", lines[3])
 suite.check("and a right-click", lines[4] == "Right-click for settings", lines[4])
 
-_G.UnitClass = function() return "Mage", "MAGE" end
+_G.UnitClass = function() return "Death Knight", "DEATHKNIGHT" end
 button:GetScript("OnEnter")(button)
 suite.check("a class without weights says so",
-    GameTooltip._lines[2] == "No stat weights for MAGE yet", GameTooltip._lines[2])
+    GameTooltip._lines[2] == "No stat weights for DEATHKNIGHT yet", GameTooltip._lines[2])
 _G.UnitClass = function() return "Hunter", "HUNTER" end
 
 -- Dragging round the ring. The stub cursor sits due east of the minimap's

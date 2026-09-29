@@ -158,6 +158,7 @@ function env.InstallClient()
     _G.C_Spell = nil
     _G.GetSpellInfo = nil
     _G.C_SpecializationInfo = nil
+    _G.C_CreatureInfo = nil
     _G.C_Container = nil
     _G.GetContainerItemLink = nil
     _G.GetItemInfo = nil

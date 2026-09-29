@@ -235,7 +235,11 @@ end
 -- Words
 --------------------------------------------------------------------------------
 
-local CLASS_NAMES = { HUNTER = "Hunters" }
+local CLASS_NAMES = {
+    WARRIOR = "Warriors", PALADIN = "Paladins", HUNTER = "Hunters", ROGUE = "Rogues",
+    PRIEST = "Priests", SHAMAN = "Shamans", MAGE = "Mages", WARLOCK = "Warlocks",
+    DRUID = "Druids",
+}
 
 --- The line a tooltip shows for a verdict, and the colour to show it in, or
 --- nil when there is nothing worth saying (the item is the one worn).

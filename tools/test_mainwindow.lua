@@ -84,9 +84,9 @@ suite.check("the header follows /beq spec", UI.specLabel:GetText() == "judging g
     UI.specLabel:GetText())
 
 -- A class with no weights.
-_G.UnitClass = function() return "MAGE", "MAGE" end
+_G.UnitClass = function() return "DEATHKNIGHT", "DEATHKNIGHT" end
 UI:Refresh()
-suite.check("a class without weights says so", UI.footer:GetText() == "There are no stat weights for MAGE yet.",
+suite.check("a class without weights says so", UI.footer:GetText() == "There are no stat weights for DEATHKNIGHT yet.",
     UI.footer:GetText())
 suite.check("and offers nothing", Link(Row(8).best) == nil)
 _G.UnitClass = function() return "HUNTER", "HUNTER" end

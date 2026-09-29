@@ -69,12 +69,12 @@ suite.check("a spec that is not one is refused",
     env.ChatText():find("not a spec: tank", 1, true), env.ChatText())
 suite.check("and nothing is saved", ns.charDB.spec == nil)
 
-ns = LoadAs("WARLOCK", nil)
+ns = LoadAs("DEATHKNIGHT", nil)
 suite.check("a class without weights has none", ns.Weights:ForPlayer() == nil)
 env.chat = {}
 ns.HandleSlash("spec")
 suite.check("and /beq spec says so",
-    env.ChatText():find("no stat weights for WARLOCK", 1, true), env.ChatText())
+    env.ChatText():find("no stat weights for DEATHKNIGHT", 1, true), env.ChatText())
 
 -- Forever: no talent tabs, one trait tree with the three specs side by side.
 -- `bought` maps a node's horizontal position to the ranks bought in it.
