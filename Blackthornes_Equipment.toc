@@ -1,0 +1,17 @@
+## Interface: 16001
+## Title: Blackthornes Equipment
+## Notes: Looks at the gear in your bags and the quest rewards on offer, and says which is best for your class and spec.
+## Author: Blackthornes
+## Version: @project-version@
+## X-License: MIT
+## SavedVariables: BlackthornesEquipmentDB
+## SavedVariablesPerCharacter: BlackthornesEquipmentCharDB
+## IconTexture: Interface\Icons\INV_Chest_Chain
+
+# Filled in once the project exists on each site. The packager reads these
+# to know where to upload; a line that stays commented is simply skipped.
+# X-Curse-Project-ID: 
+# X-Wago-ID: 
+# X-WoWI-ID: 
+
+Core\Init.lua
