@@ -54,9 +54,16 @@ inside it. If they differ, the client ignores the folder and says nothing.
 ## Use
 
 ```
-/beq          open the window (help, until the window exists)
-/beq help     list every command
+/beq            open the window (help, until the window exists)
+/beq help       list every command
+/beq spec       show the spec your gear is judged for
+/beq spec mm    judge it as Marksmanship instead (bm, mm, sv, or auto to go back)
+/beq probe      check what this client supports; it only reads
 ```
+
+On WoW: Forever a hunter's spec is the talent tree with the most points in
+it. Until level 10 there are none, so gear is judged as Beast Mastery unless
+you pick otherwise. Only hunters have stat weights so far.
 
 `/equipment` works too.
 
@@ -66,8 +73,9 @@ inside it. If they differ, the client ignores the folder and says nothing.
 |---|---|
 | `Core/` | Namespace, module registry, event dispatch, slash commands, saved variables |
 | `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats |
-| `Logic/` | Stat weights per class and spec, and scoring an item against what is worn |
+| `Logic/` | Stat weights per class and spec (`Weights.lua`), and scoring an item against what is worn |
 | `UI/` | Theme, widgets, the window and the tooltip and quest-reward hints |
+| `Probe/` | `/beq probe`, which checks what the running game actually supports instead of guessing |
 | `tools/` | Checks, tests and the link script. Not shipped to the client |
 
 `Blackthornes_Equipment.toc` lists every Lua file in load order. A file that is

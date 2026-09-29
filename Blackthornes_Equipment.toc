@@ -15,3 +15,7 @@
 # X-WoWI-ID: 
 
 Core\Init.lua
+
+Logic\Weights.lua
+
+Probe\Probe.lua

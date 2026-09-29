@@ -68,6 +68,12 @@ commented out and no release has been made.
 - **CurseForge descriptions are features only.** Leave out privacy notes and
   any explanation of public emotes or their switches. Those belong in the
   README and CHANGELOG.
+- **Forever is not retail for classes either.** Trent: "keep in mind this is
+  WoW: Forever." Hunters have classic-style talent trees (Beast Mastery,
+  Marksmanship, Survival; Survival fights in melee), not a spec picked from a
+  menu, so `Logic/Weights.lua` reads the tree with the most points. Never
+  assume a retail API or stat exists: check with `/beq probe` and record what
+  it finds.
 - **The client is WoW: Forever, a retail engine** (`## Interface: 16001`,
   modern Lua), not 1.12. Instances hand addons secret values that raise when
   compared, concatenated or formatted, so read client values inside a pcall.
