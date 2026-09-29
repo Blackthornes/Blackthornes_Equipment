@@ -14,7 +14,9 @@ The three share a palette and a framework on purpose.
 
 So far it judges the gear in your bags: hovering a piece says on its tooltip
 whether it beats what you wear and by how much, and an upgrade you can wear
-now gets a green arrow on its icon in the bags. Quest rewards come next.
+now gets a green arrow on its icon in the bags. When a quest lets you choose a
+reward, the biggest upgrade among them gets the same arrow, and chat names it
+when you hand the quest in.
 
 ## Install
 
@@ -74,8 +76,10 @@ you pick otherwise. Only hunters have stat weights so far.
 Each item gets one score (every stat times what it is worth to your spec)
 and is measured against what you wear in its slot. Rings and trinkets are
 measured against the weaker of your two, and a two-hander against both hands.
-Anything within 1% is called the same. The tooltip line and the bag arrows
-can each be switched off in the settings.
+Anything within 1% is called the same. The best quest reward is the one that
+adds the most score, so a small gain on an important slot can beat a big
+percentage on a minor one. The tooltip line and the arrows can each be
+switched off in the settings.
 
 `/equipment` works too.
 
@@ -86,7 +90,7 @@ can each be switched off in the settings.
 | `Core/` | Namespace, module registry, event dispatch, slash commands, saved variables |
 | `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats |
 | `Logic/` | Stat weights per class and spec (`Weights.lua`), and judging an item against what is worn (`Compare.lua`) |
-| `UI/` | Theme, widgets, the minimap button, the settings window, the tooltip line and the bag arrows; later the quest-reward hints |
+| `UI/` | Theme, widgets, the minimap button, the settings window, the tooltip line, the bag arrows and the quest-reward arrow |
 | `Probe/` | `/beq probe`, which checks what the running game actually supports instead of guessing |
 | `tools/` | Checks, tests and the link script. Not shipped to the client |
 | `docs/` | What the Forever client actually does, found with `/beq probe`. Not shipped |

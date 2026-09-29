@@ -28,7 +28,7 @@ local APIS = {
     "C_Item.GetItemInfo", "C_Item.GetItemInfoInstant", "GetItemInfo",
     "C_Container.GetContainerItemLink", "GetContainerItemLink", "ContainerFrame_Update",
     "TooltipDataProcessor.AddTooltipPostCall", "TooltipUtil.GetDisplayedItem",
-    "C_Texture.GetAtlasInfo",
+    "C_Texture.GetAtlasInfo", "QuestInfo_Display",
 }
 
 local function Has(path)

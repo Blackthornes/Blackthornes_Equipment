@@ -240,7 +240,8 @@ local DEFAULTS = {
     minimapHidden = false,
 
     -- The verdict on gear: a line on its tooltip, and an arrow on it in the
-    -- bags when it is an upgrade. Both on unless switched off.
+    -- bags and on the best quest reward when it is an upgrade. Both on unless
+    -- switched off.
     tooltipLine = true,
     bagArrows = true,
 }

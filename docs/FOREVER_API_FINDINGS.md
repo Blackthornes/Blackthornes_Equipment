@@ -63,5 +63,9 @@ ranks bought in each part. Re-check this if Forever reshapes the tree.
 | Tooltip line | "Upgrade for Beast Mastery: +62%" on a vendor's Stiletto, through `TooltipDataProcessor` | Matches Tradeskills' finding. |
 | Item info | `C_Item.GetItemInfo` and `C_Item.GetItemInfoInstant` present, the old `GetItemInfo` global absent | `Data/Items.lua` asks `C_Item` first. |
 
-Still unchecked: the hunter's armour and weapon rules in `Weights.lua` (mail
+Still unchecked: the quest window. `UI/QuestRewards.lua` hooks
+`QuestInfo_Display` and finds the choice buttons through
+`QuestInfoRewardsFrame.RewardButtons`, falling back to classic's named
+`QuestInfoRewardsFrameQuestInfoItem<n>`; `/beq probe` lists whether
+`QuestInfo_Display` exists. Also unchecked: the hunter's armour and weapon rules in `Weights.lua` (mail
 from 40, no shields, maces or wands) are classic's.

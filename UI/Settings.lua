@@ -244,12 +244,13 @@ function SettingsUI:BuildColumn()
     end, true)
     controls.tooltip:SetPoint("TOPLEFT", CONTROL_X, -2)
 
-    local arrowRow = CreateRow(frame, tooltipRow, "Bag arrows",
-        "A green arrow on gear in your bags that is an upgrade you can wear now.")
+    local arrowRow = CreateRow(frame, tooltipRow, "Upgrade arrows",
+        "A green arrow on upgrades you can wear now: in your bags, and on the best quest reward.")
 
     controls.arrows = Widgets.CreateCheckbox(arrowRow, "Show them", function(checked)
         ns.db.bagArrows = checked
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
+        if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
     end, true)
     controls.arrows:SetPoint("TOPLEFT", CONTROL_X, -2)
 
