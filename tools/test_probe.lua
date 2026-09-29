@@ -77,5 +77,7 @@ suite.check("lists where points are spent",
     text:find("spent in|r  Aimed Shot 2 at x700", 1, true), text)
 suite.check("a tree that raises is still listed",
     text:find("id 102, 0 nodes", 1, true), text)
+suite.check("says which bag windows there are", text:find("bag windows|r  none found", 1, true), text)
+suite.check("and what the arrows are hooked to", text:find("bag hooks|r  none", 1, true), text)
 
 suite.done()

@@ -238,6 +238,11 @@ local DEFAULTS = {
     minimapAngle = math.rad(230),
     minimapGap = 16,
     minimapHidden = false,
+
+    -- The verdict on gear: a line on its tooltip, and an arrow on it in the
+    -- bags when it is an upgrade. Both on unless switched off.
+    tooltipLine = true,
+    bagArrows = true,
 }
 
 -- Per character, because class and spec are. `spec` is the spec the player
@@ -354,6 +359,10 @@ function ns.HandleSlash(input)
     -- if it happens to be open. Before the error handler, which may raise.
     if ns.SettingsUI then
         pcall(ns.SettingsUI.Refresh, ns.SettingsUI)
+    end
+    -- /beq spec changes what counts as an upgrade.
+    if ns.BagIcons then
+        pcall(ns.BagIcons.Refresh, ns.BagIcons)
     end
 
     if not ok then

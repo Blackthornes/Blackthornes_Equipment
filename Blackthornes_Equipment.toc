@@ -16,11 +16,16 @@
 
 Core\Init.lua
 
+Data\Items.lua
+
 Logic\Weights.lua
+Logic\Compare.lua
 
 UI\Theme.lua
 UI\Widgets.lua
 UI\Minimap.lua
 UI\Settings.lua
+UI\Tooltip.lua
+UI\BagIcons.lua
 
 Probe\Probe.lua
