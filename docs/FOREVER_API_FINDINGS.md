@@ -69,7 +69,8 @@ ranks bought in each part. Re-check this if Forever reshapes the tree.
 PALADIN, HUNTER, ROGUE, PRIEST, SHAMAN, MAGE, WARLOCK, DRUID. No death
 knight, monk or other later class, and every one has weights here.
 
-Still unchecked: the other eight classes' talent trees. `Weights.lua` gives each the
+Still unchecked: the other eight classes' talent trees (the warlock's is
+checked by the seventh probe below). `Weights.lua` gives each the
 hunter's column split (4000 and 8000) and classic's tab order (Arms, Fury,
 Protection and so on), and classic's armour and weapon rules. `/beq probe`
 on a character of the class prints its columns and top talents, and a
@@ -82,3 +83,21 @@ Also unchecked: the quest window. `UI/QuestRewards.lua` hooks
 `QuestInfoRewardsFrameQuestInfoItem<n>`; `/beq probe` lists whether
 `QuestInfo_Display` exists. Also unchecked: the hunter's armour and weapon rules in `Weights.lua` (mail
 from 40, no shields, maces or wands) are classic's.
+
+## 2026-09-29, seventh probe: a level 20 warlock
+
+The first class other than the hunter. The warlock's talents sit in the one
+trait tree the same way: Improved Bane of Agony and Malediction at x 1020 and
+Improved Corruption at x 2220, all left of 4000. `points per spec` read
+11 / 0 / 0 and `judged as affliction (talents)`, so Affliction is the first
+column, as classic's tab order and `CLASSIC_COLUMNS` assume.
+
+The same probe read the main hand's stats as `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`,
+`ITEM_MOD_INTELLECT_SHORT`, `ITEM_MOD_MANA_REGENERATION_SHORT`,
+`ITEM_MOD_SPELL_POWER_SHORT` and `ITEM_MOD_SPIRIT_SHORT`, and a wand's as
+`ITEM_MOD_DAMAGE_PER_SECOND_SHORT` and `ITEM_MOD_SPELL_POWER_SHORT`. So caster
+items carry spell power and mp5 under the retail keys `Weights.lua` already
+reads.
+
+Still unchecked: where the warlock's Demonology and Destruction columns
+start (no points there yet), and the other seven classes.
