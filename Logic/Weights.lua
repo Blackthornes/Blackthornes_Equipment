@@ -6,7 +6,9 @@
 -- Marksmanship, Survival) rather than a specialization picked from a menu, so
 -- "spec" here means the tree with the most points in it. Below level 10 there
 -- are no points, and the class default applies until the player picks one
--- with /beq spec.
+-- with /beq spec. The first /beq probe found neither classic talent-tab calls
+-- nor GetSpecialization on Forever (docs/FOREVER_API_FINDINGS.md), so for now
+-- TreePoints reads nothing there and the pick or the default decides.
 --
 -- The numbers are a starting guess for levelling, per point of the stat with
 -- Agility as 1. Crit and hit are per 1%, the way classic-era items print
