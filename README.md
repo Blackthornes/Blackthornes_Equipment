@@ -59,7 +59,11 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq spec       show the spec your gear is judged for
 /beq spec mm    judge it as Marksmanship instead (bm, mm, sv, or auto to go back)
 /beq probe      check what this client supports; it only reads
+/beq settings   open the settings window (so does clicking the minimap button)
+/beq minimap    show or hide the minimap button
 ```
+
+The settings window is also under the game's Options > AddOns.
 
 On WoW: Forever a hunter's spec is the talent tree with the most points in
 it. Until level 10 there are none, so gear is judged as Beast Mastery unless
@@ -74,9 +78,10 @@ you pick otherwise. Only hunters have stat weights so far.
 | `Core/` | Namespace, module registry, event dispatch, slash commands, saved variables |
 | `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats |
 | `Logic/` | Stat weights per class and spec (`Weights.lua`), and scoring an item against what is worn |
-| `UI/` | Theme, widgets, the window and the tooltip and quest-reward hints |
+| `UI/` | Theme, widgets, the minimap button and the settings window; later the tooltip and quest-reward hints |
 | `Probe/` | `/beq probe`, which checks what the running game actually supports instead of guessing |
 | `tools/` | Checks, tests and the link script. Not shipped to the client |
+| `docs/` | What the Forever client actually does, found with `/beq probe`. Not shipped |
 
 `Blackthornes_Equipment.toc` lists every Lua file in load order. A file that is
 not in it does not load, and WoW says nothing about it.

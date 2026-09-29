@@ -46,7 +46,10 @@ function Probe:Run()
     ns.Print("probe: what this client supports")
 
     for _, api in ipairs({
-        "UnitClass", "GetNumTalentTabs", "GetTalentTabInfo", "GetSpecialization",
+        "UnitClass", "UnitLevel", "GetNumTalentTabs", "GetTalentTabInfo",
+        "GetNumTalents", "GetTalentInfo", "GetSpecialization",
+        "C_SpecializationInfo.GetSpecialization", "C_ClassTalents.GetActiveConfigID",
+        "C_Traits.GetConfigInfo",
         "C_Item.GetItemStats", "GetItemStats", "GetInventoryItemLink",
         "GetQuestItemLink", "GetNumQuestChoices",
     }) do

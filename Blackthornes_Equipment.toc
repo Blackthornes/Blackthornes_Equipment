@@ -18,4 +18,9 @@ Core\Init.lua
 
 Logic\Weights.lua
 
+UI\Theme.lua
+UI\Widgets.lua
+UI\Minimap.lua
+UI\Settings.lua
+
 Probe\Probe.lua

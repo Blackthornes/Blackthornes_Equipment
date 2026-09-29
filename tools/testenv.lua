@@ -22,26 +22,56 @@ local function Stub(fields)
     local frame = fields or {}
 
     frame._shown = frame._shown or false
+    frame._height = frame._height or 300
     frame._text = frame._text or ""
-    frame._scripts = frame._scripts or {}
-    frame._events = frame._events or {}
 
     function frame:Show() self._shown = true end
     function frame:Hide() self._shown = false end
     function frame:IsShown() return self._shown end
     function frame:SetShown(value) self._shown = value and true or false end
 
+    function frame:SetHeight(value) self._height = value end
+    function frame:GetHeight() return self._height end
+    function frame:SetWidth(value) self._width = value end
+    function frame:GetWidth() return self._width or 500 end
+
     function frame:SetText(value) self._text = tostring(value or "") end
+    function frame:SetTextColor(r, g, b) self._color = { r, g, b } end
     function frame:GetText() return self._text end
+    -- About as wide as the game's small font: 6 pixels a character.
+    function frame:GetStringWidth() return #(self._text or "") * 6 end
 
     function frame:SetScript(script, fn) self._scripts[script] = fn end
     function frame:GetScript(script) return self._scripts[script] end
+
+    function frame:GetPoint()
+        local p = self._point
+        if p and #p == 5 then return p[1], p[2], p[3], p[4], p[5] end
+        return "CENTER", nil, "CENTER", 0, 40
+    end
+    -- Nil until a test places the frame on screen, as before layout.
+    function frame:GetLeft() return self._left end
+    function frame:GetTop() return self._top end
+    function frame:GetFrameLevel() return rawget(self, "_frameLevel") or 1 end
+    function frame:SetFrameLevel(value) self._frameLevel = value end
+
+    -- Recorded so a test can check where something was anchored.
+    function frame:SetPoint(...) self._point = { ... } end
+    function frame:GetCenter() return self._cx or 0, self._cy or 0 end
+    function frame:GetEffectiveScale() return 1 end
 
     function frame:RegisterEvent(event) self._events[event] = true end
     function frame:UnregisterEvent(event) self._events[event] = nil end
 
     function frame:CreateTexture() return Stub() end
     function frame:CreateFontString() return Stub() end
+
+    function frame:SetMinMaxValues(low, high) self._min, self._max = low, high end
+    function frame:SetValue(value) self._value = value end
+    function frame:GetValue() return self._value or 0 end
+
+    frame._scripts = frame._scripts or {}
+    frame._events = frame._events or {}
 
     return setmetatable(frame, { __index = function(self, key)
         local noop = function() end
@@ -60,6 +90,29 @@ function env.InstallClient()
     env.chat = {}
 
     _G.UIParent = Stub()
+
+    -- A default-sized minimap, and a cursor parked somewhere unambiguous so a
+    -- simulated drag lands at a known angle.
+    _G.Minimap = Stub({ _width = 140, _cx = 500, _cy = 500 })
+    _G.GetCursorPosition = function() return 600, 500 end
+
+    _G.GameTooltip = Stub({
+        _lines = {},
+        SetOwner = function(self) self._lines = {} end,
+        AddLine = function(self, text) self._lines[#self._lines + 1] = text end,
+    })
+
+    -- Timers run straight away: a test has nothing to wait for.
+    _G.C_Timer = {
+        After = function(_, fn) fn() end,
+        NewTicker = function(_, fn) return Stub({ _fn = fn }) end,
+    }
+
+    -- Theme asks for the default font through pcall and falls back on its
+    -- own, so leaving GameFontNormal absent exercises that path.
+    _G.GameFontNormal = nil
+    _G.Settings = nil
+    _G.InterfaceOptions_AddCategory = nil
 
     _G.CreateFrame = function(_, name, parent)
         local frame = Stub({ _parent = parent })

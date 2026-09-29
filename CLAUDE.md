@@ -24,7 +24,10 @@ convention:
   `/equipment`, the saved data `BlackthornesEquipmentDB` (account) and
   `BlackthornesEquipmentCharDB` (per character: the picked spec lives there).
 - **Palette** is Tradeskills' and Farmer's (`ns.COLORS`), with `upgrade` and
-  `downgrade` in Tradeskills' profit green and loss red.
+  `downgrade` in Tradeskills' profit green and loss red. `UI/Theme.lua` and
+  `UI/Widgets.lua` are Farmer's (Widgets trimmed to button, checkbox and
+  stepper); the minimap button and settings window copy Farmer's too. The
+  button starts at 230 degrees, clear of the other two at 200.
 - **Tools** (`syntaxcheck`, `lintcalls`, `runtests`, `check_release`,
   `check_package` and their tests) are Tradeskills' with the names changed.
   If one of them gets a fix in either sister repo, bring it here too.
@@ -73,7 +76,9 @@ commented out and no release has been made.
   Marksmanship, Survival; Survival fights in melee), not a spec picked from a
   menu, so `Logic/Weights.lua` reads the tree with the most points. Never
   assume a retail API or stat exists: check with `/beq probe` and record what
-  it finds.
+  it finds in `docs/FOREVER_API_FINDINGS.md`. The first probe found no
+  classic talent-tab calls at all, so until the newer ones are checked the
+  spec is the picked one or Beast Mastery.
 - **The client is WoW: Forever, a retail engine** (`## Interface: 16001`,
   modern Lua), not 1.12. Instances hand addons secret values that raise when
   compared, concatenated or formatted, so read client values inside a pcall.

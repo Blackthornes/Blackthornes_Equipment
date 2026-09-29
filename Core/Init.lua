@@ -231,6 +231,13 @@ local DEFAULTS = {
     x = 0,
     y = 40,
     debug = false,
+
+    -- Minimap button: where it sits on the ring, how far off the edge, and
+    -- whether it is there at all. A little further round than Farmer's and
+    -- Tradeskills' buttons, so the three do not start stacked.
+    minimapAngle = math.rad(230),
+    minimapGap = 16,
+    minimapHidden = false,
 }
 
 -- Per character, because class and spec are. `spec` is the spec the player
@@ -342,6 +349,13 @@ function ns.HandleSlash(input)
     -- broken command and one that did nothing look identical from the chat
     -- frame.
     local ok, err = pcall(command.fn, rest or "")
+
+    -- Most commands flip something the settings page shows; keep it honest
+    -- if it happens to be open. Before the error handler, which may raise.
+    if ns.SettingsUI then
+        pcall(ns.SettingsUI.Refresh, ns.SettingsUI)
+    end
+
     if not ok then
         ns.Warn(("/beq %s failed: %s"):format(keyword, tostring(err)))
         geterrorhandler()(err)
