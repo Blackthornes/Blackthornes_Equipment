@@ -63,7 +63,13 @@ ranks bought in each part. Re-check this if Forever reshapes the tree.
 | Tooltip line | "Upgrade for Beast Mastery: +62%" on a vendor's Stiletto, through `TooltipDataProcessor` | Matches Tradeskills' finding. |
 | Item info | `C_Item.GetItemInfo` and `C_Item.GetItemInfoInstant` present, the old `GetItemInfo` global absent | `Data/Items.lua` asks `C_Item` first. |
 
-Still unchecked: the other eight classes. `Weights.lua` gives each the
+## 2026-09-29, sixth probe: the client's classes
+
+`C_CreatureInfo.GetClassInfo` lists exactly the classic nine: WARRIOR,
+PALADIN, HUNTER, ROGUE, PRIEST, SHAMAN, MAGE, WARLOCK, DRUID. No death
+knight, monk or other later class, and every one has weights here.
+
+Still unchecked: the other eight classes' talent trees. `Weights.lua` gives each the
 hunter's column split (4000 and 8000) and classic's tab order (Arms, Fury,
 Protection and so on), and classic's armour and weapon rules. `/beq probe`
 on a character of the class prints its columns and top talents, and a
