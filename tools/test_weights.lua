@@ -76,6 +76,65 @@ ns.HandleSlash("spec")
 suite.check("and /beq spec says so",
     env.ChatText():find("no stat weights for WARLOCK", 1, true), env.ChatText())
 
+-- Forever: no talent tabs, one trait tree with the three specs side by side.
+-- `bought` maps a node's horizontal position to the ranks bought in it.
+local function LoadTraits(bought, opts)
+    opts = opts or {}
+    local ns = LoadAs("HUNTER", nil)
+    local nodeList, layout = {}, {}
+    for x, ranks in pairs(bought) do
+        nodeList[#nodeList + 1] = x
+        layout[x] = { posX = x, posY = 0, ranksPurchased = ranks }
+    end
+    _G.C_ClassTalents = { GetActiveConfigID = function()
+        if opts.config == false then return nil end
+        return 9601568
+    end }
+    _G.C_Traits = {
+        GetConfigInfo = function() return { type = 4, name = "Hunter", treeIDs = { 1091 } } end,
+        GetTreeNodes = function() return nodeList end,
+        GetNodeInfo = function(_, nodeID)
+            if opts.raise == nodeID then error("secret value") end
+            return layout[nodeID]
+        end,
+    }
+    return ns
+end
+
+-- Positions from the real tree: Focused Fire 1020 (BM), Hawk Eye 5020 (MM),
+-- Entrapment 9080 (SV), Lightning Reflexes 102800 (SV, far out).
+ns = LoadTraits({ [1020] = 0, [5020] = 0, [9080] = 0 })
+spec, why = ns.Weights:CurrentSpec()
+suite.check("a trait tree with nothing spent is the default",
+    spec == "beast" and why == "default", why)
+
+ns = LoadTraits({ [1020] = 1, [5020] = 3, [6820] = 1, [9080] = 2 })
+local points = ns.Weights:TreePoints("HUNTER")
+suite.check("points are counted per spec by column",
+    points[1] == 1 and points[2] == 4 and points[3] == 2,
+    table.concat(points, "/"))
+spec, why = ns.Weights:CurrentSpec()
+suite.check("most points in the Marksmanship columns is Marksmanship",
+    spec == "marks" and why == "talents", spec)
+
+ns = LoadTraits({ [1020] = 2, [102800] = 3 })
+spec = ns.Weights:CurrentSpec()
+suite.check("Lightning Reflexes far out at 102800 counts as Survival", spec == "survival", spec)
+
+ns = LoadTraits({ [1020] = 2, [5020] = 3 }, { raise = 5020 })
+spec = ns.Weights:CurrentSpec()
+suite.check("a node that raises is skipped", spec == "beast", spec)
+
+ns = LoadTraits({ [5020] = 3 }, { config = false })
+spec, why = ns.Weights:CurrentSpec()
+suite.check("no active config falls back to the default", why == "default", why)
+
+ns = LoadTraits({ [5020] = 3 })
+ns.HandleSlash("spec sv")
+spec, why = ns.Weights:CurrentSpec()
+suite.check("a pick still beats the talents", spec == "survival" and why == "picked", why)
+_G.C_ClassTalents, _G.C_Traits = nil, nil
+
 -- Scoring.
 ns = LoadAs("HUNTER", nil)
 local stats, unknown = ns.Weights:Normalize({

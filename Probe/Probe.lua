@@ -210,13 +210,13 @@ function Probe:Run()
     local Weights = ns.Weights
     Line("class", Weights:PlayerClass() or "unknown")
 
-    local points = Weights:TreePoints()
+    local points = Weights:TreePoints(Weights:PlayerClass())
     if points then
         local parts = {}
         for tab, spent in ipairs(points) do parts[tab] = tostring(spent) end
-        Line("talent points", table.concat(parts, " / "))
+        Line("points per spec", table.concat(parts, " / "))
     else
-        Line("talent points", "no talent trees to read")
+        Line("points per spec", "no talents to read")
     end
 
     local spec, why = Weights:CurrentSpec()

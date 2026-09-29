@@ -35,3 +35,20 @@ The probe now also groups the tree's nodes into columns by position, names
 each column's top talent, and lists every talent with points in it. That shows
 which part of the tree is Beast Mastery, Marksmanship and Survival, so
 `Weights` can count points per spec.
+
+## 2026-09-29, fourth probe: the hunter tree's layout
+
+`C_SpecializationInfo.GetSpecialization` answers **1** with no points spent,
+so it says nothing about the talents; it is not used.
+
+The 52 nodes sit in columns by `posX`, each named here by its top talent:
+
+| Columns (posX) | Top talents | Spec |
+|---|---|---|
+| 1020, 1620, 2220, 2820 (16 nodes) | Focused Fire, Deadly Aspects, Endurance Training, Improved Revive Pet | Beast Mastery |
+| 5020, 5620, 6220, 6820 (17 nodes) | Hawk Eye, Improved Concussive Shot, Lethal Attacks, Lone Wolf | Marksmanship |
+| 9080, 9680, 10280, 10880 (18 nodes) | Entrapment, Improved Tracking, Deflection, Improved Wing Clip | Survival |
+| 102800 (1 node) | Lightning Reflexes | Survival, sitting far out on its own |
+
+So `Weights` splits at 4000 and 8000 (`SPECS.HUNTER.columns`) and counts the
+ranks bought in each part. Re-check this if Forever reshapes the tree.
