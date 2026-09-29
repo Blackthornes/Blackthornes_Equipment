@@ -122,7 +122,7 @@ suite.check("a non-gear item gets nothing", ns.Compare:Judge("item:40") == nil)
 suite.check("an unknown item gets nothing", ns.Compare:Judge("item:999") == nil)
 suite.check("nor does nil", ns.Compare:Judge(nil) == nil)
 
-ns = LoadWith({ [5] = "item:1" }, nil, 20, "WARRIOR")
+ns = LoadWith({ [5] = "item:1" }, nil, 20, "DEATHKNIGHT")
 suite.check("a class with no weights gets nothing", ns.Compare:Judge("item:2") == nil)
 
 -- Picking a spec changes the verdict's name.

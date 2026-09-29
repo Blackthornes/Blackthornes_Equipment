@@ -70,9 +70,15 @@ inside it. If they differ, the client ignores the folder and says nothing.
 
 The settings window is also under the game's Options > AddOns.
 
-On WoW: Forever a hunter's spec is the one with the most talent points spent
-in it (all three share one talent tree, side by side). Until level 10 there are none, so gear is judged as Beast Mastery unless
-you pick otherwise. Only hunters have stat weights so far.
+Every classic class has stat weights: warrior, paladin, hunter, rogue,
+priest, shaman, mage, warlock and druid, three specs each. On WoW: Forever a
+character's spec is the one with the most talent points spent in it (a
+class's three specs share one talent tree, side by side). Until level 10
+there are none, so gear is judged as the class's levelling default (Arms,
+Retribution, Beast Mastery, Combat, Shadow, Enhancement, Frost, Affliction,
+Feral) unless you pick otherwise with `/beq spec <name>`. Each class is held
+to classic's armour and weapon rules, so a priest is told it can't use
+leather and plate waits for level 40.
 
 Each item gets one score (every stat times what it is worth to your spec)
 and is measured against what you wear in its slot. Rings and trinkets are

@@ -63,7 +63,14 @@ ranks bought in each part. Re-check this if Forever reshapes the tree.
 | Tooltip line | "Upgrade for Beast Mastery: +62%" on a vendor's Stiletto, through `TooltipDataProcessor` | Matches Tradeskills' finding. |
 | Item info | `C_Item.GetItemInfo` and `C_Item.GetItemInfoInstant` present, the old `GetItemInfo` global absent | `Data/Items.lua` asks `C_Item` first. |
 
-Still unchecked: the quest window. `UI/QuestRewards.lua` hooks
+Still unchecked: the other eight classes. `Weights.lua` gives each the
+hunter's column split (4000 and 8000) and classic's tab order (Arms, Fury,
+Protection and so on), and classic's armour and weapon rules. `/beq probe`
+on a character of the class prints its columns and top talents, and a
+`classes` line listing every class the client knows, marking any without
+weights.
+
+Also unchecked: the quest window. `UI/QuestRewards.lua` hooks
 `QuestInfo_Display` and finds the choice buttons through
 `QuestInfoRewardsFrame.RewardButtons`, falling back to classic's named
 `QuestInfoRewardsFrameQuestInfoItem<n>`; `/beq probe` lists whether

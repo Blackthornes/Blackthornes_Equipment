@@ -28,7 +28,7 @@ local APIS = {
     "C_Item.GetItemInfo", "C_Item.GetItemInfoInstant", "GetItemInfo",
     "C_Container.GetContainerItemLink", "GetContainerItemLink", "ContainerFrame_Update",
     "TooltipDataProcessor.AddTooltipPostCall", "TooltipUtil.GetDisplayedItem",
-    "C_Texture.GetAtlasInfo", "QuestInfo_Display",
+    "C_Texture.GetAtlasInfo", "QuestInfo_Display", "C_CreatureInfo.GetClassInfo",
 }
 
 local function Has(path)
@@ -183,6 +183,23 @@ function Probe:ItemStats(link)
     return nil
 end
 
+--- Every class this client knows, as class tokens, with any this addon has
+--- no weights for marked. Forever may have classes classic did not.
+function Probe:Classes()
+    if not Has("C_CreatureInfo.GetClassInfo") then return "not readable" end
+
+    local names = {}
+    for id = 1, 30 do
+        local ok, info = pcall(C_CreatureInfo.GetClassInfo, id)
+        if ok and type(info) == "table" and type(info.classFile) == "string" then
+            local token = info.classFile
+            if not ns.Weights.SPECS[token] then token = token .. " (no weights)" end
+            names[#names + 1] = token
+        end
+    end
+    return #names > 0 and table.concat(names, ", ") or "none listed"
+end
+
 function Probe:Run()
     ns.Print("probe: what this client supports")
 
@@ -213,6 +230,7 @@ function Probe:Run()
 
     local Weights = ns.Weights
     Line("class", Weights:PlayerClass() or "unknown")
+    Line("classes", self:Classes())
 
     local points = Weights:TreePoints(Weights:PlayerClass())
     if points then

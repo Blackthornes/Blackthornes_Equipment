@@ -10,9 +10,12 @@
 -- trait tree per class (C_ClassTalents, C_Traits), so the points are counted
 -- per spec from where each talent sits in that tree.
 --
--- The numbers are a starting guess for levelling, per point of the stat with
--- Agility as 1. Crit and hit are per 1%, the way classic-era items print
--- them. /beq probe shows what the client really reports so they can be tuned.
+-- Every classic class has weights: warrior, paladin, hunter, rogue, priest,
+-- shaman, mage, warlock and druid. The numbers are a starting guess for
+-- levelling, per point of the stat with each spec's main stat as 1. Crit and
+-- hit are per 1%, the way classic-era items print them. /beq probe shows what
+-- the client really reports so they can be tuned. Only the hunter's talent
+-- layout has been checked on Forever; see CLASSIC_COLUMNS.
 
 local _, ns = ...
 
@@ -26,6 +29,10 @@ local Weights = ns.NewModule("Weights")
 --   dps is weapon damage per second; Score applies it as rangedDps or
 --   meleeDps depending on the weapon, because a hunter's bow matters far more
 --   than a sword to Beast Mastery and far less to Survival.
+-- Where a class's three specs split in its talent tree, by a talent's posX.
+-- Measured on the hunter; assumed for every class until probed.
+local CLASSIC_COLUMNS = { 4000, 8000 }
+
 local SPECS = {
     HUNTER = {
         order = { "beast", "marks", "survival" },
@@ -36,7 +43,7 @@ local SPECS = {
         -- Wolf), and anything further right Survival (Entrapment, Deflection,
         -- Lightning Reflexes, which sits far out at 102800). Read with
         -- /beq probe on 2026-09-29; see docs/FOREVER_API_FINDINGS.md.
-        columns = { 4000, 8000 },
+        columns = CLASSIC_COLUMNS,
         -- What a hunter can equip, by the client's item subclass, and the
         -- level each opens at (0 for any level). Classic rules: mail from 40,
         -- no plate, shields, maces or wands. Not yet checked on Forever; if it
@@ -89,13 +96,281 @@ local SPECS = {
             },
         },
     },
+
+    ----------------------------------------------------------------------------
+    -- The other eight classic classes. Their talent trees have not been
+    -- probed on Forever yet: each is assumed to sit side by side like the
+    -- hunter's, in classic's tab order, split at the same columns. /beq probe
+    -- on a character of the class shows its layout, and CLASSIC_COLUMNS is
+    -- replaced per class once that is known. Equip rules are classic's too.
+    ----------------------------------------------------------------------------
+
+    WARRIOR = {
+        order = { "arms", "fury", "prot" },
+        default = "arms",
+        columns = CLASSIC_COLUMNS,
+        armor = { [0] = 0, [1] = 0, [2] = 0, [3] = 0, [4] = 40, [6] = 0 },
+        weapons = {
+            [0] = 0, [1] = 0, [2] = 0, [3] = 0, [4] = 0, [5] = 0, [6] = 0,
+            [7] = 0, [8] = 0, [10] = 0, [13] = 0, [15] = 0, [16] = 0, [18] = 0,
+        },
+        arms = {
+            name = "Arms",
+            weights = {
+                strength = 1.0, agility = 0.6, stamina = 0.5, attackPower = 0.5,
+                crit = 14, hit = 12, armor = 0.02, meleeDps = 7, rangedDps = 0.3,
+            },
+        },
+        fury = {
+            name = "Fury",
+            weights = {
+                strength = 1.0, agility = 0.7, stamina = 0.4, attackPower = 0.5,
+                crit = 16, hit = 16, armor = 0.01, meleeDps = 5, rangedDps = 0.3,
+            },
+        },
+        prot = {
+            name = "Protection",
+            weights = {
+                stamina = 1.0, strength = 0.6, agility = 0.6, armor = 0.1,
+                defense = 1.2, dodge = 12, parry = 10, block = 6, blockValue = 0.4,
+                hit = 6, attackPower = 0.2, meleeDps = 2, rangedDps = 0.2,
+            },
+        },
+    },
+
+    PALADIN = {
+        order = { "holy", "prot", "ret" },
+        default = "ret",
+        columns = CLASSIC_COLUMNS,
+        -- 7 is a libram.
+        armor = { [0] = 0, [1] = 0, [2] = 0, [3] = 0, [4] = 40, [6] = 0, [7] = 0 },
+        weapons = { [0] = 0, [1] = 0, [4] = 0, [5] = 0, [6] = 0, [7] = 0, [8] = 0 },
+        holy = {
+            name = "Holy",
+            weights = {
+                intellect = 1.0, healing = 0.8, spellPower = 0.9, spirit = 0.5,
+                stamina = 0.3, mp5 = 2, spellCrit = 10, armor = 0.005,
+            },
+        },
+        prot = {
+            name = "Protection",
+            weights = {
+                stamina = 1.0, strength = 0.5, agility = 0.4, intellect = 0.3,
+                armor = 0.08, defense = 1.0, dodge = 10, parry = 8, block = 6,
+                blockValue = 0.3, spellPower = 0.5, meleeDps = 2,
+            },
+        },
+        ret = {
+            name = "Retribution",
+            weights = {
+                strength = 1.0, agility = 0.5, stamina = 0.5, intellect = 0.3,
+                attackPower = 0.45, crit = 12, hit = 12, spellPower = 0.3,
+                armor = 0.02, meleeDps = 7,
+            },
+        },
+    },
+
+    ROGUE = {
+        order = { "assassination", "combat", "sub" },
+        default = "combat",
+        columns = CLASSIC_COLUMNS,
+        armor = { [0] = 0, [1] = 0, [2] = 0 },
+        weapons = {
+            [2] = 0, [3] = 0, [4] = 0, [7] = 0, [13] = 0, [15] = 0, [16] = 0, [18] = 0,
+        },
+        assassination = {
+            name = "Assassination",
+            weights = {
+                agility = 1.0, strength = 0.5, stamina = 0.4, attackPower = 0.5,
+                crit = 15, hit = 14, armor = 0.01, meleeDps = 5, rangedDps = 0.3,
+            },
+        },
+        combat = {
+            name = "Combat",
+            weights = {
+                agility = 1.0, strength = 0.5, stamina = 0.4, attackPower = 0.5,
+                crit = 13, hit = 16, armor = 0.01, meleeDps = 6, rangedDps = 0.3,
+            },
+        },
+        sub = {
+            name = "Subtlety",
+            weights = {
+                agility = 1.0, strength = 0.5, stamina = 0.5, attackPower = 0.5,
+                crit = 14, hit = 13, armor = 0.02, meleeDps = 5, rangedDps = 0.3,
+            },
+        },
+    },
+
+    PRIEST = {
+        order = { "disc", "holy", "shadow" },
+        default = "shadow",
+        columns = CLASSIC_COLUMNS,
+        armor = { [0] = 0, [1] = 0 },
+        weapons = { [4] = 0, [10] = 0, [15] = 0, [19] = 0 },
+        disc = {
+            name = "Discipline",
+            weights = {
+                intellect = 1.0, spirit = 0.7, stamina = 0.4, healing = 0.8,
+                spellPower = 0.8, mp5 = 2, spellCrit = 8, rangedDps = 2,
+            },
+        },
+        holy = {
+            name = "Holy",
+            weights = {
+                intellect = 1.0, spirit = 0.9, stamina = 0.3, healing = 1.0,
+                spellPower = 0.8, mp5 = 2.5, spellCrit = 10, rangedDps = 2,
+            },
+        },
+        shadow = {
+            name = "Shadow",
+            weights = {
+                intellect = 0.8, spirit = 0.8, stamina = 0.6, spellPower = 1.1,
+                spellHit = 12, spellCrit = 4, mp5 = 1.5, rangedDps = 3,
+            },
+        },
+    },
+
+    SHAMAN = {
+        order = { "elemental", "enhancement", "resto" },
+        default = "enhancement",
+        columns = CLASSIC_COLUMNS,
+        -- 9 is a totem.
+        armor = { [0] = 0, [1] = 0, [2] = 0, [3] = 40, [6] = 0, [9] = 0 },
+        weapons = { [0] = 0, [1] = 0, [4] = 0, [5] = 0, [10] = 0, [13] = 0, [15] = 0 },
+        elemental = {
+            name = "Elemental",
+            weights = {
+                intellect = 1.0, stamina = 0.5, spirit = 0.3, spellPower = 1.1,
+                spellCrit = 12, spellHit = 12, mp5 = 2, armor = 0.01, meleeDps = 1,
+            },
+        },
+        enhancement = {
+            name = "Enhancement",
+            weights = {
+                strength = 1.0, agility = 0.7, stamina = 0.5, intellect = 0.3,
+                attackPower = 0.5, crit = 14, hit = 12, armor = 0.02, meleeDps = 7,
+            },
+        },
+        resto = {
+            name = "Restoration",
+            weights = {
+                intellect = 1.0, spirit = 0.3, stamina = 0.4, healing = 1.0,
+                spellPower = 0.8, mp5 = 3, spellCrit = 10,
+            },
+        },
+    },
+
+    MAGE = {
+        order = { "arcane", "fire", "frost" },
+        default = "frost",
+        columns = CLASSIC_COLUMNS,
+        armor = { [0] = 0, [1] = 0 },
+        weapons = { [7] = 0, [10] = 0, [15] = 0, [19] = 0 },
+        arcane = {
+            name = "Arcane",
+            weights = {
+                intellect = 1.0, spirit = 0.4, stamina = 0.5, spellPower = 1.2,
+                spellCrit = 10, spellHit = 12, mp5 = 1.5, rangedDps = 3,
+            },
+        },
+        fire = {
+            name = "Fire",
+            weights = {
+                intellect = 0.9, spirit = 0.4, stamina = 0.5, spellPower = 1.2,
+                spellCrit = 14, spellHit = 12, mp5 = 1.5, rangedDps = 3,
+            },
+        },
+        frost = {
+            name = "Frost",
+            weights = {
+                intellect = 0.9, spirit = 0.5, stamina = 0.6, spellPower = 1.2,
+                spellCrit = 10, spellHit = 12, mp5 = 1.5, rangedDps = 3,
+            },
+        },
+    },
+
+    WARLOCK = {
+        order = { "affliction", "demo", "destro" },
+        default = "affliction",
+        columns = CLASSIC_COLUMNS,
+        armor = { [0] = 0, [1] = 0 },
+        weapons = { [7] = 0, [10] = 0, [15] = 0, [19] = 0 },
+        affliction = {
+            name = "Affliction",
+            weights = {
+                stamina = 0.8, intellect = 0.8, spirit = 0.4, spellPower = 1.2,
+                spellHit = 12, spellCrit = 5, mp5 = 1, rangedDps = 3,
+            },
+        },
+        demo = {
+            name = "Demonology",
+            weights = {
+                stamina = 1.0, intellect = 0.8, spirit = 0.4, spellPower = 1.1,
+                spellHit = 12, spellCrit = 5, mp5 = 1, rangedDps = 3,
+            },
+        },
+        destro = {
+            name = "Destruction",
+            weights = {
+                stamina = 0.7, intellect = 0.8, spirit = 0.3, spellPower = 1.2,
+                spellHit = 12, spellCrit = 12, mp5 = 1, rangedDps = 3,
+            },
+        },
+    },
+
+    DRUID = {
+        order = { "balance", "feral", "resto" },
+        default = "feral",
+        columns = CLASSIC_COLUMNS,
+        -- 8 is an idol.
+        armor = { [0] = 0, [1] = 0, [2] = 0, [8] = 0 },
+        weapons = { [4] = 0, [5] = 0, [10] = 0, [13] = 0, [15] = 0 },
+        balance = {
+            name = "Balance",
+            weights = {
+                intellect = 1.0, spirit = 0.5, stamina = 0.4, spellPower = 1.1,
+                spellCrit = 10, spellHit = 10, mp5 = 2,
+            },
+        },
+        feral = {
+            -- Cat and bear forms ignore the weapon's damage, so it counts for
+            -- nothing here.
+            name = "Feral Combat",
+            weights = {
+                agility = 1.0, strength = 1.0, stamina = 0.8, attackPower = 0.5,
+                crit = 14, hit = 12, armor = 0.05, dodge = 6, defense = 0.4,
+            },
+        },
+        resto = {
+            name = "Restoration",
+            weights = {
+                intellect = 1.0, spirit = 0.8, stamina = 0.4, healing = 1.0,
+                spellPower = 0.8, mp5 = 2.5, spellCrit = 8,
+            },
+        },
+    },
 }
 
--- Names a player can type after /beq spec.
+-- Names a player can type after /beq spec. One list for every class: a name
+-- only counts when the player's own class has that spec.
 local ALIASES = {
     beast = "beast", bm = "beast", ["beast mastery"] = "beast", beastmastery = "beast",
     marks = "marks", mm = "marks", marksmanship = "marks",
     survival = "survival", sv = "survival", surv = "survival",
+    arms = "arms", fury = "fury",
+    prot = "prot", protection = "prot", tank = "prot",
+    holy = "holy", ret = "ret", retribution = "ret",
+    assassination = "assassination", assa = "assassination", mut = "assassination",
+    combat = "combat", sub = "sub", subtlety = "sub",
+    disc = "disc", discipline = "disc", shadow = "shadow", spriest = "shadow",
+    elemental = "elemental", ele = "elemental",
+    enhancement = "enhancement", enh = "enhancement", enhance = "enhancement",
+    resto = "resto", restoration = "resto",
+    arcane = "arcane", fire = "fire", frost = "frost",
+    affliction = "affliction", affli = "affliction", aff = "affliction",
+    demo = "demo", demonology = "demo", destro = "destro", destruction = "destro",
+    balance = "balance", boomkin = "balance", moonkin = "balance",
+    feral = "feral", ["feral combat"] = "feral", cat = "feral", bear = "feral",
 }
 
 -- What the client calls each stat, as returned by GetItemStats, mapped to the
@@ -117,6 +392,22 @@ local STAT_KEYS = {
     ["ITEM_MOD_HIT_MELEE_RATING_SHORT"] = "hit",
     ["RESISTANCE0_NAME"] = "armor",
     ["ITEM_MOD_DAMAGE_PER_SECOND_SHORT"] = "dps",
+    -- Casters and healers.
+    ["ITEM_MOD_SPELL_POWER_SHORT"] = "spellPower",
+    ["ITEM_MOD_SPELL_DAMAGE_DONE_SHORT"] = "spellPower",
+    ["ITEM_MOD_SPELL_HEALING_DONE_SHORT"] = "healing",
+    ["ITEM_MOD_MANA_REGENERATION_SHORT"] = "mp5",
+    ["ITEM_MOD_POWER_REGEN0_SHORT"] = "mp5",
+    ["ITEM_MOD_CRIT_SPELL_RATING_SHORT"] = "spellCrit",
+    ["ITEM_MOD_SPELL_CRIT_RATING_SHORT"] = "spellCrit",
+    ["ITEM_MOD_HIT_SPELL_RATING_SHORT"] = "spellHit",
+    ["ITEM_MOD_SPELL_HIT_RATING_SHORT"] = "spellHit",
+    -- Tanks.
+    ["ITEM_MOD_DEFENSE_SKILL_RATING_SHORT"] = "defense",
+    ["ITEM_MOD_DODGE_RATING_SHORT"] = "dodge",
+    ["ITEM_MOD_PARRY_RATING_SHORT"] = "parry",
+    ["ITEM_MOD_BLOCK_RATING_SHORT"] = "block",
+    ["ITEM_MOD_BLOCK_VALUE_SHORT"] = "blockValue",
 }
 
 Weights.SPECS = SPECS
@@ -341,7 +632,7 @@ local function ShowSpec()
         ns.COLORS.accent, SPECS[class][spec].name, WHY[why]))
 end
 
-ns.RegisterCommand("spec", "show the spec gear is judged for, or pick one: bm, mm, sv or auto",
+ns.RegisterCommand("spec", "show the spec gear is judged for, or pick one by name (or auto)",
     function(rest)
         rest = (rest or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
         if rest == "" then
@@ -358,7 +649,12 @@ ns.RegisterCommand("spec", "show the spec gear is judged for, or pick one: bm, m
         local spec = Weights:ResolveSpec(rest)
         local class = Weights:PlayerClass()
         if not spec or not (class and SPECS[class] and SPECS[class][spec]) then
-            ns.Warn(("not a spec: %s (try bm, mm, sv or auto)"):format(rest))
+            local names = {}
+            for _, key in ipairs(class and SPECS[class] and SPECS[class].order or {}) do
+                names[#names + 1] = key
+            end
+            names[#names + 1] = "auto"
+            ns.Warn(("not a spec: %s (try %s)"):format(rest, table.concat(names, ", ")))
             return
         end
 
