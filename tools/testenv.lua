@@ -141,6 +141,9 @@ function env.InstallClient()
     _G.UnitLevel = nil
     _G.C_ClassTalents = nil
     _G.C_Traits = nil
+    _G.C_Spell = nil
+    _G.GetSpellInfo = nil
+    _G.C_SpecializationInfo = nil
 end
 
 --------------------------------------------------------------------------------

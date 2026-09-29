@@ -22,7 +22,16 @@ it too before relying on any API.
 |---|---|---|
 | Newer talent calls | **`C_ClassTalents.GetActiveConfigID` and `C_Traits.GetConfigInfo` present** | Forever's talents are the modern trait system, not classic tabs. The spec has to be read from the trait config. |
 
-The rest of that probe had scrolled out of the chat window, so the probe now
-prints what the client has and lacks on two lines, and walks the active talent
-config: its trees, the points spent in each and their node counts. The next
-probe decides how `Weights` reads the spec.
+## 2026-09-29, third probe, same character
+
+| Question | Answer | What it means here |
+|---|---|---|
+| Classic and older talent calls | `GetNumTalentTabs`, `GetTalentTabInfo`, `GetNumTalents`, `GetTalentInfo`, `GetSpecialization` all **absent** | None of the old ways to read talents work. |
+| Active talent config | `C_ClassTalents.GetActiveConfigID` gives an id; `C_Traits.GetConfigInfo` says type 4, name "Hunter", **one tree** | Forever puts all three hunter specs in **one trait tree**, not three tabs. |
+| That tree | 52 nodes; `GetTreeCurrencyInfo` says spent 0 of 0 at level 7 | The spec has to come from *which* nodes have points, not from a per-tree total. |
+| `C_SpecializationInfo.GetSpecialization` | Not in the missing list, so present; value not seen yet | The probe now prints what it returns. |
+
+The probe now also groups the tree's nodes into columns by position, names
+each column's top talent, and lists every talent with points in it. That shows
+which part of the tree is Beast Mastery, Marksmanship and Survival, so
+`Weights` can count points per spec.

@@ -23,6 +23,8 @@ local APIS = {
     "C_Traits.GetConfigInfo", "C_Traits.GetTreeCurrencyInfo", "C_Traits.GetTreeNodes",
     "C_Item.GetItemStats", "GetItemStats", "GetInventoryItemLink",
     "GetQuestItemLink", "GetNumQuestChoices",
+    "C_Traits.GetNodeInfo", "C_Traits.GetEntryInfo", "C_Traits.GetDefinitionInfo",
+    "C_Spell.GetSpellName", "GetSpellInfo",
 }
 
 local function Has(path)
@@ -76,15 +78,91 @@ function Probe:Traits()
             end
         end
 
+        local nodes
         if Has("C_Traits.GetTreeNodes") then
-            local okNodes, nodes = pcall(C_Traits.GetTreeNodes, treeID)
-            if okNodes and type(nodes) == "table" then
+            local okNodes, list = pcall(C_Traits.GetTreeNodes, treeID)
+            if okNodes and type(list) == "table" then
+                nodes = list
                 parts[#parts + 1] = #nodes .. " nodes"
             end
         end
 
         Line("  tree " .. index, table.concat(parts, ", "))
+        if nodes then self:Nodes(configID, nodes) end
     end
+end
+
+--- The name of the talent a node grants, or nil. Node, entry, definition,
+--- spell: four calls, any of which may be missing or raise.
+function Probe:NodeName(configID, info)
+    local entryID = type(info.entryIDs) == "table" and info.entryIDs[1]
+    if not entryID or not Has("C_Traits.GetEntryInfo") then return nil end
+
+    local ok, entry = pcall(C_Traits.GetEntryInfo, configID, entryID)
+    if not ok or type(entry) ~= "table" or not entry.definitionID then return nil end
+    if not Has("C_Traits.GetDefinitionInfo") then return nil end
+
+    local okDef, definition = pcall(C_Traits.GetDefinitionInfo, entry.definitionID)
+    if not okDef or type(definition) ~= "table" then return nil end
+    if type(definition.overrideName) == "string" and definition.overrideName ~= "" then
+        return definition.overrideName
+    end
+
+    local spellID = definition.spellID
+    if not spellID then return nil end
+    if Has("C_Spell.GetSpellName") then
+        local okName, name = pcall(C_Spell.GetSpellName, spellID)
+        if okName and type(name) == "string" then return name end
+    end
+    if Has("GetSpellInfo") then
+        local okName, name = pcall(GetSpellInfo, spellID)
+        if okName and type(name) == "string" then return name end
+    end
+    return "spell " .. tostring(spellID)
+end
+
+--- How the nodes of one tree are laid out, so the three specs can be told
+--- apart: each column (by horizontal position) with its node count and the
+--- name of its top talent, and every talent with points in it.
+function Probe:Nodes(configID, nodes)
+    if not Has("C_Traits.GetNodeInfo") then return end
+
+    local columns, purchased = {}, {}
+    for _, nodeID in ipairs(nodes) do
+        local ok, info = pcall(C_Traits.GetNodeInfo, configID, nodeID)
+        if ok and type(info) == "table" and type(info.posX) == "number" then
+            local x = math.floor(info.posX + 0.5)
+            local column = columns[x]
+            if not column then
+                column = { x = x, count = 0 }
+                columns[x] = column
+            end
+            column.count = column.count + 1
+
+            local y = tonumber(info.posY) or 0
+            if not column.topY or y < column.topY then
+                column.topY = y
+                column.top = self:NodeName(configID, info)
+            end
+
+            local ranks = tonumber(info.ranksPurchased) or tonumber(info.currentRank) or 0
+            if ranks > 0 then
+                purchased[#purchased + 1] = ("%s %d at x%d"):format(
+                    self:NodeName(configID, info) or ("node " .. tostring(nodeID)), ranks, x)
+            end
+        end
+    end
+
+    local sorted = {}
+    for _, column in pairs(columns) do sorted[#sorted + 1] = column end
+    table.sort(sorted, function(a, b) return a.x < b.x end)
+
+    local parts = {}
+    for _, column in ipairs(sorted) do
+        parts[#parts + 1] = ("x%d: %d (%s)"):format(column.x, column.count, column.top or "?")
+    end
+    Line("  columns", #parts > 0 and table.concat(parts, "; ") or "no positions readable")
+    Line("  spent in", #purchased > 0 and table.concat(purchased, "; ") or "nothing yet")
 end
 
 --- The raw table GetItemStats returns for a link, from whichever version of
@@ -120,6 +198,11 @@ function Probe:Run()
     if Has("UnitLevel") then
         local ok, level = pcall(UnitLevel, "player")
         Line("level", ok and level or "unreadable")
+    end
+
+    if Has("C_SpecializationInfo.GetSpecialization") then
+        local ok, index = pcall(C_SpecializationInfo.GetSpecialization)
+        Line("spec index", ok and tostring(index) or "raised")
     end
 
     self:Traits()

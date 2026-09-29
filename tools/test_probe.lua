@@ -32,7 +32,24 @@ _G.C_Traits = {
         error("secret value")
     end,
     GetTreeNodes = function(treeID) return treeID == 101 and { 1, 2, 3, 4 } or {} end,
+    -- Two columns: x 100 holds nodes 1 and 2, x 700 holds 3 and 4. Node 3 has
+    -- two points in it; node 4 raises.
+    GetNodeInfo = function(_, nodeID)
+        if nodeID == 4 then error("secret value") end
+        local layout = {
+            [1] = { posX = 100, posY = 50, entryIDs = { 11 }, ranksPurchased = 0 },
+            [2] = { posX = 100.4, posY = 10, entryIDs = { 12 }, ranksPurchased = 0 },
+            [3] = { posX = 700, posY = 10, entryIDs = { 13 }, ranksPurchased = 2 },
+        }
+        return layout[nodeID]
+    end,
+    GetEntryInfo = function(_, entryID) return { definitionID = entryID + 100 } end,
+    GetDefinitionInfo = function(definitionID) return { spellID = definitionID + 1000 } end,
 }
+_G.C_Spell = { GetSpellName = function(spellID)
+    return ({ [1112] = "Kill Command", [1113] = "Aimed Shot" })[spellID]
+end }
+_G.C_SpecializationInfo = { GetSpecialization = function() return 5 end }
 ns.HandleSlash("probe")
 local text = env.ChatText()
 suite.check("reads the class", text:find("HUNTER", 1, true), text)
@@ -51,6 +68,11 @@ suite.check("reads the talent config", text:find("talent config|r  77", 1, true)
 suite.check("counts its trees", text:find("2 tree(s)", 1, true), text)
 suite.check("reads points spent in a tree",
     text:find("id 101, spent 3 of 20, 4 nodes", 1, true), text)
+suite.check("reads the spec index", text:find("spec index|r  5", 1, true), text)
+suite.check("groups nodes into columns, named by their top talent",
+    text:find("x100: 2 (Kill Command); x700: 1 (Aimed Shot)", 1, true), text)
+suite.check("lists where points are spent",
+    text:find("spent in|r  Aimed Shot 2 at x700", 1, true), text)
 suite.check("a tree that raises is still listed",
     text:find("id 102, 0 nodes", 1, true), text)
 
