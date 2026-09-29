@@ -53,7 +53,9 @@ _G.C_SpecializationInfo = { GetSpecialization = function() return 5 end }
 ns.HandleSlash("probe")
 local text = env.ChatText()
 suite.check("reads the class", text:find("HUNTER", 1, true), text)
-suite.check("says it judges as the default", text:find("beast (default)", 1, true), text)
+suite.check("counts points per spec from the trait tree",
+    text:find("points per spec|r  2 / 0 / 0", 1, true), text)
+suite.check("and judges from them", text:find("beast (talents)", 1, true), text)
 suite.check("shows the ranged weapon's raw stats",
     text:find("ITEM_MOD_AGILITY_SHORT=1", 1, true), text)
 suite.check("lists the stats it does not weigh",

@@ -6,9 +6,9 @@
 -- Marksmanship, Survival) rather than a specialization picked from a menu, so
 -- "spec" here means the tree with the most points in it. Below level 10 there
 -- are no points, and the class default applies until the player picks one
--- with /beq spec. The first /beq probe found neither classic talent-tab calls
--- nor GetSpecialization on Forever (docs/FOREVER_API_FINDINGS.md), so for now
--- TreePoints reads nothing there and the pick or the default decides.
+-- with /beq spec. Forever has no classic talent-tab calls; its talents are one
+-- trait tree per class (C_ClassTalents, C_Traits), so the points are counted
+-- per spec from where each talent sits in that tree.
 --
 -- The numbers are a starting guess for levelling, per point of the stat with
 -- Agility as 1. Crit and hit are per 1%, the way classic-era items print
@@ -30,6 +30,13 @@ local SPECS = {
     HUNTER = {
         order = { "beast", "marks", "survival" },
         default = "beast",
+        -- Forever puts all three hunter specs in one talent tree, side by
+        -- side. A talent left of 4000 is Beast Mastery (Focused Fire,
+        -- Endurance Training), left of 8000 Marksmanship (Hawk Eye, Lone
+        -- Wolf), and anything further right Survival (Entrapment, Deflection,
+        -- Lightning Reflexes, which sits far out at 102800). Read with
+        -- /beq probe on 2026-09-29; see docs/FOREVER_API_FINDINGS.md.
+        columns = { 4000, 8000 },
         beast = {
             name = "Beast Mastery",
             weights = {
@@ -112,9 +119,9 @@ end
 -- tree's name and has the points third; the later one starts with a numeric
 -- id and has them fifth. Forever is a modern engine running classic trees, so
 -- both are handled rather than guessed.
-function Weights:TreePoints()
+function Weights:TreePoints(class)
     if type(GetNumTalentTabs) ~= "function" or type(GetTalentTabInfo) ~= "function" then
-        return nil
+        return self:TraitPoints(class)
     end
 
     local okCount, count = pcall(GetNumTalentTabs)
@@ -136,6 +143,57 @@ function Weights:TreePoints()
     return points
 end
 
+--- Points per spec from Forever's trait tree: every talent with ranks bought
+--- counts toward the spec whose columns it sits in. Nil when there is no
+--- config to read or no split known for the class. Each call is in a pcall,
+--- and a node that will not answer is skipped rather than guessed.
+function Weights:TraitPoints(class)
+    local specs = class and SPECS[class]
+    local columns = specs and specs.columns
+    if not columns then return nil end
+
+    local talents = type(C_ClassTalents) == "table" and C_ClassTalents
+    local traits = type(C_Traits) == "table" and C_Traits
+    if not (talents and traits and type(talents.GetActiveConfigID) == "function"
+        and type(traits.GetConfigInfo) == "function"
+        and type(traits.GetTreeNodes) == "function"
+        and type(traits.GetNodeInfo) == "function") then
+        return nil
+    end
+
+    local ok, configID = pcall(talents.GetActiveConfigID)
+    if not ok or not configID then return nil end
+
+    local okInfo, info = pcall(traits.GetConfigInfo, configID)
+    if not okInfo or type(info) ~= "table" or type(info.treeIDs) ~= "table" then return nil end
+
+    local points = {}
+    for index = 1, #specs.order do points[index] = 0 end
+
+    for _, treeID in ipairs(info.treeIDs) do
+        local okNodes, nodes = pcall(traits.GetTreeNodes, treeID)
+        if okNodes and type(nodes) == "table" then
+            for _, nodeID in ipairs(nodes) do
+                local okNode, node = pcall(traits.GetNodeInfo, configID, nodeID)
+                if okNode and type(node) == "table" and type(node.posX) == "number" then
+                    local ranks = tonumber(node.ranksPurchased) or 0
+                    if ranks > 0 then
+                        local index = #columns + 1
+                        for column, edge in ipairs(columns) do
+                            if node.posX < edge then
+                                index = column
+                                break
+                            end
+                        end
+                        points[index] = points[index] + ranks
+                    end
+                end
+            end
+        end
+    end
+    return points
+end
+
 --- The spec this character is judged as, and why: "picked", "talents" or
 --- "default". Nil when there are no weights for the class yet.
 function Weights:CurrentSpec()
@@ -148,7 +206,7 @@ function Weights:CurrentSpec()
         return picked, "picked", class
     end
 
-    local points = self:TreePoints()
+    local points = self:TreePoints(class)
     if points then
         local best, bestPoints, tied = nil, 0, false
         for tab, spent in ipairs(points) do

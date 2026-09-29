@@ -65,8 +65,8 @@ inside it. If they differ, the client ignores the folder and says nothing.
 
 The settings window is also under the game's Options > AddOns.
 
-On WoW: Forever a hunter's spec is the talent tree with the most points in
-it. Until level 10 there are none, so gear is judged as Beast Mastery unless
+On WoW: Forever a hunter's spec is the one with the most talent points spent
+in it (all three share one talent tree, side by side). Until level 10 there are none, so gear is judged as Beast Mastery unless
 you pick otherwise. Only hunters have stat weights so far.
 
 `/equipment` works too.
