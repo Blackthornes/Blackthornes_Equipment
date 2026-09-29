@@ -14,6 +14,17 @@ local Probe = ns.NewModule("Probe")
 -- ranged. Forever may have no separate ranged slot; the probe says so.
 local SLOTS = { { 16, "main hand" }, { 17, "off hand" }, { 18, "ranged" } }
 
+-- The calls worth knowing about. Talents on Forever turned out to be the
+-- newer trait system (C_ClassTalents, C_Traits), not the classic tabs.
+local APIS = {
+    "UnitClass", "UnitLevel", "GetNumTalentTabs", "GetTalentTabInfo",
+    "GetNumTalents", "GetTalentInfo", "GetSpecialization",
+    "C_SpecializationInfo.GetSpecialization", "C_ClassTalents.GetActiveConfigID",
+    "C_Traits.GetConfigInfo", "C_Traits.GetTreeCurrencyInfo", "C_Traits.GetTreeNodes",
+    "C_Item.GetItemStats", "GetItemStats", "GetInventoryItemLink",
+    "GetQuestItemLink", "GetNumQuestChoices",
+}
+
 local function Has(path)
     local value = _G
     for part in path:gmatch("[^.]+") do
@@ -26,6 +37,54 @@ end
 local function Line(label, value)
     local ok, text = pcall(tostring, value)
     ns.PrintRaw(("  |c%s%s|r  %s"):format(ns.COLORS.muted, label, ok and text or "(unreadable)"))
+end
+
+--- Walk the active talent config as far as the client lets us: its id, its
+--- trees, and for each tree how many points are spent and how many nodes it
+--- has. This is what decides how Weights will read the spec on Forever.
+function Probe:Traits()
+    if not Has("C_ClassTalents.GetActiveConfigID") then return end
+
+    local ok, configID = pcall(C_ClassTalents.GetActiveConfigID)
+    if not ok or not configID then
+        Line("talent config", "none active (no points yet?)")
+        return
+    end
+    Line("talent config", configID)
+
+    if not Has("C_Traits.GetConfigInfo") then return end
+    local okInfo, info = pcall(C_Traits.GetConfigInfo, configID)
+    if not okInfo or type(info) ~= "table" then
+        Line("config info", "not readable")
+        return
+    end
+
+    local trees = type(info.treeIDs) == "table" and info.treeIDs or {}
+    Line("config", ("type %s, name %s, %d tree(s)"):format(
+        tostring(info.type), tostring(info.name), #trees))
+
+    for index, treeID in ipairs(trees) do
+        local parts = { "id " .. tostring(treeID) }
+
+        if Has("C_Traits.GetTreeCurrencyInfo") then
+            local okCur, currencies = pcall(C_Traits.GetTreeCurrencyInfo, configID, treeID, false)
+            if okCur and type(currencies) == "table" then
+                for _, currency in ipairs(currencies) do
+                    parts[#parts + 1] = ("spent %s of %s"):format(
+                        tostring(currency.spent), tostring(currency.maxQuantity or currency.quantity))
+                end
+            end
+        end
+
+        if Has("C_Traits.GetTreeNodes") then
+            local okNodes, nodes = pcall(C_Traits.GetTreeNodes, treeID)
+            if okNodes and type(nodes) == "table" then
+                parts[#parts + 1] = #nodes .. " nodes"
+            end
+        end
+
+        Line("  tree " .. index, table.concat(parts, ", "))
+    end
 end
 
 --- The raw table GetItemStats returns for a link, from whichever version of
@@ -45,16 +104,25 @@ end
 function Probe:Run()
     ns.Print("probe: what this client supports")
 
-    for _, api in ipairs({
-        "UnitClass", "UnitLevel", "GetNumTalentTabs", "GetTalentTabInfo",
-        "GetNumTalents", "GetTalentInfo", "GetSpecialization",
-        "C_SpecializationInfo.GetSpecialization", "C_ClassTalents.GetActiveConfigID",
-        "C_Traits.GetConfigInfo",
-        "C_Item.GetItemStats", "GetItemStats", "GetInventoryItemLink",
-        "GetQuestItemLink", "GetNumQuestChoices",
-    }) do
-        Line(api, Has(api) and "yes" or "no")
+    -- Two lines rather than one per call, so the whole probe fits in the
+    -- chat window without scrolling.
+    local present, missing = {}, {}
+    for _, api in ipairs(APIS) do
+        if Has(api) then
+            present[#present + 1] = api
+        else
+            missing[#missing + 1] = api
+        end
     end
+    Line("has", #present > 0 and table.concat(present, ", ") or "none of them")
+    Line("missing", #missing > 0 and table.concat(missing, ", ") or "nothing")
+
+    if Has("UnitLevel") then
+        local ok, level = pcall(UnitLevel, "player")
+        Line("level", ok and level or "unreadable")
+    end
+
+    self:Traits()
 
     local Weights = ns.Weights
     Line("class", Weights:PlayerClass() or "unknown")

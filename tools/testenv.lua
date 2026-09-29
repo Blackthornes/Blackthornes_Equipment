@@ -138,6 +138,9 @@ function env.InstallClient()
     _G.GetInventoryItemLink = nil
     _G.GetItemStats = nil
     _G.C_Item = nil
+    _G.UnitLevel = nil
+    _G.C_ClassTalents = nil
+    _G.C_Traits = nil
 end
 
 --------------------------------------------------------------------------------
