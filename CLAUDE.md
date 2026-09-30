@@ -40,9 +40,25 @@ convention:
 - **Tradeskills' `docs/FOREVER_API_FINDINGS.md`** records what the Forever
   client actually does. Read it before relying on an API.
 
-Nothing here calls the other addons yet, and nothing calls this one. If that
-changes, write down the global and the calls in both repos' `CLAUDE.md`, the
-way Farmer and Tradeskills do for prices and goals.
+## What Tradeskills calls here
+
+Tradeskills draws the green upgrade arrow on item icons across its windows
+(`Logic/Upgrades.lua`, `Theme.SetItemIcon` there). It shows only when this
+addon is loaded (`## OptionalDeps: Blackthornes_Equipment` in its TOC) and
+calls, inside a pcall:
+
+```lua
+_G.BlackthornesEquipment.Compare:IsUpgrade(item)   -- item ID or link; true or false
+```
+
+`IsUpgrade` answers exactly what the bag arrow answers (`IsUpgradeNow`: an
+upgrade that can be worn now), and by item ID it says false for anything
+already worn, so a worn ring is never an upgrade over the other ring. It never
+raises. Keep the global, `Compare` and `IsUpgrade(item)` stable; if one has to
+change, change Tradeskills' `Logic/Upgrades.lua` too.
+
+Nothing here calls the other addons. If that changes, write it down in both
+repos' `CLAUDE.md`.
 
 There is no CurseForge project yet, so the TOC's `X-Curse-Project-ID` line is
 commented out and no release has been made.
