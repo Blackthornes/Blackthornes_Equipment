@@ -106,8 +106,8 @@ The same probe read the main hand's stats as `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`,
 items carry spell power and mp5 under the retail keys `Weights.lua` already
 reads.
 
-Still unchecked: the other seven classes' layouts (the warrior's is checked
-by the eighth probe below).
+Still unchecked: the other seven classes' layouts (the warrior's and the
+paladin's are checked by the eighth and ninth probes below).
 
 Also unchecked: dual wield. `Compare` asks the client's `CanDualWield` when
 it has one and otherwise uses classic's trainer levels (warriors and hunters
@@ -131,3 +131,26 @@ for the warrior. With no points spent it is `judged as arms (default)`.
 before 20, so `Compare` uses the client's answer rather than the level table.
 The main hand's only stat was `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`. Still to
 see on a warrior: armour, defense and block values on higher-level gear.
+
+## 2026-09-30, ninth probe: a level 20 paladin
+
+The paladin's tree matches the split as well. One tree (`type 4`, "Paladin",
+50 nodes, 11 of 11 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Healing Light, Divine Strength, Divine Intellect, Unyielding Faith | Holy (below 4000) |
+| 5020 to 6820 | Precision, Toughness, Redoubt, Anticipation | Protection (4000 to 8000) |
+| 9080 to 10880 | Improved Judgement, Deflection, Benediction, Pursuit of Justice | Retribution (above 8000) |
+
+Points went into Redoubt (5) and Shield Specialization (1) at x6220 and
+Anticipation (5) at x6820, so `points per spec` read 0 / 11 / 0 and
+`judged as prot (talents)`: classic's order (Holy, Protection, Retribution)
+is right.
+
+The shield in the off hand read `RESISTANCE0_NAME=547` (its armour, which
+`Weights` reads), `ITEM_MOD_SPELL_POWER_SHORT=5`, and nature resistance twice,
+as `ITEM_MOD_NATURE_RESISTANCE_SHORT=5` and `RESISTANCE3_NAME=5`. Resistances
+are left unweighted on purpose (they matter for a fight, not for levelling),
+so the probe lists them under `not weighted`. No block value was reported on
+this shield. `can dual wield` was `false`, right for a paladin.
