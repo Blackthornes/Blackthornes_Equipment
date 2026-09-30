@@ -148,4 +148,20 @@ ns = LoadWith({}, {})
 ns.HandleSlash("bags")
 suite.check("empty bags say so", env.ChatText():find("nothing in your bags to wear", 1, true), env.ChatText())
 
+-- The call Tradeskills makes, by item ID.
+ns = LoadWith({ [5] = "item:1", [11] = "item:10", [12] = "item:11" })
+suite.check("an ID that is an upgrade gets the arrow", ns.Compare:IsUpgrade(2) == true)
+suite.check("a link works too", ns.Compare:IsUpgrade("item:2") == true)
+suite.check("a downgrade by ID does not", ns.Compare:IsUpgrade(3) == false)
+suite.check("nor the worn chest by ID", ns.Compare:IsUpgrade(1) == false)
+suite.check("nor a worn ring, though the other ring is weaker", ns.Compare:IsUpgrade(10) == false)
+suite.check("a better ring than the weaker one does", ns.Compare:IsUpgrade(12) == true)
+suite.check("one to wait for does not", ns.Compare:IsUpgrade(8) == false)
+suite.check("non-gear does not", ns.Compare:IsUpgrade(40) == false)
+suite.check("an unknown ID does not", ns.Compare:IsUpgrade(999) == false)
+suite.check("nor nil", ns.Compare:IsUpgrade(nil) == false)
+suite.check("reachable through the global", _G.BlackthornesEquipment.Compare == ns.Compare)
+_G.GetInventoryItemLink = function() error("secret value") end
+suite.check("a worn read that raises does not raise here", pcall(ns.Compare.IsUpgrade, ns.Compare, 2))
+
 suite.done()

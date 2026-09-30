@@ -231,6 +231,30 @@ function Compare:IsUpgradeNow(link)
     return ok and result ~= nil and result.verdict == "upgrade" and not result.level
 end
 
+--- Is an item with this ID worn anywhere? Rings and trinkets have two
+--- slots, so a ring asked about by ID could otherwise be measured against the
+--- other ring and called an upgrade over itself.
+function Compare:IsWornID(itemID)
+    for slot = 1, 19 do
+        local worn = Items:Equipped(slot)
+        if worn and tonumber(worn:match("item:(%d+)")) == itemID then return true end
+    end
+    return false
+end
+
+--- The call other addons make (Tradeskills' item lists): true when an item is
+--- an upgrade that can be worn now, false otherwise, and it never raises.
+--- `item` is an item ID or a link. Keep the name and meaning stable; see
+--- CLAUDE.md.
+function Compare:IsUpgrade(item)
+    if type(item) == "number" then
+        local ok, worn = pcall(self.IsWornID, self, item)
+        if not ok or worn then return false end
+        item = ("item:%d"):format(item)
+    end
+    return self:IsUpgradeNow(item)
+end
+
 --------------------------------------------------------------------------------
 -- Words
 --------------------------------------------------------------------------------
