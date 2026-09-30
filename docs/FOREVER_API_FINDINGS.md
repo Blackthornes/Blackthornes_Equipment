@@ -106,8 +106,141 @@ The same probe read the main hand's stats as `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`,
 items carry spell power and mp5 under the retail keys `Weights.lua` already
 reads.
 
-Still unchecked: the other seven classes' layouts.
+The other seven classes' layouts were checked later, by the eighth to
+fourteenth probes below: all nine are confirmed.
 
-Also unchecked: dual wield. `Compare` asks the client's `CanDualWield` when
-it has one and otherwise uses classic's trainer levels (warriors and hunters
+Dual wield: `Compare` asks the client's `CanDualWield` (present, per the
+probes below) and otherwise uses classic's trainer levels (warriors and hunters
 20, rogues 10, nobody else). `/beq probe` prints a `can dual wield` line.
+
+## 2026-09-30, eighth probe: a level 1 warrior
+
+The warrior's tree matches the split too. One tree (`type 4`, "Warrior",
+53 nodes, 0 of 0 spent at level 1), with its columns' top talents:
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Improved Heroic Strike, Deflection, Improved Rend, Improved Overpower | Arms (below 4000) |
+| 5020 to 6820 | Improved Cleave, Booming Voice, Cruelty, Boundless Rage | Fury (4000 to 8000) |
+| 9080 to 10880 | Improved Bloodrage, Shield Specialization, Anticipation, Improved Thunder Clap | Protection (above 8000) |
+
+So classic's order (Arms, Fury, Protection) and `CLASSIC_COLUMNS` are right
+for the warrior. With no points spent it is `judged as arms (default)`.
+
+`CanDualWield` is **present** and answered `false` at level 1, as expected
+before 20, so `Compare` uses the client's answer rather than the level table.
+The main hand's only stat was `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`. Still to
+see on a warrior: armour, defense and block values on higher-level gear.
+
+## 2026-09-30, ninth probe: a level 20 paladin
+
+The paladin's tree matches the split as well. One tree (`type 4`, "Paladin",
+50 nodes, 11 of 11 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Healing Light, Divine Strength, Divine Intellect, Unyielding Faith | Holy (below 4000) |
+| 5020 to 6820 | Precision, Toughness, Redoubt, Anticipation | Protection (4000 to 8000) |
+| 9080 to 10880 | Improved Judgement, Deflection, Benediction, Pursuit of Justice | Retribution (above 8000) |
+
+Points went into Redoubt (5) and Shield Specialization (1) at x6220 and
+Anticipation (5) at x6820, so `points per spec` read 0 / 11 / 0 and
+`judged as prot (talents)`: classic's order (Holy, Protection, Retribution)
+is right.
+
+The shield in the off hand read `RESISTANCE0_NAME=547` (its armour, which
+`Weights` reads), `ITEM_MOD_SPELL_POWER_SHORT=5`, and nature resistance twice,
+as `ITEM_MOD_NATURE_RESISTANCE_SHORT=5` and `RESISTANCE3_NAME=5`. Resistances
+are left unweighted on purpose (they matter for a fight, not for levelling),
+so the probe lists them under `not weighted`. No block value was reported on
+this shield. `can dual wield` was `false`, right for a paladin.
+
+## 2026-09-30, tenth probe: a level 16 rogue
+
+The rogue's tree matches the split. One tree (`type 4`, "Rogue", 53 nodes,
+7 of 7 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Improved Gouge, Remorseless Attacks, Malice, Improved Slice and Dice | Assassination (below 4000) |
+| 5020 to 6820 | Improved Eviscerate, Improved Sinister Strike, Lightning Reflexes, Improved Sprint | Combat (4000 to 8000) |
+| 9080 to 10880 | Camouflage, Master of Deception, Opportunity, Improved Ambush | Subtlety (above 8000) |
+
+Forever has moved a couple of talents (Improved Gouge sits with
+Assassination and Improved Eviscerate with Combat, the other way round from
+classic), but each column is still one spec. Points in Camouflage (3),
+Opportunity (2) and Master of Deception (2) read 0 / 0 / 7 and
+`judged as sub (talents)`.
+
+`can dual wield` was `true` at 16, matching the level 10 fallback. The
+weapons read `ITEM_MOD_AGILITY_SHORT`, `ITEM_MOD_STAMINA_SHORT`,
+`ITEM_MOD_STRENGTH_SHORT`, `ITEM_MOD_ATTACK_POWER_SHORT` and
+`ITEM_MOD_DAMAGE_PER_SECOND_SHORT` (the ranged slot too), all weighted, with
+nothing under `not weighted`.
+
+## 2026-09-30, eleventh probe: a level 1 priest
+
+The priest's tree matches the split. One tree (`type 4`, "Priest", 54 nodes,
+0 of 0 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Power in Light, Wand Specialization, Twin Disciplines, Martyrdom | Discipline (below 4000) |
+| 5020 to 6820 | Twilight Focus, Improved Renew, Holy Specialization, Inspiration | Holy (4000 to 8000) |
+| 9080 to 10880 | Shadow Focus, Blackout, Spirit Tap, Shadow Reach | Shadow (above 8000) |
+
+One odd node: a single talent named Holy Specialization sits at x9280, in
+the Shadow part, besides the one heading the x6220 column. If a priest can
+buy it, its points count toward Shadow. Worth a look on a priest with points
+spent; if it matters, `Weights:TraitPoints` can place it by name instead.
+
+`judged as shadow (default)` with no points, `can dual wield` `false`. The
+main hand read only `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
+
+## 2026-09-30, twelfth probe: a level 1 shaman
+
+The shaman's tree matches the split. One tree (`type 4`, "Shaman", 50 nodes,
+0 of 0 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Elemental Warding, Convection, Concussion, Elemental Devastation | Elemental (below 4000) |
+| 5020 to 6820 | Earth's Grasp, Thundering Strikes, Ancestral Knowledge, Improved Lightning Shield | Enhancement (4000 to 8000) |
+| 9080 to 10880 | Mindfulness, Improved Healing Wave, Totemic Focus, Improved Reincarnation | Restoration (above 8000) |
+
+`judged as enhancement (default)` with no points, `can dual wield` `false`
+(a classic shaman never dual wields). The main hand read only
+`ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
+
+## 2026-09-30, thirteenth probe: a level 1 mage
+
+The mage's tree matches the split. One tree (`type 4`, "Mage", 54 nodes,
+0 of 0 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Wand Specialization, Arcane Focus, Improved Channeling, Arcane Resilience | Arcane (below 4000) |
+| 5020 to 6820 | Wake of Fire, Incineration, Improved Fireball, Master of Elements | Fire (4000 to 8000) |
+| 9080 to 10880 | Frost Warding, Improved Frostbolt, Elemental Precision, Frostbite | Frost (above 8000) |
+
+`judged as frost (default)` with no points, `can dual wield` `false`. The
+main hand read only `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
+
+## 2026-09-30, fourteenth probe: a level 1 druid
+
+The druid's tree matches the split, which makes all nine classes. One tree
+(`type 4`, "Druid", 51 nodes, 0 of 0 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Moonglow, Improved Wrath, Genesis, Nature's Reach | Balance (below 4000) |
+| 5020 to 6820 | Feral Swiftness, Ferocity, Heart of the Wild, Thick Hide | Feral Combat (4000 to 8000) |
+| 9080 to 10880 | Naturalist, Nature's Focus, Furor, Gift of the Earthmother | Restoration (above 8000) |
+
+`judged as feral (default)` with no points, `can dual wield` `false`. The
+main hand read only `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
+
+So every class's tree on Forever is one trait tree with its three specs
+side by side, split at 4000 and 8000, in classic's order. What is still
+unseen is gear stats past the starting levels: block value, defense, dodge,
+healing and mp5 on real items, and the resistances above.
