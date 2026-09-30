@@ -106,8 +106,28 @@ The same probe read the main hand's stats as `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`,
 items carry spell power and mp5 under the retail keys `Weights.lua` already
 reads.
 
-Still unchecked: the other seven classes' layouts.
+Still unchecked: the other seven classes' layouts (the warrior's is checked
+by the eighth probe below).
 
 Also unchecked: dual wield. `Compare` asks the client's `CanDualWield` when
 it has one and otherwise uses classic's trainer levels (warriors and hunters
 20, rogues 10, nobody else). `/beq probe` prints a `can dual wield` line.
+
+## 2026-09-30, eighth probe: a level 1 warrior
+
+The warrior's tree matches the split too. One tree (`type 4`, "Warrior",
+53 nodes, 0 of 0 spent at level 1), with its columns' top talents:
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Improved Heroic Strike, Deflection, Improved Rend, Improved Overpower | Arms (below 4000) |
+| 5020 to 6820 | Improved Cleave, Booming Voice, Cruelty, Boundless Rage | Fury (4000 to 8000) |
+| 9080 to 10880 | Improved Bloodrage, Shield Specialization, Anticipation, Improved Thunder Clap | Protection (above 8000) |
+
+So classic's order (Arms, Fury, Protection) and `CLASSIC_COLUMNS` are right
+for the warrior. With no points spent it is `judged as arms (default)`.
+
+`CanDualWield` is **present** and answered `false` at level 1, as expected
+before 20, so `Compare` uses the client's answer rather than the level table.
+The main hand's only stat was `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`. Still to
+see on a warrior: armour, defense and block values on higher-level gear.

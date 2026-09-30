@@ -14,8 +14,9 @@
 -- shaman, mage, warlock and druid. The numbers are a starting guess for
 -- levelling, per point of the stat with each spec's main stat as 1. Crit and
 -- hit are per 1%, the way classic-era items print them. /beq probe shows what
--- the client really reports so they can be tuned. Only the hunter's and the
--- warlock's talent layouts have been checked on Forever; see CLASSIC_COLUMNS.
+-- the client really reports so they can be tuned. Only the hunter's, the
+-- warlock's and the warrior's talent layouts have been checked on Forever;
+-- see CLASSIC_COLUMNS.
 
 local _, ns = ...
 
@@ -101,8 +102,9 @@ local SPECS = {
     },
 
     ----------------------------------------------------------------------------
-    -- The other eight classic classes. Only the warlock's talent tree has
-    -- been probed on Forever (split at 4000 and 8000 in classic's order, as assumed);
+    -- The other eight classic classes. Only the warlock's and warrior's
+    -- talent trees have been probed on Forever (split at 4000 and 8000 in
+    -- classic's order, as assumed);
     -- the rest are assumed to sit side by side like the hunter's, in classic's tab order, split at the same columns. /beq probe
     -- on a character of the class shows its layout, and CLASSIC_COLUMNS is
     -- replaced per class once that is known. Equip rules are classic's too.
