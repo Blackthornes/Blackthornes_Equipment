@@ -106,8 +106,8 @@ The same probe read the main hand's stats as `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`,
 items carry spell power and mp5 under the retail keys `Weights.lua` already
 reads.
 
-Still unchecked: the other seven classes' layouts (the warrior's and the
-paladin's are checked by the eighth and ninth probes below).
+Still unchecked: the other seven classes' layouts (the warrior's, the
+paladin's and the rogue's are checked by the eighth to tenth probes below).
 
 Also unchecked: dual wield. `Compare` asks the client's `CanDualWield` when
 it has one and otherwise uses classic's trainer levels (warriors and hunters
@@ -154,3 +154,26 @@ as `ITEM_MOD_NATURE_RESISTANCE_SHORT=5` and `RESISTANCE3_NAME=5`. Resistances
 are left unweighted on purpose (they matter for a fight, not for levelling),
 so the probe lists them under `not weighted`. No block value was reported on
 this shield. `can dual wield` was `false`, right for a paladin.
+
+## 2026-09-30, tenth probe: a level 16 rogue
+
+The rogue's tree matches the split. One tree (`type 4`, "Rogue", 53 nodes,
+7 of 7 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Improved Gouge, Remorseless Attacks, Malice, Improved Slice and Dice | Assassination (below 4000) |
+| 5020 to 6820 | Improved Eviscerate, Improved Sinister Strike, Lightning Reflexes, Improved Sprint | Combat (4000 to 8000) |
+| 9080 to 10880 | Camouflage, Master of Deception, Opportunity, Improved Ambush | Subtlety (above 8000) |
+
+Forever has moved a couple of talents (Improved Gouge sits with
+Assassination and Improved Eviscerate with Combat, the other way round from
+classic), but each column is still one spec. Points in Camouflage (3),
+Opportunity (2) and Master of Deception (2) read 0 / 0 / 7 and
+`judged as sub (talents)`.
+
+`can dual wield` was `true` at 16, matching the level 10 fallback. The
+weapons read `ITEM_MOD_AGILITY_SHORT`, `ITEM_MOD_STAMINA_SHORT`,
+`ITEM_MOD_STRENGTH_SHORT`, `ITEM_MOD_ATTACK_POWER_SHORT` and
+`ITEM_MOD_DAMAGE_PER_SECOND_SHORT` (the ranged slot too), all weighted, with
+nothing under `not weighted`.
