@@ -75,14 +75,20 @@ end
 function Compare:Against(link, equipLoc, weights)
     local slots = SLOTS[equipLoc]
 
-    -- A one-handed weapon also fits the off hand, but only a character who
-    -- already has a weapon there is dual wielding; otherwise an empty off
-    -- hand would make every dagger look like an upgrade.
-    if equipLoc == "INVTYPE_WEAPON" then
+    -- A one-handed weapon also fits the off hand, for a character who can
+    -- dual wield and is not holding a shield or book there or swinging a
+    -- two-hander. Otherwise an empty off hand would make every dagger look
+    -- like an upgrade.
+    if equipLoc == "INVTYPE_WEAPON"
+        and Weights:CanDualWield(Weights:PlayerClass(), Items:PlayerLevel()) then
         local offHand = Items:Equipped(17)
         local offInfo = offHand and Items:Info(offHand)
-        if offInfo and (offInfo.equipLoc == "INVTYPE_WEAPON"
-            or offInfo.equipLoc == "INVTYPE_WEAPONOFFHAND") then
+        local mainHand = Items:Equipped(16)
+        local mainInfo = mainHand and Items:Info(mainHand)
+        local offIsWeapon = offInfo and (offInfo.equipLoc == "INVTYPE_WEAPON"
+            or offInfo.equipLoc == "INVTYPE_WEAPONOFFHAND")
+        local mainIsTwoHand = mainInfo and mainInfo.equipLoc == "INVTYPE_2HWEAPON"
+        if offIsWeapon or (not offHand and mainHand and not mainIsTwoHand) then
             slots = { 16, 17 }
         end
     end
@@ -152,6 +158,18 @@ function Compare:Judge(link)
     }
 
     local usable, fromLevel = Weights:CanUse(class, info.classID, info.subclassID)
+    -- An off-hand-only weapon needs dual wield, which most classes never
+    -- get and the rest learn from a trainer. The client has the last word
+    -- when it says this character can.
+    if usable and info.equipLoc == "INVTYPE_WEAPONOFFHAND"
+        and not Weights:CanDualWield(class, Items:PlayerLevel()) then
+        local learns = Weights:DualWieldLevel(class)
+        if learns then
+            fromLevel = math.max(fromLevel or 0, learns)
+        else
+            usable = false
+        end
+    end
     if not usable then
         result.verdict = "cantuse"
         return result
