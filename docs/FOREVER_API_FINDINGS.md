@@ -107,7 +107,8 @@ items carry spell power and mp5 under the retail keys `Weights.lua` already
 reads.
 
 Still unchecked: the other seven classes' layouts (the warrior's, the
-paladin's and the rogue's are checked by the eighth to tenth probes below).
+paladin's, the rogue's and the priest's are checked by the eighth to
+eleventh probes below).
 
 Also unchecked: dual wield. `Compare` asks the client's `CanDualWield` when
 it has one and otherwise uses classic's trainer levels (warriors and hunters
@@ -177,3 +178,22 @@ weapons read `ITEM_MOD_AGILITY_SHORT`, `ITEM_MOD_STAMINA_SHORT`,
 `ITEM_MOD_STRENGTH_SHORT`, `ITEM_MOD_ATTACK_POWER_SHORT` and
 `ITEM_MOD_DAMAGE_PER_SECOND_SHORT` (the ranged slot too), all weighted, with
 nothing under `not weighted`.
+
+## 2026-09-30, eleventh probe: a level 1 priest
+
+The priest's tree matches the split. One tree (`type 4`, "Priest", 54 nodes,
+0 of 0 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Power in Light, Wand Specialization, Twin Disciplines, Martyrdom | Discipline (below 4000) |
+| 5020 to 6820 | Twilight Focus, Improved Renew, Holy Specialization, Inspiration | Holy (4000 to 8000) |
+| 9080 to 10880 | Shadow Focus, Blackout, Spirit Tap, Shadow Reach | Shadow (above 8000) |
+
+One odd node: a single talent named Holy Specialization sits at x9280, in
+the Shadow part, besides the one heading the x6220 column. If a priest can
+buy it, its points count toward Shadow. Worth a look on a priest with points
+spent; if it matters, `Weights:TraitPoints` can place it by name instead.
+
+`judged as shadow (default)` with no points, `can dual wield` `false`. The
+main hand read only `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
