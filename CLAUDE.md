@@ -60,8 +60,8 @@ change, change Tradeskills' `Logic/Upgrades.lua` too.
 Nothing here calls the other addons. If that changes, write it down in both
 repos' `CLAUDE.md`.
 
-There is no CurseForge project yet, so the TOC's `X-Curse-Project-ID` line is
-commented out and no release has been made.
+The CurseForge project ID is **1720051** (Trent created it 2026-09-30), on the
+TOC's `X-Curse-Project-ID` line. The first release is 0.1.0.
 
 ## Trent's standing rules (all three addons)
 
