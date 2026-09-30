@@ -107,3 +107,7 @@ items carry spell power and mp5 under the retail keys `Weights.lua` already
 reads.
 
 Still unchecked: the other seven classes' layouts.
+
+Also unchecked: dual wield. `Compare` asks the client's `CanDualWield` when
+it has one and otherwise uses classic's trainer levels (warriors and hunters
+20, rogues 10, nobody else). `/beq probe` prints a `can dual wield` line.

@@ -105,6 +105,42 @@ ns = As("HUNTER", {})
 suite.check("a hunter cannot", ns.Compare:Judge("item:9").verdict == "cantuse")
 
 --------------------------------------------------------------------------------
+-- A second weapon: warriors and hunters from 20, rogues from 10, nobody else
+--------------------------------------------------------------------------------
+
+ITEMS["item:20"] = { loc = "INVTYPE_WEAPON", class = WEAPON, subclass = 15,
+    stats = { ITEM_MOD_AGILITY_SHORT = 5 } }
+ITEMS["item:21"] = { loc = "INVTYPE_WEAPON", class = WEAPON, subclass = 15,
+    stats = { ITEM_MOD_AGILITY_SHORT = 3 } }
+ITEMS["item:22"] = { loc = "INVTYPE_WEAPONOFFHAND", class = WEAPON, subclass = 7,
+    stats = { ITEM_MOD_STRENGTH_SHORT = 4 } }
+
+ns = As("ROGUE", { [16] = "item:20" }, 12)
+result = ns.Compare:Judge("item:21")
+suite.check("a rogue's second dagger fills the empty off hand",
+    result.verdict == "upgrade" and result.slot == 17, result.verdict)
+
+ns = As("ROGUE", { [16] = "item:20" }, 8)
+result = ns.Compare:Judge("item:21")
+suite.check("but not before the rogue can dual wield", result.slot == 16 and result.verdict == "downgrade",
+    result.verdict)
+
+ns = As("PALADIN", {})
+result = ns.Compare:Judge("item:22")
+suite.check("a paladin cannot use an off-hand sword", result.verdict == "cantuse", result.verdict)
+
+ns = As("WARRIOR", {}, 12)
+result = ns.Compare:Judge("item:22")
+suite.check("a warrior waits for 20 to use one", result.verdict == "upgrade" and result.level == 20, result.level)
+
+ns = As("PALADIN", {})
+_G.CanDualWield = function() return true end
+result = ns.Compare:Judge("item:22")
+suite.check("unless the client says this character can", result.verdict == "upgrade" and not result.level,
+    result.verdict)
+_G.CanDualWield = nil
+
+--------------------------------------------------------------------------------
 -- Picking a spec by name
 --------------------------------------------------------------------------------
 

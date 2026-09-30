@@ -44,6 +44,9 @@ local SPECS = {
         -- Lightning Reflexes, which sits far out at 102800). Read with
         -- /beq probe on 2026-09-29; see docs/FOREVER_API_FINDINGS.md.
         columns = CLASSIC_COLUMNS,
+        -- The level a second weapon opens at (classic's trainer). A class
+        -- with none never holds a weapon in the off hand.
+        dualWield = 20,
         -- What a hunter can equip, by the client's item subclass, and the
         -- level each opens at (0 for any level). Classic rules: mail from 40,
         -- no plate, shields, maces or wands. Not yet checked on Forever; if it
@@ -109,6 +112,7 @@ local SPECS = {
         order = { "arms", "fury", "prot" },
         default = "arms",
         columns = CLASSIC_COLUMNS,
+        dualWield = 20,
         armor = { [0] = 0, [1] = 0, [2] = 0, [3] = 0, [4] = 40, [6] = 0 },
         weapons = {
             [0] = 0, [1] = 0, [2] = 0, [3] = 0, [4] = 0, [5] = 0, [6] = 0,
@@ -174,6 +178,7 @@ local SPECS = {
         order = { "assassination", "combat", "sub" },
         default = "combat",
         columns = CLASSIC_COLUMNS,
+        dualWield = 10,
         armor = { [0] = 0, [1] = 0, [2] = 0 },
         weapons = {
             [2] = 0, [3] = 0, [4] = 0, [7] = 0, [13] = 0, [15] = 0, [16] = 0, [18] = 0,
@@ -566,6 +571,23 @@ function Weights:CanUse(class, classID, subclassID)
     local level = list[subclassID]
     if not level then return false, nil end
     return true, level > 0 and level or nil
+end
+
+--- Can this character hold a weapon in the off hand now? The client's
+--- CanDualWield answers when it has one; otherwise classic's rule.
+function Weights:CanDualWield(class, level)
+    if type(CanDualWield) == "function" then
+        local ok, can = pcall(CanDualWield)
+        if ok and type(can) == "boolean" then return can end
+    end
+    local from = self:DualWieldLevel(class)
+    return from ~= nil and (tonumber(level) or 0) >= from
+end
+
+--- The level this class learns to dual wield at, or nil if it never does:
+--- warriors and hunters 20, rogues 10, as in classic.
+function Weights:DualWieldLevel(class)
+    return class and SPECS[class] and SPECS[class].dualWield or nil
 end
 
 --- Turn a spec a player typed into its key, or nil.

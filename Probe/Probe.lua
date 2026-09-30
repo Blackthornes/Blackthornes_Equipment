@@ -17,7 +17,7 @@ local SLOTS = { { 16, "main hand" }, { 17, "off hand" }, { 18, "ranged" } }
 -- The calls worth knowing about. Talents on Forever turned out to be the
 -- newer trait system (C_ClassTalents, C_Traits), not the classic tabs.
 local APIS = {
-    "UnitClass", "UnitLevel", "GetNumTalentTabs", "GetTalentTabInfo",
+    "UnitClass", "UnitLevel", "CanDualWield", "GetNumTalentTabs", "GetTalentTabInfo",
     "GetNumTalents", "GetTalentInfo", "GetSpecialization",
     "C_SpecializationInfo.GetSpecialization", "C_ClassTalents.GetActiveConfigID",
     "C_Traits.GetConfigInfo", "C_Traits.GetTreeCurrencyInfo", "C_Traits.GetTreeNodes",
@@ -231,6 +231,12 @@ function Probe:Run()
     local Weights = ns.Weights
     Line("class", Weights:PlayerClass() or "unknown")
     Line("classes", self:Classes())
+    if type(CanDualWield) == "function" then
+        local ok, can = pcall(CanDualWield)
+        Line("can dual wield", ok and tostring(can) or "raised")
+    else
+        Line("can dual wield", "no CanDualWield, using classic's levels")
+    end
 
     local points = Weights:TreePoints(Weights:PlayerClass())
     if points then
