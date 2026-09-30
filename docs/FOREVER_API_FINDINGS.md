@@ -107,8 +107,8 @@ items carry spell power and mp5 under the retail keys `Weights.lua` already
 reads.
 
 Still unchecked: the other seven classes' layouts (the warrior's, the
-paladin's, the rogue's, the priest's and the shaman's are checked by the
-eighth to twelfth probes below).
+paladin's, the rogue's, the priest's, the shaman's and the mage's are
+checked by the eighth to thirteenth probes below; only the druid is left).
 
 Also unchecked: dual wield. `Compare` asks the client's `CanDualWield` when
 it has one and otherwise uses classic's trainer levels (warriors and hunters
@@ -212,3 +212,17 @@ The shaman's tree matches the split. One tree (`type 4`, "Shaman", 50 nodes,
 `judged as enhancement (default)` with no points, `can dual wield` `false`
 (a classic shaman never dual wields). The main hand read only
 `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
+
+## 2026-09-30, thirteenth probe: a level 1 mage
+
+The mage's tree matches the split. One tree (`type 4`, "Mage", 54 nodes,
+0 of 0 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Wand Specialization, Arcane Focus, Improved Channeling, Arcane Resilience | Arcane (below 4000) |
+| 5020 to 6820 | Wake of Fire, Incineration, Improved Fireball, Master of Elements | Fire (4000 to 8000) |
+| 9080 to 10880 | Frost Warding, Improved Frostbolt, Elemental Precision, Frostbite | Frost (above 8000) |
+
+`judged as frost (default)` with no points, `can dual wield` `false`. The
+main hand read only `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
