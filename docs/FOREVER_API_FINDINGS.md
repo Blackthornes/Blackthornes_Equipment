@@ -107,8 +107,8 @@ items carry spell power and mp5 under the retail keys `Weights.lua` already
 reads.
 
 Still unchecked: the other seven classes' layouts (the warrior's, the
-paladin's, the rogue's and the priest's are checked by the eighth to
-eleventh probes below).
+paladin's, the rogue's, the priest's and the shaman's are checked by the
+eighth to twelfth probes below).
 
 Also unchecked: dual wield. `Compare` asks the client's `CanDualWield` when
 it has one and otherwise uses classic's trainer levels (warriors and hunters
@@ -197,3 +197,18 @@ spent; if it matters, `Weights:TraitPoints` can place it by name instead.
 
 `judged as shadow (default)` with no points, `can dual wield` `false`. The
 main hand read only `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
+
+## 2026-09-30, twelfth probe: a level 1 shaman
+
+The shaman's tree matches the split. One tree (`type 4`, "Shaman", 50 nodes,
+0 of 0 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Elemental Warding, Convection, Concussion, Elemental Devastation | Elemental (below 4000) |
+| 5020 to 6820 | Earth's Grasp, Thundering Strikes, Ancestral Knowledge, Improved Lightning Shield | Enhancement (4000 to 8000) |
+| 9080 to 10880 | Mindfulness, Improved Healing Wave, Totemic Focus, Improved Reincarnation | Restoration (above 8000) |
+
+`judged as enhancement (default)` with no points, `can dual wield` `false`
+(a classic shaman never dual wields). The main hand read only
+`ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
