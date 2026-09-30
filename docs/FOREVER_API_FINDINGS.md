@@ -106,12 +106,11 @@ The same probe read the main hand's stats as `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`,
 items carry spell power and mp5 under the retail keys `Weights.lua` already
 reads.
 
-Still unchecked: the other seven classes' layouts (the warrior's, the
-paladin's, the rogue's, the priest's, the shaman's and the mage's are
-checked by the eighth to thirteenth probes below; only the druid is left).
+The other seven classes' layouts were checked later, by the eighth to
+fourteenth probes below: all nine are confirmed.
 
-Also unchecked: dual wield. `Compare` asks the client's `CanDualWield` when
-it has one and otherwise uses classic's trainer levels (warriors and hunters
+Dual wield: `Compare` asks the client's `CanDualWield` (present, per the
+probes below) and otherwise uses classic's trainer levels (warriors and hunters
 20, rogues 10, nobody else). `/beq probe` prints a `can dual wield` line.
 
 ## 2026-09-30, eighth probe: a level 1 warrior
@@ -226,3 +225,22 @@ The mage's tree matches the split. One tree (`type 4`, "Mage", 54 nodes,
 
 `judged as frost (default)` with no points, `can dual wield` `false`. The
 main hand read only `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
+
+## 2026-09-30, fourteenth probe: a level 1 druid
+
+The druid's tree matches the split, which makes all nine classes. One tree
+(`type 4`, "Druid", 51 nodes, 0 of 0 spent):
+
+| x | Talents | Column |
+|---|---|---|
+| 1020 to 2820 | Moonglow, Improved Wrath, Genesis, Nature's Reach | Balance (below 4000) |
+| 5020 to 6820 | Feral Swiftness, Ferocity, Heart of the Wild, Thick Hide | Feral Combat (4000 to 8000) |
+| 9080 to 10880 | Naturalist, Nature's Focus, Furor, Gift of the Earthmother | Restoration (above 8000) |
+
+`judged as feral (default)` with no points, `can dual wield` `false`. The
+main hand read only `ITEM_MOD_DAMAGE_PER_SECOND_SHORT`.
+
+So every class's tree on Forever is one trait tree with its three specs
+side by side, split at 4000 and 8000, in classic's order. What is still
+unseen is gear stats past the starting levels: block value, defense, dodge,
+healing and mp5 on real items, and the resistances above.

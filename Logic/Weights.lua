@@ -15,7 +15,7 @@
 -- levelling, per point of the stat with each spec's main stat as 1. Crit and
 -- hit are per 1%, the way classic-era items print them. /beq probe shows what
 -- the client really reports so they can be tuned. Every class's talent layout
--- has been checked on Forever except the druid's; see CLASSIC_COLUMNS.
+-- has been checked on Forever; see CLASSIC_COLUMNS.
 
 local _, ns = ...
 
@@ -30,7 +30,7 @@ local Weights = ns.NewModule("Weights")
 --   meleeDps depending on the weapon, because a hunter's bow matters far more
 --   than a sword to Beast Mastery and far less to Survival.
 -- Where a class's three specs split in its talent tree, by a talent's posX.
--- Measured on the hunter; assumed for every class until probed.
+-- Measured on the hunter and confirmed on all nine classes.
 local CLASSIC_COLUMNS = { 4000, 8000 }
 
 local SPECS = {
@@ -101,12 +101,10 @@ local SPECS = {
     },
 
     ----------------------------------------------------------------------------
-    -- The other eight classic classes. The warlock's, warrior's, paladin's,
-    -- rogue's, priest's, shaman's and mage's talent trees have been probed
-    -- on Forever: split at 4000 and 8000, in classic's order, as assumed.
-    -- The druid is assumed to match. /beq probe on a character of the
-    -- class shows its layout, and CLASSIC_COLUMNS is replaced per class if
-    -- one ever differs. Equip rules are classic's.
+    -- The other eight classic classes. Every one of their talent trees
+    -- has been probed on Forever: split at 4000 and 8000, in classic's
+    -- order, like the hunter's. If Forever ever reshapes one, /beq probe
+    -- shows the new layout and that class gets its own columns. Equip rules are classic's.
     ----------------------------------------------------------------------------
 
     WARRIOR = {

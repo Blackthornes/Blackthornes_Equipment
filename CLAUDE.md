@@ -95,10 +95,9 @@ commented out and no release has been made.
   it finds in `docs/FOREVER_API_FINDINGS.md`. Forever has no classic
   talent-tab calls: each class has one trait tree (`C_ClassTalents`,
   `C_Traits`) holding all its specs side by side, so `Weights:TraitPoints`
-  counts ranks by column, split where `SPECS.<CLASS>.columns` says. Every
-  class's layout has been probed except the druid's, which assumes the
-  same split (`CLASSIC_COLUMNS`) and classic's tab order until
-  `/beq probe` on a druid says otherwise.
+  counts ranks by column, split where `SPECS.<CLASS>.columns` says. All nine
+  classes' layouts have been probed (2026-09-30): the same split
+  (`CLASSIC_COLUMNS`) in classic's tab order.
 - **The client is WoW: Forever, a retail engine** (`## Interface: 16001`,
   modern Lua), not 1.12. Instances hand addons secret values that raise when
   compared, concatenated or formatted, so read client values inside a pcall.
