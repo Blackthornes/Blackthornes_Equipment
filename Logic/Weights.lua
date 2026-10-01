@@ -14,7 +14,8 @@
 -- shaman, mage, warlock and druid. The numbers are a starting guess for
 -- levelling, per point of the stat with each spec's main stat as 1. Crit and
 -- hit are per 1%, the way classic-era items print them. /beq probe shows what
--- the client really reports so they can be tuned. Every class's talent layout
+-- the client really reports so they can be tuned, and players can change any
+-- of them for themselves in the weights window (UI/WeightsWindow.lua). Every class's talent layout
 -- has been checked on Forever; see CLASSIC_COLUMNS.
 
 local _, ns = ...
@@ -414,8 +415,44 @@ local STAT_KEYS = {
     ["ITEM_MOD_BLOCK_VALUE_SHORT"] = "blockValue",
 }
 
+-- Every stat a weight can name, in the order the weights window lists them,
+-- with the name a player reads there. `per` marks the ones counted per 1%.
+-- Weapon damage per second is two weights, because Score applies dps as one
+-- or the other depending on the weapon.
+local STAT_ORDER = {
+    { key = "strength", name = "Strength" },
+    { key = "agility", name = "Agility" },
+    { key = "stamina", name = "Stamina" },
+    { key = "intellect", name = "Intellect" },
+    { key = "spirit", name = "Spirit" },
+    { key = "armor", name = "Armor" },
+    { key = "attackPower", name = "Attack power" },
+    { key = "rangedAttackPower", name = "Ranged attack power" },
+    { key = "crit", name = "Crit", per = true },
+    { key = "hit", name = "Hit", per = true },
+    { key = "meleeDps", name = "Melee weapon dps" },
+    { key = "rangedDps", name = "Ranged weapon dps" },
+    { key = "spellPower", name = "Spell power" },
+    { key = "healing", name = "Healing" },
+    { key = "spellCrit", name = "Spell crit", per = true },
+    { key = "spellHit", name = "Spell hit", per = true },
+    { key = "mp5", name = "Mana every 5 sec" },
+    { key = "defense", name = "Defense" },
+    { key = "dodge", name = "Dodge", per = true },
+    { key = "parry", name = "Parry", per = true },
+    { key = "block", name = "Block", per = true },
+    { key = "blockValue", name = "Block value" },
+}
+
+-- The largest weight a player can set. Far above any built-in one (16), and
+-- low enough that a typo cannot make one stat drown out the rest by a
+-- thousand times.
+local MAX_WEIGHT = 100
+
 Weights.SPECS = SPECS
 Weights.STAT_KEYS = STAT_KEYS
+Weights.STAT_ORDER = STAT_ORDER
+Weights.MAX_WEIGHT = MAX_WEIGHT
 
 --------------------------------------------------------------------------------
 -- Reading the player
@@ -542,11 +579,176 @@ function Weights:CurrentSpec()
 end
 
 --- The weights to judge this character's gear by, or nil for a class that
---- has none yet.
+--- has none yet. The player's own weights where they changed any.
 function Weights:ForPlayer()
     local spec, _, class = self:CurrentSpec()
     if not spec then return nil end
-    return SPECS[class][spec].weights, spec
+    return self:Get(class, spec), spec
+end
+
+--------------------------------------------------------------------------------
+-- The player's own weights
+--
+-- Kept account wide in BlackthornesEquipmentDB.customWeights, by class and
+-- spec: customWeights.HUNTER.marks.crit = 10. Only the stats a player changed
+-- are kept, so a built-in weight tuned in a later version still reaches every
+-- stat they left alone. Nothing here ever deletes a saved weight except the
+-- player setting it back to the built-in value or pressing reset, and a value
+-- that is not a number is skipped rather than removed.
+--------------------------------------------------------------------------------
+
+-- Merged tables, so judging a bag full of gear does not rebuild one per item.
+-- Forgotten whenever a weight changes.
+local merged = {}
+
+--- The built-in weights for a class and spec, or nil. Never changed.
+function Weights:Defaults(class, spec)
+    local specs = class and SPECS[class]
+    local entry = specs and spec and specs[spec]
+    return type(entry) == "table" and entry.weights or nil
+end
+
+--- The saved changes for a class and spec, or nil. `create` makes the
+--- tables when they are missing.
+function Weights:Custom(class, spec, create)
+    local db = ns.db
+    if type(db) ~= "table" or not class or not spec then return nil end
+
+    if type(db.customWeights) ~= "table" then
+        if not create then return nil end
+        db.customWeights = {}
+    end
+    local byClass = db.customWeights[class]
+    if type(byClass) ~= "table" then
+        if not create then return nil end
+        byClass = {}
+        db.customWeights[class] = byClass
+    end
+    local bySpec = byClass[spec]
+    if type(bySpec) ~= "table" then
+        if not create then return nil end
+        bySpec = {}
+        byClass[spec] = bySpec
+    end
+    return bySpec
+end
+
+local function Usable(value)
+    return type(value) == "number" and value == value and value >= 0 and value <= MAX_WEIGHT
+end
+
+--- The weights a class and spec are judged by: the built-in ones with the
+--- player's changes laid over them. Nil for a spec that does not exist.
+function Weights:Get(class, spec)
+    local defaults = self:Defaults(class, spec)
+    if not defaults then return nil end
+
+    local key = class .. ":" .. spec
+    if merged[key] then return merged[key] end
+
+    local weights = {}
+    for stat, value in pairs(defaults) do weights[stat] = value end
+    for stat, value in pairs(self:Custom(class, spec) or {}) do
+        if Usable(value) then
+            -- 0 is kept as 0 rather than left out, so the player's "ignore
+            -- this stat" wins over the built-in weight.
+            weights[stat] = value
+        end
+    end
+
+    -- Not kept before the saved weights have loaded, or the player's would
+    -- be missed until the next change.
+    if type(ns.db) == "table" then merged[key] = weights end
+    return weights
+end
+
+--- One stat's weight for a class and spec: what it is now, and the built-in
+--- value. Either is 0 when the stat has no weight.
+function Weights:Value(class, spec, stat)
+    local weights = self:Get(class, spec) or {}
+    local defaults = self:Defaults(class, spec) or {}
+    return weights[stat] or 0, defaults[stat] or 0
+end
+
+--- True when the player has changed this stat (or, with no stat, any stat)
+--- for a class and spec.
+function Weights:IsCustom(class, spec, stat)
+    local custom = self:Custom(class, spec)
+    if not custom then return false end
+    if stat then return Usable(custom[stat]) end
+    for _, value in pairs(custom) do
+        if Usable(value) then return true end
+    end
+    return false
+end
+
+--- Round a typed or stepped weight to what is kept: never below 0 or above
+--- MAX_WEIGHT, and to three decimals, so 0.1 + 0.2 is kept as 0.3.
+function Weights:Clean(value)
+    value = tonumber(value)
+    if not value or value ~= value then return nil end
+    value = math.max(0, math.min(MAX_WEIGHT, value))
+    return math.floor(value * 1000 + 0.5) / 1000
+end
+
+--- Set one stat's weight for a class and spec. Setting it to the built-in
+--- value forgets the change, so the stat follows the built-in one again.
+-- @return the weight kept, or nil and why
+function Weights:SetWeight(class, spec, stat, value)
+    if not self:Defaults(class, spec) then return nil, "no such spec" end
+
+    local known = false
+    for _, entry in ipairs(STAT_ORDER) do
+        if entry.key == stat then known = true break end
+    end
+    if not known then return nil, "no such stat" end
+
+    value = self:Clean(value)
+    if not value then return nil, "not a number" end
+
+    local default = self:Defaults(class, spec)[stat] or 0
+    if math.abs(value - default) < 0.0005 then
+        local custom = self:Custom(class, spec)
+        if custom then custom[stat] = nil end
+    else
+        self:Custom(class, spec, true)[stat] = value
+    end
+
+    self:Changed()
+    return value
+end
+
+--- Put every stat for a class and spec back to the built-in weights.
+function Weights:Reset(class, spec)
+    local custom = self:Custom(class, spec)
+    if custom then
+        for stat, value in pairs(custom) do
+            -- Junk that is not a weight was never ours to read; leave it be.
+            if Usable(value) then custom[stat] = nil end
+        end
+    end
+    self:Changed()
+end
+
+--- Something changed what an item is worth: forget the merged tables and
+--- redraw everything that shows a verdict.
+function Weights:Changed()
+    merged = {}
+
+    if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
+    if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
+    if ns.UI then pcall(ns.UI.Refresh, ns.UI) end
+
+    -- Tradeskills keeps its upgrade arrows per item until gear or talents
+    -- change; tell it to ask again. Read only, inside a pcall, and nothing
+    -- happens without Tradeskills. See CLAUDE.md.
+    pcall(function()
+        local tradeskills = rawget(_G, "BlackthornesTS")
+        local upgrades = type(tradeskills) == "table" and tradeskills.Upgrades
+        if type(upgrades) == "table" and type(upgrades.RedrawSoon) == "function" then
+            upgrades:RedrawSoon()
+        end
+    end)
 end
 
 -- The client's item classes that `armor` and `weapons` above describe.

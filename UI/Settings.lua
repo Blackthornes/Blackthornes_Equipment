@@ -25,7 +25,7 @@ local COLUMN_WIDTH = 330
 local CONTROL_X = 150
 
 local WIDTH = COLUMN_WIDTH + PADDING * 2
-local HEIGHT = 530
+local HEIGHT = 586
 
 local ROW_HEIGHT = 50
 local ROW_GAP = -6
@@ -237,7 +237,15 @@ function SettingsUI:BuildColumn()
     controls.spec:SetPoint("TOPLEFT", CONTROL_X, 0)
     self.specRow = specRow
 
-    local tooltipRow = CreateRow(frame, specRow, "Tooltip line",
+    local weightsRow = CreateRow(frame, specRow, "Stat weights",
+        "How much each stat counts when gear is judged. Change them for any class and spec.")
+    controls.weights = Widgets.CreateButton(weightsRow, "Change weights", function()
+        if ns.WeightsUI then ns.WeightsUI:Show() end
+    end, { width = 120, height = 20 })
+    controls.weights:SetPoint("TOPLEFT", CONTROL_X, 0)
+    self.weightsRow = weightsRow
+
+    local tooltipRow = CreateRow(frame, weightsRow, "Tooltip line",
         "Says on a piece of gear's tooltip whether it beats what you wear.")
 
     controls.tooltip = Widgets.CreateCheckbox(tooltipRow, "Show it", function(checked)
