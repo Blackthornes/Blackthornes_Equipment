@@ -4,6 +4,20 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.2.0
+
+For WoW: Forever (interface 16001). This version adds a file, so fully
+restart the game after updating; `/reload` is not enough.
+
+- Change the stat weights yourself: Settings > Stat weights > Change weights,
+  or `/beq weights`, lists how much each stat counts for any class and spec.
+  Type a number or use - and +, and the tooltips, bag arrows, quest reward,
+  gear window and Tradeskills' arrows all use your weights at once. Changed
+  stats show in gold, and "Use the built-in weights" puts a spec back.
+- Your weights are kept for every character on the account, and only for
+  the stats you changed, so later tuning of the built-in weights still
+  reaches the rest. Updates never clear them.
+
 ## 0.1.0
 
 The first release, for WoW: Forever (interface 16001). A new addon, so the
