@@ -63,6 +63,7 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq spec       show the spec your gear is judged for
 /beq spec mm    judge it as Marksmanship instead (bm, mm, sv, or auto to go back)
 /beq bags       list every piece of gear in your bags with its verdict
+/beq weights    change how much each stat counts (also in the settings window)
 /beq probe      check what this client supports; it only reads
 /beq settings   open the settings window (so does right-clicking the minimap button)
 /beq minimap    show or hide the minimap button
@@ -88,6 +89,15 @@ adds the most score, so a small gain on an important slot can beat a big
 percentage on a minor one. The tooltip line and the arrows can each be
 switched off in the settings.
 
+The built-in weights are a starting guess. **Settings > Stat weights >
+Change weights** (or `/beq weights`) lists each stat's weight for any class
+and spec: type a number or use - and +, and every verdict (tooltips, bag
+arrows, the quest reward, the gear window, and Tradeskills' arrows) uses yours
+at once. Changed stats are marked in gold; **Use the built-in weights** puts a
+spec back. Your weights are kept account wide by class and spec in
+`BlackthornesEquipmentDB.customWeights`, only for the stats you changed, so a
+later version's tuning still reaches the rest. Updates never clear them.
+
 `/equipment` works too.
 
 ## Layout
@@ -97,7 +107,7 @@ switched off in the settings.
 | `Core/` | Namespace, module registry, event dispatch, slash commands, saved variables |
 | `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats |
 | `Logic/` | Stat weights per class and spec (`Weights.lua`), and judging an item against what is worn (`Compare.lua`) |
-| `UI/` | Theme, widgets, the minimap button, the gear window, the settings window, the tooltip line, the bag arrows and the quest-reward arrow |
+| `UI/` | Theme, widgets, the minimap button, the gear window, the settings window, the stat weights window, the tooltip line, the bag arrows and the quest-reward arrow |
 | `Probe/` | `/beq probe`, which checks what the running game actually supports instead of guessing |
 | `tools/` | Checks, tests and the link script. Not shipped to the client |
 | `docs/` | What the Forever client actually does, found with `/beq probe`. Not shipped |

@@ -244,6 +244,11 @@ local DEFAULTS = {
     -- switched off.
     tooltipLine = true,
     bagArrows = true,
+
+    -- The player's own stat weights, by class and spec, are kept under
+    -- `customWeights` (Logic/Weights.lua). Not given a default here: the
+    -- table is made the first time a weight is changed, and once made it is
+    -- never cleared or renamed by an update.
 }
 
 -- Per character, because class and spec are. `spec` is the spec the player
@@ -367,6 +372,9 @@ function ns.HandleSlash(input)
     end
     if ns.UI then
         pcall(ns.UI.Refresh, ns.UI)
+    end
+    if ns.WeightsUI then
+        pcall(ns.WeightsUI.Refresh, ns.WeightsUI)
     end
 
     if not ok then

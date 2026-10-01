@@ -57,11 +57,30 @@ already worn, so a worn ring is never an upgrade over the other ring. It never
 raises. Keep the global, `Compare` and `IsUpgrade(item)` stable; if one has to
 change, change Tradeskills' `Logic/Upgrades.lua` too.
 
-Nothing here calls the other addons. If that changes, write it down in both
-repos' `CLAUDE.md`.
-
 The CurseForge project ID is **1720051** (Trent created it 2026-09-30), on the
 TOC's `X-Curse-Project-ID` line. The first release is 0.1.0.
+
+## What this addon calls in Tradeskills
+
+When a player changes a stat weight (`Weights:Changed` in
+`Logic/Weights.lua`), Tradeskills' kept upgrade answers are stale, so it
+calls, inside a pcall and only when Tradeskills is loaded:
+
+```lua
+_G.BlackthornesTS.Upgrades:RedrawSoon()   -- forget kept answers, redraw the open tab
+```
+
+Nothing else here calls the other addons. If Tradeskills renames
+`Upgrades:RedrawSoon`, its arrows only catch up on the next gear or talent
+change; change `Weights:Changed` too.
+
+## Players' own stat weights
+
+Kept in `BlackthornesEquipmentDB.customWeights[CLASS][spec][stat]`, account
+wide, only for stats the player changed (`Weights:Get` lays them over
+`SPECS`). Trent's rule: saved data is never lost or renamed in an update, so
+never rename that key, never reshape it without keeping the old values, and
+never delete a value the code cannot read (it is skipped instead).
 
 ## Trent's standing rules (all three addons)
 

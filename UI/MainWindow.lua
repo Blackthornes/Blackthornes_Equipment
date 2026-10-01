@@ -101,6 +101,7 @@ function UI:Build()
     local hint = Theme.CreateLabel(frame, "tiny", "dim")
     hint:SetPoint("BOTTOMLEFT", PADDING, 10)
     hint:SetText("Hover an item for its tooltip. Equipping is up to you.")
+    self.hint = hint
 
     frame:Hide()
     return frame
@@ -217,6 +218,12 @@ function UI:Refresh()
             SetCell(row.best, nil, "-")
             row.gain:SetText("")
         end
+    end
+
+    if spec and Weights:IsCustom(class, spec) then
+        self.hint:SetText("Judged by your own stat weights. Equipping is up to you.")
+    else
+        self.hint:SetText("Hover an item for its tooltip. Equipping is up to you.")
     end
 
     if not spec then
