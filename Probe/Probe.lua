@@ -29,6 +29,8 @@ local APIS = {
     "C_Container.GetContainerItemLink", "GetContainerItemLink", "ContainerFrame_Update",
     "TooltipDataProcessor.AddTooltipPostCall", "TooltipUtil.GetDisplayedItem",
     "C_Texture.GetAtlasInfo", "QuestInfo_Display", "C_CreatureInfo.GetClassInfo",
+    "UnitFactionGroup", "C_SpellBook.IsSpellKnown", "IsPlayerSpell", "IsSpellKnown",
+    "GetNumSkillLines", "GetSkillLineInfo",
 }
 
 local function Has(path)
@@ -245,6 +247,21 @@ function Probe:Run()
         Line("points per spec", table.concat(parts, " / "))
     else
         Line("points per spec", "no talents to read")
+    end
+
+    if ns.WeaponSkills then
+        local skills = ns.WeaponSkills
+        Line("faction", skills:Faction() or "unknown")
+        local ok, known = pcall(skills.Known, skills)
+        local names = {}
+        if ok and known then
+            for subclassID in pairs(known) do
+                names[#names + 1] = ns.WeaponTrainers.SKILLS[subclassID].name
+            end
+            table.sort(names)
+        end
+        Line("weapon skills", #names > 0 and table.concat(names, ", ")
+            or "none read, so no trainer lines")
     end
 
     local spec, why = Weights:CurrentSpec()

@@ -247,7 +247,7 @@ function SettingsUI:BuildColumn()
     self.weightsRow = weightsRow
 
     local tooltipRow = CreateRow(frame, weightsRow, "Tooltip line",
-        "Says on a piece of gear's tooltip whether it beats what you wear.")
+        "Whether gear beats what you wear, and where to learn a weapon skill.")
 
     controls.tooltip = Widgets.CreateCheckbox(tooltipRow, "Show it", function(checked)
         ns.db.tooltipLine = checked
