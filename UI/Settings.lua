@@ -107,8 +107,9 @@ function SettingsUI:SetSpec(key)
         ns.charDB.spec = key
     end
     self:Refresh()
-    if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
-    if ns.UI then pcall(ns.UI.Refresh, ns.UI) end
+    -- Every verdict can change with the spec: the bag arrows, quest rewards,
+    -- the main window and Tradeskills' arrows.
+    ns.Weights:Changed()
 end
 
 --- What the spec row's description says: which spec is in use, and why.

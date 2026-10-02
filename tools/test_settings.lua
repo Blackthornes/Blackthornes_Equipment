@@ -64,6 +64,25 @@ suite.check("/beq spec while it is open moves the stepper",
 controls.spec:SetValue(1)
 suite.check("stepping back to Auto clears the pick", ns.charDB.spec == nil)
 
+-- Every verdict can change with the spec: quest rewards and Tradeskills'
+-- arrows are drawn again too, not only the bag arrows.
+local asked, rewards = 0, 0
+_G.BlackthornesTS = { Upgrades = { RedrawSoon = function() asked = asked + 1 end } }
+local QuestRefresh = ns.QuestRewards.Refresh
+ns.QuestRewards.Refresh = function(...) rewards = rewards + 1; return QuestRefresh(...) end
+local function Told() return ("%d/%d"):format(asked, rewards) end
+
+controls.spec:SetValue(2)
+suite.check("picking a spec redraws quest rewards and Tradeskills' arrows",
+    asked == 1 and rewards == 1, Told())
+ns.HandleSlash("spec mm")
+suite.check("and so does /beq spec", asked == 2 and rewards == 2, Told())
+ns.HandleSlash("spec auto")
+suite.check("and /beq spec auto", asked == 3 and rewards == 3 and ns.charDB.spec == nil, Told())
+
+ns.QuestRewards.Refresh = QuestRefresh
+_G.BlackthornesTS = nil
+
 -- The minimap checkbox.
 local minimapBox = controls.minimap
 suite.check("the minimap box starts ticked", minimapBox:GetChecked())
