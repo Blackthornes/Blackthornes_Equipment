@@ -4,6 +4,16 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.2.1
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- Picking a spec, in Settings or with `/beq spec`, redraws every verdict: the
+  bag arrows, the gear window, quest rewards and Blackthornes Tradeskills'
+  upgrade arrows. `/beq spec` used to redraw nothing until the next gear or
+  talent change.
+
 ## 0.2.0
 
 For WoW: Forever (interface 16001). This version adds a file, so fully
