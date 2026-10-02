@@ -8,6 +8,8 @@ local ns = env.Load()
 ns.HandleSlash("probe")
 suite.check("runs on a client with none of the calls",
     env.ChatText():find("has|r  none of them", 1, true), env.ChatText())
+suite.check("says no weapon skills could be read",
+    env.ChatText():find("weapon skills|r  none read, so no trainer lines", 1, true), env.ChatText())
 suite.check("and lists them as missing on one line",
     env.ChatText():find("missing|r  UnitClass, UnitLevel,", 1, true), env.ChatText())
 

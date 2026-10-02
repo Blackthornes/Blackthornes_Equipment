@@ -1,6 +1,7 @@
 -- Blackthornes Equipment -- UI/Tooltip.lua
 -- One line on a piece of gear's tooltip: an upgrade or not, for the spec the
--- character is judged as, and by how much.
+-- character is judged as, and by how much. Under it, for a weapon the class
+-- can learn but the character has not, where its weapon master is.
 --
 -- Hooked the way Tradeskills' UI/ItemTooltip.lua is. Its measurement on
 -- Forever (docs/FOREVER_API_FINDINGS.md there) is that retail's
@@ -17,6 +18,7 @@ local Tooltip = ns.NewModule("Tooltip")
 
 local Compare = ns.Compare
 local Items = ns.Items
+local WeaponSkills = ns.WeaponSkills
 
 local TOOLTIP_NAMES = { "GameTooltip", "ItemRefTooltip" }
 
@@ -99,14 +101,23 @@ function Tooltip:Decorate(tooltip, data)
         if not now or now >= mark.lines then return "duplicate" end
     end
 
+    local lines = {}
     local text, color = Compare:Describe(Compare:Judge(link))
-    if not text then return "quiet" end
+    if text then lines[#lines + 1] = { text, color } end
+    local okTrainer, trainer, trainerColor = pcall(WeaponSkills.Describe, WeaponSkills, link)
+    if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true } end
+    if #lines == 0 then return "quiet" end
 
     local addLine = Field(tooltip, "AddLine")
     if type(addLine) ~= "function" then return "noitem" end
 
     self.writing = true
-    pcall(addLine, tooltip, ("|c%s%s|r"):format(ns.COLORS[color] or ns.COLORS.text, text))
+    for _, line in ipairs(lines) do
+        -- The trainer line wraps, so a list of cities folds onto a second
+        -- line rather than stretching the tooltip.
+        pcall(addLine, tooltip, ("|c%s%s|r"):format(ns.COLORS[line[2]] or ns.COLORS.text, line[1]),
+            nil, nil, nil, line[3])
+    end
 
     -- Adding a line needs the tooltip resized, which Show does; on a client
     -- where that re-enters the hook, `writing` is what stops it.

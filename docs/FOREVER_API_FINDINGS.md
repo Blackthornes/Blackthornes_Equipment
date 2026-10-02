@@ -244,3 +244,14 @@ So every class's tree on Forever is one trait tree with its three specs
 side by side, split at 4000 and 8000, in classic's order. What is still
 unseen is gear stats past the starting levels: block value, defense, dodge,
 healing and mp5 on real items, and the resistances above.
+
+## Not yet checked: weapon skills and faction
+
+The weapon master line (`Logic/WeaponSkills.lua`) reads which weapon skills
+the character knows from the spell each skill gives (196 One-Handed Axes,
+1180 Daggers and so on, through `C_SpellBook.IsSpellKnown`, `IsPlayerSpell`
+or `IsSpellKnown`) and from classic's `GetSkillLineInfo`, and the faction
+from `UnitFactionGroup`. None of these has been seen on Forever yet.
+`/beq probe` prints a `faction` line and a `weapon skills` line listing what
+it read; if that line says none were read, the tooltip stays quiet rather
+than guess. The trainer list itself is classic's (`Data/WeaponTrainers.lua`).

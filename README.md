@@ -81,6 +81,11 @@ Feral) unless you pick otherwise with `/beq spec <name>`. Each class is held
 to classic's armour and weapon rules, so a priest is told it can't use
 leather and plate waits for level 40.
 
+A weapon your class can learn but you have not trained yet says where to
+learn it, under the verdict: "Learn Daggers from the weapon master in
+Orgrimmar or Undercity". Only your own faction's cities are listed, from
+classic's weapon masters.
+
 Each item gets one score (every stat times what it is worth to your spec)
 and is measured against what you wear in its slot. Rings and trinkets are
 measured against the weaker of your two, and a two-hander against both hands.
@@ -105,9 +110,9 @@ later version's tuning still reaches the rest. Updates never clear them.
 | Folder | What is in it |
 |---|---|
 | `Core/` | Namespace, module registry, event dispatch, slash commands, saved variables |
-| `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats |
-| `Logic/` | Stat weights per class and spec (`Weights.lua`), and judging an item against what is worn (`Compare.lua`) |
-| `UI/` | Theme, widgets, the minimap button, the gear window, the settings window, the stat weights window, the tooltip line, the bag arrows and the quest-reward arrow |
+| `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats; classic's weapon masters and what each teaches |
+| `Logic/` | Stat weights per class and spec (`Weights.lua`), judging an item against what is worn (`Compare.lua`), and which weapon skills are known and where to learn the rest (`WeaponSkills.lua`) |
+| `UI/` | Theme, widgets, the minimap button, the gear window, the settings window, the stat weights window, the tooltip lines, the bag arrows and the quest-reward arrow |
 | `Probe/` | `/beq probe`, which checks what the running game actually supports instead of guessing |
 | `tools/` | Checks, tests and the link script. Not shipped to the client |
 | `docs/` | What the Forever client actually does, found with `/beq probe`. Not shipped |
