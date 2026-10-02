@@ -4,6 +4,16 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.3.0
+
+For WoW: Forever (interface 16001). This version adds files, so fully
+restart the game after updating; `/reload` is not enough.
+
+- A weapon your class can learn but you haven't trained yet says where to
+  learn it on its tooltip, under the verdict: "Learn Daggers from the weapon
+  master in Orgrimmar or Undercity". Only your own faction's cities are
+  listed. The tooltip switch in Settings covers this line too.
+
 ## 0.2.1
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
