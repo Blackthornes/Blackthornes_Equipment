@@ -27,7 +27,8 @@ convention:
   `downgrade` in Tradeskills' profit green and loss red. `UI/Theme.lua` and
   `UI/Widgets.lua` are Farmer's (Widgets trimmed to button, checkbox and
   stepper); the minimap button and settings window copy Farmer's too. The
-  button starts at 230 degrees, clear of the other two at 200.
+  button starts at 230 degrees, clear of Farmer's at 200, Tradeskills' at
+  170 and Pets' at 260.
 - **Tools** (`syntaxcheck`, `lintcalls`, `runtests`, `check_release`,
   `check_package` and their tests) are Tradeskills' with the names changed.
   If one of them gets a fix in either sister repo, bring it here too.
@@ -62,12 +63,13 @@ TOC's `X-Curse-Project-ID` line. The first release is 0.1.0.
 
 ## What this addon calls in Tradeskills
 
-When a player changes a stat weight (`Weights:Changed` in
-`Logic/Weights.lua`), Tradeskills' kept upgrade answers are stale, so it
-calls, inside a pcall and only when Tradeskills is loaded:
+When a player changes a stat weight or picks a spec (`Weights:Changed` in
+`Logic/Weights.lua`, which the Settings spec stepper and `/beq spec` call
+too), Tradeskills' kept upgrade answers are stale, so it calls, inside a
+pcall and only when Tradeskills is loaded:
 
 ```lua
-_G.BlackthornesTS.Upgrades:RedrawSoon()   -- forget kept answers, redraw the open tab
+_G.BlackthornesTS.Upgrades:RedrawSoon()   -- forget kept answers, redraw what shows arrows
 ```
 
 Nothing else here calls the other addons. If Tradeskills renames

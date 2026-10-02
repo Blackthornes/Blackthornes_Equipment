@@ -865,6 +865,7 @@ ns.RegisterCommand("spec", "show the spec gear is judged for, or pick one by nam
 
         if rest == "auto" then
             ns.charDB.spec = nil
+            Weights:Changed()
             ShowSpec()
             return
         end
@@ -882,5 +883,7 @@ ns.RegisterCommand("spec", "show the spec gear is judged for, or pick one by nam
         end
 
         ns.charDB.spec = spec
+        -- Every verdict can change with the spec, Tradeskills' arrows too.
+        Weights:Changed()
         ShowSpec()
     end)
