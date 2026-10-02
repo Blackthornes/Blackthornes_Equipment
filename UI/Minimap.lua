@@ -16,8 +16,8 @@ local MinimapButton = ns.NewModule("MinimapButton")
 
 local Theme = ns.Theme
 
--- A little further round than Farmer's and Tradeskills' 200 degrees, so the
--- three buttons do not start stacked on one another.
+-- Clear of Farmer's at 200 degrees, Tradeskills' at 170 and Pets' at 260,
+-- so the buttons do not start stacked on one another.
 local DEFAULT_ANGLE = math.rad(230)
 local ICON = [[Interface\Icons\INV_Chest_Chain]]
 
