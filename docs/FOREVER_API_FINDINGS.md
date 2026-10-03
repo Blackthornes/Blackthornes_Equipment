@@ -255,3 +255,28 @@ from `UnitFactionGroup`. None of these has been seen on Forever yet.
 `/beq probe` prints a `faction` line and a `weapon skills` line listing what
 it read; if that line says none were read, the tooltip stays quiet rather
 than guess. The trainer list itself is classic's (`Data/WeaponTrainers.lua`).
+
+## Not yet checked: professions, random rolls and map pins
+
+The upgrade finder's crafted gear, random rolls and upgrade hunts lean on
+calls no probe has seen on Forever yet. `/beq probe` prints a line for each:
+
+- `professions`: read from `C_TradeSkillUI.GetAllProfessionTradeSkillLines`
+  and `GetProfessionInfoBySkillLineID`, else classic's `GetSkillLineInfo`.
+  Whether a recipe is known comes from Tradeskills' saved recipes when it is
+  loaded, else `IsPlayerSpell` / `C_SpellBook.IsSpellKnown` on the recipe's
+  spell. If neither reads anything, crafted gear is still listed, as made by
+  someone else.
+- `Tradeskills recipes`: how many recipes Tradeskills has seen across
+  characters (it records them when a profession window opens).
+- `random roll stats`: whether `C_Item.GetItemStats` answers for a link
+  carrying a roll (`item:id::::::suffix`). If not, rolled gear is judged
+  plain and the tooltip has no roll line.
+- `map pin`: whether `C_Map.SetUserWaypoint` and `UiMapPoint` exist. Zone
+  map IDs are looked up by name under the top map
+  (`C_Map.GetMapChildrenInfo`), never typed in.
+
+The merchant and loot arrows read `C_MerchantFrame.GetItemLink` or
+`GetMerchantItemLink`, and `GetLootSlotLink`, on the game's
+`MerchantItemNItemButton` and `LootButtonN` frames. A client that builds
+those windows differently simply gets no arrows there.

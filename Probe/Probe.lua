@@ -37,6 +37,12 @@ local APIS = {
     "IsQuestFlaggedCompleted", "C_Item.IsItemDataCachedByID",
     "C_Item.RequestLoadItemDataByID", "C_Reputation.GetFactionDataByID",
     "GetFactionInfoByID",
+    -- Crafted upgrades, show on map, and the vendor and loot window arrows.
+    "C_TradeSkillUI.GetAllProfessionTradeSkillLines", "C_TradeSkillUI.GetProfessionInfoBySkillLineID",
+    "C_Map.GetBestMapForUnit", "C_Map.GetMapInfo", "C_Map.GetMapChildrenInfo",
+    "C_Map.SetUserWaypoint", "UiMapPoint.CreateFromCoordinates",
+    "C_SuperTrack.SetSuperTrackedUserWaypoint", "OpenWorldMap",
+    "GetMerchantItemLink", "MerchantFrame_UpdateMerchantInfo", "GetLootSlotLink", "LootFrame_Update",
 }
 
 local function Has(path)
@@ -291,6 +297,7 @@ function Probe:Run()
         end
         Line("tooltip lines added", #parts > 0 and table.concat(parts, ", ") or "none yet")
     end
+    pcall(self.Upgrades, self)
 
     if not Has("GetInventoryItemLink") then return end
 
@@ -316,6 +323,35 @@ function Probe:Run()
                 end
             end
         end
+    end
+end
+
+--- The GearQuest-style features: the professions read, whether a link
+--- with a random roll gives that roll's stats, and whether a zone's map
+--- can be found for a pin.
+function Probe:Upgrades()
+    if ns.Crafting then
+        local parts = {}
+        for line, skill in pairs(ns.Crafting:Professions()) do
+            parts[#parts + 1] = ("%s %d"):format(ns.Crafts.PROFESSIONS[line] or line, skill)
+        end
+        table.sort(parts)
+        Line("professions", #parts > 0 and table.concat(parts, ", ") or "none read")
+        Line("Tradeskills recipes", next(ns.Crafting:Known()) and "read" or "none (not loaded, or no window opened yet)")
+    end
+    local data = ns.RollData
+    local itemID, group = next(data and data.ITEMS or {})
+    if itemID and ns.Rolls then
+        local roll = data.GROUPS[group][1]
+        local name, stats = ns.Rolls:Describe(ns.Rolls.Link(itemID, roll))
+        Line("random roll stats", stats and ((name or "unnamed") .. ": " .. stats)
+            or "not readable (the item may not be cached yet; try again)")
+    end
+    if ns.Waypoints then
+        local zone = _G.GetRealZoneText and select(2, pcall(_G.GetRealZoneText))
+        local mapID = type(zone) == "string" and ns.Waypoints:MapFor(zone)
+        Line("map pin", ns.Waypoints:CanPin() and ("can pin; this zone's map " .. tostring(mapID or "not found"))
+            or "this client cannot pin")
     end
 end
 

@@ -128,6 +128,13 @@ function UpgradeChat:Consider(link)
     if Compare.WearableUpgrade(result) then
         ns.Print(("upgrade in your bags: %s |c%s%s|r"):format(
             link, ns.COLORS.upgrade, Compare:HowMuch(result)))
+        -- The banner too (UI/Toast.lua), unless it is a tracked upgrade,
+        -- which gets its own.
+        local itemID = tonumber(link:match("item:(%d+)"))
+        if ns.Toast and not (ns.Tracking and itemID and ns.Tracking:IsTracked(itemID)) then
+            ns.Toast:Show({ title = "Upgrade in your bags", link = link,
+                text = ("%s for %s"):format(Compare:HowMuch(result), result.specName or "you") })
+        end
     end
     return true
 end

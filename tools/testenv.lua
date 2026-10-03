@@ -184,6 +184,27 @@ function env.InstallClient()
     _G.ContainerFrameCombinedBags = nil
     _G.NUM_CONTAINER_FRAMES = nil
     for i = 1, 13 do _G["ContainerFrame" .. i] = nil end
+    _G.C_TradeSkillUI = nil
+    _G.BlackthornesTS = nil
+    _G.C_Map = nil
+    _G.UiMapPoint = nil
+    _G.C_SuperTrack = nil
+    _G.OpenWorldMap = nil
+    _G.WorldMapFrame = nil
+    _G.GetMerchantItemLink = nil
+    _G.C_MerchantFrame = nil
+    _G.MerchantFrame = nil
+    _G.MerchantFrame_UpdateMerchantInfo = nil
+    _G.MerchantFrame_Update = nil
+    _G.GetLootSlotLink = nil
+    _G.LootFrame_Update = nil
+    for i = 1, 12 do _G["MerchantItem" .. i .. "ItemButton"] = nil end
+    for i = 1, 4 do _G["LootButton" .. i] = nil end
+    for _, slot in ipairs({ "Head", "Neck", "Shoulder", "Back", "Chest", "Shirt", "Tabard", "Wrist", "Hands",
+        "Waist", "Legs", "Feet", "Finger0", "Finger1", "Trinket0", "Trinket1", "MainHand", "SecondaryHand",
+        "Ranged" }) do
+        _G["Character" .. slot .. "Slot"] = nil
+    end
 end
 
 --------------------------------------------------------------------------------
