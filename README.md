@@ -16,7 +16,8 @@ So far it judges the gear in your bags: hovering a piece says on its tooltip
 whether it beats what you wear and by how much, and an upgrade you can wear
 now gets a green arrow on its icon in the bags. When a quest lets you choose a
 reward, the biggest upgrade among them gets the same arrow, and chat names it
-when you hand the quest in. When an upgrade you can wear now lands in your
+when you hand the quest in. Gear up for a group loot roll gets the arrow too,
+with how much better it is under the icon, so you know when to Need. When an upgrade you can wear now lands in your
 bags (looted, bought, mailed or traded), chat says so once, with how much
 better it is. The gear window lists every slot with what you
 wear and the biggest upgrade for it in your bags.
@@ -120,7 +121,7 @@ later version's tuning still reaches the rest. Updates never clear them.
 | `Core/` | Namespace, module registry, event dispatch, slash commands, saved variables |
 | `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats; classic's weapon masters and what each teaches |
 | `Logic/` | Stat weights per class and spec (`Weights.lua`), judging an item against what is worn (`Compare.lua`), and which weapon skills are known and where to learn the rest (`WeaponSkills.lua`) |
-| `UI/` | Theme, widgets, the minimap button, the gear window, the settings window, the stat weights window, the tooltip lines, the bag arrows, the quest-reward arrow and the chat line for a new upgrade |
+| `UI/` | Theme, widgets, the minimap button, the gear window, the settings window, the stat weights window, the tooltip lines, the bag arrows, the quest-reward arrow, the loot roll arrow and the chat line for a new upgrade |
 | `Probe/` | `/beq probe`, which checks what the running game actually supports instead of guessing |
 | `tools/` | Checks, tests and the link script. Not shipped to the client |
 | `docs/` | What the Forever client actually does, found with `/beq probe`. Not shipped |

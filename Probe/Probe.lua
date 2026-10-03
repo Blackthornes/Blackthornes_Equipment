@@ -273,6 +273,11 @@ function Probe:Run()
         Line("bag hooks", hooks)
         Line("arrows showing", ns.BagIcons.lastShown or "bags not looked at yet")
     end
+    if ns.LootRolls then
+        local frames, hooks = ns.LootRolls:Describe()
+        Line("loot roll windows", frames)
+        Line("loot roll hooks", hooks)
+    end
     if ns.Tooltip and ns.Tooltip.fired then
         local parts = {}
         for source, count in pairs(ns.Tooltip.fired) do
