@@ -4,6 +4,16 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.4.0
+
+For WoW: Forever (interface 16001). This version adds a file, so fully
+restart the game after updating; `/reload` is not enough.
+
+- When an upgrade you can wear now lands in your bags (looted, bought, mailed
+  or traded), chat says so once, with how much better it is. Gear you move
+  between bags or just took off isn't mentioned. Turn it off in Settings
+  under Upgrade in chat.
+
 ## 0.3.0
 
 For WoW: Forever (interface 16001). This version adds files, so fully
