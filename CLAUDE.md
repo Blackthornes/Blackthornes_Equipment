@@ -127,7 +127,8 @@ finder lists crafted gear in four states (you can make it, an alt can, you
 can learn it, someone else makes it), never bind on pickup gear from a
 profession the player lacks, and judges random-roll gear at its best roll.
 Trent's rule (2026-10-03): never name other addons in this repo, its PRs or
-its commits.
+its commits; `tools/check_package.py` refuses a package
+that names the one these features were asked to match.
 
 Upgrade hunts, kept per character in `BlackthornesEquipmentCharDB.tracked`
 and `.trackedDone` (never rename them): `Logic/Tracking.lua`,

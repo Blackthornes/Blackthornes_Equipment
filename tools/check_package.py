@@ -48,6 +48,8 @@ PRIVATE = [
      re.compile(r"^BlackthornesEquipment(Char)?DB\s*=\s*\{\s*\n\s*\[", re.M)),
     ("a GitHub token", re.compile(r"\b(ghp|gho|ghs|ghu|github_pat)_[A-Za-z0-9_]{20,}")),
     ("a private key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
+    # Trent's rule: another gear addon is never named in what ships.
+    ("another gear addon's name", re.compile(r"gear\s*" + "quest", re.I)),
     ("an API key or token", re.compile(
         r"(api[_-]?key|api[_-]?token|secret|password)\s*[=:]\s*[\"'][^\"']{8,}",
         re.I)),
