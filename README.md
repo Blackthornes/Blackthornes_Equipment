@@ -23,15 +23,17 @@ better it is. The gear window lists every slot with what you
 wear and the biggest upgrade for it in your bags.
 
 Its **Find upgrades** button (or `/beq find`) opens "Where to get upgrades":
-for each slot, the best gear a vendor sells, a quest gives or a dungeon boss
-drops that beats what you wear, judged the same way, and where to go for it
-(the vendor and their spot on the map with the price, the quest and who gives
-it, or the boss, dungeon and drop chance). It only offers what the character
-can get now: their own faction's vendors and quest givers, quests open at
-their level they have not turned in, and dungeons whose recommended levels
-start at or below theirs. Raids are left out. Hovering a row shows the item
-and every place to get it; somewhere in the zone you are standing in is
-listed first.
+for each slot, the best gear a vendor sells, a quest gives or a dungeon or
+raid boss drops that beats what you wear, judged the same way, and where to
+go for it (the vendor and their spot on the map with the price, the quest and
+who gives it, or the boss, dungeon and drop chance). It offers what the
+character can get: their own faction's vendors and quest givers, quests open
+at their level they have not turned in, dungeons whose recommended levels
+start at or below theirs, and raids at 60. Gear that needs a reputation is
+listed once the character could buy or earn it, and before then in amber,
+after everything else, saying which standing it needs. Hovering a row shows
+the item and every place to get it; somewhere in the zone you are standing in
+is listed first.
 
 Where gear comes from is `Data/Sources.lua`, generated from Classic 1.12
 data by `tools/make_sources.py` (see below); the game supplies each item's

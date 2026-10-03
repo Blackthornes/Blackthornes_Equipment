@@ -43,7 +43,7 @@ S.NPCS = {
     [2] = { "Horde Smith", 14, 50, 50, "H" },
 }
 S.QUESTS = {
-    [10] = { "Wolves of the Forest", 15, 18, 77, 0, "Marshal Dughan", 12, 42.1, 65.9, "Prowlers", true },
+    [10] = { "Wolves of the Forest", 15, 18, 77, 0, "Marshal Dughan", 12, 42.1, 65.9, "Prowlers", "group" },
     [11] = { "Too Soon", 25, 28, 0, 0, "Someone", 12, 40, 40, "" },
     [12] = { "For the Horde", 15, 18, 178, 0, "Thrall", 14, 30, 30, "" },
     [13] = { "Already Done", 15, 18, 0, 0, "Someone", 12, 40, 40, "" },
@@ -132,6 +132,42 @@ suite.check("a drop says the boss, dungeon, levels and chance",
     Finder:Describe(drop) == "Edwin VanCleef in The Deadmines (17-26), 20% drop", Finder:Describe(drop))
 suite.check("money skips empty coins", Finder.Money(10003) == "|cffffd7001g|r |cffeda55f3c|r")
 suite.check("no price, no money", Finder.Money(0) == nil)
+
+-- Reputation gear: offered once the standing is reached, and before then
+-- shown as waiting on it.
+local standing = {}
+_G.C_Reputation = { GetFactionDataByID = function(id)
+    if standing[id] then return { name = "Warsong Outriders", reaction = standing[id] } end
+end }
+S.FACTIONS = { [889] = "Warsong Outriders" }
+S.ITEMS[1013] = { 15, 18, 0, 0, 500, v = { 1, 0 }, r = { 889, 5 } }
+ITEMS["item:1013"] = Chest(50)
+suite.check("never met the faction: it says what is needed",
+    Finder:Needs(1013).standing == "Honored" and Finder:Needs(1013).faction == "Warsong Outriders"
+    and Finder:Needs(1013).have == nil)
+standing[889] = 5
+suite.check("Friendly is not enough, and says so", Finder.NeedsText(Finder:Needs(1013))
+    == "Needs Honored with Warsong Outriders (you are Friendly)", Finder.NeedsText(Finder:Needs(1013)))
+local waits = Finder:Scan()
+suite.check("gear waiting on a reputation comes after what can be had now",
+    Offered(waits, 5) == "1003,1001,1013", Offered(waits, 5))
+standing[889] = 6
+suite.check("Honored is enough", Finder:Needs(1013) == nil)
+suite.check("and then it is the best chest", Offered(Finder:Scan(), 5):sub(1, 4) == "1013")
+S.ITEMS[1013], ITEMS["item:1013"], _G.C_Reputation = nil, nil, nil
+
+-- Raids.
+S.DUNGEONS["409"] = { "Molten Core", 60, 60, "Blackrock Mountain", "", true }
+S.BOSSES[102] = { "Ragnaros", "409", 63 }
+S.ITEMS[1014] = { 0, 18, 0, 0, 0, d = { 102, 22.2 } }
+suite.check("a raid is shut below 60", Kinds(1014) == "")
+local sixty = Finder:Player()
+sixty.level = 60
+local raid = Finder:SourcesFor(1014, sixty)[1]
+suite.check("and open at 60", raid and raid.raid == true)
+suite.check("a raid drop reads as one", Finder:Describe(raid) == "Ragnaros in Molten Core, 22.2% drop"
+    and Finder.Label(raid) == "Raid", Finder:Describe(raid))
+S.ITEMS[1014] = nil
 
 -- Somewhere in your own zone comes first.
 S.ITEMS[1001].q = { 10 }

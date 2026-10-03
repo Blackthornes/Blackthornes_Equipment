@@ -88,8 +88,12 @@ hand, rerun the script. The game supplies each item's stats: an item the
 client has not seen is asked for (`C_Item.RequestLoadItemDataByID`, 40 per
 scan) and the window scans again on `GET_ITEM_INFO_RECEIVED`. Defaults Trent's
 project chose (2026-10-03): own faction only, nothing above the player's
-level (a dungeon counts from its lowest recommended level), raids left out.
-Not yet seen in game.
+level (a dungeon counts from its lowest recommended level). Trent then asked
+for raid drops (open at 60) and reputation gear: gear whose standing the
+character has not reached is still listed, after the rest, in amber with the
+standing it needs (`Finder:Needs`, read through
+`C_Reputation.GetFactionDataByID` or `GetFactionInfoByID`). Not yet seen in
+game.
 
 ## Players' own stat weights
 

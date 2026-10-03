@@ -40,7 +40,7 @@ local KIND_COLORS = { vendor = "accent", quest = "quest", dungeon = "dungeon" }
 
 local FILTER_BUTTONS = {
     { nil, "Everything" }, { "vendor", "Vendors" }, { "quest", "Quests" },
-    { "dungeon", "Dungeons" },
+    { "dungeon", "Dungeons and raids" },
 }
 
 --------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ end
 
 --- A source as one line: the coloured kind, then where.
 function FinderUI.SourceLine(source)
-    return Colored(KIND_COLORS[source.kind] or "text", Finder.LABELS[source.kind] or "")
+    return Colored(KIND_COLORS[source.kind] or "text", Finder.Label(source))
         .. "  " .. Finder:Describe(source)
 end
 
@@ -90,6 +90,9 @@ local function ShowTooltip(row)
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
     pcall(GameTooltip.SetHyperlink, GameTooltip, pick.link)
     GameTooltip:AddLine(" ")
+    if pick.needs then
+        GameTooltip:AddLine(Finder.NeedsText(pick.needs), Theme.Unpack("warn"))
+    end
     GameTooltip:AddLine("Where to get it", Theme.Unpack("accent"))
     for index, source in ipairs(pick.sources) do
         if index > TOOLTIP_SOURCES then
@@ -350,12 +353,21 @@ function FinderUI:FillRow(row, line)
         return
     end
 
-    row.pick = { link = line.pick.link, sources = line.sources, itemID = line.pick.itemID }
+    row.pick = {
+        link = line.pick.link, sources = line.sources, itemID = line.pick.itemID,
+        needs = line.pick.needs,
+    }
     row.slot:SetText(line.first and line.slotName or "")
     row.item:SetText(line.pick.link)
     row.gain:SetText(Gain(line.pick.result))
+    -- Gear that waits on a reputation is shown in amber, not green.
+    row.gain:SetTextColor(Theme.Unpack(line.pick.needs and "warn" or "good"))
 
     local text = FinderUI.SourceLine(line.sources[1])
+    if line.pick.needs then
+        text = Colored("warn", ("Needs %s with %s"):format(line.pick.needs.standing,
+            line.pick.needs.faction)) .. "  " .. text
+    end
     local more = #line.sources - 1
     local tail = more > 0 and ("  +%d more"):format(more) or ""
     local room = row.sourceWidth - Theme.TextWidth("tiny", tail)
@@ -396,7 +408,7 @@ local NO_UPGRADES = {
     [false] = "Nothing on offer beats what you wear right now.",
     vendor = "No vendor sells anything better than what you wear.",
     quest = "No quest open to you gives anything better than what you wear.",
-    dungeon = "No dungeon open to you drops anything better than what you wear.",
+    dungeon = "No dungeon or raid open to you drops anything better than what you wear.",
 }
 
 --- Look again and redraw.

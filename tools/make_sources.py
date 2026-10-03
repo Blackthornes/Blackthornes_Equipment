@@ -24,10 +24,11 @@ Kept:
   quests    every white or better gear reward, choice or fixed, of a quest
             that has a known start; seasonal event quests are left out
   dungeons  green or better gear that drops from a creature in one of the
-            dungeons below at 1% or more, which in practice is the bosses
-            and the few trash mobs with their own loot. Raids are left out.
-Items that need a profession, a reputation or a PvP rank are left out: the
-finder is for gear a player can go and get now.
+            dungeons or raids below at 1% or more, which in practice is the
+            bosses and the few trash mobs with their own loot
+Gear that needs a reputation carries the faction and standing, so the finder
+can check the player's own. Items that need a profession or a PvP rank are
+left out: the finder is for gear a player can go and get.
 """
 
 import collections
@@ -75,6 +76,32 @@ DUNGEONS = {
     289: ("Scholomance", 58, 60, "Western Plaguelands", ""),
 }
 
+# The raids, the same way. All of them open at 60.
+RAIDS = {
+    309: ("Zul'Gurub", 60, 60, "Stranglethorn Vale", ""),
+    409: ("Molten Core", 60, 60, "Blackrock Mountain", ""),
+    249: ("Onyxia's Lair", 60, 60, "Dustwallow Marsh", ""),
+    469: ("Blackwing Lair", 60, 60, "Blackrock Mountain", ""),
+    509: ("Ruins of Ahn'Qiraj", 60, 60, "Silithus", ""),
+    531: ("Temple of Ahn'Qiraj", 60, 60, "Silithus", ""),
+    533: ("Naxxramas", 60, 60, "Eastern Plaguelands", ""),
+}
+INSTANCES = {**DUNGEONS, **RAIDS}
+
+# Factions whose standing gear asks for, by Faction.dbc ID. The game names
+# them itself when it can; these are for when it cannot.
+FACTIONS = {
+    21: "Booty Bay", 47: "Ironforge", 54: "Gnomeregan Exiles", 59: "Thorium Brotherhood",
+    68: "Undercity", 69: "Darnassus", 72: "Stormwind", 76: "Orgrimmar",
+    81: "Thunder Bluff", 87: "Bloodsail Buccaneers", 270: "Zandalar Tribe",
+    349: "Ravenholdt", 369: "Gadgetzan", 470: "Ratchet", 509: "League of Arathor",
+    510: "The Defilers", 529: "Argent Dawn", 530: "Darkspear Trolls",
+    576: "Timbermaw Hold", 577: "Everlook", 589: "Wintersaber Trainers",
+    609: "Cenarion Circle", 729: "Frostwolf Clan", 730: "Stormpike Guard",
+    749: "Hydraxian Waterlords", 809: "Shen'dralar", 889: "Warsong Outriders",
+    890: "Silverwing Sentinels", 909: "Darkmoon Faire", 910: "Brood of Nozdormu",
+}
+
 # Scarlet Monastery is four dungeons behind one door, so its bosses carry
 # their wing's own levels.
 WINGS = {
@@ -86,8 +113,12 @@ WINGS = {
 SM_MAP = 189
 
 # Bosses a script brings in rather than a spawn, so no map says where they
-# are: Mutanus, Gahz'rilla, the Avatar of Hakkar, Kirtonos, Rend and Gyth.
-SUMMONED = {3654: 43, 7273: 209, 8443: 109, 10506: 289, 10429: 229, 10339: 229}
+# are: Mutanus, Gahz'rilla, the Avatar of Hakkar, Kirtonos, Rend and Gyth,
+SUMMONED = {3654: 43, 7273: 209, 8443: 109, 10506: 289, 10429: 229, 10339: 229,
+            # and in raids: Ragnaros, Nefarian, Ouro, Sapphiron, Arlokk,
+            # Gahz'ranka and the Edge of Madness bosses.
+            11502: 409, 11583: 469, 15517: 531, 15989: 533, 14515: 309, 15114: 309,
+            15082: 309, 15083: 309, 15084: 309, 15085: 309}
 
 BAD_TITLE = re.compile(r"UNUSED|DEPRECATED|\bOLD\b|<|\[|TEST|NYI|ZZOLD", re.I)
 
@@ -215,7 +246,7 @@ def main():
             continue
         if r["Quality"] < 1 or r["Quality"] > 5:
             continue
-        if (r["RequiredSkill"] or r["RequiredReputationFaction"] or r["requiredhonorrank"]
+        if (r["RequiredSkill"] or r["requiredhonorrank"]
                 or r["requiredspell"]):
             continue
         if BAD_TITLE.search(r["name"]) or r["name"].startswith("Monster"):
@@ -227,6 +258,7 @@ def main():
             "req": r["RequiredLevel"], "ilvl": r["ItemLevel"], "q": r["Quality"],
             "classes": classes, "races": r["AllowableRace"],
             "price": r["BuyPrice"] // max(1, r["BuyCount"]),
+            "rep": r["RequiredReputationFaction"], "repRank": r["RequiredReputationRank"],
         }
 
     units, objects = pfq["units"]["data"], pfq["objects"]["data"]
@@ -318,14 +350,14 @@ def main():
             used_zones.add(giver[1])
         quests[qid] = (title, r["MinLevel"], r["QuestLevel"], races,
                        r["RequiredClasses"] or 0, giver[0], giver[1], giver[2], giver[3],
-                       after, r["Type"] in (1, 81))   # group / dungeon quests
+                       after, {1: "group", 81: "group", 62: "raid"}.get(r["Type"], ""))
         for itemID in rewards:
             sources[itemID]["q"].append(qid)
 
     # Dungeon drops.
     where_map = {}
     for r in rows(mangos / "creature.sql", "creature"):
-        if r["map"] in DUNGEONS:
+        if r["map"] in INSTANCES:
             where_map.setdefault(r["id"], r["map"])
     for uid, m in SUMMONED.items():
         where_map.setdefault(uid, m)
@@ -351,7 +383,9 @@ def main():
         for item, chance, group, mincount, rolls in entries:
             if chance < 0:
                 continue   # quest items
-            if group:
+            # A reference is rolled on its own whatever group it names, as
+            # the server does it.
+            if group and mincount > 0:
                 groups[group].append((item, chance, mincount, rolls))
             else:
                 out.append((item, chance, mincount, rolls))
@@ -432,10 +466,12 @@ def main():
     w("}")
     w("")
     w("-- Dungeons: name, lowest and highest recommended level, the zone the door")
-    w("-- is in, and \"A\" or \"H\" when only that faction reaches it safely.")
+    w("-- is in, \"A\" or \"H\" when only that faction reaches it safely, and true")
+    w("-- for a raid.")
     w("Sources.DUNGEONS = {")
-    for m, (name, lo, hi, zone, fac) in sorted(DUNGEONS.items()):
-        w(f"    [\"{m}\"] = {{ {lua_string(name)}, {lo}, {hi}, {lua_string(zone)}, \"{fac}\" }},")
+    for m, (name, lo, hi, zone, fac) in sorted(INSTANCES.items()):
+        raid = ", true" if m in RAIDS else ""
+        w(f"    [\"{m}\"] = {{ {lua_string(name)}, {lo}, {hi}, {lua_string(zone)}, \"{fac}\"{raid} }},")
         if m == SM_MAP:
             for wing, (wlo, whi, _) in WINGS.items():
                 w(f"    [\"{m}{wing}\"] = {{ {lua_string(name + ' ' + wing)}, {wlo}, {whi}, "
@@ -462,7 +498,8 @@ def main():
     w("")
     w("-- Quests: title, level you can take it, quest level, races (0 for all),")
     w("-- classes (0 for all), who or what starts it, zone, x, y (0 when it starts")
-    w("-- from an item), the quest that comes before it, and true for group quests.")
+    w("-- from an item), the quest that comes before it, and \"group\" or \"raid\"")
+    w("-- when it needs one.")
     w("Sources.QUESTS = {")
     used_quests = set()
     for s in keep.values():
@@ -471,13 +508,16 @@ def main():
         t, mn, lv, races, classes, giver, zone, x, y, after, group = quests[qid]
         w(f"    [{qid}] = {{ {lua_string(t)}, {mn}, {lv}, {races}, {classes}, "
           f"{lua_string(giver)}, {zone}, {num(x)}, {num(y)}, {lua_string(after)}"
-          f"{', true' if group else ''} }},")
+          f"{(', ' + lua_string(group)) if group else ''} }},")
     w("}")
     w("")
     w("-- Items: required level, item level, classes (0 for all), races (0 for")
     w("-- all), and the vendor price in copper; then v = { npc, stock (0 for")
-    w("-- unlimited), ... }, q = { quest, ... }, d = { npc, drop chance %, ... }.")
+    w("-- unlimited), ... }, q = { quest, ... }, d = { npc, drop chance %, ... },")
+    w("-- and r = { faction, standing } for gear that needs a reputation (standing")
+    w("-- 4 is Friendly, 5 Honored, 6 Revered, 7 Exalted).")
     w("Sources.ITEMS = {")
+    used_factions = set()
     for itemID in sorted(keep):
         meta, s = items[itemID], keep[itemID]
         races = meta["races"]
@@ -491,7 +531,20 @@ def main():
             parts.append("q = { " + ", ".join(str(q) for q in sorted(set(s["q"]))) + " }")
         if s["d"]:
             parts.append("d = { " + ", ".join(f"{u}, {num(c)}" for u, c in sorted(s["d"])) + " }")
+        if meta["rep"]:
+            used_factions.add(meta["rep"])
+            parts.append(f"r = {{ {meta['rep']}, {meta['repRank']} }}")
         w(f"    [{itemID}] = {{ {', '.join(parts)} }},")
+    w("}")
+    w("")
+
+    unknown = used_factions - set(FACTIONS)
+    if unknown:
+        raise SystemExit(f"name these factions in FACTIONS: {sorted(unknown)}")
+    w("-- Factions gear asks for a standing with, in case the game cannot name them.")
+    w("Sources.FACTIONS = {")
+    for f in sorted(used_factions):
+        w(f"    [{f}] = {lua_string(FACTIONS[f])},")
     w("}")
     w("")
 

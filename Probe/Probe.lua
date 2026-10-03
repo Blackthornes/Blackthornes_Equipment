@@ -35,7 +35,8 @@ local APIS = {
     -- quests they have done, and asking the server about unseen items.
     "UnitRace", "GetRealZoneText", "C_QuestLog.IsQuestFlaggedCompleted",
     "IsQuestFlaggedCompleted", "C_Item.IsItemDataCachedByID",
-    "C_Item.RequestLoadItemDataByID",
+    "C_Item.RequestLoadItemDataByID", "C_Reputation.GetFactionDataByID",
+    "GetFactionInfoByID",
 }
 
 local function Has(path)

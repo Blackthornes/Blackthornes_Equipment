@@ -115,6 +115,42 @@ local function ZoneName(zoneID)
     return ns.Sources.ZONES[zoneID]
 end
 
+-- The game's standings, 1 Hated to 8 Exalted.
+local STANDINGS = {
+    "Hated", "Hostile", "Unfriendly", "Neutral", "Friendly", "Honored", "Revered", "Exalted",
+}
+Finder.STANDINGS = STANDINGS
+
+--- This character's standing with a faction (1 Hated to 8 Exalted) and the
+--- faction's name, or nil when the game cannot say (never met them, say).
+function Finder:Standing(factionID)
+    local reputation = _G.C_Reputation
+    local data = Read(reputation and reputation.GetFactionDataByID, factionID)
+    if type(data) == "table" and tonumber(data.reaction) then
+        return tonumber(data.reaction), data.name
+    end
+    local name, _, standing = Read(_G.GetFactionInfoByID, factionID)
+    if tonumber(standing) then return tonumber(standing), name end
+    return nil, name
+end
+
+--- What an item asks of the character's reputation that they do not have
+--- yet: { faction, standing, have } in words, or nil when nothing.
+function Finder:Needs(itemID)
+    local item = ns.Sources.ITEMS[itemID]
+    local rep = item and item.r
+    if not rep then return nil end
+
+    -- Standing in the data counts from 0 (Hated); the game's from 1.
+    local need = rep[2] + 1
+    local have, name = self:Standing(rep[1])
+    if have and have >= need then return nil end
+    if type(name) ~= "string" or name == "" then
+        name = ns.Sources.FACTIONS[rep[1]] or "a faction"
+    end
+    return { faction = name, standing = STANDINGS[need] or "?", have = have and STANDINGS[have] }
+end
+
 --- Every place this character can get an item from now, as a list of
 --- tables { kind, ... }, vendors first, then quests, then dungeons.
 function Finder:SourcesFor(itemID, player)
@@ -147,7 +183,7 @@ function Finder:SourcesFor(itemID, player)
                 kind = "quest", questID = questID, title = quest[1], questLevel = quest[3],
                 name = quest[6], zone = ZoneName(quest[7]),
                 x = quest[8] ~= 0 and quest[8] or nil, y = quest[9] ~= 0 and quest[9] or nil,
-                after = quest[10] ~= "" and quest[10] or nil, group = quest[11] or false,
+                after = quest[10] ~= "" and quest[10] or nil, group = quest[11],
             }
         end
     end
@@ -161,6 +197,7 @@ function Finder:SourcesFor(itemID, player)
             found[#found + 1] = {
                 kind = "dungeon", name = boss[1], dungeon = dungeon[1],
                 minLevel = dungeon[2], maxLevel = dungeon[3], zone = dungeon[4],
+                raid = dungeon[6] or false,
                 chance = drops[i + 1],
             }
         end
@@ -197,7 +234,7 @@ function Finder:Candidates(player, only)
                 sources = kept
             end
             if #sources > 0 then
-                list[#list + 1] = { itemID = itemID, sources = sources }
+                list[#list + 1] = { itemID = itemID, sources = sources, needs = self:Needs(itemID) }
             end
         end
     end
@@ -285,7 +322,7 @@ function Finder:Scan(only)
                         list[#list + 1] = {
                             itemID = itemID, link = LinkFor(itemID), result = result,
                             gain = (result.score or 0) - (result.against or 0),
-                            sources = candidate.sources,
+                            sources = candidate.sources, needs = candidate.needs,
                         }
                     end
                 elseif ok then
@@ -298,7 +335,9 @@ function Finder:Scan(only)
 
     local count = 0
     for slot, list in pairs(slots) do
+        -- What can be had now comes before gear that waits on a reputation.
         table.sort(list, function(a, b)
+            if (a.needs == nil) ~= (b.needs == nil) then return a.needs == nil end
             if a.gain ~= b.gain then return a.gain > b.gain end
             return a.itemID < b.itemID
         end)
@@ -356,7 +395,7 @@ function Finder:Describe(source)
         return text
     elseif source.kind == "quest" then
         local text = ("%s (level %d)"):format(source.title, source.questLevel or 0)
-        if source.group then text = text .. ", group" end
+        if source.group then text = text .. ", " .. source.group end
         local where = Place(source)
         if source.x then
             text = text .. ", from " .. source.name
@@ -365,6 +404,8 @@ function Finder:Describe(source)
             text = text .. ", starts from " .. source.name
         end
         return text
+    elseif source.kind == "dungeon" and source.raid then
+        return ("%s in %s, %s%% drop"):format(source.name, source.dungeon, tostring(source.chance))
     elseif source.kind == "dungeon" then
         return ("%s in %s (%d-%d), %s%% drop"):format(source.name, source.dungeon,
             source.minLevel, source.maxLevel, tostring(source.chance))
@@ -373,6 +414,20 @@ function Finder:Describe(source)
 end
 
 Finder.LABELS = { vendor = "Vendor", quest = "Quest", dungeon = "Dungeon" }
+
+--- The tag a source shows: "Vendor", "Quest", "Dungeon" or "Raid".
+function Finder.Label(source)
+    if source.kind == "dungeon" and source.raid then return "Raid" end
+    return Finder.LABELS[source.kind] or ""
+end
+
+--- What a reputation still asks for, in words: "Needs Honored with
+--- Warsong Outriders (you are Friendly)".
+function Finder.NeedsText(needs)
+    local text = ("Needs %s with %s"):format(needs.standing, needs.faction)
+    if needs.have then text = text .. (" (you are %s)"):format(needs.have) end
+    return text
+end
 
 --------------------------------------------------------------------------------
 -- /beq find
