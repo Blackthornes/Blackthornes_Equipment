@@ -326,7 +326,7 @@ function Probe:Run()
     end
 end
 
---- The upgrade finder's extras: the professions read, whether a link
+--- The upgrade hunt and crafting features: the professions read, whether a link
 --- with a random roll gives that roll's stats, and whether a zone's map
 --- can be found for a pin.
 function Probe:Upgrades()
