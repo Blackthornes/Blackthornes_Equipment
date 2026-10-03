@@ -166,6 +166,9 @@ function Compare:Judge(link)
         local learns = Weights:DualWieldLevel(class)
         if learns then
             fromLevel = math.max(fromLevel or 0, learns)
+            -- Old enough and still the client says no: it has to be
+            -- trained first, so it is not an upgrade that can be worn now.
+            if (Items:PlayerLevel() or 0) >= learns then result.train = "Dual Wield" end
         else
             usable = false
         end
@@ -218,6 +221,43 @@ end
 -- Rings and trinkets come in pairs: the slot that is not the weaker one.
 local PAIRED = { [11] = 12, [12] = 11, [13] = 14, [14] = 13 }
 
+--- Judge an item known to be carried in the bags, not worn.
+--
+-- A link alone cannot tell a worn ring from a second copy of it, so Judge
+-- calls both "equipped". A copy in the bags is free to go in the other ring
+-- or trinket slot, so it is measured against that one instead.
+function Compare:JudgeCarried(link)
+    local result = self:Judge(link)
+    if not (result and result.verdict == "equipped" and PAIRED[result.slot]) then return result end
+
+    local weights = Weights:ForPlayer()
+    local score = weights and self:ScoreOf(link, weights)
+    if not score then return result end
+
+    local other = PAIRED[result.slot]
+    local worn = Items:Equipped(other)
+    if worn == link then return result end
+    local against = worn and (self:ScoreOf(worn, weights) or 0) or 0
+
+    local judged = {
+        className = result.className, specName = result.specName, slot = other,
+        score = score, against = against, empty = not worn,
+    }
+    if not worn then
+        judged.verdict = "upgrade"
+    elseif against > 0 then
+        judged.percent = (score - against) / against * 100
+        if math.abs(judged.percent) < SAME_WITHIN then
+            judged.verdict = "same"
+        else
+            judged.verdict = judged.percent > 0 and "upgrade" or "downgrade"
+        end
+    else
+        judged.verdict = score > against and "upgrade" or "same"
+    end
+    return judged
+end
+
 --- The biggest upgrade in the bags for each slot, that can be worn now.
 --
 -- A new ring is judged against the weaker ring, so two good rings in the
@@ -229,8 +269,8 @@ function Compare:BestInBags()
     for bag = FIRST_BAG, LAST_BAG do
         for bagSlot = 1, Items:BagSize(bag) do
             local link = Items:InBag(bag, bagSlot)
-            local ok, result = pcall(self.Judge, self, link)
-            if ok and result and result.verdict == "upgrade" and not result.level and result.slot then
+            local ok, result = pcall(self.JudgeCarried, self, link)
+            if ok and Compare.WearableUpgrade(result) and result.slot then
                 local gain = (result.score or 0) - (result.against or 0)
                 local entry = { link = link, result = result, gain = gain, where = bag * 100 + bagSlot }
                 local held = best[result.slot]
@@ -272,6 +312,13 @@ function Compare:BestInBags()
     return best
 end
 
+--- Is a verdict an upgrade that can be put on right now: not waiting on a
+--- level or on training?
+function Compare.WearableUpgrade(result)
+    return type(result) == "table" and result.verdict == "upgrade"
+        and not result.level and not result.train
+end
+
 --- How much better, in words: "+14%", "fills an empty slot" or "better stats".
 function Compare:HowMuch(result)
     if result.empty then return "fills an empty slot" end
@@ -280,10 +327,10 @@ function Compare:HowMuch(result)
 end
 
 --- Should this item get the upgrade arrow in the bags? Only a real upgrade
---- that can be worn now.
-function Compare:IsUpgradeNow(link)
-    local ok, result = pcall(self.Judge, self, link)
-    return ok and result ~= nil and result.verdict == "upgrade" and not result.level
+--- that can be worn now. `carried` says the link is a copy in the bags.
+function Compare:IsUpgradeNow(link, carried)
+    local ok, result = pcall(carried and self.JudgeCarried or self.Judge, self, link)
+    return ok and Compare.WearableUpgrade(result)
 end
 
 --- Is an item with this ID worn anywhere? Rings and trinkets have two
@@ -336,6 +383,9 @@ function Compare:Describe(result)
         local how = result.empty and "fills an empty slot" or percent or "better stats"
         if result.level then
             return ("Upgrade for %s at level %d: %s"):format(spec, result.level, how), "warn"
+        end
+        if result.train then
+            return ("Upgrade for %s once you train %s: %s"):format(spec, result.train, how), "warn"
         end
         return ("Upgrade for %s: %s"):format(spec, how), "upgrade"
     elseif verdict == "downgrade" then

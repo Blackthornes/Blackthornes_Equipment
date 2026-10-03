@@ -157,8 +157,8 @@ function LootRolls:UpdateFrame(frame)
     local result
     if self:IsEnabled() and Ask(frame, "IsShown") then
         local link = self:LinkOf(frame)
-        local ok, judged = pcall(Compare.Judge, Compare, link)
-        if ok and judged and judged.verdict == "upgrade" and not judged.level then
+        local ok, judged = pcall(Compare.JudgeCarried, Compare, link)
+        if ok and Compare.WearableUpgrade(judged) then
             result = judged
         end
     end

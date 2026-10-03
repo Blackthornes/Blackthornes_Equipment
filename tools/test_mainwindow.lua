@@ -115,6 +115,14 @@ env.bags[0] = { "item:5" }
 UI:Refresh()
 suite.check("one ring only fills one slot", Link(Row(12).best) == nil, Link(Row(12).best))
 suite.check("upgrade rows are lit", Row(11).frame.edge:IsShown() and not Row(12).frame.edge:IsShown())
+-- A second copy of the ring already worn goes against the other ring.
+env.worn[11], env.worn[12] = "item:5", "item:6"     -- Agi 8 and 2
+env.bags[0] = { "item:5" }
+UI:Refresh()
+suite.check("a second copy of a worn ring is an upgrade for the other slot",
+    Link(Row(12).best) == "item:5", Link(Row(12).best))
+suite.check("and gets the bag arrow", ns.Compare:IsUpgradeNow("item:5", true))
+suite.check("but the worn one itself is not called an upgrade", not ns.Compare:IsUpgradeNow("item:5"))
 UI:Hide()
 
 -- Its place is remembered.

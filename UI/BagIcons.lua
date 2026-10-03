@@ -157,7 +157,7 @@ function BagIcons:UpdateButton(button, frame)
     if self:IsEnabled() then
         local bag, slot = self:Location(button, frame)
         local link = bag and Items:InBag(bag, slot)
-        show = link ~= nil and Compare:IsUpgradeNow(link)
+        show = link ~= nil and Compare:IsUpgradeNow(link, true)
     end
 
     if show then

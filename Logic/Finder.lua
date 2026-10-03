@@ -370,7 +370,7 @@ function Finder:Scan(only)
                 local ok, result = pcall(Compare.Judge, Compare, link)
                 if ok and result then
                     checked = checked + 1
-                    if result.verdict == "upgrade" and not result.level and result.slot then
+                    if Compare.WearableUpgrade(result) and result.slot then
                         local list = slots[result.slot] or {}
                         slots[result.slot] = list
                         list[#list + 1] = {

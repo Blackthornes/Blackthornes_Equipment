@@ -125,7 +125,7 @@ function UpgradeChat:Consider(link)
     if not ok then return true end
     if not result then return not MaybeGear(link) end
 
-    if result.verdict == "upgrade" and not result.level then
+    if Compare.WearableUpgrade(result) then
         ns.Print(("upgrade in your bags: %s |c%s%s|r"):format(
             link, ns.COLORS.upgrade, Compare:HowMuch(result)))
     end

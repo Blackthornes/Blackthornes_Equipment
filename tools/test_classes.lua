@@ -140,6 +140,17 @@ suite.check("unless the client says this character can", result.verdict == "upgr
     result.verdict)
 _G.CanDualWield = nil
 
+-- Old enough, but the client says this warrior has not trained it.
+ns = As("WARRIOR", {}, 30)
+_G.CanDualWield = function() return false end
+result = ns.Compare:Judge("item:22")
+suite.check("an untrained warrior's off-hand sword waits on training",
+    result.verdict == "upgrade" and result.train == "Dual Wield", result.train)
+suite.check("so it is not an upgrade to wear now", not ns.Compare:IsUpgradeNow("item:22"))
+suite.check("and the tooltip says to train",
+    (ns.Compare:Describe(result) or ""):find("once you train Dual Wield", 1, true), ns.Compare:Describe(result))
+_G.CanDualWield = nil
+
 --------------------------------------------------------------------------------
 -- Picking a spec by name
 --------------------------------------------------------------------------------

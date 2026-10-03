@@ -65,12 +65,12 @@ function QuestRewards:Best()
     local unknown = 0
     for index = 1, self:Count() do
         local link = self:Link(index)
-        local ok, result = pcall(Compare.Judge, Compare, link)
+        local ok, result = pcall(Compare.JudgeCarried, Compare, link)
         if ok and result == nil and link then
             local okInfo, info = pcall(Items.Info, Items, link)
             if okInfo and (info == nil or Compare.SLOTS[info.equipLoc]) then unknown = unknown + 1 end
         end
-        if ok and result and result.verdict == "upgrade" and not result.level then
+        if ok and Compare.WearableUpgrade(result) then
             -- Gain in score, not percent: +5 on a slot worth 50 beats +50% on
             -- a slot worth 2. An empty slot counts its whole score.
             local gain = (result.score or 0) - (result.against or 0)
