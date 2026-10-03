@@ -255,12 +255,13 @@ function SettingsUI:BuildColumn()
     controls.tooltip:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     local arrowRow = CreateRow(frame, tooltipRow, "Upgrade arrows",
-        "A green arrow on upgrades you can wear now: in your bags, and on the best quest reward.")
+        "A green arrow on upgrades you can wear now: in your bags, on the best quest reward and on loot up for a roll.")
 
     controls.arrows = Widgets.CreateCheckbox(arrowRow, "Show them", function(checked)
         ns.db.bagArrows = checked
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
         if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
+        if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
     end, true)
     controls.arrows:SetPoint("TOPLEFT", CONTROL_X, -2)
 

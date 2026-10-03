@@ -737,6 +737,7 @@ function Weights:Changed()
 
     if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
     if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
+    if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
     if ns.UI then pcall(ns.UI.Refresh, ns.UI) end
 
     -- Tradeskills keeps its upgrade arrows per item until gear or talents
