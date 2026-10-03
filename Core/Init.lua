@@ -245,6 +245,9 @@ local DEFAULTS = {
     tooltipLine = true,
     bagArrows = true,
 
+    -- A line in chat when an upgrade you can wear now lands in the bags.
+    upgradeChat = true,
+
     -- The player's own stat weights, by class and spec, are kept under
     -- `customWeights` (Logic/Weights.lua). Not given a default here: the
     -- table is made the first time a weight is changed, and once made it is

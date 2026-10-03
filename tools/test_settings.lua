@@ -103,6 +103,9 @@ controls.arrows:GetScript("OnClick")(controls.arrows)
 suite.check("unticking it switches the arrows off", ns.db.bagArrows == false, ns.db.bagArrows)
 controls.tooltip:GetScript("OnClick")(controls.tooltip)
 suite.check("and the tooltip line", ns.db.tooltipLine == false, ns.db.tooltipLine)
+suite.check("the upgrade in chat box starts ticked", controls.upgradeChat:GetChecked())
+controls.upgradeChat:GetScript("OnClick")(controls.upgradeChat)
+suite.check("unticking it switches the chat line off", ns.db.upgradeChat == false, ns.db.upgradeChat)
 
 -- Position.
 ns.db.settingsX = 400

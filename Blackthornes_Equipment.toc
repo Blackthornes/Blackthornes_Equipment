@@ -32,5 +32,6 @@ UI\MainWindow.lua
 UI\Tooltip.lua
 UI\BagIcons.lua
 UI\QuestRewards.lua
+UI\UpgradeChat.lua
 
 Probe\Probe.lua

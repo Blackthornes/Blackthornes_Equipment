@@ -25,7 +25,7 @@ local COLUMN_WIDTH = 330
 local CONTROL_X = 150
 
 local WIDTH = COLUMN_WIDTH + PADDING * 2
-local HEIGHT = 586
+local HEIGHT = 642
 
 local ROW_HEIGHT = 50
 local ROW_GAP = -6
@@ -264,7 +264,16 @@ function SettingsUI:BuildColumn()
     end, true)
     controls.arrows:SetPoint("TOPLEFT", CONTROL_X, -2)
 
-    local windows = CreateSection(frame, "WINDOWS", { anchor = arrowRow })
+    local chatRow = CreateRow(frame, arrowRow, "Upgrade in chat",
+        "One line in chat when an upgrade you can wear now lands in your bags.")
+
+    controls.upgradeChat = Widgets.CreateCheckbox(chatRow, "Say so", function(checked)
+        ns.db.upgradeChat = checked
+    end, true)
+    controls.upgradeChat:SetPoint("TOPLEFT", CONTROL_X, -2)
+    self.chatRow = chatRow
+
+    local windows = CreateSection(frame, "WINDOWS", { anchor = chatRow })
 
     local minimapRow = CreateRow(frame, windows, "Minimap button",
         "Click it for the gear window, right-click for this page. Drag it to move it.")
@@ -309,6 +318,7 @@ function SettingsUI:Refresh()
     controls.debug:SetChecked(ns.db.debug == true)
     controls.tooltip:SetChecked(ns.db.tooltipLine ~= false)
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
+    controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
 
     local choices = self:SpecChoices()
     local picked = ns.charDB and ns.charDB.spec
