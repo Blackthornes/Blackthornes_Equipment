@@ -18,10 +18,13 @@ Core\Init.lua
 
 Data\Items.lua
 Data\WeaponTrainers.lua
+Data\Sources.lua
+Data\ForeverDrops.lua
 
 Logic\Weights.lua
 Logic\Compare.lua
 Logic\WeaponSkills.lua
+Logic\Finder.lua
 
 UI\Theme.lua
 UI\Widgets.lua
@@ -29,6 +32,7 @@ UI\Minimap.lua
 UI\Settings.lua
 UI\WeightsWindow.lua
 UI\MainWindow.lua
+UI\FinderWindow.lua
 UI\Tooltip.lua
 UI\BagIcons.lua
 UI\QuestRewards.lua

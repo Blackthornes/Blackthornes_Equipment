@@ -22,6 +22,23 @@ bags (looted, bought, mailed or traded), chat says so once, with how much
 better it is. The gear window lists every slot with what you
 wear and the biggest upgrade for it in your bags.
 
+Its **Find upgrades** button (or `/beq find`) opens "Where to get upgrades":
+for each slot, the best gear a vendor sells, a quest gives or a dungeon or
+raid boss drops that beats what you wear, judged the same way, and where to
+go for it (the vendor and their spot on the map with the price, the quest and
+who gives it, or the boss, dungeon and drop chance). It offers what the
+character can get: their own faction's vendors and quest givers, quests open
+at their level they have not turned in, dungeons whose recommended levels
+start at or below theirs, and raids at 60. Gear that needs a reputation is
+listed once the character could buy or earn it, and before then in amber,
+after everything else, saying which standing it needs. Hovering a row shows
+the item and every place to get it; somewhere in the zone you are standing in
+is listed first.
+
+Where gear comes from is `Data/Sources.lua`, generated from Classic 1.12
+data by `tools/make_sources.py` (see below); the game supplies each item's
+stats when it is asked, so the verdicts are Forever's own.
+
 ## Install
 
 ### Linked to your working copy (recommended while developing)
@@ -66,6 +83,7 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq spec       show the spec your gear is judged for
 /beq spec mm    judge it as Marksmanship instead (bm, mm, sv, or auto to go back)
 /beq bags       list every piece of gear in your bags with its verdict
+/beq find       where to get upgrades: vendors, quests and dungeons
 /beq weights    change how much each stat counts (also in the settings window)
 /beq probe      check what this client supports; it only reads
 /beq settings   open the settings window (so does right-clicking the minimap button)
@@ -119,9 +137,9 @@ later version's tuning still reaches the rest. Updates never clear them.
 | Folder | What is in it |
 |---|---|
 | `Core/` | Namespace, module registry, event dispatch, slash commands, saved variables |
-| `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats; classic's weapon masters and what each teaches |
-| `Logic/` | Stat weights per class and spec (`Weights.lua`), judging an item against what is worn (`Compare.lua`), and which weapon skills are known and where to learn the rest (`WeaponSkills.lua`) |
-| `UI/` | Theme, widgets, the minimap button, the gear window, the settings window, the stat weights window, the tooltip lines, the bag arrows, the quest-reward arrow, the loot roll arrow and the chat line for a new upgrade |
+| `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats; classic's weapon masters and what each teaches; where gear comes from (`Sources.lua`, generated) |
+| `Logic/` | Stat weights per class and spec (`Weights.lua`), judging an item against what is worn (`Compare.lua`), and which weapon skills are known and where to learn the rest (`WeaponSkills.lua`), and where to get an upgrade (`Finder.lua`) |
+| `UI/` | Theme, widgets, the minimap button, the gear window, the "Where to get upgrades" window, the settings window, the stat weights window, the tooltip lines, the bag arrows, the quest-reward arrow, the loot roll arrow and the chat line for a new upgrade |
 | `Probe/` | `/beq probe`, which checks what the running game actually supports instead of guessing |
 | `tools/` | Checks, tests and the link script. Not shipped to the client |
 | `docs/` | What the Forever client actually does, found with `/beq probe`. Not shipped |
@@ -144,6 +162,33 @@ fails to compile, and because a call to a method that no longer exists is valid
 Lua that fails only when that line runs. `deploy.ps1` runs the first two before
 it copies anything, and `.github/workflows/tests.yml` runs all of them on every
 push.
+
+`Data/Sources.lua` is generated, never edited by hand. To rebuild it, check
+out [mangoszero/database](https://github.com/mangoszero/database) and
+[shagu/pfQuest](https://github.com/shagu/pfQuest) anywhere and run:
+
+```bash
+python tools/make_sources.py <mangoszero database> <pfQuest>
+```
+
+The script's opening comment says what it keeps and leaves out.
+
+What bosses really drop on Forever comes from Blackthornes Farmer's loot
+records. With a Farmer checkout beside this one (its `Data/Data_Harvested.lua`
+brought up to date by its `tools/harvest_import.py`), run:
+
+```bash
+python tools/forever_drops.py ../Blackthornes_Farmer
+```
+
+It writes `Data/ForeverDrops.lua`: every item looted from a mob inside a
+dungeon or raid, by mob and dungeon. The finder tags those drops [Forever],
+uses Forever's drop rate once enough corpses were counted, and offers gear
+Classic never had at that boss. Item stats are never copied from anywhere;
+the game always supplies them, so gear Forever changed is judged as it is
+now. The dungeon
+level ranges, and the few bosses a script summons rather than spawns, are the
+only parts typed in by hand, at the top of the script.
 
 The tests load the addon against a stub client (`tools/testenv.lua`), reading
 the file list straight from the TOC. A new test is a new `tools/test_*.lua`

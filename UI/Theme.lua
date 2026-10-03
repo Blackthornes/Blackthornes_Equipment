@@ -27,6 +27,8 @@ Theme.colors = {
     good      = { 0.310, 0.820, 0.545 },   -- #4FD18B, an upgrade
     warn      = { 0.910, 0.757, 0.353 },
     loss      = { 0.898, 0.376, 0.310 },   -- #E5604F, a downgrade, or a close button under the mouse
+    quest     = { 0.400, 0.690, 1.000 },   -- #66B0FF, a quest reward in the upgrade finder
+    dungeon   = { 0.722, 0.522, 1.000 },   -- #B885FF, a dungeon drop in the upgrade finder
 
     text      = { 0.902, 0.910, 0.925 },   -- #E6E8EC
     muted     = { 0.478, 0.502, 0.541 },   -- #7A8089

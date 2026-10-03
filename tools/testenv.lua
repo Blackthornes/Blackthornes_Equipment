@@ -148,6 +148,12 @@ function env.InstallClient()
     _G.BlackthornesEquipmentCharDB = nil
     _G.UnitClass = nil
     _G.UnitFactionGroup = nil
+    _G.UnitRace = nil
+    _G.C_Reputation = nil
+    _G.GetFactionInfoByID = nil
+    _G.GetRealZoneText = nil
+    _G.C_QuestLog = nil
+    _G.IsQuestFlaggedCompleted = nil
     _G.C_SpellBook = nil
     _G.IsPlayerSpell = nil
     _G.IsSpellKnown = nil
