@@ -202,6 +202,19 @@ end
 function Motion:Open(frame, rise)
     if not frame then return end
 
+    -- Opened again before the last opening finished: land that one first,
+    -- which puts its point back, or the window would start from the
+    -- lowered spot and settle a few pixels further down every time.
+    self:Stop(frame, "open", true)
+
+    -- A window with the house glow round it flares as it opens.
+    local rest = frame.haloTextures and frame.haloRest
+    if rest then
+        self:Run(frame, "halo", 0.7, function(p)
+            Theme.SetHalo(frame, rest * 3.2 + (rest - rest * 3.2) * p)
+        end)
+    end
+
     local level = self.Level()
     if level == "off" then
         frame:SetAlpha(1)
@@ -248,6 +261,10 @@ function Widgets.CreateButton(parent, text, onClick, opts)
     Theme.Border(button, edgeKey, opts.primary and edgeAlpha or nil)
     button.sheen = Theme.TopSheen(button)
 
+    -- The one button on a screen that does the main thing glows gold
+    -- round its edge under the mouse.
+    if opts.primary then Theme.Halo(button, 4, 0) end
+
     button.label = Theme.CreateLabel(button, "small", labelKey, "CENTER")
     button.label:SetPoint("CENTER")
     button.label:SetText(text)
@@ -271,6 +288,7 @@ function Widgets.CreateButton(parent, text, onClick, opts)
         if opts.danger then
             button.label:SetTextColor(Motion.Mix(labelKey, "loss", p))
         end
+        if opts.primary then Theme.SetHalo(button, 0.32 * p) end
     end
     button.Light = Light
 

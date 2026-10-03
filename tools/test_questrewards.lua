@@ -52,6 +52,7 @@ local function LoadWith(choices, named)
     end
 
     _G.QuestInfo_Display = function() end
+    _G.QuestFrame = env.Stub({ _shown = true })
     ns.QuestRewards:OnEnable()
     return ns, buttons
 end
@@ -70,6 +71,24 @@ ns.QuestRewards:QUEST_COMPLETE()
 local chat = env.ChatText()
 suite.check("hand-in names the best reward", chat:find("best reward for Beast Mastery: item:3", 1, true), chat)
 suite.check("and why", chat:find("fills an empty slot", 1, true), chat)
+
+-- The quest log draws through the same function; with the quest giver's
+-- window closed the arrows come off rather than marking a stale choice.
+_G.QuestFrame:Hide()
+_G.QuestInfo_Display()
+suite.check("the quest log view hides the arrow", not Arrow(buttons[2]):IsShown())
+_G.QuestFrame:Show()
+
+-- A reward the client has not described yet: no "none of these" line, and
+-- the real answer once its details arrive.
+ns, buttons = LoadWith({ "item:5", "item:7" })
+ITEMS["item:7"] = { loc = "INVTYPE_FEET", class = 4, subclass = 2, stats = nil }
+ns.QuestRewards:QUEST_COMPLETE()
+suite.check("an unloaded reward waits", not env.ChatText():find("none of these", 1, true), env.ChatText())
+ITEMS["item:7"].stats = Agi(3)
+ns.QuestRewards:GET_ITEM_INFO_RECEIVED()
+suite.check("and is announced when it arrives",
+    env.ChatText():find("best reward for Beast Mastery: item:7", 1, true), env.ChatText())
 
 -- Nothing worth taking.
 ns, buttons = LoadWith({ "item:5", "item:4", "item:6" })

@@ -58,11 +58,18 @@ end
 
 --- The choice that is the biggest upgrade that can be worn now.
 -- @return index, link, result; or nil when none of them is one
+-- The fourth return is how many choices are gear whose details the client
+-- has not had yet, so they could not be judged.
 function QuestRewards:Best()
     local bestIndex, bestLink, bestResult, bestGain
+    local unknown = 0
     for index = 1, self:Count() do
         local link = self:Link(index)
         local ok, result = pcall(Compare.Judge, Compare, link)
+        if ok and result == nil and link then
+            local okInfo, info = pcall(Items.Info, Items, link)
+            if okInfo and (info == nil or Compare.SLOTS[info.equipLoc]) then unknown = unknown + 1 end
+        end
         if ok and result and result.verdict == "upgrade" and not result.level then
             -- Gain in score, not percent: +5 on a slot worth 50 beats +50% on
             -- a slot worth 2. An empty slot counts its whole score.
@@ -72,7 +79,7 @@ function QuestRewards:Best()
             end
         end
     end
-    return bestIndex, bestLink, bestResult
+    return bestIndex, bestLink, bestResult, unknown
 end
 
 --------------------------------------------------------------------------------
@@ -131,15 +138,31 @@ function QuestRewards:Mark()
     return marked
 end
 
+--- Take the arrow off every reward button.
+function QuestRewards:HideArrows()
+    for _, button in ipairs(self:Buttons()) do
+        local arrow = ns.BagIcons:ExistingArrow(button)
+        if arrow then arrow:Hide() end
+    end
+end
+
 --------------------------------------------------------------------------------
 -- Saying so in chat
 --------------------------------------------------------------------------------
 
 --- One line when a quest is handed in with rewards to choose from.
+-- A reward the client has not described yet cannot be judged, so the line
+-- waits for its details (GET_ITEM_INFO_RECEIVED) rather than saying none of
+-- them helps.
 function QuestRewards:Announce()
+    self.announcePending = false
     if not self:IsEnabled() or self:Count() < 2 then return end
 
-    local index, link, result = self:Best()
+    local index, link, result, unknown = self:Best()
+    if unknown > 0 then
+        self.announcePending = true
+        return
+    end
     if index then
         local how = result.empty and "fills an empty slot"
             or result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5))
@@ -175,21 +198,36 @@ function QuestRewards:QUEST_COMPLETE()
     pcall(self.Announce, self)
 end
 
+--- A choice the client had not seen before arrives a moment later: mark
+--- again, and say the hand-in line that was waiting on it.
+function QuestRewards:GET_ITEM_INFO_RECEIVED()
+    if not Ask(_G.QuestFrame, "IsShown") then
+        self.announcePending = false
+        return
+    end
+    self:Refresh()
+    if self.announcePending then pcall(self.Announce, self) end
+end
+
 function QuestRewards:OnEnable()
     -- The game lays out the reward buttons in QuestInfo_Display, for the
     -- offer, the progress and the hand-in alike; marking after it runs is
     -- marking the buttons as they are.
     local hook = _G.hooksecurefunc
     if type(hook) == "function" and type(_G.QuestInfo_Display) == "function" then
+        -- The quest log draws its rewards through the same function, but
+        -- the choice calls describe the quest giver's window, so arrows are
+        -- only marked while that window is open.
         self.hooked = pcall(hook, "QuestInfo_Display", function()
-            QuestRewards:Refresh()
+            if Ask(_G.QuestFrame, "IsShown") then
+                QuestRewards:Refresh()
+            else
+                QuestRewards:HideArrows()
+            end
         end)
     end
 
     ns.RegisterEvent(self, "QUEST_DETAIL", self.RefreshSoon)
     ns.RegisterEvent(self, "QUEST_COMPLETE", self.QUEST_COMPLETE)
-    -- A choice the client had not seen before arrives a moment later.
-    ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", function()
-        if Ask(_G.QuestFrame, "IsShown") then QuestRewards:Refresh() end
-    end)
+    ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", self.GET_ITEM_INFO_RECEIVED)
 end

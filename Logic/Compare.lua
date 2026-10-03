@@ -215,19 +215,56 @@ function Compare:Judge(link)
     return result
 end
 
+-- Rings and trinkets come in pairs: the slot that is not the weaker one.
+local PAIRED = { [11] = 12, [12] = 11, [13] = 14, [14] = 13 }
+
 --- The biggest upgrade in the bags for each slot, that can be worn now.
+--
+-- A new ring is judged against the weaker ring, so two good rings in the
+-- bags would both land on that one slot. The runner-up is then measured
+-- against the other ring, so the second slot shows it too.
 -- @return { [inventory slot] = { link, result } }
 function Compare:BestInBags()
-    local best = {}
+    local best, paired = {}, {}
     for bag = FIRST_BAG, LAST_BAG do
         for bagSlot = 1, Items:BagSize(bag) do
             local link = Items:InBag(bag, bagSlot)
             local ok, result = pcall(self.Judge, self, link)
             if ok and result and result.verdict == "upgrade" and not result.level and result.slot then
                 local gain = (result.score or 0) - (result.against or 0)
+                local entry = { link = link, result = result, gain = gain, where = bag * 100 + bagSlot }
                 local held = best[result.slot]
-                if not held or gain > held.gain then
-                    best[result.slot] = { link = link, result = result, gain = gain }
+                if not held or gain > held.gain then best[result.slot] = entry end
+                if PAIRED[result.slot] then paired[#paired + 1] = entry end
+            end
+        end
+    end
+
+    local weights = #paired > 1 and Weights:ForPlayer()
+    for _, pair in ipairs({ { 11, 12 }, { 13, 14 } }) do
+        local taken = best[pair[1]] or best[pair[2]]
+        local other = best[pair[1]] and pair[2] or pair[1]
+        if weights and taken and not best[other] then
+            local worn = Items:Equipped(other)
+            local against = worn and (self:ScoreOf(worn, weights) or 0) or 0
+            for _, entry in ipairs(paired) do
+                local result = entry.result
+                if entry.where ~= taken.where and (result.slot == pair[1] or result.slot == pair[2]) then
+                    local score = result.score or 0
+                    local percent = against > 0 and (score - against) / against * 100 or nil
+                    local beats = not worn or (percent and percent >= SAME_WITHIN)
+                        or (against <= 0 and score > 0)
+                    local gain = score - against
+                    if beats and (not best[other] or gain > best[other].gain) then
+                        best[other] = {
+                            link = entry.link, gain = gain, where = entry.where,
+                            result = {
+                                verdict = "upgrade", className = result.className,
+                                specName = result.specName, slot = other, score = score,
+                                against = against, empty = not worn, percent = worn and percent or nil,
+                            },
+                        }
+                    end
                 end
             end
         end

@@ -230,3 +230,179 @@ function Theme.HeaderGlow(frame, height, alpha)
     if not ok then glow:Hide() end
     return glow
 end
+
+--------------------------------------------------------------------------------
+-- Glow
+--
+-- Farmer's neon edge, so the four addons' windows glow the same way.
+--------------------------------------------------------------------------------
+
+--- Shade `texture` from one alpha of a palette colour to another, along
+--- "VERTICAL" (bottom to top) or "HORIZONTAL" (left to right). Where the
+--- client cannot draw a gradient it gets one flat, fainter wash instead.
+--- Returns true when the gradient was drawn.
+function Theme.SetGradientAlpha(texture, orientation, key, fromAlpha, toAlpha)
+    local r, g, b = Theme.Unpack(key or "accent")
+    texture:SetColorTexture(1, 1, 1, 1)
+
+    local ok = false
+    if type(CreateColor) == "function" and type(texture.SetGradient) == "function" then
+        ok = pcall(texture.SetGradient, texture, orientation,
+            CreateColor(r, g, b, fromAlpha), CreateColor(r, g, b, toAlpha))
+    end
+
+    if not ok then
+        texture:SetColorTexture(r, g, b, math.max(fromAlpha, toAlpha) * 0.4)
+    end
+    return ok
+end
+
+--- A soft glow round the outside of a frame, fading out from its edge.
+--- Returns the four sides, so a caller can brighten or dim them together
+--- with Theme.SetHalo.
+function Theme.Halo(frame, spread, alpha, key)
+    spread = spread or 6
+    local sides = {}
+
+    for _, side in ipairs({ "TOP", "BOTTOM", "LEFT", "RIGHT" }) do
+        local halo = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
+        pcall(halo.SetBlendMode, halo, "ADD")
+
+        if side == "TOP" or side == "BOTTOM" then
+            local out = side == "TOP" and 1 or -1
+            halo:SetPoint(side .. "LEFT", frame, side .. "LEFT", 0, out * spread)
+            halo:SetPoint(side .. "RIGHT", frame, side .. "RIGHT", 0, out * spread)
+            halo:SetHeight(spread)
+        else
+            local out = side == "LEFT" and -1 or 1
+            halo:SetPoint("TOP" .. side, frame, "TOP" .. side, out * spread, 0)
+            halo:SetPoint("BOTTOM" .. side, frame, "BOTTOM" .. side, out * spread, 0)
+            halo:SetWidth(spread)
+        end
+
+        halo.side = side
+        sides[#sides + 1] = halo
+    end
+
+    frame.haloTextures = sides
+    frame.haloKey = key
+    -- Where it settles; Motion:Open flares it from brighter as a window opens.
+    frame.haloRest = alpha or 0.12
+    Theme.SetHalo(frame, frame.haloRest, key)
+    return sides
+end
+
+--- Relight a halo drawn by Theme.Halo: `alpha` at the frame's edge, in the
+--- palette colour `key` (its own colour, else gold).
+function Theme.SetHalo(frame, alpha, key)
+    local sides = frame and frame.haloTextures
+    if not sides then return end
+
+    key = key or frame.haloKey or "accent"
+    alpha = math.max(0, tonumber(alpha) or 0)
+
+    for _, halo in ipairs(sides) do
+        -- The bright end sits against the frame.
+        if halo.side == "TOP" then
+            Theme.SetGradientAlpha(halo, "VERTICAL", key, alpha, 0)
+        elseif halo.side == "BOTTOM" then
+            Theme.SetGradientAlpha(halo, "VERTICAL", key, 0, alpha)
+        elseif halo.side == "LEFT" then
+            Theme.SetGradientAlpha(halo, "HORIZONTAL", key, 0, alpha)
+        else
+            Theme.SetGradientAlpha(halo, "HORIZONTAL", key, alpha, 0)
+        end
+        halo:SetShown(alpha > 0)
+    end
+end
+
+--- The house window shell: dark fill, lit border and the gold halo round it.
+function Theme.Window(frame)
+    Theme.Fill(frame, "window")
+    Theme.Border(frame, "borderLit")
+    Theme.Halo(frame, 10, 0.14)
+end
+
+--------------------------------------------------------------------------------
+-- Item icons
+--------------------------------------------------------------------------------
+
+local FALLBACK_ICON = [[Interface\Icons\INV_Misc_QuestionMark]]
+
+local function ItemID(item)
+    if type(item) == "number" then return item end
+    if type(item) ~= "string" then return nil end
+    local ok, id = pcall(function() return tonumber(item:match("item:(%d+)")) end)
+    return ok and id or nil
+end
+
+--- An item's icon texture, or nil while the game has not sent it. Read in a
+--- pcall: inside an instance the client can hand back values that raise.
+function Theme.ItemIcon(item)
+    local id = ItemID(item)
+    if not id then return nil end
+
+    local calls = { type(C_Item) == "table" and C_Item.GetItemIconByID or false, _G.GetItemIcon or false }
+    for _, fn in ipairs(calls) do
+        if type(fn) == "function" then
+            local ok, icon = pcall(function()
+                local value = fn(id)
+                -- A number or a path, copied so a secret value raises here.
+                if type(value) == "number" then return value + 0 end
+                if type(value) == "string" then return value .. "" end
+            end)
+            if ok and icon then return icon end
+        end
+    end
+    return nil
+end
+
+--- The quality colour of an item (r, g, b), or nil when not known yet.
+function Theme.QualityColor(item)
+    local id = ItemID(item)
+    if not id or not ns.Items then return nil end
+
+    local _, _, quality = ns.Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, id)
+    local ok, number = pcall(tonumber, quality)
+    if not ok or not number then return nil end
+
+    local r, g, b = ns.Items.Call({ "C_Item.GetItemQualityColor", "GetItemQualityColor" }, number)
+    local fine = pcall(function() return r + g + b end)
+    if fine and type(r) == "number" then return r, g, b end
+    return nil
+end
+
+--- A square item icon in a thin frame that takes the item's quality colour.
+function Theme.CreateItemIcon(parent, size)
+    local holder = CreateFrame("Frame", nil, parent)
+    holder:SetSize(size, size)
+    holder.background = Theme.Fill(holder, "panel")
+    Theme.Border(holder, "border")
+
+    local icon = holder:CreateTexture(nil, "ARTWORK")
+    icon:SetPoint("TOPLEFT", 1, -1)
+    icon:SetPoint("BOTTOMRIGHT", -1, 1)
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    holder.icon = icon
+
+    holder:Hide()
+    return holder
+end
+
+--- Show an item in an icon made by CreateItemIcon, or hide it for none.
+function Theme.SetItemIcon(holder, item)
+    if not holder then return end
+    if not item then
+        holder:Hide()
+        return
+    end
+
+    holder.icon:SetTexture(Theme.ItemIcon(item) or FALLBACK_ICON)
+    local r, g, b = Theme.QualityColor(item)
+    if r then
+        for _, edge in ipairs(holder.borderTextures or {}) do edge:SetColorTexture(r, g, b, 0.9) end
+    else
+        Theme.SetBorderColor(holder, "border")
+    end
+    holder:Show()
+end

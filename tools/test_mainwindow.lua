@@ -100,6 +100,23 @@ suite.check("/beq window opens it", UI.frame:IsShown())
 UI:Hide()
 suite.check("a closed window does not refresh", UI:Refresh() == 0)
 
+-- Two rings in the bags that both beat the weaker worn ring: the runner-up
+-- is measured against the other ring, so both ring slots can show one.
+UI:Show()
+env.worn[11], env.worn[12] = "item:6", "item:7"     -- Agi 2 and 5
+env.bags[0] = { "item:5", "item:9" }                 -- Agi 8 and 6
+ITEMS["item:9"] = { loc = "INVTYPE_FINGER", class = 4, subclass = 0, stats = Agi(6) }
+UI:Refresh()
+suite.check("the better ring goes against the weaker one", Link(Row(11).best) == "item:5",
+    Link(Row(11).best))
+suite.check("the second ring against the other", Link(Row(12).best) == "item:9", Link(Row(12).best))
+suite.check("with its own gain", Row(12).gain:GetText() == "+20%", Row(12).gain:GetText())
+env.bags[0] = { "item:5" }
+UI:Refresh()
+suite.check("one ring only fills one slot", Link(Row(12).best) == nil, Link(Row(12).best))
+suite.check("upgrade rows are lit", Row(11).frame.edge:IsShown() and not Row(12).frame.edge:IsShown())
+UI:Hide()
+
 -- Its place is remembered.
 UI.frame._point = { "TOPLEFT", nil, "TOPLEFT", 120, -80 }
 UI:SavePosition()

@@ -166,8 +166,7 @@ function WeightsUI:Build()
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
 
-    Theme.Fill(frame, "window")
-    Theme.Border(frame, "borderLit")
+    Theme.Window(frame)
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -362,7 +361,9 @@ function WeightsUI:BuildRow(entry)
 
     row:SetScript("OnEnter", function(self) WeightsUI:ShowRowTooltip(self) end)
     row:SetScript("OnLeave", function(self)
-        self.hover:SetColorTexture(Theme.Unpack("rowHover", 0))
+        Motion:Blend(self, "hover", 0, 0.18, function(p)
+            self.hover:SetColorTexture(Theme.Unpack("rowHover", 0.6 * p))
+        end)
         if GameTooltip then GameTooltip:Hide() end
     end)
 
@@ -442,7 +443,9 @@ function WeightsUI:ResetSpec()
 end
 
 function WeightsUI:ShowRowTooltip(row)
-    row.hover:SetColorTexture(Theme.Unpack("rowHover", 0.6))
+    Motion:Blend(row, "hover", 1, 0.12, function(p)
+        row.hover:SetColorTexture(Theme.Unpack("rowHover", 0.6 * p))
+    end)
     if not GameTooltip then return end
 
     local value, default = Weights:Value(self.class, self.spec, row.entry.key)

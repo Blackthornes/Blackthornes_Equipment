@@ -128,13 +128,24 @@ function SettingsUI:SpecHint()
     return ("Judging gear as %s until your talents say otherwise."):format(name)
 end
 
---- Put the settings window back where it started.
+-- Where each window keeps its spot in the saved data.
+local POSITION_KEYS = {
+    { "point", "relativePoint", "x", "y" },
+    { "settingsPoint", "settingsRelativePoint", "settingsX", "settingsY" },
+    { "weightsPoint", "weightsRelativePoint", "weightsX", "weightsY" },
+    { "finderPoint", "finderRelativePoint", "finderX", "finderY" },
+}
+
+--- Put every Equipment window back where it started: the gear window, this
+--- one, the stat weights and the upgrade finder. Only the saved spots are
+--- cleared; nothing else is touched.
 function SettingsUI:ResetPositions()
-    ns.db.settingsPoint = nil
-    ns.db.settingsRelativePoint = nil
-    ns.db.settingsX = nil
-    ns.db.settingsY = nil
-    self:RestorePosition()
+    for _, keys in ipairs(POSITION_KEYS) do
+        for _, key in ipairs(keys) do ns.db[key] = nil end
+    end
+    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI }) do
+        if module and module.frame and module.RestorePosition then module:RestorePosition() end
+    end
 end
 
 --------------------------------------------------------------------------------
@@ -153,8 +164,7 @@ function SettingsUI:Build()
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
 
-    Theme.Fill(frame, "window")
-    Theme.Border(frame, "borderLit")
+    Theme.Window(frame)
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -285,8 +295,8 @@ function SettingsUI:BuildColumn()
     end, true)
     controls.minimap:SetPoint("TOPLEFT", CONTROL_X, -2)
 
-    local positionRow = CreateRow(frame, minimapRow, "Window position",
-        "Moves this window back to the middle of the screen, if it ends up off screen.")
+    local positionRow = CreateRow(frame, minimapRow, "Window positions",
+        "Moves every Equipment window back to the middle of the screen, if one ends up off screen.")
 
     local reset = Widgets.CreateButton(positionRow, "Put it back", function()
         SettingsUI:ResetPositions()
