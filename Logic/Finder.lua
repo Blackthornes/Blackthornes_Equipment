@@ -317,6 +317,19 @@ local function LinkFor(itemID)
     return Items.PlainLink(link) or ("item:%d"):format(itemID)
 end
 
+--- The item IDs in the carried bags, as a set.
+function Finder:Carried()
+    local carried = {}
+    for bag = 0, 4 do
+        for slot = 1, Items:BagSize(bag) do
+            local link = Items:InBag(bag, slot)
+            local id = link and tonumber(link:match("item:(%d+)"))
+            if id then carried[id] = true end
+        end
+    end
+    return carried
+end
+
 --------------------------------------------------------------------------------
 -- The scan
 --------------------------------------------------------------------------------
@@ -337,10 +350,14 @@ function Finder:Scan(only)
     local weights = Weights:ForPlayer()
     if not weights then return nil, "noweights" end
 
+    -- Gear already in the bags is the gear window's to show, not something
+    -- to go and buy or farm again.
+    local carried = self:Carried()
+
     local slots, checked, waiting, asked = {}, 0, 0, 0
     for _, candidate in ipairs(self:Candidates(player, only)) do
         local itemID = candidate.itemID
-        local wearable = Wearable(player.class, itemID)
+        local wearable = not carried[itemID] and Wearable(player.class, itemID)
         if wearable ~= false then
             if wearable == nil or not self:IsCached(itemID) then
                 waiting = waiting + 1
@@ -353,7 +370,7 @@ function Finder:Scan(only)
                 local ok, result = pcall(Compare.Judge, Compare, link)
                 if ok and result then
                     checked = checked + 1
-                    if result.verdict == "upgrade" and not result.level and result.slot then
+                    if Compare.WearableUpgrade(result) and result.slot then
                         local list = slots[result.slot] or {}
                         slots[result.slot] = list
                         list[#list + 1] = {

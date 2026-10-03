@@ -5,7 +5,7 @@
 -- What counts is an item that is new in the bags, not one that was there and
 -- became an upgrade later (a level up, a spec change). Each scan counts the
 -- carried bags by item, and only an item whose count went up since the last
--- scan is judged, the same way the bag arrow judges it (Compare:Judge).
+-- scan is judged, the same way the bag arrow judges it (Compare:JudgeCarried).
 -- Moving an item between bags or splitting a stack leaves the counts as they
 -- were, so it says nothing.
 --
@@ -121,11 +121,11 @@ end
 -- @return true when it was judged (announced or not), false when its details
 --         are not known yet
 function UpgradeChat:Consider(link)
-    local ok, result = pcall(Compare.Judge, Compare, link)
+    local ok, result = pcall(Compare.JudgeCarried, Compare, link)
     if not ok then return true end
     if not result then return not MaybeGear(link) end
 
-    if result.verdict == "upgrade" and not result.level then
+    if Compare.WearableUpgrade(result) then
         ns.Print(("upgrade in your bags: %s |c%s%s|r"):format(
             link, ns.COLORS.upgrade, Compare:HowMuch(result)))
     end

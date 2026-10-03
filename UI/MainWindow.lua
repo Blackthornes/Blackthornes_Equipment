@@ -17,15 +17,18 @@ local Compare = ns.Compare
 local Items = ns.Items
 local Weights = ns.Weights
 
+local Motion = ns.Motion
+
 local PADDING = 18
 local HEADER = 36
-local ROW_HEIGHT = 22
+local ROW_HEIGHT = 24
 local COLUMN_HEADS = 22
-local FOOTER = 44
+local FOOTER = 48
 
-local SLOT_X, WORN_X, BEST_X = 0, 84, 250
-local GAIN_WIDTH = 90
-local WIDTH = 520
+local ICON = 18
+local SLOT_X, WORN_X, BEST_X = 0, 78, 300
+local GAIN_WIDTH = 104
+local WIDTH = 640
 
 -- The slots in the order the character sheet runs down them.
 local SLOTS = {
@@ -44,23 +47,41 @@ UI.SLOTS = SLOTS
 -- Construction
 --------------------------------------------------------------------------------
 
---- A strip of text that shows an item's tooltip under the mouse.
+--- An item's icon and name, showing its tooltip under the mouse. A
+--- shift-click puts the item's link in chat, as anywhere in the game.
 local function CreateItemCell(parent, width)
     local cell = CreateFrame("Button", nil, parent)
     cell:SetSize(width, ROW_HEIGHT)
 
+    local icon = Theme.CreateItemIcon(cell, ICON)
+    icon:SetPoint("LEFT", 0, 0)
+    cell.icon = icon
+
     local text = Theme.CreateLabel(cell, "small", "text")
-    text:SetPoint("LEFT", 0, 0)
-    text:SetWidth(width)
+    text:SetPoint("LEFT", ICON + 6, 0)
+    text:SetWidth(width - ICON - 6)
     cell.text = text
 
     cell:SetScript("OnEnter", function(self)
+        local row = parent
+        if row and row.Light then Motion:Blend(row, "hover", 1, 0.12, row.Light) end
         if type(self.link) ~= "string" then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         pcall(GameTooltip.SetHyperlink, GameTooltip, self.link)
         GameTooltip:Show()
     end)
-    cell:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    cell:SetScript("OnLeave", function(self)
+        local row = parent
+        if row and row.Light then Motion:Blend(row, "hover", 0, 0.18, row.Light) end
+        GameTooltip:Hide()
+    end)
+    cell:SetScript("OnClick", function(self)
+        if type(self.link) ~= "string" then return end
+        if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
+            local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
+            if ok and chatLink then pcall(ChatEdit_InsertLink, self.link) end
+        end
+    end)
     return cell
 end
 
@@ -76,8 +97,7 @@ function UI:Build()
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
 
-    Theme.Fill(frame, "window")
-    Theme.Border(frame, "borderLit")
+    Theme.Window(frame)
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -101,14 +121,14 @@ function UI:Build()
     find:SetPoint("BOTTOMRIGHT", -PADDING, 12)
     self.findButton = find
 
-    local footer = Theme.CreateLabel(frame, "small", "muted")
-    footer:SetPoint("BOTTOMLEFT", PADDING, 24)
-    footer:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, 12)
+    local footer = Theme.CreateLabel(frame, "normal", "muted")
+    footer:SetPoint("BOTTOMLEFT", PADDING, 26)
+    footer:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, 14)
     self.footer = footer
 
     local hint = Theme.CreateLabel(frame, "tiny", "dim")
-    hint:SetPoint("BOTTOMLEFT", PADDING, 10)
-    hint:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, -2)
+    hint:SetPoint("BOTTOMLEFT", PADDING, 11)
+    hint:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, -1)
     hint:SetText("Hover an item for its tooltip. Equipping is up to you.")
     self.hint = hint
 
@@ -129,10 +149,6 @@ function UI:BuildHeader()
     title:SetPoint("LEFT", PADDING, 0)
     title:SetText("Blackthornes Equipment")
 
-    local spec = Theme.CreateLabel(header, "small", "muted")
-    spec:SetPoint("LEFT", title, "RIGHT", 10, -1)
-    self.specLabel = spec
-
     local close = Widgets.CreateButton(header, "X", function() UI:Hide() end,
         { width = 22, height = 20, danger = true })
     close:SetPoint("RIGHT", -PADDING + 4, 0)
@@ -141,6 +157,13 @@ function UI:BuildHeader()
         if ns.SettingsUI then ns.SettingsUI:Toggle() end
     end, { width = 70, height = 20 })
     settings:SetPoint("RIGHT", close, "LEFT", -6, 0)
+
+    -- Stops short of the Settings button, so a long spec name never runs
+    -- under it.
+    local spec = Theme.CreateLabel(header, "small", "muted")
+    spec:SetPoint("LEFT", title, "RIGHT", 10, -1)
+    spec:SetPoint("RIGHT", settings, "LEFT", -10, -1)
+    self.specLabel = spec
 
     local divider = Theme.CreateDivider(frame, "borderLit")
     divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT")
@@ -161,26 +184,48 @@ function UI:BuildRows()
 
     self.rows = {}
     for index, entry in ipairs(SLOTS) do
+        local restKey = index % 2 == 0 and "row" or "rowAlt"
         local row = CreateFrame("Frame", nil, frame)
         row:SetSize(inner, ROW_HEIGHT)
         row:SetPoint("TOPLEFT", PADDING, top - COLUMN_HEADS - (index - 1) * ROW_HEIGHT)
-        Theme.Fill(row, index % 2 == 0 and "row" or "rowAlt")
+        row.background = Theme.Fill(row, restKey)
+
+        -- A slot with an upgrade waiting gets a green edge and a faint green
+        -- wash, so the eye finds it before reading anything.
+        local wash = row:CreateTexture(nil, "BACKGROUND", nil, 2)
+        wash:SetAllPoints(row)
+        wash:Hide()
+        row.wash = wash
+
+        local edge = row:CreateTexture(nil, "ARTWORK")
+        edge:SetPoint("TOPLEFT")
+        edge:SetPoint("BOTTOMLEFT")
+        edge:SetWidth(2)
+        edge:SetColorTexture(Theme.Unpack("good"))
+        edge:Hide()
+        row.edge = edge
 
         local name = Theme.CreateLabel(row, "small", "muted")
-        name:SetPoint("LEFT", SLOT_X + 6, 0)
+        name:SetPoint("LEFT", SLOT_X + 8, 0)
         name:SetText(entry[2])
 
-        local worn = CreateItemCell(row, BEST_X - WORN_X - 8)
+        local worn = CreateItemCell(row, BEST_X - WORN_X - 10)
         worn:SetPoint("LEFT", WORN_X, 0)
 
-        local best = CreateItemCell(row, inner - BEST_X - GAIN_WIDTH - 8)
+        local best = CreateItemCell(row, inner - BEST_X - GAIN_WIDTH - 10)
         best:SetPoint("LEFT", BEST_X, 0)
 
         local gain = Theme.CreateLabel(row, "small", "good", "RIGHT")
-        gain:SetPoint("RIGHT", -6, 0)
+        gain:SetPoint("RIGHT", -8, 0)
         gain:SetWidth(GAIN_WIDTH)
 
-        self.rows[index] = { slot = entry[1], worn = worn, best = best, gain = gain }
+        function row.Light(p)
+            row.background:SetColorTexture(Motion.Mix(restKey, "rowHover", p))
+        end
+
+        self.rows[index] = {
+            slot = entry[1], frame = row, worn = worn, best = best, gain = gain, name = name,
+        }
     end
 end
 
@@ -190,12 +235,39 @@ end
 
 local function SetCell(cell, link, emptyText, colorKey)
     cell.link = link
+    Theme.SetItemIcon(cell.icon, link)
     if link then
         cell.text:SetText(link)
         cell.text:SetTextColor(Theme.Unpack("text"))
+        cell.text:SetPoint("LEFT", ICON + 6, 0)
     else
         cell.text:SetText(emptyText)
         cell.text:SetTextColor(Theme.Unpack(colorKey or "dim"))
+        cell.text:SetPoint("LEFT", 0, 0)
+    end
+end
+
+--- Light a row for an upgrade, flaring green the first time it shows.
+local function MarkUpgrade(row, on, fresh)
+    row.frame.edge:SetShown(on)
+    row.frame.wash:SetShown(on)
+    row.name:SetTextColor(Theme.Unpack(on and "text" or "muted"))
+    if not on then
+        Motion:Stop(row.frame, "flare")
+        row.gain:SetAlpha(1)
+        return
+    end
+
+    local function Wash(alpha)
+        Theme.SetGradientAlpha(row.frame.wash, "HORIZONTAL", "good", alpha, 0)
+    end
+    if fresh then
+        Motion:Run(row.frame, "flare", 0.8, function(p)
+            Wash(0.34 - 0.24 * p)
+            row.gain:SetAlpha(0.3 + 0.7 * p)
+        end)
+    else
+        Wash(0.10)
     end
 end
 
@@ -227,6 +299,11 @@ function UI:Refresh()
             SetCell(row.best, nil, "-")
             row.gain:SetText("")
         end
+
+        -- Flares only when this is news: a new pick, not every redraw.
+        local shown = pick and pick.link or nil
+        MarkUpgrade(row, shown ~= nil, shown ~= nil and shown ~= row.shown)
+        row.shown = shown
     end
 
     if spec and Weights:IsCustom(class, spec) then
@@ -235,6 +312,7 @@ function UI:Refresh()
         self.hint:SetText("Hover an item for its tooltip. Equipping is up to you.")
     end
 
+    self.footer:SetTextColor(Theme.Unpack(upgrades > 0 and "good" or "muted"))
     if not spec then
         self.footer:SetText(("There are no stat weights for %s yet."):format(class or "this class"))
     elseif upgrades == 0 then
@@ -286,7 +364,7 @@ function UI:Show()
     if not self.frame:IsShown() then
         self:RestorePosition()
         self.frame:Show()
-        ns.Motion:Open(self.frame)
+        Motion:Open(self.frame)
     end
     self:Refresh()
 end

@@ -44,6 +44,22 @@ function MinimapButton:SpecLine()
     return "Judging gear as " .. Weights.SPECS[class][spec].name
 end
 
+--- "2 upgrades in your bags", or nil when there are none (or no weights).
+function MinimapButton:UpgradeLine()
+    local Compare = ns.Compare
+    if not (Compare and ns.Weights) then return nil end
+
+    local ok, spec = pcall(ns.Weights.CurrentSpec, ns.Weights)
+    if not (ok and spec) then return nil end
+
+    local found, best = pcall(Compare.BestInBags, Compare)
+    if not found then return nil end
+    local count = 0
+    for _ in pairs(best) do count = count + 1 end
+    if count == 0 then return nil end
+    return count == 1 and "1 upgrade in your bags" or ("%d upgrades in your bags"):format(count)
+end
+
 function MinimapButton:Build()
     if self.button or not Minimap then return self.button end
 
@@ -141,6 +157,9 @@ function MinimapButton:Build()
 
         local specLine = MinimapButton:SpecLine()
         if specLine then GameTooltip:AddLine(specLine, 0.78, 0.64, 0.30) end
+
+        local upgradeLine = MinimapButton:UpgradeLine()
+        if upgradeLine then GameTooltip:AddLine(upgradeLine, Theme.Unpack("good")) end
 
         if ns.UI and ns.UI.Toggle then
             GameTooltip:AddLine("Click to open", 0.7, 0.7, 0.7)

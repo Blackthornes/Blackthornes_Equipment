@@ -69,6 +69,31 @@ function Tooltip:LinkFor(tooltip, data)
     return nil
 end
 
+--- Is the tooltip showing an item from one of the game's bag buttons? Only
+--- a button that says its bag (retail) or is named as a bag slot (classic)
+--- counts; the character sheet's buttons never do.
+function Tooltip:FromBag(tooltip)
+    local getOwner = Field(tooltip, "GetOwner")
+    if type(getOwner) ~= "function" then return false end
+    local ok, owner = pcall(getOwner, tooltip)
+    if not ok or type(owner) ~= "table" then return false end
+
+    local getBag = Field(owner, "GetBagID")
+    if type(getBag) == "function" then
+        local okBag, bag = pcall(getBag, owner)
+        if okBag and type(bag) == "number" then return true end
+    end
+    local getName = Field(owner, "GetName")
+    if type(getName) == "function" then
+        local okName, name = pcall(getName, owner)
+        if okName and type(name) == "string" then
+            local okMatch, found = pcall(string.find, name, "^ContainerFrame%d+Item%d+$")
+            return okMatch and found ~= nil
+        end
+    end
+    return false
+end
+
 -- Which tooltip already carries the line, for which item and at what length.
 -- Cleared when the tooltip is, so the next showing gets it again.
 local decorated = setmetatable({}, { __mode = "k" })
@@ -102,7 +127,10 @@ function Tooltip:Decorate(tooltip, data)
     end
 
     local lines = {}
-    local text, color = Compare:Describe(Compare:Judge(link))
+    -- An item shown from a bag slot is a carried copy, so a second copy of a
+    -- worn ring is judged against the other ring, as its bag arrow is.
+    local judge = self:FromBag(tooltip) and Compare.JudgeCarried or Compare.Judge
+    local text, color = Compare:Describe(judge(Compare, link))
     if text then lines[#lines + 1] = { text, color } end
     local okTrainer, trainer, trainerColor = pcall(WeaponSkills.Describe, WeaponSkills, link)
     if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true } end

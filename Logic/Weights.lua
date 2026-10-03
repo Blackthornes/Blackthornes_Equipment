@@ -478,13 +478,15 @@ function Weights:TreePoints(class)
         return self:TraitPoints(class)
     end
 
+    -- Old talent calls that are only stubs (no tabs, or raising) fall back
+    -- to the trait tree, which is what Forever really has.
     local okCount, count = pcall(GetNumTalentTabs)
-    if not okCount or type(count) ~= "number" or count < 1 then return nil end
+    if not okCount or type(count) ~= "number" or count < 1 then return self:TraitPoints(class) end
 
     local points = {}
     for tab = 1, count do
         local info = { pcall(GetTalentTabInfo, tab) }
-        if not info[1] then return nil end
+        if not info[1] then return self:TraitPoints(class) end
 
         local spent
         if type(info[2]) == "number" then

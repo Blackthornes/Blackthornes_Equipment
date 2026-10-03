@@ -52,6 +52,7 @@ local function LoadWith(choices, named)
     end
 
     _G.QuestInfo_Display = function() end
+    _G.QuestFrame = env.Stub({ _shown = true })
     ns.QuestRewards:OnEnable()
     return ns, buttons
 end
@@ -70,6 +71,44 @@ ns.QuestRewards:QUEST_COMPLETE()
 local chat = env.ChatText()
 suite.check("hand-in names the best reward", chat:find("best reward for Beast Mastery: item:3", 1, true), chat)
 suite.check("and why", chat:find("fills an empty slot", 1, true), chat)
+
+-- The quest log draws through the same function; with the quest giver's
+-- window closed the arrows come off rather than marking a stale choice.
+_G.QuestFrame:Hide()
+_G.QuestInfo_Display()
+suite.check("the quest log view hides the arrow", not Arrow(buttons[2]):IsShown())
+_G.QuestFrame:Show()
+
+-- A reward the client has not described yet: no "none of these" line, and
+-- the real answer once its details arrive.
+ns, buttons = LoadWith({ "item:5", "item:7" })
+local timers = {}
+local immediate = _G.C_Timer.After
+_G.C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+ITEMS["item:7"] = { loc = "INVTYPE_FEET", class = 4, subclass = 2, stats = nil }
+ns.QuestRewards:QUEST_COMPLETE()
+for _, fn in ipairs(timers) do if fn ~= timers[#timers] then fn() end end
+suite.check("an unloaded reward waits", not env.ChatText():find("none of these", 1, true), env.ChatText())
+-- Some other item's answer arrives first: still waiting.
+ns.QuestRewards:GET_ITEM_INFO_RECEIVED()
+suite.check("an unrelated answer does not end the wait", ns.QuestRewards.announcePending == true)
+ITEMS["item:7"].stats = Agi(3)
+ns.QuestRewards:GET_ITEM_INFO_RECEIVED()
+suite.check("and is announced when it arrives",
+    env.ChatText():find("best reward for Beast Mastery: item:7", 1, true), env.ChatText())
+
+-- A reward that never arrives: after a moment, a known pick is named, and
+-- "none of these" is never said on a guess.
+env.chat = {}
+ITEMS["item:8"] = { loc = "INVTYPE_FEET", class = 4, subclass = 2, stats = nil }
+ns, buttons = LoadWith({ "item:5", "item:8" })
+timers = {}
+_G.C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+ns.QuestRewards:QUEST_COMPLETE()
+timers[#timers]()
+suite.check("giving up on an unknown reward stays quiet",
+    not env.ChatText():find("none of these", 1, true), env.ChatText())
+_G.C_Timer.After = immediate
 
 -- Nothing worth taking.
 ns, buttons = LoadWith({ "item:5", "item:4", "item:6" })

@@ -28,6 +28,8 @@ local WIDTH = 660
 
 local SLOT_WIDTH = 84
 local GAIN_WIDTH = 120
+local ICON = 28
+local TEXT_X = SLOT_WIDTH + ICON + 10
 local SCROLL_WIDTH = 4
 
 -- Some gear is sold by a dozen vendors; the tooltip lists this many.
@@ -132,9 +134,13 @@ function FinderUI:BuildRow(index)
     slot:SetWidth(SLOT_WIDTH - 10)
     row.slot = slot
 
+    local icon = Theme.CreateItemIcon(row, ICON)
+    icon:SetPoint("LEFT", SLOT_WIDTH, 0)
+    row.icon = icon
+
     local item = Theme.CreateLabel(row, "normal", "text")
-    item:SetPoint("TOPLEFT", SLOT_WIDTH, -6)
-    item:SetWidth(inner - SLOT_WIDTH - GAIN_WIDTH - 8)
+    item:SetPoint("TOPLEFT", TEXT_X, -6)
+    item:SetWidth(inner - TEXT_X - GAIN_WIDTH - 8)
     row.item = item
 
     local gain = Theme.CreateLabel(row, "normal", "good", "RIGHT")
@@ -143,21 +149,23 @@ function FinderUI:BuildRow(index)
     row.gain = gain
 
     local source = Theme.CreateLabel(row, "tiny", "muted")
-    source:SetPoint("TOPLEFT", SLOT_WIDTH, -23)
-    source:SetWidth(inner - SLOT_WIDTH - 8)
+    source:SetPoint("TOPLEFT", TEXT_X, -23)
+    source:SetWidth(inner - TEXT_X - 8)
     row.source = source
-    row.sourceWidth = inner - SLOT_WIDTH - 8
+    row.sourceWidth = inner - TEXT_X - 8
 
     local function Light(p)
         row.background:SetColorTexture(Motion.Mix(row.restKey, "rowHover", p))
-        row.edge:SetColorTexture(Theme.Unpack("good", p))
+        row.edge:SetColorTexture(Theme.Unpack(rawget(row, "edgeKey") or "good", p))
     end
 
     row:SetScript("OnEnter", function(self)
+        self.over = true
         Motion:Blend(self, "hover", 1, 0.12, Light)
         ShowTooltip(self)
     end)
     row:SetScript("OnLeave", function(self)
+        self.over = false
         Motion:Blend(self, "hover", 0, 0.18, Light)
         GameTooltip:Hide()
     end)
@@ -186,8 +194,7 @@ function FinderUI:Build()
     frame:EnableMouse(true)
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
-    Theme.Fill(frame, "window")
-    Theme.Border(frame, "borderLit")
+    Theme.Window(frame)
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -257,13 +264,14 @@ function FinderUI:BuildHeader()
     title:SetPoint("LEFT", PADDING, 0)
     title:SetText("Where to get upgrades")
 
-    local spec = Theme.CreateLabel(header, "small", "muted")
-    spec:SetPoint("LEFT", title, "RIGHT", 10, -1)
-    self.specLabel = spec
-
     local close = Widgets.CreateButton(header, "X", function() FinderUI:Hide() end,
         { width = 22, height = 20, danger = true })
     close:SetPoint("RIGHT", -PADDING + 4, 0)
+
+    local spec = Theme.CreateLabel(header, "small", "muted")
+    spec:SetPoint("LEFT", title, "RIGHT", 10, -1)
+    spec:SetPoint("RIGHT", close, "LEFT", -10, -1)
+    self.specLabel = spec
 
     local divider = Theme.CreateDivider(frame, "borderLit")
     divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT")
@@ -361,10 +369,12 @@ function FinderUI:FillRow(row, line)
         needs = line.pick.needs,
     }
     row.slot:SetText(line.first and line.slotName or "")
+    Theme.SetItemIcon(row.icon, line.pick.link)
     row.item:SetText(line.pick.link)
     row.gain:SetText(Gain(line.pick.result))
     -- Gear that waits on a reputation is shown in amber, not green.
-    row.gain:SetTextColor(Theme.Unpack(line.pick.needs and "warn" or "good"))
+    row.edgeKey = line.pick.needs and "warn" or "good"
+    row.gain:SetTextColor(Theme.Unpack(row.edgeKey))
 
     local text = FinderUI.SourceLine(line.sources[1])
     if line.pick.needs then
@@ -389,6 +399,10 @@ function FinderUI:Draw()
     local offset = self.offset or 0
     for index, row in ipairs(self.rows) do
         self:FillRow(row, lines[offset + index])
+        -- Scrolled under a still mouse: the tooltip follows the new item.
+        if rawget(row, "over") == true then
+            if rawget(row, "pick") then ShowTooltip(row) else GameTooltip:Hide() end
+        end
     end
 
     -- The thumb only shows when there is more than fits.
@@ -536,7 +550,7 @@ end
 
 local EVENTS = {
     "GET_ITEM_INFO_RECEIVED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
-    "QUEST_TURNED_IN", "TRAIT_CONFIG_UPDATED",
+    "QUEST_TURNED_IN", "TRAIT_CONFIG_UPDATED", "BAG_UPDATE_DELAYED",
 }
 
 function FinderUI:OnEnable()

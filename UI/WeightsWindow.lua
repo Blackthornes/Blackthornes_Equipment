@@ -166,8 +166,7 @@ function WeightsUI:Build()
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
 
-    Theme.Fill(frame, "window")
-    Theme.Border(frame, "borderLit")
+    Theme.Window(frame)
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -361,8 +360,27 @@ function WeightsUI:BuildRow(entry)
     end)
 
     row:SetScript("OnEnter", function(self) WeightsUI:ShowRowTooltip(self) end)
+
+    -- The row's own buttons and box take the mouse from it, so leaving the
+    -- row through one of them has to put the row out too.
+    local function LeftChild()
+        local okOver, over = pcall(row.IsMouseOver, row)
+        if okOver and over == true then return end
+        Motion:Blend(row, "hover", 0, 0.18, function(p)
+            row.hover:SetColorTexture(Theme.Unpack("rowHover", 0.6 * p))
+        end)
+        if GameTooltip then GameTooltip:Hide() end
+    end
+    for _, child in ipairs({ row.minus, row.plus, box }) do
+        if child.HookScript then child:HookScript("OnLeave", LeftChild) end
+    end
     row:SetScript("OnLeave", function(self)
-        self.hover:SetColorTexture(Theme.Unpack("rowHover", 0))
+        -- Moving onto the row's own - or + button is still being on the row.
+        local okOver, over = pcall(self.IsMouseOver, self)
+        if okOver and over == true then return end
+        Motion:Blend(self, "hover", 0, 0.18, function(p)
+            self.hover:SetColorTexture(Theme.Unpack("rowHover", 0.6 * p))
+        end)
         if GameTooltip then GameTooltip:Hide() end
     end)
 
@@ -442,7 +460,9 @@ function WeightsUI:ResetSpec()
 end
 
 function WeightsUI:ShowRowTooltip(row)
-    row.hover:SetColorTexture(Theme.Unpack("rowHover", 0.6))
+    Motion:Blend(row, "hover", 1, 0.12, function(p)
+        row.hover:SetColorTexture(Theme.Unpack("rowHover", 0.6 * p))
+    end)
     if not GameTooltip then return end
 
     local value, default = Weights:Value(self.class, self.spec, row.entry.key)
