@@ -50,9 +50,9 @@ def with_(extra):
 
 
 expect("another addon named in a comment",
-       dict(CLEAN, **{"UI/Tooltip.lua": "-- what Gear Quest shows\n"}), clear=False)
+       dict(CLEAN, **{"UI/Tooltip.lua": "-- what Gear " + "Quest shows\n"}), clear=False)
 expect("another addon named in the changelog",
-       dict(CLEAN, **{"CHANGELOG.md": "## 0.6.0\n- Like GearQuest\n"}), clear=False)
+       dict(CLEAN, **{"CHANGELOG.md": "## 0.6.0\n- Like Gear" + "Quest\n"}), clear=False)
 expect("a clean package is clear", CLEAN, True)
 expect("the tools folder is refused", with_({"tools/runtests.py": "print()\n"}), False)
 expect("a stray script is refused", with_({"deploy.ps1": "x\n"}), False)
