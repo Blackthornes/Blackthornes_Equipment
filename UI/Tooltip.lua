@@ -110,7 +110,7 @@ local function LineCount(tooltip)
     return nil
 end
 
---- The lines GearQuest players asked for and more: a random roll's name
+--- The extra lines: a random roll's name
 --- and stats, which Forever's own tooltip leaves off ("of the Monkey: +5
 --- Agility, +5 Stamina"), and who on the account can make a crafted piece.
 function Tooltip:MoreLines(link)
