@@ -4,6 +4,16 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.5.0
+
+For WoW: Forever (interface 16001). This version adds a file, so fully
+restart the game after updating; `/reload` is not enough.
+
+- Gear up for a group loot roll (the Need and Greed window) gets the same
+  green upgrade arrow as in your bags, with how much better it is under the
+  icon. Gear you can't wear yet, or that isn't better, gets nothing. The
+  Upgrade arrows setting covers it.
+
 ## 0.4.0
 
 For WoW: Forever (interface 16001). This version adds a file, so fully
