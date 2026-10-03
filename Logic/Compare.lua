@@ -230,9 +230,17 @@ end
 function Compare:IsUnique(link)
     local id = IDOf(link)
     if not id then return false end
-    local unique = Items.Call({ "C_Item.GetItemUniquenessByID", "GetItemUniqueness" }, id)
-    if type(unique) == "boolean" then return unique end
-    if type(unique) == "number" then return unique > 0 end
+    -- Retail: isUnique, limitCategoryName, limitCategoryCount. The older
+    -- call: uniqueFamily (-1 for plain Unique), maxEquipped.
+    local first, second, third = Items.Call({ "C_Item.GetItemUniquenessByID", "GetItemUniqueness" }, id)
+    local ok, answer = pcall(function()
+        if first == true or first == -1 then return true end
+        if type(second) == "number" and second == 1 then return true end
+        if type(third) == "number" and third == 1 then return true end
+        if first == false or type(first) == "number" then return false end
+        return nil
+    end)
+    if ok and answer ~= nil then return answer end
     local info = Items:Info(link)
     return info ~= nil and info.equipLoc == "INVTYPE_TRINKET"
 end

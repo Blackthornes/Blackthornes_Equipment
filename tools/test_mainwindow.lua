@@ -132,6 +132,17 @@ env.bags[0] = { "item:10" }
 UI:Refresh()
 suite.check("a second copy of a unique trinket is not an upgrade", Link(Row(14).best) == nil, Link(Row(14).best))
 env.worn[13], env.worn[14] = nil, nil
+
+-- What the client says about uniqueness wins over the trinket guess.
+_G.C_Item.GetItemUniquenessByID = function() return false end
+suite.check("a trinket the client calls not unique", not ns.Compare:IsUnique("item:10"))
+_G.C_Item.GetItemUniquenessByID = nil
+_G.GetItemUniqueness = function() return -1, 1 end
+suite.check("the old call's -1 means unique", ns.Compare:IsUnique("item:5"))
+_G.GetItemUniqueness = function() return 0, 0 end
+suite.check("and nothing there means not", not ns.Compare:IsUnique("item:10"))
+_G.GetItemUniqueness = nil
+suite.check("no answer: a ring is not taken to be unique", not ns.Compare:IsUnique("item:5"))
 UI:Hide()
 
 -- Its place is remembered.

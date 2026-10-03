@@ -360,6 +360,20 @@ function WeightsUI:BuildRow(entry)
     end)
 
     row:SetScript("OnEnter", function(self) WeightsUI:ShowRowTooltip(self) end)
+
+    -- The row's own buttons and box take the mouse from it, so leaving the
+    -- row through one of them has to put the row out too.
+    local function LeftChild()
+        local okOver, over = pcall(row.IsMouseOver, row)
+        if okOver and over == true then return end
+        Motion:Blend(row, "hover", 0, 0.18, function(p)
+            row.hover:SetColorTexture(Theme.Unpack("rowHover", 0.6 * p))
+        end)
+        if GameTooltip then GameTooltip:Hide() end
+    end
+    for _, child in ipairs({ row.minus, row.plus, box }) do
+        if child.HookScript then child:HookScript("OnLeave", LeftChild) end
+    end
     row:SetScript("OnLeave", function(self)
         -- Moving onto the row's own - or + button is still being on the row.
         local okOver, over = pcall(self.IsMouseOver, self)

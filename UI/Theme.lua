@@ -366,8 +366,12 @@ function Theme.QualityColor(item)
     if not id or not ns.Items then return nil end
 
     local _, _, quality = ns.Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, id)
-    local ok, number = pcall(tonumber, quality)
-    if not ok or not number or number < 2 then return nil end
+    -- Compared inside the pcall: a client value could be one that raises.
+    local ok, number = pcall(function()
+        local value = tonumber(quality)
+        if value and value >= 2 then return value end
+    end)
+    if not ok or not number then return nil end
 
     local r, g, b = ns.Items.Call({ "C_Item.GetItemQualityColor", "GetItemQualityColor" }, number)
     local fine = pcall(function() return r + g + b end)

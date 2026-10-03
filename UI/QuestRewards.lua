@@ -171,17 +171,34 @@ end
 -- A reward the client has not described yet cannot be judged, so the line
 -- waits for its details (GET_ITEM_INFO_RECEIVED) rather than saying none of
 -- them helps.
--- It waits once: if a reward is still unknown after the next answer, a
--- best pick is still named, but "none of these" is never said on a guess.
-function QuestRewards:Announce(retry)
+-- Every item answer looks again; after a few seconds it gives up waiting:
+-- a best pick is still named, but "none of these" is never said on a guess.
+local GIVE_UP = 3
+
+function QuestRewards:Announce(final)
     self.announcePending = false
     if not self:IsEnabled() or self:Count() < 2 then return end
 
     local index, link, result, unknown = self:Best()
-    if unknown > 0 and not retry then
+    if unknown > 0 and not final then
         self.announcePending = true
+        if not self.waitToken then
+            local token = {}
+            self.waitToken = token
+            local after = Field(_G.C_Timer, "After")
+            if type(after) == "function" then
+                after(GIVE_UP, function()
+                    if QuestRewards.waitToken ~= token then return end
+                    QuestRewards.waitToken = nil
+                    if QuestRewards.announcePending and Ask(_G.QuestFrame, "IsShown") then
+                        pcall(QuestRewards.Announce, QuestRewards, true)
+                    end
+                end)
+            end
+        end
         return
     end
+    self.waitToken = nil
     if unknown > 0 and not index then return end
     if index then
         local how = result.empty and "fills an empty slot"
@@ -226,13 +243,14 @@ function QuestRewards:GET_ITEM_INFO_RECEIVED()
         return
     end
     self:Refresh()
-    if self.announcePending then pcall(self.Announce, self, true) end
+    if self.announcePending then pcall(self.Announce, self) end
 end
 
 --- The window moved on to another quest (or closed): a line still waiting
 --- would describe the wrong rewards, so it is dropped.
 function QuestRewards:Moved()
     self.announcePending = false
+    self.waitToken = nil
 end
 
 function QuestRewards:OnEnable()
