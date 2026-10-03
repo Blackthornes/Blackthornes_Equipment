@@ -171,7 +171,22 @@ out [mangoszero/database](https://github.com/mangoszero/database) and
 python tools/make_sources.py <mangoszero database> <pfQuest>
 ```
 
-The script's opening comment says what it keeps and leaves out. The dungeon
+The script's opening comment says what it keeps and leaves out.
+
+What bosses really drop on Forever comes from Blackthornes Farmer's loot
+records. With a Farmer checkout beside this one (its `Data/Data_Harvested.lua`
+brought up to date by its `tools/harvest_import.py`), run:
+
+```bash
+python tools/forever_drops.py ../Blackthornes_Farmer
+```
+
+It writes `Data/ForeverDrops.lua`: every item looted from a mob inside a
+dungeon or raid, by mob and dungeon. The finder tags those drops [Forever],
+uses Forever's drop rate once enough corpses were counted, and offers gear
+Classic never had at that boss. Item stats are never copied from anywhere;
+the game always supplies them, so gear Forever changed is judged as it is
+now. The dungeon
 level ranges, and the few bosses a script summons rather than spawns, are the
 only parts typed in by hand, at the top of the script.
 

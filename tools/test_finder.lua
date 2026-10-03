@@ -169,6 +169,25 @@ suite.check("a raid drop reads as one", Finder:Describe(raid) == "Ragnaros in Mo
     and Finder.Label(raid) == "Raid", Finder:Describe(raid))
 S.ITEMS[1014] = nil
 
+-- Drops seen on Forever (Farmer's loot records).
+S.FOREVER = {
+    [1005] = { { "Edwin VanCleef", "36", 35 } },
+    [1015] = { { "Captain Greenskin", "36", 0 } },
+    [1016] = { { "Ragnaros", "409", 0 } },
+}
+ITEMS["item:1015"] = { loc = "INVTYPE_HEAD", class = 4, subclass = 2, stats = Agi(9) }
+local confirmed = Finder:SourcesFor(1005, player)
+suite.check("a Classic drop seen on Forever is marked, with Forever's rate",
+    #confirmed == 1 and confirmed[1].forever and confirmed[1].chance == 35)
+local new = Finder:SourcesFor(1015, player)[1]
+suite.check("gear Classic never had at that boss is added", new and new.forever and new.chance == nil)
+suite.check("without a rate when too few were counted",
+    Finder:Describe(new) == "Captain Greenskin in The Deadmines (17-26)", Finder:Describe(new))
+suite.check("a Forever raid drop still waits for 60", #Finder:SourcesFor(1016, player) == 0)
+suite.check("and Forever-only gear is offered", Offered(Finder:Scan(), 1) == "1015", Offered(Finder:Scan(), 1))
+suite.check("tagged [Forever] in the window", ns.FinderUI.SourceLine(new):find("[Forever]", 1, true) ~= nil)
+S.FOREVER, ITEMS["item:1015"] = {}, nil
+
 -- Somewhere in your own zone comes first.
 S.ITEMS[1001].q = { 10 }
 _G.GetRealZoneText = function() return "Elwynn Forest" end

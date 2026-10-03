@@ -95,6 +95,15 @@ standing it needs (`Finder:Needs`, read through
 `C_Reputation.GetFactionDataByID` or `GetFactionInfoByID`). Not yet seen in
 game.
 
+Forever's own boss drops: `tools/forever_drops.py` reads Farmer's
+`Data/Data_Harvested.lua` (no player names in it) and writes
+`Data/ForeverDrops.lua`, rows looted inside a known dungeon or raid by mob
+name. The finder tags them [Forever] and prefers their rate. Trent asked
+(2026-10-03) for this to be refreshed at least once a week: bring Farmer's
+harvest up to date from his saved data first (he attaches it; see Farmer's
+`tools/harvest_import.py`), then rerun this. Stats always come from the
+game, never from data, so a Forever stat change needs nothing.
+
 ## Players' own stat weights
 
 Kept in `BlackthornesEquipmentDB.customWeights[CLASS][spec][stat]`, account

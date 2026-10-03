@@ -75,8 +75,11 @@ end
 
 --- A source as one line: the coloured kind, then where.
 function FinderUI.SourceLine(source)
-    return Colored(KIND_COLORS[source.kind] or "text", Finder.Label(source))
+    local line = Colored(KIND_COLORS[source.kind] or "text", Finder.Label(source))
         .. "  " .. Finder:Describe(source)
+    -- Seen on Forever, the way Farmer marks what it has confirmed.
+    if source.forever then line = line .. "  " .. Colored("good", "[Forever]") end
+    return line
 end
 
 --------------------------------------------------------------------------------

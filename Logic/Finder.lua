@@ -155,8 +155,11 @@ end
 --- tables { kind, ... }, vendors first, then quests, then dungeons.
 function Finder:SourcesFor(itemID, player)
     local S = ns.Sources
-    local item = S.ITEMS[itemID]
-    if not item then return {} end
+    -- Gear only seen on Forever has no Classic entry; the game says what
+    -- level it needs when it is judged.
+    local item = S.ITEMS[itemID] or { 0, 0, 0, 0, 0 }
+    local seen = S.FOREVER and S.FOREVER[itemID]
+    if not S.ITEMS[itemID] and not seen then return {} end
 
     local found = {}
     if item[1] > player.level or not Allows(item[3], player.classBit)
@@ -203,6 +206,33 @@ function Finder:SourcesFor(itemID, player)
         end
     end
 
+    -- What Farmer's loot records saw drop on Forever: it marks the Classic
+    -- drop as confirmed, with Forever's own rate where there is one, or adds
+    -- a drop Classic never had.
+    for _, drop in ipairs(seen or {}) do
+        local dungeon = S.DUNGEONS[drop[2]]
+        if dungeon and dungeon[2] <= player.level
+            and (dungeon[5] == "" or dungeon[5] == player.faction) then
+            local rate = drop[3] > 0 and drop[3] or nil
+            local match
+            for _, source in ipairs(found) do
+                if source.kind == "dungeon" and source.name:lower() == drop[1]:lower() then
+                    match = source
+                end
+            end
+            if match then
+                match.forever = true
+                match.chance = rate or match.chance
+            else
+                found[#found + 1] = {
+                    kind = "dungeon", name = drop[1], dungeon = dungeon[1],
+                    minLevel = dungeon[2], maxLevel = dungeon[3], zone = dungeon[4],
+                    raid = dungeon[6] or false, chance = rate, forever = true,
+                }
+            end
+        end
+    end
+
     -- Somewhere in the zone the character is standing in comes first: a
     -- vendor down the road beats the same item across the world.
     if player.zone then
@@ -223,8 +253,15 @@ end
 function Finder:Candidates(player, only)
     local list = {}
     local floor = player.level - LEVELS_BELOW
+    local ids = {}
     for itemID, item in pairs(ns.Sources.ITEMS) do
-        if item[2] >= floor and item[1] <= player.level then
+        if item[2] >= floor and item[1] <= player.level then ids[#ids + 1] = itemID end
+    end
+    for itemID in pairs(ns.Sources.FOREVER or {}) do
+        if not ns.Sources.ITEMS[itemID] then ids[#ids + 1] = itemID end
+    end
+    for _, itemID in ipairs(ids) do
+        do
             local sources = self:SourcesFor(itemID, player)
             if only then
                 local kept = {}
@@ -404,11 +441,13 @@ function Finder:Describe(source)
             text = text .. ", starts from " .. source.name
         end
         return text
-    elseif source.kind == "dungeon" and source.raid then
-        return ("%s in %s, %s%% drop"):format(source.name, source.dungeon, tostring(source.chance))
     elseif source.kind == "dungeon" then
-        return ("%s in %s (%d-%d), %s%% drop"):format(source.name, source.dungeon,
-            source.minLevel, source.maxLevel, tostring(source.chance))
+        local text = ("%s in %s"):format(source.name, source.dungeon)
+        if not source.raid then
+            text = text .. (" (%d-%d)"):format(source.minLevel, source.maxLevel)
+        end
+        if source.chance then text = text .. (", %s%% drop"):format(tostring(source.chance)) end
+        return text
     end
     return ""
 end
