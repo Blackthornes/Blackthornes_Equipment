@@ -221,6 +221,22 @@ end
 -- Rings and trinkets come in pairs: the slot that is not the weaker one.
 local PAIRED = { [11] = 12, [12] = 11, [13] = 14, [14] = 13 }
 
+local function IDOf(link)
+    return type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil
+end
+
+--- Can only one of this item be worn at a time? Asked of the client where
+--- it can say; otherwise trinkets are taken to be (most are), rings not.
+function Compare:IsUnique(link)
+    local id = IDOf(link)
+    if not id then return false end
+    local unique = Items.Call({ "C_Item.GetItemUniquenessByID", "GetItemUniqueness" }, id)
+    if type(unique) == "boolean" then return unique end
+    if type(unique) == "number" then return unique > 0 end
+    local info = Items:Info(link)
+    return info ~= nil and info.equipLoc == "INVTYPE_TRINKET"
+end
+
 --- Judge an item known to be carried in the bags, not worn.
 --
 -- A link alone cannot tell a worn ring from a second copy of it, so Judge
@@ -236,7 +252,7 @@ function Compare:JudgeCarried(link)
 
     local other = PAIRED[result.slot]
     local worn = Items:Equipped(other)
-    if worn == link then return result end
+    if worn == link or self:IsUnique(link) then return result end
     local against = worn and (self:ScoreOf(worn, weights) or 0) or 0
 
     local judged = {
@@ -289,7 +305,9 @@ function Compare:BestInBags()
             local against = worn and (self:ScoreOf(worn, weights) or 0) or 0
             for _, entry in ipairs(paired) do
                 local result = entry.result
-                if entry.where ~= taken.where and (result.slot == pair[1] or result.slot == pair[2]) then
+                local twin = IDOf(entry.link) == IDOf(taken.link) and self:IsUnique(entry.link)
+                if entry.where ~= taken.where and not twin
+                    and (result.slot == pair[1] or result.slot == pair[2]) then
                     local score = result.score or 0
                     local percent = against > 0 and (score - against) / against * 100 or nil
                     local beats = not worn or (percent and percent >= SAME_WITHIN)

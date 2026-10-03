@@ -298,7 +298,7 @@ function SettingsUI:BuildColumn()
     local positionRow = CreateRow(frame, minimapRow, "Window positions",
         "Moves every Equipment window back to the middle of the screen, if one ends up off screen.")
 
-    local reset = Widgets.CreateButton(positionRow, "Put it back", function()
+    local reset = Widgets.CreateButton(positionRow, "Put them back", function()
         SettingsUI:ResetPositions()
     end, { width = 100, height = 20 })
     reset:SetPoint("TOPLEFT", CONTROL_X, 0)

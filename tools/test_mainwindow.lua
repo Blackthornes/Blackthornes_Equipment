@@ -123,6 +123,15 @@ suite.check("a second copy of a worn ring is an upgrade for the other slot",
     Link(Row(12).best) == "item:5", Link(Row(12).best))
 suite.check("and gets the bag arrow", ns.Compare:IsUpgradeNow("item:5", true))
 suite.check("but the worn one itself is not called an upgrade", not ns.Compare:IsUpgradeNow("item:5"))
+
+-- A trinket is taken to be unique, so a second copy is not offered.
+ITEMS["item:10"] = { loc = "INVTYPE_TRINKET", class = 4, subclass = 0, stats = Agi(9) }
+ITEMS["item:11"] = { loc = "INVTYPE_TRINKET", class = 4, subclass = 0, stats = Agi(1) }
+env.worn[13], env.worn[14] = "item:10", "item:11"
+env.bags[0] = { "item:10" }
+UI:Refresh()
+suite.check("a second copy of a unique trinket is not an upgrade", Link(Row(14).best) == nil, Link(Row(14).best))
+env.worn[13], env.worn[14] = nil, nil
 UI:Hide()
 
 -- Its place is remembered.

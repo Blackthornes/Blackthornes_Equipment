@@ -270,8 +270,9 @@ function Theme.Halo(frame, spread, alpha, key)
 
         if side == "TOP" or side == "BOTTOM" then
             local out = side == "TOP" and 1 or -1
-            halo:SetPoint(side .. "LEFT", frame, side .. "LEFT", 0, out * spread)
-            halo:SetPoint(side .. "RIGHT", frame, side .. "RIGHT", 0, out * spread)
+            -- Running past the corners, so the glow has no dark notches.
+            halo:SetPoint(side .. "LEFT", frame, side .. "LEFT", -spread, out * spread)
+            halo:SetPoint(side .. "RIGHT", frame, side .. "RIGHT", spread, out * spread)
             halo:SetHeight(spread)
         else
             local out = side == "LEFT" and -1 or 1
@@ -357,14 +358,16 @@ function Theme.ItemIcon(item)
     return nil
 end
 
---- The quality colour of an item (r, g, b), or nil when not known yet.
+--- The quality colour of an item (r, g, b), or nil when not known yet or
+--- plain: grey and white items keep the quiet house border, so green and
+--- better stand out.
 function Theme.QualityColor(item)
     local id = ItemID(item)
     if not id or not ns.Items then return nil end
 
     local _, _, quality = ns.Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, id)
     local ok, number = pcall(tonumber, quality)
-    if not ok or not number then return nil end
+    if not ok or not number or number < 2 then return nil end
 
     local r, g, b = ns.Items.Call({ "C_Item.GetItemQualityColor", "GetItemQualityColor" }, number)
     local fine = pcall(function() return r + g + b end)

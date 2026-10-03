@@ -361,6 +361,9 @@ function WeightsUI:BuildRow(entry)
 
     row:SetScript("OnEnter", function(self) WeightsUI:ShowRowTooltip(self) end)
     row:SetScript("OnLeave", function(self)
+        -- Moving onto the row's own - or + button is still being on the row.
+        local okOver, over = pcall(self.IsMouseOver, self)
+        if okOver and over == true then return end
         Motion:Blend(self, "hover", 0, 0.18, function(p)
             self.hover:SetColorTexture(Theme.Unpack("rowHover", 0.6 * p))
         end)

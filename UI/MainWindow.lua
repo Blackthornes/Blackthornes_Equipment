@@ -254,6 +254,7 @@ local function MarkUpgrade(row, on, fresh)
     row.name:SetTextColor(Theme.Unpack(on and "text" or "muted"))
     if not on then
         Motion:Stop(row.frame, "flare")
+        row.gain:SetAlpha(1)
         return
     end
 

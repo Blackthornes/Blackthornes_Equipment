@@ -264,13 +264,14 @@ function FinderUI:BuildHeader()
     title:SetPoint("LEFT", PADDING, 0)
     title:SetText("Where to get upgrades")
 
-    local spec = Theme.CreateLabel(header, "small", "muted")
-    spec:SetPoint("LEFT", title, "RIGHT", 10, -1)
-    self.specLabel = spec
-
     local close = Widgets.CreateButton(header, "X", function() FinderUI:Hide() end,
         { width = 22, height = 20, danger = true })
     close:SetPoint("RIGHT", -PADDING + 4, 0)
+
+    local spec = Theme.CreateLabel(header, "small", "muted")
+    spec:SetPoint("LEFT", title, "RIGHT", 10, -1)
+    spec:SetPoint("RIGHT", close, "LEFT", -10, -1)
+    self.specLabel = spec
 
     local divider = Theme.CreateDivider(frame, "borderLit")
     divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT")

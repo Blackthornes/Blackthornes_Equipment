@@ -56,6 +56,14 @@ function QuestRewards:Link(index)
     return Items.PlainLink(Items.Call({ "GetQuestItemLink" }, "choice", index))
 end
 
+--- Has the client got an item's details? True when it cannot say.
+function QuestRewards:IsCached(link)
+    local id = tonumber(link:match("item:(%d+)"))
+    local cached = id and Items.Call({ "C_Item.IsItemDataCachedByID" }, id)
+    if cached == nil then return Items:Info(link) ~= nil and Items:Stats(link) ~= nil end
+    return cached == true
+end
+
 --- The choice that is the biggest upgrade that can be worn now.
 -- @return index, link, result; or nil when none of them is one
 -- The fourth return is how many choices are gear whose details the client
@@ -66,9 +74,18 @@ function QuestRewards:Best()
     for index = 1, self:Count() do
         local link = self:Link(index)
         local ok, result = pcall(Compare.JudgeCarried, Compare, link)
-        if ok and result == nil and link then
-            local okInfo, info = pcall(Items.Info, Items, link)
-            if okInfo and (info == nil or Compare.SLOTS[info.equipLoc]) then unknown = unknown + 1 end
+        if ok and result == nil then
+            -- No link yet, or gear whose stats have not arrived: worth
+            -- waiting for. A cached item that still cannot be judged is not.
+            if not link then
+                unknown = unknown + 1
+            else
+                local okInfo, info = pcall(Items.Info, Items, link)
+                local gear = okInfo and (info == nil or Compare.SLOTS[info.equipLoc])
+                if gear and not Items:Stats(link) and not self:IsCached(link) then
+                    unknown = unknown + 1
+                end
+            end
         end
         if ok and Compare.WearableUpgrade(result) then
             -- Gain in score, not percent: +5 on a slot worth 50 beats +50% on
@@ -154,15 +171,18 @@ end
 -- A reward the client has not described yet cannot be judged, so the line
 -- waits for its details (GET_ITEM_INFO_RECEIVED) rather than saying none of
 -- them helps.
-function QuestRewards:Announce()
+-- It waits once: if a reward is still unknown after the next answer, a
+-- best pick is still named, but "none of these" is never said on a guess.
+function QuestRewards:Announce(retry)
     self.announcePending = false
     if not self:IsEnabled() or self:Count() < 2 then return end
 
     local index, link, result, unknown = self:Best()
-    if unknown > 0 then
+    if unknown > 0 and not retry then
         self.announcePending = true
         return
     end
+    if unknown > 0 and not index then return end
     if index then
         local how = result.empty and "fills an empty slot"
             or result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5))
@@ -206,7 +226,13 @@ function QuestRewards:GET_ITEM_INFO_RECEIVED()
         return
     end
     self:Refresh()
-    if self.announcePending then pcall(self.Announce, self) end
+    if self.announcePending then pcall(self.Announce, self, true) end
+end
+
+--- The window moved on to another quest (or closed): a line still waiting
+--- would describe the wrong rewards, so it is dropped.
+function QuestRewards:Moved()
+    self.announcePending = false
 end
 
 function QuestRewards:OnEnable()
@@ -227,7 +253,12 @@ function QuestRewards:OnEnable()
         end)
     end
 
-    ns.RegisterEvent(self, "QUEST_DETAIL", self.RefreshSoon)
+    ns.RegisterEvent(self, "QUEST_DETAIL", function()
+        QuestRewards:Moved()
+        QuestRewards:RefreshSoon()
+    end)
+    ns.RegisterEvent(self, "QUEST_GREETING", self.Moved)
+    ns.RegisterEvent(self, "QUEST_FINISHED", self.Moved)
     ns.RegisterEvent(self, "QUEST_COMPLETE", self.QUEST_COMPLETE)
     ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", self.GET_ITEM_INFO_RECEIVED)
 end
