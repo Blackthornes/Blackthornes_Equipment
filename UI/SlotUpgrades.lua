@@ -81,14 +81,31 @@ end
 -- The slot's tooltip
 --------------------------------------------------------------------------------
 
-function SlotUpgrades:AddLines(tooltip, slot)
+local function LineCount(tooltip)
+    local ok, count = pcall(tooltip.NumLines, tooltip)
+    return ok and tonumber(count) or 0
+end
+
+--- Add the slot's upgrades to its tooltip. `picks` are the ones worked out
+--- when the slot was hovered; the game redraws a slot's tooltip several
+--- times a second, and the same lines go back on each time.
+function SlotUpgrades:AddLines(tooltip, slot, picks)
     if not self:IsEnabled() or not SLOT_NAMES[slot] then return end
-    local ok, picks = pcall(self.PicksFor, self, slot)
-    if not ok then return end
+    if not picks then
+        local ok, found = pcall(self.PicksFor, self, slot)
+        if not ok then return end
+        picks = found
+    end
 
     tooltip:AddLine(" ")
     if #picks == 0 then
-        tooltip:AddLine("Nothing on offer beats this yet", Theme.Unpack("muted"))
+        local latest = ns.Finder and ns.Finder.latest
+        if latest and (latest.waiting or 0) > 0 then
+            tooltip:AddLine("Still reading gear from the server, hover again in a moment",
+                Theme.Unpack("muted"))
+        else
+            tooltip:AddLine("Nothing on offer beats this yet", Theme.Unpack("muted"))
+        end
     else
         tooltip:AddLine("Upgrades on offer", Theme.Unpack("accent"))
         for _, pick in ipairs(picks) do
@@ -107,6 +124,32 @@ function SlotUpgrades:AddLines(tooltip, slot)
     end
     tooltip:AddLine("Alt-click for upgrades you can track", Theme.Unpack("dim"))
     pcall(tooltip.Show, tooltip)
+end
+
+--- A slot was hovered: work out its upgrades once and put them on.
+function SlotUpgrades:OnSlotEnter(tooltip, button, slot)
+    local ok, picks = pcall(self.PicksFor, self, slot)
+    self.tip = { tooltip = tooltip, owner = button, slot = slot, picks = ok and picks or {} }
+    self:AddLines(tooltip, slot, self.tip.picks)
+    self.tip.lines = LineCount(tooltip)
+end
+
+--- Every frame the tooltip shows: when the game has redrawn the slot's
+--- tooltip (which wipes added lines), put the upgrades back on.
+function SlotUpgrades:Keep(tooltip)
+    local tip = self.tip
+    if not tip or tip.tooltip ~= tooltip or self.keeping then return end
+    local okOwner, owner = pcall(tooltip.GetOwner, tooltip)
+    local okShown, shown = pcall(tooltip.IsShown, tooltip)
+    if not (okOwner and owner == tip.owner and okShown and shown) then
+        self.tip = nil
+        return
+    end
+    if LineCount(tooltip) >= (tip.lines or 0) then return end
+    self.keeping = true
+    pcall(self.AddLines, self, tooltip, tip.slot, tip.picks)
+    self.keeping = false
+    tip.lines = LineCount(tooltip)
 end
 
 --------------------------------------------------------------------------------
@@ -281,7 +324,7 @@ function SlotUpgrades:Hook()
             button:HookScript("OnEnter", function(slotButton)
                 local slot = SlotOf(slotButton)
                 if slot and GameTooltip and GameTooltip:IsShown() then
-                    pcall(SlotUpgrades.AddLines, SlotUpgrades, GameTooltip, slot)
+                    pcall(SlotUpgrades.OnSlotEnter, SlotUpgrades, GameTooltip, slotButton, slot)
                 end
             end)
             button:HookScript("OnClick", function(slotButton)
@@ -295,6 +338,10 @@ end
 
 function SlotUpgrades:OnEnable()
     self:Hook()
+    local tooltip = _G.GameTooltip
+    if type(tooltip) == "table" and type(tooltip.HookScript) == "function" then
+        pcall(tooltip.HookScript, tooltip, "OnUpdate", function(shown) SlotUpgrades:Keep(shown) end)
+    end
     -- The character sheet may be made later on some clients.
     local frame = _G.CharacterFrame
     if type(frame) == "table" and type(frame.HookScript) == "function" then

@@ -331,6 +331,15 @@ local function LinkFor(itemID)
     return Items.PlainLink(link) or ("item:%d"):format(itemID)
 end
 
+--- A rolled item's link from the client ("[Chain Vest of the Monkey]"),
+--- or the plain item's when the client has none for the roll.
+local function RolledLink(rolled, itemID)
+    local _, link = Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, rolled)
+    link = Items.PlainLink(link)
+    if link and link:find("|H", 1, true) then return link end
+    return LinkFor(itemID)
+end
+
 --- The item IDs in the carried bags, as a set.
 function Finder:Carried()
     local carried = {}
@@ -424,7 +433,8 @@ function Finder:Scan(only, ahead)
                         local list = slots[result.slot] or {}
                         slots[result.slot] = list
                         list[#list + 1] = {
-                            itemID = itemID, link = best and best.link or LinkFor(itemID), result = result,
+                            itemID = itemID, link = best and RolledLink(best.link, itemID) or LinkFor(itemID),
+                            result = result,
                             gain = (result.score or 0) - (result.against or 0),
                             sources = candidate.sources, needs = candidate.needs,
                             roll = best, at = result.level, remote = Remote(candidate.sources),

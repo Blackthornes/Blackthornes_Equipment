@@ -76,7 +76,10 @@ S.ITEMS = { [4000] = { 15, 18, 0, 0, 0, d = { 100, 5 } } }
 
 local found = ns.Finder:Scan()
 local pick = found.slots[5] and found.slots[5][1]
-suite.check("the finder offers it at its best roll", pick and pick.link == "item:4000::::::3", pick and pick.link)
+suite.check("the finder offers it at its best roll", pick and pick.roll and pick.roll.link == "item:4000::::::3",
+    pick and pick.link)
+suite.check("shown by the client's link, or the plain item's when it has none", pick.link == "item:4000",
+    pick.link)
 suite.check("and says so", ns.Finder.RollText(pick) == "Best roll of Agility: 10% of drops; 40% of drops are an upgrade",
     ns.Finder.RollText(pick))
 suite.check("gear without rolls has no roll text", ns.Finder.RollText({}) == nil)

@@ -179,15 +179,35 @@ suite.check("the chest slot's picks, best first", #picks == 2 and picks[1].itemI
 
 local chest = env.Stub({ GetID = function() return 5 end })
 _G.CharacterChestSlot = chest
-ns.SlotUpgrades:Hook()
+ns.SlotUpgrades:OnEnable()
 _G.GameTooltip._shown = true
-_G.GameTooltip._lines = {}
+_G.GameTooltip._lines = { "Chest", "item:900" }
+_G.GameTooltip.GetOwner = function() return chest end
 _G.GameTooltip.AddDoubleLine = function(self, left, right) self._lines[#self._lines + 1] = left .. "  " .. right end
 chest:GetScript("OnEnter")(chest)
 local text = table.concat(_G.GameTooltip._lines, "\n")
 suite.check("hovering the slot lists the upgrade", text:find("Upgrades on offer", 1, true)
     and text:find("item:1002", 1, true), text)
 suite.check("and says how to track it", text:find("Alt-click", 1, true) ~= nil)
+
+-- The game redraws a slot's tooltip several times a second, which wipes
+-- added lines; they go straight back on, without a new scan.
+local lines = #_G.GameTooltip._lines
+local scans = 0
+local realScan = Finder.Scan
+Finder.Scan = function(...) scans = scans + 1 return realScan(...) end
+_G.GameTooltip._lines = { "Chest", "item:900" }
+_G.GameTooltip:GetScript("OnUpdate")(_G.GameTooltip, 0.2)
+suite.check("a redraw puts the upgrades back", #_G.GameTooltip._lines == lines
+    and table.concat(_G.GameTooltip._lines, "\n"):find("Upgrades on offer", 1, true), #_G.GameTooltip._lines)
+_G.GameTooltip:GetScript("OnUpdate")(_G.GameTooltip, 0.2)
+suite.check("and only once", #_G.GameTooltip._lines == lines, #_G.GameTooltip._lines)
+suite.check("without scanning again", scans == 0, scans)
+Finder.Scan = realScan
+_G.GameTooltip.GetOwner = function() return nil end
+_G.GameTooltip._lines = {}
+_G.GameTooltip:GetScript("OnUpdate")(_G.GameTooltip, 0.2)
+suite.check("another owner's tooltip is left alone", #_G.GameTooltip._lines == 0)
 
 _G.IsAltKeyDown = function() return true end
 chest:GetScript("OnClick")(chest)
