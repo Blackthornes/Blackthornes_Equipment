@@ -1,0 +1,303 @@
+-- Blackthornes Equipment -- UI/SlotUpgrades.lua
+-- Upgrades on the character sheet: hover a gear slot and its tooltip lists
+-- the best upgrades on offer for it and where they come from; Alt-click the
+-- slot for a panel of them with Track and Map buttons.
+--
+-- The picks are the upgrade finder's (Finder:Latest, scanned again only
+-- when the gear, level or bags change), so the sheet, the finder window and
+-- the bag arrows always agree. A ring or trinket slot shows the picks for
+-- both of the pair. Only the slot buttons' scripts are hooked, after the
+-- game's own, so nothing the game does with a slot (equipping, using a
+-- trinket) changes. Switched off with the "Character sheet" setting
+-- (`slotUpgrades`).
+
+local _, ns = ...
+
+local SlotUpgrades = ns.NewModule("SlotUpgrades")
+
+local Theme = ns.Theme
+local Widgets = ns.Widgets
+local Motion = ns.Motion
+
+local SLOT_BUTTONS = {
+    "CharacterHeadSlot", "CharacterNeckSlot", "CharacterShoulderSlot", "CharacterBackSlot",
+    "CharacterChestSlot", "CharacterWristSlot", "CharacterHandsSlot", "CharacterWaistSlot",
+    "CharacterLegsSlot", "CharacterFeetSlot", "CharacterFinger0Slot", "CharacterFinger1Slot",
+    "CharacterTrinket0Slot", "CharacterTrinket1Slot", "CharacterMainHandSlot",
+    "CharacterSecondaryHandSlot", "CharacterRangedSlot",
+}
+
+-- Rings and trinkets are a pair: either slot shows the picks for both.
+local PAIRS = { [11] = { 11, 12 }, [12] = { 11, 12 }, [13] = { 13, 14 }, [14] = { 13, 14 } }
+
+local SLOT_NAMES = {
+    [1] = "Head", [2] = "Neck", [3] = "Shoulder", [5] = "Chest", [6] = "Waist", [7] = "Legs",
+    [8] = "Feet", [9] = "Wrist", [10] = "Hands", [11] = "Rings", [12] = "Rings", [13] = "Trinkets",
+    [14] = "Trinkets", [15] = "Back", [16] = "Main hand", [17] = "Off hand", [18] = "Ranged",
+}
+
+local SHOWN = 3
+local WIDTH = 380
+local ROW_HEIGHT = 46
+local PAD = 12
+
+function SlotUpgrades:IsEnabled()
+    return not (ns.db and ns.db.slotUpgrades == false)
+end
+
+local function Colored(key, text)
+    local r, g, b = Theme.Unpack(key)
+    return ("|cff%02x%02x%02x%s|r"):format(math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5),
+        math.floor(b * 255 + 0.5), text)
+end
+
+--- How much better, short: "+12%", "empty slot", "better", with the level
+--- it waits on when planning ahead.
+function SlotUpgrades.Gain(pick)
+    local result = pick.result or {}
+    if result.empty then return "empty slot" end
+    if result.percent then return ("%+d%%"):format(math.floor(result.percent + 0.5)) end
+    return "better"
+end
+
+--- The best picks for an inventory slot (both of a pair), best first.
+function SlotUpgrades:PicksFor(slot)
+    local found = ns.Finder and ns.Finder:Latest()
+    if not found then return {} end
+    local picks = {}
+    for _, each in ipairs(PAIRS[slot] or { slot }) do
+        for _, pick in ipairs(found.slots[each] or {}) do picks[#picks + 1] = pick end
+    end
+    table.sort(picks, function(a, b)
+        if (a.needs == nil) ~= (b.needs == nil) then return a.needs == nil end
+        if a.remote ~= b.remote then return not a.remote end
+        return a.gain > b.gain
+    end)
+    for i = #picks, SHOWN + 1, -1 do picks[i] = nil end
+    return picks
+end
+
+--------------------------------------------------------------------------------
+-- The slot's tooltip
+--------------------------------------------------------------------------------
+
+function SlotUpgrades:AddLines(tooltip, slot)
+    if not self:IsEnabled() or not SLOT_NAMES[slot] then return end
+    local ok, picks = pcall(self.PicksFor, self, slot)
+    if not ok then return end
+
+    tooltip:AddLine(" ")
+    if #picks == 0 then
+        tooltip:AddLine("Nothing on offer beats this yet", Theme.Unpack("muted"))
+    else
+        tooltip:AddLine("Upgrades on offer", Theme.Unpack("accent"))
+        for _, pick in ipairs(picks) do
+            local gainKey = (pick.needs or pick.remote) and "warn" or "good"
+            if type(tooltip.AddDoubleLine) == "function" then
+                local r, g, b = Theme.Unpack(gainKey)
+                tooltip:AddDoubleLine(pick.link, SlotUpgrades.Gain(pick), 1, 1, 1, r, g, b)
+            else
+                tooltip:AddLine(pick.link .. "  " .. Colored(gainKey, SlotUpgrades.Gain(pick)))
+            end
+            local source = pick.sources and pick.sources[1]
+            if source and ns.FinderUI then
+                tooltip:AddLine("    " .. ns.FinderUI.SourceLine(source), Theme.Unpack("muted"))
+            end
+        end
+    end
+    tooltip:AddLine("Alt-click for upgrades you can track", Theme.Unpack("dim"))
+    pcall(tooltip.Show, tooltip)
+end
+
+--------------------------------------------------------------------------------
+-- The Alt-click panel
+--------------------------------------------------------------------------------
+
+function SlotUpgrades:BuildRow(index)
+    local row = CreateFrame("Frame", nil, self.frame)
+    row:SetSize(WIDTH - PAD * 2, ROW_HEIGHT)
+    row:SetPoint("TOPLEFT", PAD, -(40 + (index - 1) * ROW_HEIGHT))
+    row.background = Theme.Fill(row, index % 2 == 0 and "row" or "rowAlt")
+    row:EnableMouse(true)
+
+    local icon = Theme.CreateItemIcon(row, 30)
+    icon:SetPoint("LEFT", 6, 0)
+    row.icon = icon
+
+    local track = Widgets.CreateButton(row, "Track", function()
+        local pick = row.pick
+        if pick and ns.Tracking then ns.Tracking:Toggle(pick) end
+        SlotUpgrades:Fill()
+    end, { width = 58, height = 18 })
+    track:SetPoint("TOPRIGHT", -6, -5)
+    row.track = track
+
+    local map = Widgets.CreateButton(row, "Map", function()
+        local source = row.pick and row.pick.sources and row.pick.sources[1]
+        if source and ns.Waypoints then ns.Waypoints:Show(source, source.name) end
+    end, { width = 58, height = 18 })
+    map:SetPoint("TOPRIGHT", track, "BOTTOMRIGHT", 0, -2)
+    row.map = map
+
+    local textWidth = WIDTH - PAD * 2 - 6 - 30 - 8 - 70
+    local item = Theme.CreateLabel(row, "normal", "text")
+    item:SetPoint("TOPLEFT", 44, -6)
+    item:SetWidth(textWidth - 60)
+    row.item = item
+
+    local gain = Theme.CreateLabel(row, "normal", "good", "RIGHT")
+    gain:SetPoint("TOPLEFT", 44 + textWidth - 56, -6)
+    gain:SetWidth(54)
+    row.gain = gain
+
+    local source = Theme.CreateLabel(row, "tiny", "muted")
+    source:SetPoint("TOPLEFT", 44, -26)
+    source:SetWidth(textWidth)
+    row.source = source
+    row.sourceWidth = textWidth
+
+    row:SetScript("OnEnter", function(self)
+        if not self.pick then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        pcall(GameTooltip.SetHyperlink, GameTooltip, self.pick.link)
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row:Hide()
+    return row
+end
+
+function SlotUpgrades:Build()
+    if self.frame then return self.frame end
+    local frame = CreateFrame("Frame", "BlackthornesEquipmentSlotUpgrades", UIParent)
+    frame:SetSize(WIDTH, 40 + SHOWN * ROW_HEIGHT + 40)
+    frame:SetFrameStrata("DIALOG")
+    frame:SetClampedToScreen(true)
+    frame:EnableMouse(true)
+    Theme.Window(frame)
+    if type(UISpecialFrames) == "table" then
+        table.insert(UISpecialFrames, "BlackthornesEquipmentSlotUpgrades")
+    end
+
+    local header = Theme.CreatePanel(frame, "header", false)
+    header:SetPoint("TOPLEFT")
+    header:SetPoint("TOPRIGHT")
+    header:SetHeight(32)
+    Theme.HouseHeader(header, 16)
+
+    local close = Widgets.CreateButton(header, "X", function() frame:Hide() end,
+        { width = 22, height = 20, danger = true })
+    close:SetPoint("RIGHT", -8, 0)
+
+    local title = Theme.CreateLabel(header, "title", "accent")
+    title:SetPoint("LEFT", PAD, 0)
+    title:SetPoint("RIGHT", close, "LEFT", -8, 0)
+    self.title = title
+
+    local empty = Theme.CreateLabel(frame, "normal", "muted", "CENTER")
+    empty:SetPoint("TOP", 0, -70)
+    empty:SetWidth(WIDTH - PAD * 2)
+    self.empty = empty
+
+    local all = Widgets.CreateButton(frame, "All upgrades", function()
+        frame:Hide()
+        if ns.FinderUI then ns.FinderUI:Show() end
+    end, { width = 110, height = 22, primary = true })
+    all:SetPoint("BOTTOMRIGHT", -PAD, 10)
+
+    self.frame = frame
+    self.rows = {}
+    for index = 1, SHOWN do self.rows[index] = self:BuildRow(index) end
+    frame:Hide()
+    return frame
+end
+
+function SlotUpgrades:Fill()
+    if not (self.frame and self.slot) then return end
+    self.title:SetText(("Upgrades: %s"):format(SLOT_NAMES[self.slot] or "this slot"))
+    local picks = self:PicksFor(self.slot)
+    for index, row in ipairs(self.rows) do
+        local pick = picks[index]
+        row.pick = pick
+        if pick then
+            Theme.SetItemIcon(row.icon, pick.link)
+            row.item:SetText(pick.link)
+            row.gain:SetText(SlotUpgrades.Gain(pick))
+            row.gain:SetTextColor(Theme.Unpack((pick.needs or pick.remote) and "warn" or "good"))
+            local source = pick.sources and pick.sources[1]
+            local text = source and ns.FinderUI and ns.FinderUI.SourceLine(source) or ""
+            row.source:SetText(ns.FinderUI and ns.FinderUI.Fit("tiny", text, row.sourceWidth) or text)
+            local tracked = ns.Tracking and ns.Tracking:IsTracked(pick.itemID)
+            row.track:SetText(tracked and "Untrack" or "Track")
+            row.track:SetLabelColor(tracked and "accent" or "text")
+            row.map:SetShown(source ~= nil and source.x ~= nil)
+            row:Show()
+        else
+            row:Hide()
+        end
+    end
+    self.empty:SetShown(#picks == 0)
+    self.empty:SetText("Nothing on offer beats what you wear here.")
+end
+
+function SlotUpgrades:Open(slot, anchor)
+    self:Build()
+    self.slot = slot
+    self.frame:ClearAllPoints()
+    if anchor then
+        self.frame:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 8, 0)
+    else
+        self.frame:SetPoint("CENTER", UIParent, "CENTER")
+    end
+    self:Fill()
+    self.frame:Show()
+    Motion:Open(self.frame)
+end
+
+function SlotUpgrades:OnTrackingChanged()
+    if self.frame and self.frame:IsShown() then self:Fill() end
+end
+
+--------------------------------------------------------------------------------
+-- Hooks
+--------------------------------------------------------------------------------
+
+local function SlotOf(button)
+    local ok, id = pcall(button.GetID, button)
+    return ok and tonumber(id) or nil
+end
+
+local function AltDown()
+    local ok, down = pcall(function() return IsAltKeyDown() == true end)
+    return ok and down
+end
+
+function SlotUpgrades:Hook()
+    self.hooked = self.hooked or {}
+    for _, name in ipairs(SLOT_BUTTONS) do
+        local button = _G[name]
+        if type(button) == "table" and not self.hooked[button] and type(button.HookScript) == "function" then
+            self.hooked[button] = true
+            button:HookScript("OnEnter", function(slotButton)
+                local slot = SlotOf(slotButton)
+                if slot and GameTooltip and GameTooltip:IsShown() then
+                    pcall(SlotUpgrades.AddLines, SlotUpgrades, GameTooltip, slot)
+                end
+            end)
+            button:HookScript("OnClick", function(slotButton)
+                if not (SlotUpgrades:IsEnabled() and AltDown()) then return end
+                local slot = SlotOf(slotButton)
+                if slot then pcall(SlotUpgrades.Open, SlotUpgrades, slot, slotButton) end
+            end)
+        end
+    end
+end
+
+function SlotUpgrades:OnEnable()
+    self:Hook()
+    -- The character sheet may be made later on some clients.
+    local frame = _G.CharacterFrame
+    if type(frame) == "table" and type(frame.HookScript) == "function" then
+        frame:HookScript("OnShow", function() SlotUpgrades:Hook() end)
+    end
+end

@@ -24,7 +24,9 @@ local COLUMN_WIDTH = 330
 -- game's font, which runs wider than it looks.
 local CONTROL_X = 150
 
-local WIDTH = COLUMN_WIDTH + PADDING * 2
+-- Two columns: the gear and the windows on the left, upgrade hunts on the
+-- right.
+local WIDTH = COLUMN_WIDTH * 2 + PADDING * 3
 local HEIGHT = 642
 
 local ROW_HEIGHT = 50
@@ -134,16 +136,17 @@ local POSITION_KEYS = {
     { "settingsPoint", "settingsRelativePoint", "settingsX", "settingsY" },
     { "weightsPoint", "weightsRelativePoint", "weightsX", "weightsY" },
     { "finderPoint", "finderRelativePoint", "finderX", "finderY" },
+    { "trackerPoint", "trackerRelativePoint", "trackerX", "trackerY" },
 }
 
 --- Put every Equipment window back where it started: the gear window, this
---- one, the stat weights and the upgrade finder. Only the saved spots are
---- cleared; nothing else is touched.
+--- one, the stat weights, the upgrade finder and the upgrade tracker. Only
+--- the saved spots are cleared; nothing else is touched.
 function SettingsUI:ResetPositions()
     for _, keys in ipairs(POSITION_KEYS) do
         for _, key in ipairs(keys) do ns.db[key] = nil end
     end
-    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI }) do
+    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel }) do
         if module and module.frame and module.RestorePosition then module:RestorePosition() end
     end
 end
@@ -182,6 +185,7 @@ function SettingsUI:Build()
 
     self:BuildHeader()
     self:BuildColumn()
+    self:BuildHunting()
 
     local footer = Theme.CreateLabel(frame, "tiny", "dim")
     footer:SetPoint("BOTTOMLEFT", PADDING, 14)
@@ -314,6 +318,42 @@ function SettingsUI:BuildColumn()
     controls.debug:SetPoint("TOPLEFT", CONTROL_X, -2)
 end
 
+-- The right-hand column's switches: saved key, label, what it does, the
+-- checkbox's words, and what to redraw when it changes.
+local HUNTING = {
+    { "upgradeToast", "Upgrade banner",
+        "A glowing banner when an upgrade lands in your bags, or a tracked one is got.", "Show it" },
+    { "showTracker", "Upgrade tracker",
+        "The panel of upgrades you are tracking. Right-click a row in Where to get upgrades to track it.",
+        "Show it", "TrackerPanel" },
+    { "mapPins", "Map pins",
+        "Pins on the world map where each tracked upgrade comes from.", "Show them", "MapPins" },
+    { "slotUpgrades", "Character sheet",
+        "Hover a gear slot for the upgrades on offer for it; Alt-click it to track one.", "Show them" },
+    { "suffixLine", "Random roll names",
+        "Names a green's random roll on its tooltip (of the Monkey), which Forever leaves off.", "Show them" },
+}
+
+function SettingsUI:BuildHunting()
+    local frame = self.frame
+    local controls = self.controls
+
+    local section = CreateSection(frame, "UPGRADE HUNTS",
+        { x = PADDING * 2 + COLUMN_WIDTH, y = -(HEADER + 16) })
+    local anchor = section
+    for _, entry in ipairs(HUNTING) do
+        local key, redraw = entry[1], entry[5]
+        local row = CreateRow(frame, anchor, entry[2], entry[3])
+        controls[key] = Widgets.CreateCheckbox(row, entry[4], function(checked)
+            ns.db[key] = checked
+            local module = redraw and ns[redraw]
+            if module and module.OnTrackingChanged then pcall(module.OnTrackingChanged, module) end
+        end, true)
+        controls[key]:SetPoint("TOPLEFT", CONTROL_X, -2)
+        anchor = row
+    end
+end
+
 --------------------------------------------------------------------------------
 -- Refresh
 --------------------------------------------------------------------------------
@@ -330,6 +370,9 @@ function SettingsUI:Refresh()
     controls.tooltip:SetChecked(ns.db.tooltipLine ~= false)
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
+    for _, entry in ipairs(HUNTING) do
+        controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
+    end
 
     local choices = self:SpecChoices()
     local picked = ns.charDB and ns.charDB.spec

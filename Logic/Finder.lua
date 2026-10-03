@@ -57,7 +57,9 @@ local function Band(a, b)
     return result
 end
 
-Finder.KINDS = { "vendor", "quest", "dungeon" }
+Finder.Band = Band
+
+Finder.KINDS = { "vendor", "quest", "dungeon", "craft" }
 
 --------------------------------------------------------------------------------
 -- The character
@@ -138,7 +140,8 @@ end
 --- yet: { faction, standing, have } in words, or nil when nothing.
 function Finder:Needs(itemID)
     local item = ns.Sources.ITEMS[itemID]
-    local rep = item and item.r
+    local craft = ns.Crafts and ns.Crafts.ITEMS[itemID]
+    local rep = (item and item.r) or (craft and craft.f)
     if not rep then return nil end
 
     -- Standing in the data counts from 0 (Hated); the game's from 1.
@@ -159,7 +162,10 @@ function Finder:SourcesFor(itemID, player)
     -- level it needs when it is judged.
     local item = S.ITEMS[itemID] or { 0, 0, 0, 0, 0 }
     local seen = S.FOREVER and S.FOREVER[itemID]
-    if not S.ITEMS[itemID] and not seen then return {} end
+    -- Gear players make: whoever on the account can make it, or where to
+    -- learn it (Logic/Crafting.lua).
+    local craft = ns.Crafting and ns.Crafting:SourceFor(itemID, player, Band)
+    if not S.ITEMS[itemID] and not seen then return { craft } end
 
     local found = {}
     if item[1] > player.level or not Allows(item[3], player.classBit)
@@ -233,6 +239,8 @@ function Finder:SourcesFor(itemID, player)
         end
     end
 
+    found[#found + 1] = craft
+
     -- Somewhere in the zone the character is standing in comes first: a
     -- vendor down the road beats the same item across the world.
     if player.zone then
@@ -259,6 +267,12 @@ function Finder:Candidates(player, only)
     end
     for itemID in pairs(ns.Sources.FOREVER or {}) do
         if not ns.Sources.ITEMS[itemID] then ids[#ids + 1] = itemID end
+    end
+    for itemID, craft in pairs(ns.Crafts and ns.Crafts.ITEMS or {}) do
+        if not ns.Sources.ITEMS[itemID] and not (ns.Sources.FOREVER or {})[itemID]
+            and craft[5] >= floor and craft[4] <= player.level then
+            ids[#ids + 1] = itemID
+        end
     end
     for _, itemID in ipairs(ids) do
         do
@@ -334,28 +348,61 @@ end
 -- The scan
 --------------------------------------------------------------------------------
 
+--- Is a verdict an upgrade worth listing? Wearable now, or, when planning
+--- ahead, wearable by the level planned for.
+local function Counts(result, reach, level)
+    if Compare.WearableUpgrade(result) then return true end
+    return reach > level and result.verdict == "upgrade" and result.level ~= nil
+        and result.level <= reach and not result.train
+end
+
+--- Every pick's sources are gear nobody on the account can make: a
+--- crafter or the auction house would have to supply it.
+local function Remote(sources)
+    for _, source in ipairs(sources) do
+        if not (source.kind == "craft" and source.state == "other") then return false end
+    end
+    return true
+end
+
 --- Look for upgrades, from every kind of source or only `only` ("vendor",
---- "quest" or "dungeon").
+--- "quest", "dungeon" or "craft"), and `ahead` levels past the character's
+--- (0 or nil for now).
 -- @return nil and why, or a table:
 --   slots     { [inventory slot] = { pick, ... } } best first, at most
---             PER_SLOT each; a pick is { itemID, link, result, gain, sources }
+--             PER_SLOT each; a pick is { itemID, link, result, gain,
+--             sources, needs, roll, at }: `roll` for gear with random rolls
+--             (Logic/Rolls.lua's best), `at` the level it can be worn from
+--             when that is still ahead
 --   count     how many picks in all
 --   checked   how many items were judged
 --   waiting   how many the server has still to answer about
 --   player    the player table
-function Finder:Scan(only)
+--   reach     the level looked at
+function Finder:Scan(only, ahead)
     local player = self:Player()
     if not player then return nil, "nolevel" end
 
     local weights = Weights:ForPlayer()
     if not weights then return nil, "noweights" end
 
+    -- Looking ahead: everything open to the character at the level planned
+    -- for, judged against what is worn today.
+    local level = player.level
+    local reach = math.min(60, level + math.max(0, math.floor(tonumber(ahead) or 0)))
+    local plan = player
+    if reach > level then
+        plan = {}
+        for key, value in pairs(player) do plan[key] = value end
+        plan.level = reach
+    end
+
     -- Gear already in the bags is the gear window's to show, not something
     -- to go and buy or farm again.
     local carried = self:Carried()
 
     local slots, checked, waiting, asked = {}, 0, 0, 0
-    for _, candidate in ipairs(self:Candidates(player, only)) do
+    for _, candidate in ipairs(self:Candidates(plan, only)) do
         local itemID = candidate.itemID
         local wearable = not carried[itemID] and Wearable(player.class, itemID)
         if wearable ~= false then
@@ -366,17 +413,21 @@ function Finder:Scan(only)
                     self:Request(itemID)
                 end
             elseif not Compare:IsWornID(itemID) then
-                local link = ("item:%d"):format(itemID)
-                local ok, result = pcall(Compare.Judge, Compare, link)
+                -- Gear with random rolls is judged at its best roll.
+                local best = ns.Rolls and ns.Rolls.Best and ns.Rolls:Best(itemID)
+                local link = best and best.link or ("item:%d"):format(itemID)
+                local ok, result = true, best and best.result
+                if not best then ok, result = pcall(Compare.Judge, Compare, link) end
                 if ok and result then
                     checked = checked + 1
-                    if Compare.WearableUpgrade(result) and result.slot then
+                    if Counts(result, reach, level) and result.slot then
                         local list = slots[result.slot] or {}
                         slots[result.slot] = list
                         list[#list + 1] = {
-                            itemID = itemID, link = LinkFor(itemID), result = result,
+                            itemID = itemID, link = best and best.link or LinkFor(itemID), result = result,
                             gain = (result.score or 0) - (result.against or 0),
                             sources = candidate.sources, needs = candidate.needs,
+                            roll = best, at = result.level, remote = Remote(candidate.sources),
                         }
                     end
                 elseif ok then
@@ -389,9 +440,11 @@ function Finder:Scan(only)
 
     local count = 0
     for slot, list in pairs(slots) do
-        -- What can be had now comes before gear that waits on a reputation.
+        -- What can be had now comes before gear that waits on a reputation,
+        -- and both before gear someone else would have to make.
         table.sort(list, function(a, b)
             if (a.needs == nil) ~= (b.needs == nil) then return a.needs == nil end
+            if a.remote ~= b.remote then return not a.remote end
             if a.gain ~= b.gain then return a.gain > b.gain end
             return a.itemID < b.itemID
         end)
@@ -400,7 +453,43 @@ function Finder:Scan(only)
         slots[slot] = list
     end
 
-    return { slots = slots, count = count, checked = checked, waiting = waiting, player = player }
+    local found = {
+        slots = slots, count = count, checked = checked, waiting = waiting, player = player,
+        reach = reach,
+    }
+    if not only and reach == level then
+        self.latest, self.latestAt = found, self.Now()
+    end
+    return found
+end
+
+--- Seconds, for how old a kept scan is.
+function Finder.Now()
+    local now = _G.GetTime and Read(_G.GetTime)
+    return tonumber(now) or os.time()
+end
+
+--- The latest scan of everything for now, made again when the gear, the
+--- level or the bags changed since, at most every few seconds. For the
+--- character sheet's slots, which ask on every hover.
+function Finder:Latest()
+    local fresh = self.latest and not self.stale and (self.Now() - (self.latestAt or 0)) < 60
+    if not fresh and (not self.latest or (self.Now() - (self.latestAt or 0)) >= 2) then
+        self.stale = false
+        self:Scan()
+    end
+    return self.latest
+end
+
+function Finder:MarkStale()
+    self.stale = true
+end
+
+function Finder:OnEnable()
+    for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "BAG_UPDATE_DELAYED",
+        "QUEST_TURNED_IN", "TRAIT_CONFIG_UPDATED", "GET_ITEM_INFO_RECEIVED" }) do
+        ns.RegisterEvent(self, event, self.MarkStale)
+    end
 end
 
 --------------------------------------------------------------------------------
@@ -465,13 +554,16 @@ function Finder:Describe(source)
         end
         if source.chance then text = text .. (", %s%% drop"):format(tostring(source.chance)) end
         return text
+    elseif source.kind == "craft" and ns.Crafting then
+        return ns.Crafting:Describe(source, self.Money)
     end
     return ""
 end
 
-Finder.LABELS = { vendor = "Vendor", quest = "Quest", dungeon = "Dungeon" }
+Finder.LABELS = { vendor = "Vendor", quest = "Quest", dungeon = "Dungeon", craft = "Crafted" }
 
---- The tag a source shows: "Vendor", "Quest", "Dungeon" or "Raid".
+--- The tag a source shows: "Vendor", "Quest", "Dungeon", "Raid" or
+--- "Crafted".
 function Finder.Label(source)
     if source.kind == "dungeon" and source.raid then return "Raid" end
     return Finder.LABELS[source.kind] or ""
@@ -489,6 +581,20 @@ end
 -- /beq find
 --------------------------------------------------------------------------------
 
-ns.RegisterCommand("find", "where to get upgrades: vendors, quests and dungeons", function()
+--- A pick's random roll in words: "best roll of the Monkey, 4.5% of drops;
+--- 38% of drops are an upgrade", or nil for gear without rolls.
+function Finder.RollText(pick)
+    local roll = pick and pick.roll
+    if not (roll and ns.Rolls) then return nil end
+    local name = ns.Rolls:Describe(roll.link)
+    local text = ("Best roll%s: %s of drops"):format(name and (" " .. name) or "",
+        ns.Rolls.Percent(roll.chance))
+    if roll.upgradeChance and roll.upgradeChance > roll.chance then
+        text = text .. ("; %s of drops are an upgrade"):format(ns.Rolls.Percent(roll.upgradeChance))
+    end
+    return text
+end
+
+ns.RegisterCommand("find", "where to get upgrades: vendors, quests, dungeons and crafting", function()
     if ns.FinderUI then ns.FinderUI:Toggle() end
 end)

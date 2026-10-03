@@ -1,7 +1,9 @@
 -- Blackthornes Equipment -- UI/FinderWindow.lua
 -- The "Where to get upgrades" window: for each slot, the best gear a vendor
--- sells, a quest gives or a dungeon drops that beats what is worn, and where
--- to go for it.
+-- sells, a quest gives, a dungeon drops or a crafter makes that beats what
+-- is worn, and where to go for it. The stepper beside the filters looks a
+-- few levels ahead. Right-click a row to track it (Logic/Tracking.lua),
+-- Alt-click to pin its spot on the map (Logic/Waypoints.lua).
 --
 -- Opened from the gear window's "Find upgrades" button and /beq find. Built
 -- like the gear window (same header, palette and rows). Logic/Finder.lua does
@@ -38,12 +40,15 @@ local TOOLTIP_SOURCES = 8
 local HEIGHT = HEADER + 10 + FILTERS + 8 + VISIBLE * ROW_HEIGHT + FOOTER
 
 -- The tag in front of a source, in its own colour.
-local KIND_COLORS = { vendor = "accent", quest = "quest", dungeon = "dungeon" }
+local KIND_COLORS = { vendor = "accent", quest = "quest", dungeon = "dungeon", craft = "craft" }
 
 local FILTER_BUTTONS = {
     { nil, "Everything" }, { "vendor", "Vendors" }, { "quest", "Quests" },
-    { "dungeon", "Dungeons and raids" },
+    { "dungeon", "Dungeons and raids" }, { "craft", "Crafted" },
 }
+
+-- How many levels ahead the stepper can look.
+local MOST_AHEAD = 10
 
 --------------------------------------------------------------------------------
 -- Text that fits
@@ -98,6 +103,11 @@ local function ShowTooltip(row)
     if pick.needs then
         GameTooltip:AddLine(Finder.NeedsText(pick.needs), Theme.Unpack("warn"))
     end
+    if pick.at then
+        GameTooltip:AddLine(("You can wear it from level %d"):format(pick.at), Theme.Unpack("warn"))
+    end
+    local roll = Finder.RollText(pick)
+    if roll then GameTooltip:AddLine(roll, Theme.Unpack("good"), true) end
     GameTooltip:AddLine("Where to get it", Theme.Unpack("accent"))
     for index, source in ipairs(pick.sources) do
         if index > TOOLTIP_SOURCES then
@@ -109,6 +119,16 @@ local function ShowTooltip(row)
         if source.after then
             GameTooltip:AddLine("    after " .. source.after, Theme.Unpack("muted"))
         end
+        if source.kind == "craft" and ns.Crafting then
+            GameTooltip:AddLine("    " .. ns.Crafting:MaterialsText(pick.itemID), Theme.Unpack("muted"), true)
+        end
+    end
+    GameTooltip:AddLine(" ")
+    local tracked = ns.Tracking and ns.Tracking:IsTracked(pick.itemID)
+    GameTooltip:AddLine(tracked and "Right-click to stop tracking it" or "Right-click to track it",
+        Theme.Unpack("muted"))
+    if FinderUI.Place(pick) then
+        GameTooltip:AddLine("Alt-click to pin it on your map", Theme.Unpack("muted"))
     end
     GameTooltip:Show()
 end
@@ -169,15 +189,26 @@ function FinderUI:BuildRow(index)
         Motion:Blend(self, "hover", 0, 0.18, Light)
         GameTooltip:Hide()
     end)
-    row:SetScript("OnClick", function(self)
+    row:SetScript("OnClick", function(self, button)
         local pick = self.pick
         if not pick then return end
+        if button == "RightButton" then
+            if ns.Tracking then ns.Tracking:Toggle(pick) end
+            if rawget(self, "over") == true then ShowTooltip(self) end
+            return
+        end
+        local okAlt, alt = pcall(function() return IsAltKeyDown() == true end)
+        if okAlt and alt then
+            local place = FinderUI.Place(pick)
+            if place and ns.Waypoints then ns.Waypoints:Show(place, place.name) end
+            return
+        end
         if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
             local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
             if ok and chatLink then pcall(ChatEdit_InsertLink, pick.link) end
         end
     end)
-    if row.RegisterForClicks then row:RegisterForClicks("LeftButtonUp") end
+    if row.RegisterForClicks then row:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
 
     row:Hide()
     return row
@@ -244,7 +275,7 @@ function FinderUI:Build()
     local hint = Theme.CreateLabel(frame, "tiny", "dim")
     hint:SetPoint("BOTTOMLEFT", PADDING, 10)
     hint:SetWidth(WIDTH - PADDING * 2)
-    hint:SetText("Places and prices are from Classic, so Forever may differ. Shift-click an item to link it.")
+    hint:SetText("Places and prices are from Classic, so Forever may differ. Right-click to track, Alt-click for the map.")
     self.hint = hint
 
     frame:Hide()
@@ -304,16 +335,52 @@ function FinderUI:BuildFilters()
         self.filters[#self.filters + 1] = button
         previous = button
     end
+
+    -- Plan ahead: "Now", or a level up to MOST_AHEAD past the character's.
+    local ahead = Widgets.CreateStepper(self.frame, {
+        min = 0, max = MOST_AHEAD, step = 1, value = self:Ahead(),
+        format = function(value) return FinderUI.AheadText(value) end,
+        onChange = function(value)
+            if ns.db then ns.db.finderAhead = value end
+            FinderUI.offset = 0
+            FinderUI:Refresh()
+        end,
+    })
+    ahead:SetPoint("TOPRIGHT", -PADDING, -(HEADER + 11))
+    self.ahead = ahead
+end
+
+--- How many levels ahead the window looks (0 for now).
+function FinderUI:Ahead()
+    local value = tonumber(ns.db and ns.db.finderAhead) or 0
+    return math.max(0, math.min(MOST_AHEAD, math.floor(value)))
+end
+
+--- The stepper's words: "Now", or "Level 27".
+function FinderUI.AheadText(value)
+    if (value or 0) <= 0 then return "Now" end
+    local level = ns.Items and ns.Items:PlayerLevel()
+    if not level then return ("+%d levels"):format(value) end
+    return ("Level %d"):format(math.min(60, level + value))
+end
+
+--- Where a pick's first source with an exact spot is, for the map.
+function FinderUI.Place(pick)
+    for _, source in ipairs(pick and pick.sources or {}) do
+        if source.zone and source.x and source.y then return source end
+    end
+    return nil
 end
 
 --------------------------------------------------------------------------------
 -- Filling it in
 --------------------------------------------------------------------------------
 
---- The kind showing: "vendor", "quest", "dungeon", or nil for everything.
+--- The kind showing: "vendor", "quest", "dungeon", "craft", or nil for
+--- everything.
 function FinderUI:Filter()
     local show = ns.db and ns.db.finderShow
-    if show == "vendor" or show == "quest" or show == "dungeon" then return show end
+    if show == "vendor" or show == "quest" or show == "dungeon" or show == "craft" then return show end
     return nil
 end
 
@@ -366,17 +433,23 @@ function FinderUI:FillRow(row, line)
 
     row.pick = {
         link = line.pick.link, sources = line.sources, itemID = line.pick.itemID,
-        needs = line.pick.needs,
+        needs = line.pick.needs, result = line.pick.result, roll = line.pick.roll, at = line.pick.at,
     }
     row.slot:SetText(line.first and line.slotName or "")
     Theme.SetItemIcon(row.icon, line.pick.link)
     row.item:SetText(line.pick.link)
-    row.gain:SetText(Gain(line.pick.result))
-    -- Gear that waits on a reputation is shown in amber, not green.
-    row.edgeKey = line.pick.needs and "warn" or "good"
+    local gain = Gain(line.pick.result)
+    if line.pick.at then gain = ("at %d: %s"):format(line.pick.at, gain) end
+    row.gain:SetText(gain)
+    -- Gear that waits on a reputation, a level or a crafter is shown in
+    -- amber, not green.
+    row.edgeKey = (line.pick.needs or line.pick.at or line.pick.remote) and "warn" or "good"
     row.gain:SetTextColor(Theme.Unpack(row.edgeKey))
 
     local text = FinderUI.SourceLine(line.sources[1])
+    if ns.Tracking and ns.Tracking:IsTracked(line.pick.itemID) then
+        text = Colored("accent", "Tracking") .. "  " .. text
+    end
     if line.pick.needs then
         text = Colored("warn", ("Needs %s with %s"):format(line.pick.needs.standing,
             line.pick.needs.faction)) .. "  " .. text
@@ -426,6 +499,7 @@ local NO_UPGRADES = {
     vendor = "No vendor sells anything better than what you wear.",
     quest = "No quest open to you gives anything better than what you wear.",
     dungeon = "No dungeon or raid open to you drops anything better than what you wear.",
+    craft = "No crafted gear beats what you wear.",
 }
 
 --- Look again and redraw.
@@ -439,7 +513,7 @@ function FinderUI:Refresh()
         button:SetLabelColor(on and "accent" or "text")
     end
 
-    local found, why = Finder:Scan(self:Filter())
+    local found, why = Finder:Scan(self:Filter(), self:Ahead())
     if not found then
         self.lines = {}
         self:Draw()
@@ -457,7 +531,9 @@ function FinderUI:Refresh()
 
     local spec, _, class = Weights:CurrentSpec()
     local specName = spec and Weights.SPECS[class][spec].name or ""
-    self.specLabel:SetText(("%s, level %d"):format(specName, found.player.level))
+    local planning = found.reach > found.player.level and (", planning for %d"):format(found.reach) or ""
+    self.specLabel:SetText(("%s, level %d%s"):format(specName, found.player.level, planning))
+    if self.ahead then self.ahead:SetValue(self:Ahead(), true) end
 
     self.lines = self:Lines(found)
     local most = math.max(0, #self.lines - VISIBLE)
@@ -477,10 +553,11 @@ function FinderUI:Refresh()
     end
 
     local text
+    local when = found.reach > found.player.level and ("by level %d"):format(found.reach) or "now"
     if shown == 1 then
-        text = "1 upgrade you can go and get now."
+        text = ("1 upgrade you can go and get %s."):format(when)
     else
-        text = ("%d upgrades you can go and get now."):format(shown)
+        text = ("%d upgrades you can go and get %s."):format(shown, when)
     end
     if found.waiting > 0 then
         text = text .. Colored("muted", ("  Still asking the server about %d items."):format(found.waiting))
@@ -546,6 +623,10 @@ function FinderUI:Toggle()
     else
         self:Show()
     end
+end
+
+function FinderUI:OnTrackingChanged()
+    if self.frame and self.frame:IsShown() then self:Draw() end
 end
 
 local EVENTS = {

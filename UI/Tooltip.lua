@@ -110,6 +110,25 @@ local function LineCount(tooltip)
     return nil
 end
 
+--- The lines GearQuest players asked for and more: a random roll's name
+--- and stats, which Forever's own tooltip leaves off ("of the Monkey: +5
+--- Agility, +5 Stamina"), and who on the account can make a crafted piece.
+function Tooltip:MoreLines(link)
+    local lines = {}
+    if not (ns.db and ns.db.suffixLine == false) and ns.Rolls and ns.Rolls.RollOf(link) then
+        local name, stats = ns.Rolls:Describe(link)
+        if stats then
+            lines[#lines + 1] = { name and (name .. ": " .. stats) or ("Random roll: " .. stats), "accent" }
+        end
+    end
+    local itemID = tonumber(link:match("item:(%d+)"))
+    if itemID and ns.Crafting then
+        local text, color = ns.Crafting:TooltipLine(itemID)
+        if text then lines[#lines + 1] = { text, color } end
+    end
+    return lines
+end
+
 --- Put the line on a tooltip.
 -- @return "added", "quiet" (nothing to say), "duplicate" or "noitem"
 function Tooltip:Decorate(tooltip, data)
@@ -134,6 +153,10 @@ function Tooltip:Decorate(tooltip, data)
     if text then lines[#lines + 1] = { text, color } end
     local okTrainer, trainer, trainerColor = pcall(WeaponSkills.Describe, WeaponSkills, link)
     if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true } end
+    local okMore, more = pcall(Tooltip.MoreLines, Tooltip, link)
+    if okMore then
+        for _, line in ipairs(more) do lines[#lines + 1] = line end
+    end
     if #lines == 0 then return "quiet" end
 
     local addLine = Field(tooltip, "AddLine")

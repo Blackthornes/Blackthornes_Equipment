@@ -37,6 +37,9 @@ local done = { [13] = true }
 _G.C_QuestLog = { IsQuestFlaggedCompleted = function(id) return done[id] or false end }
 
 local S = ns.Sources
+-- Crafted gear and random rolls have suites of their own.
+ns.Crafts.ITEMS = {}
+ns.RollData.ITEMS = {}
 S.ZONES = { [12] = "Elwynn Forest", [14] = "Durotar" }
 S.NPCS = {
     [1] = { "Corina Steele", 12, 41.5, 65.9, "A" },

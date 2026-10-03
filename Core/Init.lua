@@ -255,6 +255,19 @@ local DEFAULTS = {
     finderX = 40,
     finderY = 20,
     finderShow = "all",
+    -- How many levels ahead the finder looks (0 for now).
+    finderAhead = 0,
+
+    -- Upgrade hunts: the banner when an upgrade or a tracked one lands in
+    -- the bags, the tracker panel and where it sits, pins on the world map,
+    -- upgrades on the character sheet's slots, and naming random rolls on
+    -- tooltips. All on unless switched off. What is tracked is kept per
+    -- character (`tracked`, `trackedDone`; Logic/Tracking.lua).
+    upgradeToast = true,
+    showTracker = true,
+    mapPins = true,
+    slotUpgrades = true,
+    suffixLine = true,
 
     -- The player's own stat weights, by class and spec, are kept under
     -- `customWeights` (Logic/Weights.lua). Not given a default here: the

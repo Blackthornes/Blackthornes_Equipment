@@ -20,11 +20,17 @@ Data\Items.lua
 Data\WeaponTrainers.lua
 Data\Sources.lua
 Data\ForeverDrops.lua
+Data\Crafts.lua
+Data\Rolls.lua
 
 Logic\Weights.lua
 Logic\Compare.lua
 Logic\WeaponSkills.lua
+Logic\Crafting.lua
+Logic\Rolls.lua
 Logic\Finder.lua
+Logic\Tracking.lua
+Logic\Waypoints.lua
 
 UI\Theme.lua
 UI\Widgets.lua
@@ -38,5 +44,10 @@ UI\BagIcons.lua
 UI\QuestRewards.lua
 UI\LootRolls.lua
 UI\UpgradeChat.lua
+UI\Toast.lua
+UI\TrackerPanel.lua
+UI\MapPins.lua
+UI\SlotUpgrades.lua
+UI\MoreMarks.lua
 
 Probe\Probe.lua
