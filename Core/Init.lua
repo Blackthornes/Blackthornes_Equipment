@@ -248,6 +248,14 @@ local DEFAULTS = {
     -- A line in chat when an upgrade you can wear now lands in the bags.
     upgradeChat = true,
 
+    -- The "Where to get upgrades" window: where it sits, and which sources
+    -- it shows ("all", "vendor", "quest" or "dungeon").
+    finderPoint = "CENTER",
+    finderRelativePoint = "CENTER",
+    finderX = 40,
+    finderY = 20,
+    finderShow = "all",
+
     -- The player's own stat weights, by class and spec, are kept under
     -- `customWeights` (Logic/Weights.lua). Not given a default here: the
     -- table is made the first time a weight is changed, and once made it is

@@ -31,6 +31,11 @@ local APIS = {
     "C_Texture.GetAtlasInfo", "QuestInfo_Display", "C_CreatureInfo.GetClassInfo",
     "UnitFactionGroup", "C_SpellBook.IsSpellKnown", "IsPlayerSpell", "IsSpellKnown",
     "GetNumSkillLines", "GetSkillLineInfo",
+    -- The upgrade finder: who the character is, where they stand, which
+    -- quests they have done, and asking the server about unseen items.
+    "UnitRace", "GetRealZoneText", "C_QuestLog.IsQuestFlaggedCompleted",
+    "IsQuestFlaggedCompleted", "C_Item.IsItemDataCachedByID",
+    "C_Item.RequestLoadItemDataByID",
 }
 
 local function Has(path)

@@ -93,13 +93,22 @@ function UI:Build()
     self:BuildHeader()
     self:BuildRows()
 
+    -- Where to go for an upgrade that is not in the bags yet. Down here
+    -- rather than in the header, where the spec line needs the room.
+    local find = Widgets.CreateButton(frame, "Find upgrades", function()
+        if ns.FinderUI then ns.FinderUI:Toggle() end
+    end, { width = 100, height = 24, primary = true })
+    find:SetPoint("BOTTOMRIGHT", -PADDING, 12)
+    self.findButton = find
+
     local footer = Theme.CreateLabel(frame, "small", "muted")
     footer:SetPoint("BOTTOMLEFT", PADDING, 24)
-    footer:SetPoint("BOTTOMRIGHT", -PADDING, 24)
+    footer:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, 12)
     self.footer = footer
 
     local hint = Theme.CreateLabel(frame, "tiny", "dim")
     hint:SetPoint("BOTTOMLEFT", PADDING, 10)
+    hint:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, -2)
     hint:SetText("Hover an item for its tooltip. Equipping is up to you.")
     self.hint = hint
 
