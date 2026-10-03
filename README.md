@@ -16,7 +16,9 @@ So far it judges the gear in your bags: hovering a piece says on its tooltip
 whether it beats what you wear and by how much, and an upgrade you can wear
 now gets a green arrow on its icon in the bags. When a quest lets you choose a
 reward, the biggest upgrade among them gets the same arrow, and chat names it
-when you hand the quest in. The gear window lists every slot with what you
+when you hand the quest in. When an upgrade you can wear now lands in your
+bags (looted, bought, mailed or traded), chat says so once, with how much
+better it is. The gear window lists every slot with what you
 wear and the biggest upgrade for it in your bags.
 
 ## Install
@@ -91,8 +93,14 @@ and is measured against what you wear in its slot. Rings and trinkets are
 measured against the weaker of your two, and a two-hander against both hands.
 Anything within 1% is called the same. The best quest reward is the one that
 adds the most score, so a small gain on an important slot can beat a big
-percentage on a minor one. The tooltip line and the arrows can each be
-switched off in the settings.
+percentage on a minor one. The tooltip line, the arrows and the chat line
+for a new upgrade can each be switched off in the settings.
+
+The chat line is only for gear that is new in your bags: what you carried at
+login, after a `/reload` or a loading screen, what you move between bags, and
+a piece you take off are never announced, nor is gear you already had that
+becomes an upgrade later (a level up or a spec change). Only the backpack and
+the four bags beside it count, not the bank.
 
 The built-in weights are a starting guess. **Settings > Stat weights >
 Change weights** (or `/beq weights`) lists each stat's weight for any class
@@ -112,7 +120,7 @@ later version's tuning still reaches the rest. Updates never clear them.
 | `Core/` | Namespace, module registry, event dispatch, slash commands, saved variables |
 | `Data/` | Everything read from the game: bags, equipped gear, quest rewards, item stats; classic's weapon masters and what each teaches |
 | `Logic/` | Stat weights per class and spec (`Weights.lua`), judging an item against what is worn (`Compare.lua`), and which weapon skills are known and where to learn the rest (`WeaponSkills.lua`) |
-| `UI/` | Theme, widgets, the minimap button, the gear window, the settings window, the stat weights window, the tooltip lines, the bag arrows and the quest-reward arrow |
+| `UI/` | Theme, widgets, the minimap button, the gear window, the settings window, the stat weights window, the tooltip lines, the bag arrows, the quest-reward arrow and the chat line for a new upgrade |
 | `Probe/` | `/beq probe`, which checks what the running game actually supports instead of guessing |
 | `tools/` | Checks, tests and the link script. Not shipped to the client |
 | `docs/` | What the Forever client actually does, found with `/beq probe`. Not shipped |
