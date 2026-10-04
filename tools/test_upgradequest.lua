@@ -186,7 +186,26 @@ env.worn[5] = "item:9000"
 Quest:Update()
 suite.check("an upgrade no longer wanted is dropped", Quest:Current() == nil)
 suite.check("and chat says why", env.ChatText():find("wear something as good now", 1, true) ~= nil)
+suite.check("with a banner", (function()
+    for _, banner in ipairs(toasts) do
+        if banner.title == "You already beat this one" then return true end
+    end
+end)())
 suite.check("without counting as done", Quest:DoneCount() == 1)
+env.worn[5] = "item:900"
+
+-- Beaten while the quest's item sits in the bags, not yet put on: the
+-- quest still closes rather than asking to put on the weaker one.
+ns.charDB.upgradeQuest = nil
+ns.Finder:MarkStale()
+Quest:Update()
+local beaten = Quest:Current()
+suite.check("a new quest to beat", beaten ~= nil)
+env.bags[0][1] = beaten.link
+env.worn[5] = "item:9000"
+Quest:Update()
+suite.check("beaten in the bags, it is dropped too", Quest:Current() == nil or Quest:Current().itemID ~= beaten.itemID)
+env.bags[0][1] = nil
 env.worn[5] = "item:900"
 
 --------------------------------------------------------------------------------

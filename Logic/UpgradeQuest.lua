@@ -543,10 +543,17 @@ function UpgradeQuest:Check()
         end
         if ns.Finder then ns.Finder:MarkStale() end
         quest = nil
-    elseif quest and self.Count(quest.itemID) == 0 and not self:StillWanted(quest) then
+    elseif quest and not self:StillWanted(quest) then
+        -- Something as good or better was put on first (looted, bought,
+        -- made): this one is beaten, carried or not.
         ns.charDB.upgradeQuest = nil
         self.lastStep = nil
         ns.Print(("dropped the upgrade quest for %s: you wear something as good now."):format(quest.link))
+        if ns.Toast then
+            ns.Toast:Show({ title = "You already beat this one", link = quest.link,
+                text = "You wear something as good. Picking your next upgrade." })
+        end
+        if ns.Finder then ns.Finder:MarkStale() end
         quest = nil
     elseif quest and self:HandedInWithout(quest) then
         -- The quest was handed in and another reward taken: it cannot be
