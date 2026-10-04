@@ -21,6 +21,10 @@ local Motion = ns.Motion
 
 local PADDING = 18
 local HEADER = 36
+
+-- The metal rim (UI/Titanforged.lua) reaches this far in from the edge;
+-- the header sits inside it.
+local RIM = 6
 local ROW_HEIGHT = 24
 local COLUMN_HEADS = 22
 local FOOTER = 48
@@ -97,7 +101,27 @@ function UI:Build()
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
 
-    Theme.Window(frame)
+    Theme.Fill(frame, "window")
+
+    -- The house frame: a gold rim with corner gems, the shield in a round
+    -- portrait, the name on a plate and a red close gem (UI/Titanforged.lua).
+    if ns.Titanforged then
+        local trim = ns.Titanforged:Dress(frame, {
+            title = "Blackthornes Equipment",
+            portrait = true,
+            close = function() UI:Hide() end,
+        })
+
+        -- Kept on the screen whole: the portrait and plate reach out past
+        -- the top left, the close gem past the top right.
+        local left, right, top, bottom = ns.Titanforged.Reach(trim)
+        if frame.SetClampRectInsets then frame:SetClampRectInsets(-left, right, top, -bottom) end
+    else
+        Theme.Border(frame, "borderLit")
+    end
+
+    -- The house glow round the outside, flaring as the window opens.
+    Theme.Halo(frame, 12, 0.14)
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -139,35 +163,33 @@ end
 function UI:BuildHeader()
     local frame = self.frame
 
-    local header = Theme.CreatePanel(frame, "header", false)
-    header:SetPoint("TOPLEFT")
-    header:SetPoint("TOPRIGHT")
+    -- The window's name is on the plate across the top edge and the close
+    -- gem sits on the top right corner (UI/Titanforged.lua), so the header
+    -- holds the spec line, clear of the portrait on the left, and the
+    -- Settings button. Both sit a little low, under the plate.
+    local header = CreateFrame("Frame", nil, frame)
+    header:SetPoint("TOPLEFT", RIM, 0)
+    header:SetPoint("TOPRIGHT", -RIM, 0)
     header:SetHeight(HEADER)
-    Theme.HouseHeader(header, 20)
-
-    local title = Theme.CreateLabel(header, "title", "accent")
-    title:SetPoint("LEFT", PADDING, 0)
-    title:SetText("Blackthornes Equipment")
-
-    local close = Widgets.CreateButton(header, "X", function() UI:Hide() end,
-        { width = 22, height = 20, danger = true })
-    close:SetPoint("RIGHT", -PADDING + 4, 0)
 
     local settings = Widgets.CreateButton(header, "Settings", function()
         if ns.SettingsUI then ns.SettingsUI:Toggle() end
     end, { width = 70, height = 20 })
-    settings:SetPoint("RIGHT", close, "LEFT", -6, 0)
+    settings:SetPoint("RIGHT", -(PADDING + 6 - RIM), -4)
 
     -- Stops short of the Settings button, so a long spec name never runs
     -- under it.
     local spec = Theme.CreateLabel(header, "small", "muted")
-    spec:SetPoint("LEFT", title, "RIGHT", 10, -1)
-    spec:SetPoint("RIGHT", settings, "LEFT", -10, -1)
+    spec:SetPoint("LEFT", 58 - RIM, -4)
+    spec:SetPoint("RIGHT", settings, "LEFT", -10, 0)
     self.specLabel = spec
 
-    local divider = Theme.CreateDivider(frame, "borderLit")
-    divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT")
-    divider:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT")
+    -- A gold rule under it, bright at the left and fading out to the right.
+    local rule = header:CreateTexture(nil, "ARTWORK")
+    rule:SetPoint("BOTTOMLEFT")
+    rule:SetPoint("BOTTOMRIGHT")
+    rule:SetHeight(1)
+    Theme.SetGradientAlpha(rule, "HORIZONTAL", "accent", 0.6, 0.05)
 end
 
 function UI:BuildRows()
@@ -182,10 +204,18 @@ function UI:BuildRows()
         label:SetText(head[2])
     end
 
+    -- The rows sit sunk into the window, as the game's inset lists do.
+    local well = Theme.CreatePanel(frame, "panel", "border")
+    well:SetPoint("TOPLEFT", PADDING - 3, top - COLUMN_HEADS + 3)
+    well:SetSize(inner + 6, #SLOTS * ROW_HEIGHT + 6)
+    Theme.Recess(well)
+
     self.rows = {}
     for index, entry in ipairs(SLOTS) do
         local restKey = index % 2 == 0 and "row" or "rowAlt"
         local row = CreateFrame("Frame", nil, frame)
+        -- Above the well, whatever order the client draws siblings in.
+        row:SetFrameLevel(well:GetFrameLevel() + 1)
         row:SetSize(inner, ROW_HEIGHT)
         row:SetPoint("TOPLEFT", PADDING, top - COLUMN_HEADS - (index - 1) * ROW_HEIGHT)
         row.background = Theme.Fill(row, restKey)
@@ -219,8 +249,16 @@ function UI:BuildRows()
         gain:SetPoint("RIGHT", -8, 0)
         gain:SetWidth(GAIN_WIDTH)
 
+        -- Under the mouse the row lights from the left: a gold wash fading
+        -- across it (Titanforged).
+        local hoverWash = row:CreateTexture(nil, "BACKGROUND", nil, 3)
+        hoverWash:SetAllPoints(row)
+        Theme.SetGradientAlpha(hoverWash, "HORIZONTAL", "accent", 0.20, 0)
+        hoverWash:SetAlpha(0)
+
         function row.Light(p)
             row.background:SetColorTexture(Motion.Mix(restKey, "rowHover", p))
+            hoverWash:SetAlpha(p)
         end
 
         self.rows[index] = {
@@ -365,6 +403,8 @@ function UI:Show()
         self:RestorePosition()
         self.frame:Show()
         Motion:Open(self.frame)
+        -- And a light runs round the portrait.
+        if ns.Titanforged then ns.Titanforged:Opened(self.frame) end
     end
     self:Refresh()
 end

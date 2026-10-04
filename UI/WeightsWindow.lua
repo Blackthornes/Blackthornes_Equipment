@@ -22,6 +22,10 @@ local Weights = ns.Weights
 
 local PADDING = 18
 local HEADER = 36
+
+-- The metal rim (UI/Titanforged.lua) reaches this far in from the edge;
+-- the header sits inside it.
+local RIM = 6
 local PICKERS = 84          -- the class and spec steppers and the line under them
 local ROW_HEIGHT = 26
 local COLUMN_GAP = 22
@@ -166,7 +170,22 @@ function WeightsUI:Build()
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
 
-    Theme.Window(frame)
+    Theme.Fill(frame, "window")
+
+    -- The house frame (UI/Titanforged.lua): the gold rim and corner gems,
+    -- the name on a plate and the red close gem. No portrait: that is for
+    -- the gear window and the finder.
+    if ns.Titanforged then
+        self.trim = ns.Titanforged:Dress(frame, {
+            title = "Blackthornes Equipment",
+            close = function() WeightsUI:Hide() end,
+        })
+        local left, right, top, bottom = ns.Titanforged.Reach(self.trim)
+        if frame.SetClampRectInsets then frame:SetClampRectInsets(-left, right, top, -bottom) end
+    else
+        Theme.Border(frame, "borderLit")
+    end
+    Theme.Halo(frame, 12, 0.14)
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -195,36 +214,38 @@ end
 function WeightsUI:BuildHeader()
     local frame = self.frame
 
-    local header = Theme.CreatePanel(frame, "header", false)
-    header:SetPoint("TOPLEFT")
-    header:SetPoint("TOPRIGHT")
+    -- The name is on the plate across the top edge and the close gem on the
+    -- top right corner (UI/Titanforged.lua), so the header holds what this
+    -- window is, a little low, under the plate.
+    local header = CreateFrame("Frame", nil, frame)
+    header:SetPoint("TOPLEFT", RIM, 0)
+    header:SetPoint("TOPRIGHT", -RIM, 0)
     header:SetHeight(HEADER)
-    Theme.HouseHeader(header, 20)
 
-    local title = Theme.CreateLabel(header, "title", "accent")
-    title:SetPoint("LEFT", PADDING, 0)
-    title:SetText("Blackthornes Equipment")
-
-    local subtitle = Theme.CreateLabel(header, "small", "muted")
-    subtitle:SetPoint("LEFT", title, "RIGHT", 10, -1)
+    local subtitle = Theme.CreateLabel(header, "normal", "muted")
+    subtitle:SetPoint("LEFT", PADDING - RIM, -4)
     subtitle:SetText("Stat weights")
 
-    local close = Widgets.CreateButton(header, "X", function() WeightsUI:Hide() end,
-        { width = 22, height = 20, danger = true })
-    close:SetPoint("RIGHT", -PADDING + 4, 0)
-
-    -- The title, subtitle and close button must all fit; the window widens
-    -- for them rather than letting the subtitle run under the button.
-    local needed = PADDING + Theme.TextWidth("title", "Blackthornes Equipment") + 10
-        + Theme.TextWidth("small", "Stat weights") + 16 + 22 + PADDING
+    -- The plate and the corner gems either side of it must fit; the window
+    -- widens for them rather than letting the plate run over a corner.
+    local plate = self.trim and rawget(self.trim, "plate")
+    local plateWidth = plate and plate:GetWidth()
+    if type(plateWidth) ~= "number" then
+        plateWidth = Theme.TextWidth("title", "Blackthornes Equipment") + 58
+    end
+    local needed = math.max(plateWidth + 2 * 40,
+        PADDING + Theme.TextWidth("normal", "Stat weights") + PADDING)
     if needed > self.width then
         self.width = needed
         frame:SetWidth(needed)
     end
 
-    local divider = Theme.CreateDivider(frame, "borderLit")
-    divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT")
-    divider:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT")
+    -- A gold rule under it, bright at the left and fading out to the right.
+    local rule = header:CreateTexture(nil, "ARTWORK")
+    rule:SetPoint("BOTTOMLEFT")
+    rule:SetPoint("BOTTOMRIGHT")
+    rule:SetHeight(1)
+    Theme.SetGradientAlpha(rule, "HORIZONTAL", "accent", 0.6, 0.05)
 end
 
 function WeightsUI:BuildPickers()
@@ -321,9 +342,12 @@ function WeightsUI:BuildRow(entry)
         { width = BUTTON, height = 20 })
     row.plus:SetPoint("RIGHT", -2, 0)
 
+    -- The typed value sits sunk into the row, its edge lit gold while it
+    -- has the keyboard.
     local well = Theme.CreatePanel(row, "panel", "border")
     well:SetSize(BOX, 20)
     well:SetPoint("RIGHT", row.plus, "LEFT", -4, 0)
+    Theme.Recess(well)
     row.well = well
 
     row.minus = Widgets.CreateButton(row, "-", function() WeightsUI:Step(row, -1) end,
@@ -355,7 +379,9 @@ function WeightsUI:BuildRow(entry)
         self:HighlightText()
     end)
     box:SetScript("OnEditFocusLost", function(self)
-        Theme.SetBorderColor(well, "border")
+        -- Back to sunk: a dim edge with its top in shadow.
+        Theme.SetBorderColor(well, "border", 0.8)
+        well.borderTextures[1]:SetColorTexture(0.016, 0.020, 0.028, 1)
         if row.editing then WeightsUI:Commit(row, self:GetText()) end
     end)
 
@@ -557,8 +583,8 @@ function WeightsUI:Refresh()
         row.box:SetTextColor(Theme.Unpack(custom and "accent" or (value > 0 and "text" or "dim")))
         row.label:SetTextColor(Theme.Unpack(custom and "accent" or "text"))
         row.mark:SetShown(custom)
-        row.minus.label:SetTextColor(Theme.Unpack(value <= 0 and "dim" or "text"))
-        row.plus.label:SetTextColor(Theme.Unpack(value >= Weights.MAX_WEIGHT and "dim" or "text"))
+        row.minus:SetDimmed(value <= 0)
+        row.plus:SetDimmed(value >= Weights.MAX_WEIGHT)
     end
 
     self.frame:SetHeight(top + perColumn * ROW_HEIGHT + 8 + FOOTER)

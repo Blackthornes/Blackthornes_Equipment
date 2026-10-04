@@ -22,6 +22,10 @@ local Weights = ns.Weights
 
 local PADDING = 18
 local HEADER = 36
+
+-- The metal rim (UI/Titanforged.lua) reaches this far in from the edge;
+-- the header sits inside it.
+local RIM = 6
 local FILTERS = 30
 local ROW_HEIGHT = 50
 local VISIBLE = 9
@@ -146,6 +150,8 @@ end
 function FinderUI:BuildRow(index)
     local inner = WIDTH - PADDING * 2 - SCROLL_WIDTH - 6
     local row = CreateFrame("Button", nil, self.frame)
+    -- Above the well, whatever order the client draws siblings in.
+    row:SetFrameLevel(self.well:GetFrameLevel() + 1)
     row:SetSize(inner, ROW_HEIGHT)
     row:SetPoint("TOPLEFT", PADDING, self.listTop - (index - 1) * ROW_HEIGHT)
     row.background = Theme.Fill(row, index % 2 == 0 and "row" or "rowAlt")
@@ -158,6 +164,14 @@ function FinderUI:BuildRow(index)
     edge:SetWidth(2)
     edge:SetColorTexture(Theme.Unpack("good", 0))
     row.edge = edge
+
+    -- Under the mouse the row lights from the left too: a gold wash fading
+    -- across it (Titanforged).
+    local wash = row:CreateTexture(nil, "BACKGROUND", nil, 3)
+    wash:SetAllPoints(row)
+    Theme.SetGradientAlpha(wash, "HORIZONTAL", "accent", 0.20, 0)
+    wash:SetAlpha(0)
+    row.hoverWash = wash
 
     local slot = Theme.CreateLabel(row, "small", "muted")
     slot:SetPoint("TOPLEFT", 8, -7)
@@ -189,6 +203,7 @@ function FinderUI:BuildRow(index)
     local function Light(p)
         row.background:SetColorTexture(Motion.Mix(row.restKey, "rowHover", p))
         row.edge:SetColorTexture(Theme.Unpack(rawget(row, "edgeKey") or "good", p))
+        wash:SetAlpha(p)
     end
 
     row:SetScript("OnEnter", function(self)
@@ -237,7 +252,24 @@ function FinderUI:Build()
     frame:EnableMouse(true)
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
-    Theme.Window(frame)
+    Theme.Fill(frame, "window")
+
+    -- The house frame, as the gear window wears it (UI/Titanforged.lua).
+    if ns.Titanforged then
+        local trim = ns.Titanforged:Dress(frame, {
+            title = "Where to get upgrades",
+            portrait = true,
+            close = function() FinderUI:Hide() end,
+        })
+
+        -- Kept on the screen whole: the portrait and plate reach out past
+        -- the top left, the close gem past the top right.
+        local left, right, top, bottom = ns.Titanforged.Reach(trim)
+        if frame.SetClampRectInsets then frame:SetClampRectInsets(-left, right, top, -bottom) end
+    else
+        Theme.Border(frame, "borderLit")
+    end
+    Theme.Halo(frame, 12, 0.14)
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -258,24 +290,33 @@ function FinderUI:Build()
     self:BuildFilters()
 
     self.listTop = -(HEADER + 10 + FILTERS + 8)
+
+    -- The list sits sunk into the window, as the game's inset lists do.
+    local well = Theme.CreatePanel(frame, "panel", "border")
+    well:SetPoint("TOPLEFT", PADDING - 3, self.listTop + 3)
+    well:SetPoint("TOPRIGHT", -(PADDING - 3), self.listTop + 3)
+    well:SetHeight(VISIBLE * ROW_HEIGHT + 6)
+    Theme.Recess(well)
+    self.well = well
+
     self.rows = {}
     for index = 1, VISIBLE do self.rows[index] = self:BuildRow(index) end
 
     -- A thin track down the right of the list, and a thumb that shows where
-    -- in it the view is.
-    local track = frame:CreateTexture(nil, "ARTWORK")
-    track:SetPoint("TOPRIGHT", -PADDING, self.listTop)
+    -- in it the view is. On the well, or the well would hide them.
+    local track = well:CreateTexture(nil, "ARTWORK")
+    track:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -PADDING, self.listTop)
     track:SetSize(SCROLL_WIDTH, VISIBLE * ROW_HEIGHT)
     track:SetColorTexture(Theme.Unpack("rowAlt"))
     self.track = track
 
-    local thumb = frame:CreateTexture(nil, "OVERLAY")
+    local thumb = well:CreateTexture(nil, "OVERLAY")
     thumb:SetWidth(SCROLL_WIDTH)
     thumb:SetColorTexture(Theme.Unpack("accent", 0.8))
     self.thumb = thumb
 
-    local empty = Theme.CreateLabel(frame, "normal", "muted", "CENTER")
-    empty:SetPoint("TOP", 0, self.listTop - 60)
+    local empty = Theme.CreateLabel(well, "normal", "muted", "CENTER")
+    empty:SetPoint("TOP", frame, "TOP", 0, self.listTop - 60)
     empty:SetWidth(WIDTH - PADDING * 4)
     empty:SetWordWrap(true)
     self.empty = empty
@@ -298,28 +339,25 @@ end
 function FinderUI:BuildHeader()
     local frame = self.frame
 
-    local header = Theme.CreatePanel(frame, "header", false)
-    header:SetPoint("TOPLEFT")
-    header:SetPoint("TOPRIGHT")
+    -- The window's name is on the plate and the close gem on the top right
+    -- corner (UI/Titanforged.lua), so the header holds the spec line, clear
+    -- of the portrait on the left and a little low, under the plate.
+    local header = CreateFrame("Frame", nil, frame)
+    header:SetPoint("TOPLEFT", RIM, 0)
+    header:SetPoint("TOPRIGHT", -RIM, 0)
     header:SetHeight(HEADER)
-    Theme.HouseHeader(header, 20)
-
-    local title = Theme.CreateLabel(header, "title", "accent")
-    title:SetPoint("LEFT", PADDING, 0)
-    title:SetText("Where to get upgrades")
-
-    local close = Widgets.CreateButton(header, "X", function() FinderUI:Hide() end,
-        { width = 22, height = 20, danger = true })
-    close:SetPoint("RIGHT", -PADDING + 4, 0)
 
     local spec = Theme.CreateLabel(header, "small", "muted")
-    spec:SetPoint("LEFT", title, "RIGHT", 10, -1)
-    spec:SetPoint("RIGHT", close, "LEFT", -10, -1)
+    spec:SetPoint("LEFT", 58 - RIM, -4)
+    spec:SetPoint("RIGHT", -(PADDING + 16 - RIM), -4)
     self.specLabel = spec
 
-    local divider = Theme.CreateDivider(frame, "borderLit")
-    divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT")
-    divider:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT")
+    -- A gold rule under it, bright at the left and fading out to the right.
+    local rule = header:CreateTexture(nil, "ARTWORK")
+    rule:SetPoint("BOTTOMLEFT")
+    rule:SetPoint("BOTTOMRIGHT")
+    rule:SetHeight(1)
+    Theme.SetGradientAlpha(rule, "HORIZONTAL", "accent", 0.6, 0.05)
 end
 
 function FinderUI:BuildFilters()
@@ -333,7 +371,9 @@ function FinderUI:BuildFilters()
         if previous then
             button:SetPoint("LEFT", previous, "RIGHT", 6, 0)
         else
-            button:SetPoint("TOPLEFT", PADDING, -(HEADER + 10))
+            -- A few pixels lower than the header's foot, clear of the
+            -- round portrait above it.
+            button:SetPoint("TOPLEFT", PADDING, -(HEADER + 13))
         end
 
         -- A gold bar under the one that is showing.
@@ -359,7 +399,7 @@ function FinderUI:BuildFilters()
             FinderUI:Refresh()
         end,
     })
-    ahead:SetPoint("TOPRIGHT", -PADDING, -(HEADER + 11))
+    ahead:SetPoint("TOPRIGHT", -PADDING, -(HEADER + 14))
     self.ahead = ahead
 end
 
@@ -612,11 +652,12 @@ function FinderUI:RestorePosition()
     local db = ns.db or {}
     self.frame:ClearAllPoints()
     -- Until it is dragged somewhere, it opens beside the gear window rather
-    -- than over its title.
+    -- than over its title, far enough off that its portrait clears the gear
+    -- window's close gem.
     local gear = ns.UI and ns.UI.frame
     local okShown, shown = pcall(function() return gear and gear:IsShown() end)
     if not db.finderMoved and okShown and shown then
-        self.frame:SetPoint("TOPLEFT", gear, "TOPRIGHT", 10, 0)
+        self.frame:SetPoint("TOPLEFT", gear, "TOPRIGHT", 30, 0)
         return
     end
     self.frame:SetPoint(db.finderPoint or "CENTER", UIParent, db.finderRelativePoint or "CENTER",
@@ -630,6 +671,8 @@ function FinderUI:Show()
         self.offset = 0
         self.frame:Show()
         Motion:Open(self.frame)
+        -- And a light runs round the portrait.
+        if ns.Titanforged then ns.Titanforged:Opened(self.frame) end
     end
     self:Refresh()
 end

@@ -19,6 +19,10 @@ local Widgets = ns.Widgets
 local PADDING = 18
 local HEADER = 36
 
+-- The metal rim (UI/Titanforged.lua) reaches this far in from the edge;
+-- the header sits inside it.
+local RIM = 6
+
 local COLUMN_WIDTH = 330
 -- Where the controls start: room for a label like "Minimap button" in the
 -- game's font, which runs wider than it looks.
@@ -180,7 +184,22 @@ function SettingsUI:Build()
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
 
-    Theme.Window(frame)
+    Theme.Fill(frame, "window")
+
+    -- The house frame (UI/Titanforged.lua): the gold rim and corner gems,
+    -- the name on a plate and the red close gem. No portrait: that is for
+    -- the gear window and the finder.
+    if ns.Titanforged then
+        local trim = ns.Titanforged:Dress(frame, {
+            title = TITLE,
+            close = function() SettingsUI:Hide() end,
+        })
+        local left, right, top, bottom = ns.Titanforged.Reach(trim)
+        if frame.SetClampRectInsets then frame:SetClampRectInsets(-left, right, top, -bottom) end
+    else
+        Theme.Border(frame, "borderLit")
+    end
+    Theme.Halo(frame, 12, 0.14)
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -213,32 +232,29 @@ end
 function SettingsUI:BuildHeader()
     local frame = self.frame
 
-    local header = Theme.CreatePanel(frame, "header", false)
-    header:SetPoint("TOPLEFT")
-    header:SetPoint("TOPRIGHT")
+    -- The name is on the plate across the top edge and the close gem on the
+    -- top right corner (UI/Titanforged.lua), so the header holds what this
+    -- window is and the version, a little low, under the plate.
+    local header = CreateFrame("Frame", nil, frame)
+    header:SetPoint("TOPLEFT", RIM, 0)
+    header:SetPoint("TOPRIGHT", -RIM, 0)
     header:SetHeight(HEADER)
-    Theme.HouseHeader(header, 20)
 
-    local title = Theme.CreateLabel(header, "title", "accent")
-    title:SetPoint("LEFT", PADDING, 0)
-    title:SetText(TITLE)
-
-    local subtitle = Theme.CreateLabel(header, "small", "muted")
-    subtitle:SetPoint("LEFT", title, "RIGHT", 10, -1)
+    local subtitle = Theme.CreateLabel(header, "normal", "muted")
+    subtitle:SetPoint("LEFT", PADDING - RIM, -4)
     subtitle:SetText("Settings")
 
+    -- Clear of the close gem on the corner.
     local version = Theme.CreateLabel(header, "tiny", "dim", "RIGHT")
     version:SetText(ns.VersionLabel())
+    version:SetPoint("RIGHT", -(PADDING + 16 - RIM), -4)
 
-    local close = Widgets.CreateButton(header, "X", function() SettingsUI:Hide() end,
-        { width = 22, height = 20, danger = true })
-    close:SetPoint("RIGHT", -PADDING + 4, 0)
-
-    version:SetPoint("RIGHT", close, "LEFT", -10, 0)
-
-    local divider = Theme.CreateDivider(frame, "borderLit")
-    divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT")
-    divider:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT")
+    -- A gold rule under it, bright at the left and fading out to the right.
+    local rule = header:CreateTexture(nil, "ARTWORK")
+    rule:SetPoint("BOTTOMLEFT")
+    rule:SetPoint("BOTTOMRIGHT")
+    rule:SetHeight(1)
+    Theme.SetGradientAlpha(rule, "HORIZONTAL", "accent", 0.6, 0.05)
 end
 
 function SettingsUI:BuildColumn()
