@@ -1,6 +1,7 @@
 -- Blackthornes Equipment -- UI/MapPins.lua
 -- Pins on the world map where each tracked upgrade comes from: the vendor,
--- the quest giver, or the trainer who teaches a crafted piece.
+-- the quest giver, or the trainer who teaches a crafted piece. The upgrade
+-- quest's next place to go gets one too.
 --
 -- A pin is the item's own icon in a gold ring with a soft glow, the size of
 -- the game's own pins at any zoom. Hover one for the item and where it is;
@@ -88,6 +89,16 @@ function MapPins:HuntsOn(zone)
             list[#list + 1] = hunt
         end
     end
+    -- The upgrade quest's next place to go, when it has an exact spot.
+    local quest = ns.UpgradeQuest and ns.UpgradeQuest:IsEnabled() and ns.UpgradeQuest:Current()
+    local spot = quest and ns.UpgradeQuest:NextPlace()
+    if spot and spot.zone == zone and spot.x and spot.y then
+        list[#list + 1] = {
+            link = quest.link, quest = true,
+            place = { zone = spot.zone, x = spot.x, y = spot.y, name = spot.name,
+                text = spot.name and ("Upgrade quest: go to %s"):format(spot.name) or "Upgrade quest" },
+        }
+    end
     return list
 end
 
@@ -121,7 +132,7 @@ function MapPins:MakePin(canvas)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         pcall(GameTooltip.SetHyperlink, GameTooltip, hunt.link)
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Tracked upgrade", Theme.Unpack("accent"))
+        GameTooltip:AddLine(hunt.quest and "Upgrade quest" or "Tracked upgrade", Theme.Unpack("accent"))
         if hunt.place.text then GameTooltip:AddLine(hunt.place.text, Theme.Unpack("text")) end
         GameTooltip:AddLine("Click to pin it on your map", Theme.Unpack("muted"))
         GameTooltip:Show()
@@ -166,6 +177,10 @@ function MapPins:Draw()
             hunt.place.x / 100 * view.width / scale, -hunt.place.y / 100 * view.height / scale)
         pin:Show()
     end
+end
+
+function MapPins:OnUpgradeQuestChanged()
+    self:OnTrackingChanged()
 end
 
 function MapPins:OnTrackingChanged()

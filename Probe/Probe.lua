@@ -43,6 +43,10 @@ local APIS = {
     "C_Map.SetUserWaypoint", "UiMapPoint.CreateFromCoordinates",
     "C_SuperTrack.SetSuperTrackedUserWaypoint", "OpenWorldMap",
     "GetMerchantItemLink", "MerchantFrame_UpdateMerchantInfo", "GetLootSlotLink", "LootFrame_Update",
+    -- The upgrade quest: is a quest in the log, are its objectives done,
+    -- and how many of an item the bags hold.
+    "C_QuestLog.IsOnQuest", "C_QuestLog.GetLogIndexForQuestID", "C_QuestLog.IsComplete",
+    "C_QuestLog.ReadyForTurnIn", "C_Item.GetItemCount", "GetItemCount",
 }
 
 local function Has(path)
