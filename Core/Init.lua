@@ -184,9 +184,28 @@ function ns.GetUnknownEvents()
     return unknownEvents
 end
 
+-- Events a hunter's every shot fires, with what each says changed. Each is
+-- passed on only when that has really changed (Data/Items.lua): looking
+-- again at every upgrade per arrow made the game hang after each shot.
+local QUIET = { BAG_UPDATE_DELAYED = "BagSignature", PLAYER_EQUIPMENT_CHANGED = "WornSignature" }
+local lastSeen = {}
+
+--- True when the event changed nothing worth looking at again.
+function ns.NothingChanged(event)
+    local method = QUIET[event]
+    local items = ns.Items
+    if not (method and items and type(items[method]) == "function") then return false end
+    local ok, now = pcall(items[method], items)
+    if not ok or type(now) ~= "string" then return false end
+    if lastSeen[event] == now then return true end
+    lastSeen[event] = now
+    return false
+end
+
 eventFrame:SetScript("OnEvent", function(_, event, ...)
     local list = handlers[event]
     if not list then return end
+    if ns.NothingChanged(event) then return end
 
     -- One handler erroring must not swallow the rest.
     for i = 1, #list do
