@@ -458,7 +458,31 @@ suite.check("short ones take one line", Panel.Lines("small", "Put it on", 200) =
 suite.check("a link's hidden part takes no room",
     Panel.Lines("small", "|cff1eff00|Hitem:1001::::::::20:::::|h[Vest]|h|r", 60) == 1)
 
+-- Every /beq quest command has a button in Settings.
 ns.SettingsUI:Show()
+local controls = ns.SettingsUI.controls
+local function Click(button) button:GetScript("OnClick")(button) end
+local skippedID = Quest:Current() and Quest:Current().itemID
+Click(controls.questSkip)
+suite.check("the Skip button skips", skippedID and ns.charDB.upgradeQuestSkipped[skippedID] == true
+    and (Quest:Current() == nil or Quest:Current().itemID ~= skippedID))
+Click(controls.questSwitch)
+suite.check("the Switch button with nothing on offer says so",
+    env.ChatText():find("no new upgrade is on offer", 1, true) ~= nil)
+Click(controls.questReset)
+suite.check("the Bring back button brings skipped ones back", next(ns.charDB.upgradeQuestSkipped) == nil)
+ns.HandleSlash("quest off")
+Click(controls.questOpen)
+suite.check("the Open button turns it on and shows the panel", ns.db.upgradeQuest == true
+    and Panel.frame:IsShown() and controls.upgradeQuest:GetChecked())
+for _, key in ipairs({ "questSkip", "questSwitch", "questOpen", "questReset" }) do
+    suite.check(key .. " has a tooltip", (function()
+        GameTooltip._lines = nil
+        local ok = pcall(controls[key]:GetScript("OnEnter"), controls[key])
+        return ok
+    end)())
+end
+
 local box = ns.SettingsUI.controls.upgradeQuest
 suite.check("the settings box is ticked while it is on", box:GetChecked())
 box:GetScript("OnClick")(box)
