@@ -23,10 +23,15 @@ local Weights = ns.Weights
 local PADDING = 18
 local HEADER = 36
 local FILTERS = 30
-local ROW_HEIGHT = 40
-local VISIBLE = 10
+local ROW_HEIGHT = 50
+local VISIBLE = 9
 local FOOTER = 48
-local WIDTH = 660
+local WIDTH = 780
+
+-- The line under each item wraps onto a second line rather than being cut.
+-- Wrapping breaks at spaces, so a little of each line goes unused.
+local SOURCE_LINES = 2
+local WRAP_SLACK = 60
 
 local SLOT_WIDTH = 84
 local GAIN_WIDTH = 120
@@ -107,7 +112,10 @@ local function ShowTooltip(row)
         GameTooltip:AddLine(("You can wear it from level %d"):format(pick.at), Theme.Unpack("warn"))
     end
     local roll = Finder.RollText(pick)
-    if roll then GameTooltip:AddLine(roll, Theme.Unpack("good"), true) end
+    if roll then
+        local r, g, b = Theme.Unpack("good")
+        GameTooltip:AddLine(roll, r, g, b, true)
+    end
     GameTooltip:AddLine("Where to get it", Theme.Unpack("accent"))
     for index, source in ipairs(pick.sources) do
         if index > TOOLTIP_SOURCES then
@@ -120,7 +128,9 @@ local function ShowTooltip(row)
             GameTooltip:AddLine("    after " .. source.after, Theme.Unpack("muted"))
         end
         if source.kind == "craft" and ns.Crafting then
-            GameTooltip:AddLine("    " .. ns.Crafting:MaterialsText(pick.itemID), Theme.Unpack("muted"), true)
+            -- Light, so it reads on the tooltip's dark background.
+            local r, g, b = Theme.Unpack("text")
+            GameTooltip:AddLine("    Materials: " .. ns.Crafting:MaterialsText(pick.itemID), r, g, b, true)
         end
     end
     GameTooltip:AddLine(" ")
@@ -171,6 +181,8 @@ function FinderUI:BuildRow(index)
     local source = Theme.CreateLabel(row, "tiny", "muted")
     source:SetPoint("TOPLEFT", TEXT_X, -23)
     source:SetWidth(inner - TEXT_X - 8)
+    source:SetWordWrap(true)
+    pcall(source.SetMaxLines, source, SOURCE_LINES)
     row.source = source
     row.sourceWidth = inner - TEXT_X - 8
 
@@ -230,6 +242,7 @@ function FinderUI:Build()
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
+        if ns.db then ns.db.finderMoved = true end
         FinderUI:SavePosition()
     end)
     frame:EnableMouseWheel(true)
@@ -456,7 +469,7 @@ function FinderUI:FillRow(row, line)
     end
     local more = #line.sources - 1
     local tail = more > 0 and ("  +%d more"):format(more) or ""
-    local room = row.sourceWidth - Theme.TextWidth("tiny", tail)
+    local room = row.sourceWidth * SOURCE_LINES - WRAP_SLACK - Theme.TextWidth("tiny", tail)
     row.source:SetText(FinderUI.Fit("tiny", text, room) .. Colored("dim", tail))
     row:Show()
 end
@@ -598,6 +611,14 @@ function FinderUI:RestorePosition()
     if not self.frame then return end
     local db = ns.db or {}
     self.frame:ClearAllPoints()
+    -- Until it is dragged somewhere, it opens beside the gear window rather
+    -- than over its title.
+    local gear = ns.UI and ns.UI.frame
+    local okShown, shown = pcall(function() return gear and gear:IsShown() end)
+    if not db.finderMoved and okShown and shown then
+        self.frame:SetPoint("TOPLEFT", gear, "TOPRIGHT", 10, 0)
+        return
+    end
     self.frame:SetPoint(db.finderPoint or "CENTER", UIParent, db.finderRelativePoint or "CENTER",
         db.finderX or 40, db.finderY or 20)
 end

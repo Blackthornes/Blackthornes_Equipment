@@ -38,7 +38,7 @@ local SLOT_NAMES = {
 
 local SHOWN = 3
 local WIDTH = 380
-local ROW_HEIGHT = 46
+local ROW_HEIGHT = 54
 local PAD = 12
 
 function SlotUpgrades:IsEnabled()
@@ -196,6 +196,9 @@ function SlotUpgrades:BuildRow(index)
     local source = Theme.CreateLabel(row, "tiny", "muted")
     source:SetPoint("TOPLEFT", 44, -26)
     source:SetWidth(textWidth)
+    -- Two lines rather than a cut.
+    source:SetWordWrap(true)
+    pcall(source.SetMaxLines, source, 2)
     row.source = source
     row.sourceWidth = textWidth
 
@@ -269,7 +272,7 @@ function SlotUpgrades:Fill()
             row.gain:SetTextColor(Theme.Unpack((pick.needs or pick.remote) and "warn" or "good"))
             local source = pick.sources and pick.sources[1]
             local text = source and ns.FinderUI and ns.FinderUI.SourceLine(source) or ""
-            row.source:SetText(ns.FinderUI and ns.FinderUI.Fit("tiny", text, row.sourceWidth) or text)
+            row.source:SetText(ns.FinderUI and ns.FinderUI.Fit("tiny", text, row.sourceWidth * 2 - 60) or text)
             local tracked = ns.Tracking and ns.Tracking:IsTracked(pick.itemID)
             row.track:SetText(tracked and "Untrack" or "Track")
             row.track:SetLabelColor(tracked and "accent" or "text")
