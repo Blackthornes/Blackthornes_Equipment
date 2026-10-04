@@ -106,4 +106,50 @@ function Items:PlayerLevel()
     return tonumber((Call({ "UnitLevel" }, "player")))
 end
 
+--------------------------------------------------------------------------------
+-- What the bags and gear hold, to tell a real change from an arrow shot
+--
+-- Every shot a hunter fires spends ammo, and the client says the bags (and
+-- the ammo slot) changed each time. Looking again at every upgrade on each
+-- of those hangs the game, so the events are only passed on when what is
+-- carried or worn has really changed (Core/Init.lua).
+--------------------------------------------------------------------------------
+
+--- Is a link arrows or bullets?
+function Items.IsAmmo(link)
+    local _, _, _, equipLoc, _, classID = Call({ "C_Item.GetItemInfoInstant", "GetItemInfoInstant" }, link)
+    return equipLoc == "INVTYPE_AMMO" or tonumber(classID) == 6
+end
+
+--- How many are in a bag slot (1 when the client cannot say).
+function Items:SlotCount(bag, slot)
+    local info = Call({ "C_Container.GetContainerItemInfo" }, bag, slot)
+    if type(info) == "table" then return tonumber(info.stackCount) or 1 end
+    local _, count = Call({ "GetContainerItemInfo" }, bag, slot)
+    return tonumber(count) or 1
+end
+
+--- Everything in the bags with how many, ammo without its count, as one
+--- string: the same string means nothing changed but the ammo spent.
+function Items:BagSignature()
+    local parts = {}
+    for bag = 0, 4 do
+        for slot = 1, self:BagSize(bag) do
+            local link = self:InBag(bag, slot)
+            if link then
+                local count = self.IsAmmo(link) and "" or ("x" .. self:SlotCount(bag, slot))
+                parts[#parts + 1] = bag .. ":" .. slot .. "=" .. link .. count
+            end
+        end
+    end
+    return table.concat(parts, ";")
+end
+
+--- Everything worn, leaving out the ammo slot, as one string.
+function Items:WornSignature()
+    local parts = {}
+    for slot = 1, 19 do parts[slot] = self:Equipped(slot) or "-" end
+    return table.concat(parts, ";")
+end
+
 Items.Call = Call

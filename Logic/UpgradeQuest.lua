@@ -62,6 +62,19 @@ UpgradeQuest.NONE = NONE
 -- Where each tab stands: "active", "waiting" or "none". Not saved.
 UpgradeQuest.states = {}
 
+-- A tab with nothing to pick is only looked at again when something that can
+-- open new gear happens (gear, level, talents, recipes, quests handed in, item
+-- answers) or the player asks, so looting and quest log ticks stay cheap.
+-- A bag change looks again at most once a minute (gear sold or thrown away
+-- can be picked again). Not saved.
+UpgradeQuest.rescan = true
+local BAG_RESCAN = 60
+local RESCAN_ON = {
+    PLAYER_EQUIPMENT_CHANGED = true, PLAYER_LEVEL_UP = true, QUEST_TURNED_IN = true,
+    GET_ITEM_INFO_RECEIVED = true, SKILL_LINES_CHANGED = true, NEW_RECIPE_LEARNED = true,
+    TRAIT_CONFIG_UPDATED = true,
+}
+
 local Items = ns.Items
 
 -- How long to wait for the server to answer about gear before picking
@@ -185,6 +198,7 @@ function UpgradeQuest:SelectTab(tab)
     if not (IS_TAB[tab] and ns.charDB) then return false end
     if tab == self:Tab() and ns.charDB.upgradeQuestTab then return true end
     ns.charDB.upgradeQuestTab = tab
+    self.rescan = true
     self.offer = nil
     self.lastStep = nil
     self:Mirror()
@@ -310,6 +324,16 @@ function UpgradeQuest:Look()
     return found
 end
 
+--- Whether the empty tabs need a fresh scan: not when each already found
+--- nothing and nothing since could have opened new gear.
+function UpgradeQuest:WorthLooking(empty)
+    if self.rescan or not IS_TAB[ns.charDB.upgradeQuestTab] then return true end
+    for _, tab in ipairs(empty) do
+        if self.states[tab] ~= "none" then return true end
+    end
+    return self.bagsChanged and Now() - (self.lookedAt or 0) >= BAG_RESCAN or false
+end
+
 --- Give every tab without a quest its best upgrade, and pick the tab the
 --- first time: the one whose upgrade is most worth the trip.
 function UpgradeQuest:PickEmpty()
@@ -319,12 +343,16 @@ function UpgradeQuest:PickEmpty()
         if not Valid(quests[tab.key]) then empty[#empty + 1] = tab.key end
     end
     if #empty == 0 and IS_TAB[ns.charDB.upgradeQuestTab] then return end
+    if not self:WorthLooking(empty) then return end
 
     local found, why = self:Look()
     if not found then
         for _, tab in ipairs(empty) do self.states[tab] = why end
         return
     end
+    self.rescan = false
+    self.bagsChanged = false
+    self.lookedAt = Now()
     for _, tab in ipairs(empty) do
         local best = self:Choose(found, nil, tab)
         if best then self:Start(best.pick, best.source) end
@@ -859,6 +887,7 @@ function UpgradeQuest:Skip()
     self:Skipped()[quest.itemID] = true
     self:Quests()[self:Tab()] = nil
     self.lastStep = nil
+    self.rescan = true
     self:Update()
     return true
 end
@@ -868,6 +897,7 @@ function UpgradeQuest:SetEnabled(on)
     if not ns.db then return end
     ns.db.upgradeQuest = on and true or false
     if on then
+        self.rescan = true
         self:Update()
     else
         self.state = nil
@@ -885,6 +915,8 @@ function UpgradeQuest:OnEvent(event, level)
         end)
         self.newLevel = ok and value or nil
     end
+    if RESCAN_ON[event] then self.rescan = true end
+    if event == "BAG_UPDATE_DELAYED" then self.bagsChanged = true end
     self:UpdateSoon()
 end
 
@@ -943,6 +975,7 @@ ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip
     if word == "reset" then
         if ns.charDB then ns.charDB.upgradeQuestSkipped = {} end
         ns.Print("skipped upgrades can come up again.")
+        UpgradeQuest.rescan = true
         UpgradeQuest:Update()
         return
     end
@@ -950,6 +983,7 @@ ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip
         UpgradeQuest:SetEnabled(true)
         ns.Print("upgrade quest on. Follow the steps on the quest panel.")
     else
+        UpgradeQuest.rescan = true
         UpgradeQuest:Update()
     end
     if ns.QuestPanel then ns.QuestPanel:Unfold() end

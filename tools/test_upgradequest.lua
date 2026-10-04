@@ -150,7 +150,8 @@ suite.check("with Other ways still there", Panel.otherButton:IsShown() and not P
 env.worn[5] = "item:900"
 turnedIn = false
 ns.Finder:MarkStale()
-Quest:Update()
+-- A tab that found nothing looks again when the gear changes.
+Quest:OnEvent("PLAYER_EQUIPMENT_CHANGED")
 suite.check("a new quest once there is an upgrade again", Quest:Current() and Quest:Current().itemID == 1002)
 ns.HandleSlash("quest skip")
 suite.check("skip leaves the tab with the next best: no other quest reward here", Quest:Current() == nil)
@@ -590,6 +591,38 @@ suite.check("/beq quest off", ns.db.upgradeQuest == false)
 
 ns.SettingsUI:ResetPositions()
 suite.check("the panel's spot is reset with the others", ns.db.questPoint == nil)
+
+--------------------------------------------------------------------------------
+-- Looting and the quest log do not rescan a tab that found nothing
+--------------------------------------------------------------------------------
+
+local clock = 1000
+local realTime = rawget(_G, "time")
+_G.time = function() return clock end
+ns.HandleSlash("quest")
+Quest:OnEvent("PLAYER_EQUIPMENT_CHANGED")
+local emptyNone = 0
+for _, tab in ipairs(Quest.TABS) do
+    if not Quest:Quests()[tab.key] and Quest.states[tab.key] == "none" then emptyNone = emptyNone + 1 end
+end
+suite.check("some tab has nothing to chase", emptyNone > 0, emptyNone)
+local realScan, scans = ns.Finder.Scan, 0
+ns.Finder.Scan = function(...) scans = scans + 1 return realScan(...) end
+for _ = 1, 20 do
+    Quest:OnEvent("BAG_UPDATE_DELAYED")
+    Quest:OnEvent("QUEST_LOG_UPDATE")
+    Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+end
+suite.check("twenty loots and quest log ticks scan nothing", scans == 0, scans)
+clock = clock + 61
+Quest:OnEvent("BAG_UPDATE_DELAYED")
+suite.check("a bag change a minute later looks once", scans == 1, scans)
+Quest:OnEvent("BAG_UPDATE_DELAYED")
+suite.check("and not again straight after", scans == 1, scans)
+Quest:OnEvent("PLAYER_EQUIPMENT_CHANGED")
+suite.check("new gear worn looks again", scans == 2, scans)
+ns.Finder.Scan = realScan
+_G.time = realTime
 
 ns.Toast.Show = realShow
 suite.done()
