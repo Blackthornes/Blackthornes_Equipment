@@ -171,6 +171,38 @@ wide, only for stats the player changed (`Weights:Get` lays them over
 never rename that key, never reshape it without keeping the old values, and
 never delete a value the code cannot read (it is skipped instead).
 
+## The house frame (Titanforged)
+
+Trent picked this look for all four addons on 2026-10-04 from two mockups
+(the other was "Arcane Glass"). It's the game's own window shape with the
+light turned up: a gold metal rim with corner gems, a round portrait with
+the addon's emblem, the name on a plate across the top edge, a red close
+gem, and gold-edged metal buttons. The main action is solid gold with dark
+"ink" lettering; a primary button given its own dark face (`baseColor`)
+keeps a gold label, so it never reads as an empty box
+(`tools/test_titanforged.lua` checks every button's contrast).
+
+`UI/Titanforged.lua` (`Titanforged:Dress(frame, opts)`, `:Opened(frame)`)
+and `tools/make_frame_art.py` are Tradeskills' copies; the art is
+`Media/Frame/*.tga`, which the tool writes. Equipment's emblem is the
+shield (`EMBLEM = "shield"`): a rimmed heater shield with the upgrade arrow
+cut out, redrawn here (`heater_shield`, `EMBLEM_RIM`) so it reads at the
+36 pixels the portrait shows it at. The Lua differs from Tradeskills' only
+where Equipment's differs: `Theme.TextWidth(size, text)`, and optional
+pieces read with `rawget`, because this repo's test frames answer any
+missing field with a function. A fix to the frame in one addon belongs in
+all four.
+
+The gear window and the finder wear the whole frame (portrait, plate,
+close gem), with their lists sunk in a well (`Theme.Recess`); settings and
+the stat weights get the plate and close gem only. The panels that stay on
+screen while playing (upgrade quest, tracker, toasts, the character
+sheet's slot list) keep `Theme.Window` and only share the restyled
+buttons. Equipment has no Window effects
+setting, so `Motion.Level()` is always full and the glint and the
+portrait's light always run; add the setting before anyone asks for them
+to stop.
+
 ## Trent's standing rules (all three addons)
 
 - **"Always check that it's clear to post."** Anything that goes public (a
