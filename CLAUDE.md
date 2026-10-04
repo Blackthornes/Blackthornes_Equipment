@@ -138,6 +138,18 @@ and `.trackedDone` (never rename them): `Logic/Tracking.lua`,
 loot arrows). None of it has been seen in game yet; `/beq probe` reports the
 calls they need.
 
+## The upgrade quest
+
+`Logic/UpgradeQuest.lua` and `UI/QuestPanel.lua` (`/beq quest`, a setting
+under Upgrade hunts): Trent asked (2026-10-04) for an optional quest for the
+next upgrade with a guide to get it. Off by default (`upgradeQuest`). It
+picks from `Finder:Scan()` by gain times how easy the source is, keeps that
+pick until it is worn, and works out the steps live from the saved source
+and the game (zone, quest log, bags). Kept per character in
+`BlackthornesEquipmentCharDB.upgradeQuest`, `.upgradeQuestSkipped` and
+`.upgradeQuestsDone` (never rename them). Not yet seen in game; `/beq probe`
+lists the quest log calls it reads.
+
 ## Players' own stat weights
 
 Kept in `BlackthornesEquipmentDB.customWeights[CLASS][spec][stat]`, account

@@ -31,6 +31,7 @@ Logic\Rolls.lua
 Logic\Finder.lua
 Logic\Tracking.lua
 Logic\Waypoints.lua
+Logic\UpgradeQuest.lua
 
 UI\Theme.lua
 UI\Widgets.lua
@@ -49,5 +50,6 @@ UI\TrackerPanel.lua
 UI\MapPins.lua
 UI\SlotUpgrades.lua
 UI\MoreMarks.lua
+UI\QuestPanel.lua
 
 Probe\Probe.lua

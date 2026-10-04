@@ -269,6 +269,12 @@ local DEFAULTS = {
     slotUpgrades = true,
     suffixLine = true,
 
+    -- The upgrade quest: the best next upgrade handed out as a quest, with
+    -- the steps to get it (Logic/UpgradeQuest.lua). Off unless the player
+    -- turns it on. The quest itself is kept per character
+    -- (`upgradeQuest`, `upgradeQuestSkipped`, `upgradeQuestsDone`).
+    upgradeQuest = false,
+
     -- The player's own stat weights, by class and spec, are kept under
     -- `customWeights` (Logic/Weights.lua). Not given a default here: the
     -- table is made the first time a weight is changed, and once made it is

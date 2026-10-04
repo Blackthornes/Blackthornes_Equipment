@@ -137,16 +137,18 @@ local POSITION_KEYS = {
     { "weightsPoint", "weightsRelativePoint", "weightsX", "weightsY" },
     { "finderPoint", "finderRelativePoint", "finderX", "finderY", "finderMoved" },
     { "trackerPoint", "trackerRelativePoint", "trackerX", "trackerY" },
+    { "questPoint", "questRelativePoint", "questX", "questY" },
 }
 
 --- Put every Equipment window back where it started: the gear window, this
---- one, the stat weights, the upgrade finder and the upgrade tracker. Only
+--- one, the stat weights, the upgrade finder, the upgrade tracker and the
+--- upgrade quest. Only
 --- the saved spots are cleared; nothing else is touched.
 function SettingsUI:ResetPositions()
     for _, keys in ipairs(POSITION_KEYS) do
         for _, key in ipairs(keys) do ns.db[key] = nil end
     end
-    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel }) do
+    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel }) do
         if module and module.frame and module.RestorePosition then module:RestorePosition() end
     end
 end
@@ -340,7 +342,16 @@ function SettingsUI:BuildHunting()
 
     local section = CreateSection(frame, "UPGRADE HUNTS",
         { x = PADDING * 2 + COLUMN_WIDTH, y = -(HEADER + 16) })
-    local anchor = section
+
+    -- Off unless the player turns it on, unlike the switches below.
+    local questRow = CreateRow(frame, section, "Upgrade quest",
+        "A quest for your best next upgrade, with the steps to go and get it.")
+    controls.upgradeQuest = Widgets.CreateCheckbox(questRow, "Turn it on", function(checked)
+        if ns.UpgradeQuest then ns.UpgradeQuest:SetEnabled(checked) end
+    end, false)
+    controls.upgradeQuest:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    local anchor = questRow
     for _, entry in ipairs(HUNTING) do
         local key, redraw = entry[1], entry[5]
         local row = CreateRow(frame, anchor, entry[2], entry[3])
@@ -373,6 +384,7 @@ function SettingsUI:Refresh()
     for _, entry in ipairs(HUNTING) do
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
     end
+    controls.upgradeQuest:SetChecked(ns.db.upgradeQuest == true)
 
     local choices = self:SpecChoices()
     local picked = ns.charDB and ns.charDB.spec
