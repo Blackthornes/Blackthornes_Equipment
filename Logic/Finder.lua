@@ -315,7 +315,7 @@ end
 
 --- The items worth judging for this character: in level range, with at least
 --- one source open to them. A list of { itemID, sources }.
-function Finder:Candidates(player, only)
+function Finder:Candidates(player, only, pause)
     local list = {}
     local floor = player.level - LEVELS_BELOW
     local ids = {}
@@ -332,6 +332,7 @@ function Finder:Candidates(player, only)
         end
     end
     for _, itemID in ipairs(ids) do
+        if pause then pause() end
         do
             local sources = self:SourcesFor(itemID, player)
             if only then
@@ -448,13 +449,17 @@ local function WornStatsRead()
     return read
 end
 
-function Finder:Judged()
+function Finder:JudgeKey()
     -- Worn gear whose stats had not loaded yet (just after login) scores
     -- nothing, so its count is part of the key too.
-    local key = table.concat({
+    return table.concat({
         tostring(Items:WornSignature()), tostring(WornStatsRead()), tostring(Items:PlayerLevel()),
         tostring(Weights.generation or 0), tostring(self.judgeGeneration or 0),
     }, "|")
+end
+
+function Finder:Judged()
+    local key = self:JudgeKey()
     if key ~= self.judgedKey or type(self.judged) ~= "table" then
         self.judgedKey, self.judged = key, {}
     end
@@ -504,6 +509,12 @@ end
 --   player    the player table
 --   reach     the level looked at
 function Finder:Scan(only, ahead)
+    return self:Build(only, ahead)
+end
+
+--- The scan itself. `pause`, when given, is called between items: the
+--- background scan hands one in that yields once a frame's share is used.
+function Finder:Build(only, ahead, pause)
     local player = self:Player()
     if not player then return nil, "nolevel" end
 
@@ -528,7 +539,8 @@ function Finder:Scan(only, ahead)
     local judged = self:Judged()
     local worn = Compare:WornIDs()
     local slots, checked, waiting, asked = {}, 0, 0, 0
-    for _, candidate in ipairs(self:Candidates(plan, only)) do
+    for _, candidate in ipairs(self:Candidates(plan, only, pause)) do
+        if pause then pause() end
         local itemID = candidate.itemID
         local wearable = not carried[itemID] and Wearable(player.class, itemID)
         if wearable ~= false then
@@ -581,7 +593,7 @@ function Finder:Scan(only, ahead)
         reach = reach,
     }
     if not only and reach == level then
-        self.latest, self.latestAt = found, self.Now()
+        self.latest, self.latestAt, self.latestKey = found, self.Now(), self.judgedKey
     end
     return found
 end
@@ -592,14 +604,21 @@ function Finder.Now()
     return tonumber(now) or os.time()
 end
 
---- The latest scan of everything for now, made again when the gear, the
---- level or the bags changed since, at most every few seconds. For the
---- character sheet's slots, which ask on every hover.
+--- The latest scan of everything for now, made again (in the background,
+--- once there is one) when the gear, the level or the bags changed since, at
+--- most every few seconds. For the character sheet's slots, which ask on
+--- every hover.
 function Finder:Latest()
+    if self.background then return self.latest end
     local fresh = self.latest and not self.stale and (self.Now() - (self.latestAt or 0)) < 60
     if not fresh and (not self.latest or (self.Now() - (self.latestAt or 0)) >= 2) then
-        self.stale = false
-        self:Scan()
+        if self.latest then
+            -- Kept on show while a new one is made a slice per frame.
+            self:ScanInBackground()
+        else
+            self.stale = false
+            self:Scan()
+        end
     end
     return self.latest
 end
@@ -614,11 +633,101 @@ function Finder:MarkStale()
     self.stale = true
 end
 
+--------------------------------------------------------------------------------
+-- Scanning in the background
+--
+-- A full scan after the gear or level changes judges hundreds of items. Done
+-- in one go it freezes the game for a moment, so the upgrade quest has it
+-- done a slice per frame instead, and is told when it is finished.
+--------------------------------------------------------------------------------
+
+-- How long one frame's slice may run, in milliseconds, and how many items a
+-- slice takes on a client without a timer to measure with.
+local SLICE_MS = 6
+local SLICE_ITEMS = 40
+
+--- The latest full scan, if nothing has changed since it was started.
+function Finder:Fresh()
+    -- While a scan runs, the last one is out of date. The key catches a
+    -- change whose event was missed.
+    if self.background or self.stale or not self.latest then return nil end
+    if self.latestKey == self:JudgeKey() then return self.latest end
+    return nil
+end
+
+--- Is a background scan under way?
+function Finder:Scanning()
+    return self.background ~= nil
+end
+
+--- Make a full scan for now, a slice per frame, then call each of the
+--- waiting `done` functions with it (or with nil and why). A scan already
+--- under way takes the new caller too. Without timers it runs at once.
+function Finder:ScanInBackground(done)
+    if self.background then
+        if done then self.background.waiting[#self.background.waiting + 1] = done end
+        return
+    end
+    local job = { waiting = { done } }
+    self.background = job
+    -- Whatever changes from here on makes this scan stale.
+    self.stale = false
+
+    local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
+    local started, count = Clock(), 0
+    local after = _G.C_Timer and _G.C_Timer.After
+    local canYield = type(after) == "function" and type(coroutine) == "table"
+    local function Pause()
+        if not canYield then return end
+        count = count + 1
+        local now = Clock()
+        if (now and started and now - started >= SLICE_MS) or (not now and count >= SLICE_ITEMS) then
+            coroutine.yield()
+            started, count = Clock(), 0
+        end
+    end
+
+    local function Finish(found, why)
+        Finder.background = nil
+        for _, fn in ipairs(job.waiting) do
+            local ok, err = pcall(fn, found, why)
+            if not ok then ns.Debug("finder:", tostring(err)) end
+        end
+    end
+
+    if not canYield then
+        Finish(self:Build(nil, nil))
+        return
+    end
+
+    local worker = coroutine.create(function() return Finder:Build(nil, nil, Pause) end)
+    local function Step()
+        started, count = Clock(), 0
+        local ok, found, why = coroutine.resume(worker)
+        local finished = Clock()
+        if ns.Perf and started and finished then ns.Perf:Add("Finder:background slice", finished - started) end
+        if not ok then
+            ns.Debug("finder:", tostring(found))
+            Finish(nil, "error")
+        elseif coroutine.status(worker) == "dead" then
+            Finish(found, why)
+        else
+            after(0, Step)
+        end
+    end
+    Step()
+end
+
 function Finder:OnEnable()
     for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "BAG_UPDATE_DELAYED",
-        "TRAIT_CONFIG_UPDATED", "GET_ITEM_INFO_RECEIVED" }) do
+        "TRAIT_CONFIG_UPDATED" }) do
         ns.RegisterEvent(self, event, self.MarkStale)
     end
+    -- Only answers a scan asked for: the client loads items for chat links
+    -- and the auction house all the time.
+    ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", function(_, _, itemID)
+        if Finder:Asked(itemID) then Finder:MarkStale() end
+    end)
     ns.RegisterEvent(self, "QUEST_TURNED_IN", self.OnQuestTurnedIn)
     ns.RegisterEvent(self, "TRAIT_CONFIG_UPDATED", self.ForgetVerdicts)
     ns.RegisterEvent(self, "SKILL_LINES_CHANGED", self.ForgetVerdicts)
