@@ -4,7 +4,18 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
-## 0.6.0
+## 0.6.1
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- Where to get upgrades: the line under each item wraps onto a second line
+  instead of being cut off, and the window is wider, so the whole source
+  shows. The slot upgrades panel and the upgrade tracker wrap the same way.
+- The finder opens beside the gear window until you drag it somewhere else,
+  and Reset window positions puts it back there.
+- Crafted gear's materials line is in the normal light text colour instead
+  of a hard-to-read dark red, and the best-roll line is green as intended.
 
 ## 0.6.0
 
