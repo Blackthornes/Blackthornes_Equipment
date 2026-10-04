@@ -202,6 +202,109 @@ function ns.NothingChanged(event)
     return false
 end
 
+--------------------------------------------------------------------------------
+-- Speed check (/beq perf): how long each piece of work took, this session
+-- only. Nothing is saved. A hitch in game can then be traced to its cause.
+--------------------------------------------------------------------------------
+
+local Perf = { rows = {} }
+ns.Perf = Perf
+
+--- Milliseconds from the client's high resolution clock, or nil.
+function Perf.Clock()
+    local clock = rawget(_G, "debugprofilestop")
+    if type(clock) == "function" then
+        local ok, now = pcall(clock)
+        if ok and type(now) == "number" then return now end
+    end
+    return nil
+end
+
+--- Note that `label` took `ms` milliseconds.
+function Perf:Add(label, ms)
+    if type(ms) ~= "number" then return end
+    local row = self.rows[label]
+    if not row then
+        row = { label = label, runs = 0, total = 0, worst = 0 }
+        self.rows[label] = row
+    end
+    row.runs = row.runs + 1
+    row.total = row.total + ms
+    if ms > row.worst then row.worst = ms end
+end
+
+--- Run fn, timing it under `label`. Errors are passed on unchanged.
+function Perf:Run(label, fn, ...)
+    local started = self.Clock()
+    if not started then return fn(...) end
+    local result = { pcall(fn, ...) }
+    local finished = self.Clock()
+    if finished then Perf:Add(label, finished - started) end
+    if not result[1] then error(result[2], 0) end
+    return unpack(result, 2)
+end
+
+--- Time `module[method]` from now on, under "Module:Method".
+function Perf:Wrap(module, method)
+    local fn = type(module) == "table" and rawget(module, method)
+    if type(fn) ~= "function" then return false end
+    local label = ("%s:%s"):format(rawget(module, "moduleName") or "?", method)
+    module[method] = function(...) return Perf:Run(label, fn, ...) end
+    return true
+end
+
+-- The pieces of work big enough to hitch, wrapped once every module is
+-- enabled. Event handlers are timed where they are dispatched.
+Perf.WATCH = {
+    { "Finder", "Scan" }, { "UpgradeQuest", "Update" }, { "UpgradeQuest", "LookForBetter" },
+    { "Tracking", "Check" }, { "BagIcons", "Refresh" }, { "BagIcons", "RefreshFrame" },
+    { "UpgradeChat", "Scan" }, { "Tooltip", "OnTooltip" }, { "Compare", "BestInBags" },
+    { "UI", "Refresh" }, { "FinderUI", "Refresh" }, { "QuestPanel", "Refresh" },
+    { "TrackerPanel", "Refresh" }, { "MapPins", "Draw" }, { "SlotUpgrades", "Fill" },
+    { "QuestRewards", "Refresh" }, { "LootRolls", "Refresh" },
+    { "MoreMarks", "RefreshMerchant" }, { "MoreMarks", "RefreshLoot" },
+}
+
+function Perf:WrapAll()
+    if self.wrapped then return end
+    self.wrapped = true
+    for _, pair in ipairs(Perf.WATCH) do Perf:Wrap(ns.modules[pair[1]], pair[2]) end
+end
+
+--- The rows, slowest first.
+function Perf:Slowest()
+    local list = {}
+    for _, row in pairs(self.rows) do list[#list + 1] = row end
+    table.sort(list, function(a, b)
+        if a.worst ~= b.worst then return a.worst > b.worst end
+        return a.label < b.label
+    end)
+    return list
+end
+
+function Perf:Reset()
+    self.rows = {}
+end
+
+--- Print the slowest pieces of work to chat.
+function Perf:Report(count)
+    if not self.Clock() then
+        ns.Print("speed check: this client has no timer to measure with.")
+        return
+    end
+    local list = Perf:Slowest()
+    if #list == 0 then
+        ns.Print("speed check: nothing measured yet. Play for a bit and try again.")
+        return
+    end
+    ns.Print("speed check, slowest first (since login or the last clear):")
+    for i = 1, math.min(count or 10, #list) do
+        local row = list[i]
+        ns.PrintRaw(("  %s  worst %.0f ms, %d runs, %.0f ms in all"):format(
+            row.label, row.worst, row.runs, row.total))
+    end
+end
+
 eventFrame:SetScript("OnEvent", function(_, event, ...)
     local list = handlers[event]
     if not list then return end
@@ -211,7 +314,13 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
     for i = 1, #list do
         local entry = list[i]
         if entry then
+            local started = Perf.Clock()
             local ok, err = pcall(entry.fn, entry.owner, event, ...)
+            if started then
+                local finished = Perf.Clock()
+                local owner = type(entry.owner) == "table" and rawget(entry.owner, "moduleName") or "?"
+                if finished then Perf:Add(("%s on %s"):format(owner, event), finished - started) end
+            end
             if not ok then
                 geterrorhandler()(err)
             end
@@ -352,6 +461,7 @@ function bootstrap:PLAYER_LOGIN()
     if enabled then return end
     enabled = true
     RunLifecycle("OnEnable")
+    Perf:WrapAll()
 end
 
 ns.RegisterEvent(bootstrap, "ADDON_LOADED", bootstrap.ADDON_LOADED)
@@ -382,6 +492,14 @@ local function ShowHelp()
 end
 
 ns.RegisterCommand("help", "show this list", ShowHelp)
+ns.RegisterCommand("perf", "what took longest this session, to find a hitch (/beq perf clear starts over)", function(rest)
+    if (rest or ""):lower():match("^%s*clear") then
+        Perf:Reset()
+        ns.Print("speed check cleared.")
+        return
+    end
+    Perf:Report(10)
+end)
 
 SLASH_BLACKTHORNESEQUIPMENT1 = "/beq"
 SLASH_BLACKTHORNESEQUIPMENT2 = "/equipment"

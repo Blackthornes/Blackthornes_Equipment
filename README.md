@@ -140,6 +140,7 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq quest      a quest for your next upgrade (/beq quest off, skip, switch, reset, or a tab: vendor, quest, dungeon, crafted)
 /beq weights    change how much each stat counts (also in the settings window)
 /beq probe      check what this client supports; it only reads
+/beq perf       what took longest this session, if the game hitches (/beq perf clear starts over; also Settings > Speed check)
 /beq settings   open the settings window (so does right-clicking the minimap button)
 /beq minimap    show or hide the minimap button
 ```
