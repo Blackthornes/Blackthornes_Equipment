@@ -15,6 +15,8 @@ local ITEMS = {
     ["item:1003"] = Gear("INVTYPE_CHEST", 5),   -- worse
     ["item:2001"] = Gear("INVTYPE_CHEST", 40),  -- a dungeon drop, seen later
     ["item:9000"] = Gear("INVTYPE_CHEST", 50),  -- better than anything on offer
+    ["item:3001"] = { loc = "INVTYPE_CHEST", class = 4, subclass = 2, stats = Agi(100), minLevel = 22 },
+    ["item:3002"] = { loc = "INVTYPE_CHEST", class = 4, subclass = 2, stats = Agi(32), minLevel = 22 },
 }
 
 local ns = env.Load()
@@ -372,6 +374,79 @@ suite.check("one only named is still a step", steps[1].text == "Do Lost Necklace
     and steps[1].note:find("Skip this one if you have done it", 1, true) ~= nil, steps[1].text)
 _G.C_QuestLog = realLog
 S.QUESTS = { [10] = { "Wolves of the Forest", 15, 18, 0, 0, "Marshal Dughan", 12, 42.1, 65.9, "" } }
+
+--------------------------------------------------------------------------------
+-- A level up that opens something better
+--------------------------------------------------------------------------------
+
+onQuest, ready, turnedIn = false, false, false
+ns.charDB.questsTurnedIn = {}
+ns.charDB.upgradeQuestSkipped = {}
+ns.charDB.upgradeQuest = nil
+env.worn[5] = "item:900"
+env.bags[0] = {}
+ns.Finder:MarkStale()
+Quest:Update()
+local following = Quest:Current()
+suite.check("following the quest reward", following and following.itemID == 1002, following and following.itemID)
+
+-- Level 22 opens a vest only a little better than the quest's reward:
+-- nothing is offered, and the quest stays.
+S.ITEMS[3002] = { 22, 25, 0, 0, 500, v = { 1, 0 } }
+_G.UnitLevel = function() return 22 end
+ns.Finder:MarkStale()
+Quest:OnEvent("PLAYER_LEVEL_UP", 22)
+suite.check("a level up keeps the quest", Quest:Current() and Quest:Current().itemID == 1002)
+suite.check("a little better is not offered", Quest:Offer() == nil)
+S.ITEMS[3002] = nil
+
+-- Level 23 opens one far better, sold close by.
+S.ITEMS[3001] = { 22, 25, 0, 0, 500, v = { 1, 0 } }
+_G.UnitLevel = function() return 23 end
+ns.Finder:MarkStale()
+local shown = #toasts
+Quest:OnEvent("PLAYER_LEVEL_UP", 23)
+local offer = Quest:Offer()
+suite.check("a far better one is offered", offer and offer.pick.itemID == 3001, offer and offer.pick.itemID)
+suite.check("but not swapped in", Quest:Current().itemID == 1002)
+suite.check("with the level it opened at", offer and offer.level == 23, offer and offer.level)
+suite.check("and a banner", #toasts > shown and toasts[#toasts].title == "New upgrade unlocked")
+suite.check("the panel shows the offer", Panel.offerBox:IsShown()
+    and Panel.offerTitle:GetText() == "New upgrade unlocked at level 23", Panel.offerTitle:GetText())
+suite.check("naming it", Panel.offerName:GetText() == "item:3001", Panel.offerName:GetText())
+suite.check("with Switch and Keep current", Panel.switchButton:IsShown() and Panel.keepButton:IsShown())
+Quest:Update()
+suite.check("offered once, not again on every update", #toasts == shown + 1, #toasts - shown)
+
+Panel.keepButton:GetScript("OnClick")(Panel.keepButton)
+suite.check("Keep current leaves the quest", Quest:Current().itemID == 1002 and Quest:Offer() == nil)
+suite.check("and the box goes", not Panel.offerBox:IsShown())
+_G.UnitLevel = function() return 24 end
+ns.Finder:MarkStale()
+Quest:OnEvent("PLAYER_LEVEL_UP", 24)
+suite.check("one kept past is not offered again", Quest:Offer() == nil)
+
+Quest.declined = {}
+_G.UnitLevel = function() return 25 end
+ns.Finder:MarkStale()
+Quest:OnEvent("PLAYER_LEVEL_UP", 25)
+suite.check("offered again after a log in", Quest:Offer() ~= nil)
+Panel.switchButton:GetScript("OnClick")(Panel.switchButton)
+suite.check("Switch follows it", Quest:Current().itemID == 3001 and Quest:Offer() == nil)
+suite.check("with its own steps", StepTexts():find("Buy item:3001", 1, true) ~= nil, StepTexts())
+suite.check("the box goes", not Panel.offerBox:IsShown())
+
+Quest:OnEvent("BAG_UPDATE_DELAYED")
+suite.check("nothing is offered without a level up", Quest:Offer() == nil)
+ns.HandleSlash("quest switch")
+suite.check("/beq quest switch with nothing on offer says so",
+    env.ChatText():find("no new upgrade is on offer", 1, true) ~= nil)
+
+S.ITEMS[3001] = nil
+_G.UnitLevel = function() return 20 end
+ns.charDB.upgradeQuest = nil
+ns.Finder:MarkStale()
+Quest:Update()
 
 --------------------------------------------------------------------------------
 -- Text that wraps, and turning it off

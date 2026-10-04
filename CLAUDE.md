@@ -156,7 +156,11 @@ carries the quests before a reward quest (`p` = the quest before), and
 `Finder:Chain` walks back past what is done; the upgrade quest lists them
 as steps first and counts each as extra work when it picks. When something
 as good or better is worn first, the quest closes with a "You already beat
-this one" banner (not counted as done) and the next one is picked. Not yet seen in
+this one" banner (not counted as done) and the next one is picked. On a level up the quest stays
+(Trent asked 2026-10-04): `UpgradeQuest:LookForBetter` rescans for a short
+while and, when an upgrade is worth 1.5 times the quest's (gain times
+ease), offers it in a box on the panel (Switch, Keep current; kept past
+ones are not offered again that session). Not yet seen in
 game; `/beq probe` lists the quest log calls it reads.
 
 ## Players' own stat weights

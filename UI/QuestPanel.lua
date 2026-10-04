@@ -4,7 +4,9 @@
 -- one to do now lit gold and the ones done ticked green.
 --
 -- Show on map pins the next place to go; Skip leaves this upgrade for the
--- next best; Other ways opens Where to get upgrades. Shift-click the item
+-- next best; Other ways opens Where to get upgrades. When a level up opens
+-- an upgrade clearly more worth the trip, a gold box at the top offers it:
+-- Switch follows it instead, Keep current leaves the quest as it is. Shift-click the item
 -- to link it in chat. The panel is there while the "Upgrade quest" setting
 -- (`upgradeQuest`, off unless turned on) is, folds to its header with "-",
 -- and can be dragged anywhere; the spot is kept with the other window
@@ -27,6 +29,9 @@ local STEP_GAP = 6
 local MOST_STEPS = 10
 local FOOTER = 34
 local BAR = 4
+local OFFER_ICON = 24
+local OFFER_PAD = 8
+local OFFER_TEXT = WIDTH - PAD * 2 - OFFER_PAD * 2 - OFFER_ICON - 8
 
 local QUEST_ICON = [[Interface\GossipFrame\AvailableQuestIcon]]
 local DONE_ICON = [[Interface\RaidFrame\ReadyCheck-Ready]]
@@ -168,6 +173,64 @@ function QuestPanel:Build()
     body:SetPoint("TOPRIGHT", 0, -HEADER)
     body:SetHeight(1)
     self.body = body
+
+    -- A level up opened something better: offered, never swapped in.
+    local offer = CreateFrame("Frame", nil, body)
+    offer:SetPoint("TOPLEFT", PAD, -PAD)
+    offer:SetWidth(WIDTH - PAD * 2)
+    Theme.Fill(offer, "rowActive", 0.75)
+    Theme.Border(offer, "accent", 0.9)
+    Theme.Halo(offer, 6, 0.3, "accent")
+    offer:Hide()
+    self.offerBox = offer
+
+    local offerTitle = Theme.CreateLabel(offer, "small", "accent")
+    offerTitle:SetPoint("TOPLEFT", OFFER_PAD, -OFFER_PAD)
+    offerTitle:SetWidth(WIDTH - PAD * 2 - OFFER_PAD * 2)
+    offerTitle:SetWordWrap(true)
+    self.offerTitle = offerTitle
+
+    local offerItem = CreateFrame("Button", nil, offer)
+    offerItem:SetSize(WIDTH - PAD * 2 - OFFER_PAD * 2, OFFER_ICON)
+    offerItem:SetScript("OnEnter", function(self)
+        local on = ns.UpgradeQuest and ns.UpgradeQuest:Offer()
+        if not on then return end
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+        pcall(GameTooltip.SetHyperlink, GameTooltip, on.pick.link)
+        GameTooltip:Show()
+    end)
+    offerItem:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    self.offerItem = offerItem
+
+    local offerIcon = Theme.CreateItemIcon(offerItem, OFFER_ICON)
+    offerIcon:SetPoint("TOPLEFT", 0, 0)
+    self.offerIcon = offerIcon
+
+    local offerName = Theme.CreateLabel(offerItem, "small", "text")
+    offerName:SetPoint("TOPLEFT", OFFER_ICON + 8, -1)
+    offerName:SetWidth(OFFER_TEXT)
+    offerName:SetWordWrap(true)
+    self.offerName = offerName
+
+    local offerGain = Theme.CreateLabel(offerItem, "tiny", "good")
+    offerGain:SetPoint("TOPLEFT", offerName, "BOTTOMLEFT", 0, -2)
+    offerGain:SetWidth(OFFER_TEXT)
+    offerGain:SetWordWrap(true)
+    self.offerGain = offerGain
+
+    local switch = Widgets.CreateButton(offer, "Switch", function()
+        if ns.UpgradeQuest then ns.UpgradeQuest:SwitchToOffer() end
+    end, { width = 72, height = 22, primary = true })
+    switch:SetPoint("BOTTOMLEFT", OFFER_PAD, OFFER_PAD)
+    Explain(switch, "Switch to it", "Follow this upgrade instead. The one you are on now can come up again later.")
+    self.switchButton = switch
+
+    local keep = Widgets.CreateButton(offer, "Keep current", function()
+        if ns.UpgradeQuest then ns.UpgradeQuest:KeepCurrent() end
+    end, { width = 96, height = 22 })
+    keep:SetPoint("LEFT", switch, "RIGHT", 10, 0)
+    Explain(keep, "Keep current", "Stay on the upgrade you are following. This one is not offered again until you log in again.")
+    self.keepButton = keep
 
     -- The item: hover for its tooltip, shift-click to link it.
     local item = CreateFrame("Button", nil, body)
@@ -356,6 +419,7 @@ function QuestPanel:FillBody(quest, steps, current, done)
     for _, row in ipairs(self.steps) do row:Hide() end
 
     if not quest then
+        self.offerBox:Hide()
         self.item:Hide()
         self.track:Hide()
         self.fill:Hide()
@@ -381,6 +445,9 @@ function QuestPanel:FillBody(quest, steps, current, done)
     end
 
     self.empty:Hide()
+    local top = PAD + self:FillOffer(ns.UpgradeQuest:Offer())
+    self.item:ClearAllPoints()
+    self.item:SetPoint("TOPLEFT", PAD, -top)
     self.item:Show()
     Theme.SetItemIcon(self.icon, quest.link)
     self.name:SetText(quest.link or "?")
@@ -394,7 +461,7 @@ function QuestPanel:FillBody(quest, steps, current, done)
     local share = #steps > 0 and done / #steps or 0
     self.fill:SetWidth(math.max(1, (WIDTH - PAD * 2) * share))
 
-    local y = PAD + itemHeight + 8 + BAR + 10
+    local y = top + itemHeight + 8 + BAR + 10
     for index, step in ipairs(steps) do
         local row = self.steps[index]
         if not row then break end
@@ -423,6 +490,51 @@ function QuestPanel:FillBody(quest, steps, current, done)
     local height = y + FOOTER - 4
     self.body:SetHeight(height)
     return height
+end
+
+--- The box offering what a level up opened, or nothing; returns how much
+--- room it takes, gap below included.
+function QuestPanel:FillOffer(offer)
+    if not offer then
+        self.offerBox:Hide()
+        return 0
+    end
+    local title = offer.level and ("New upgrade unlocked at level %d"):format(offer.level)
+        or "New upgrade unlocked"
+    self.offerTitle:SetText(title)
+    local titleLines = QuestPanel.Lines("small", title, WIDTH - PAD * 2 - OFFER_PAD * 2)
+
+    local link = offer.pick.link or "?"
+    Theme.SetItemIcon(self.offerIcon, link)
+    self.offerName:SetText(link)
+    local parts = {}
+    if offer.howMuch then parts[#parts + 1] = offer.howMuch .. " over what you wear" end
+    local source = offer.source
+    if source and source.kind and ns.Finder then
+        local label = ns.Finder.Label(source)
+        if label ~= "" then parts[#parts + 1] = Colored(KIND_COLOR[source.kind] or "accent", label) end
+    end
+    local gain = table.concat(parts, "  ")
+    self.offerGain:SetText(gain)
+    local itemHeight = math.max(OFFER_ICON, 2 + QuestPanel.Lines("small", link, OFFER_TEXT) * LINE_HEIGHT.small
+        + 2 + QuestPanel.Lines("tiny", gain, OFFER_TEXT) * LINE_HEIGHT.tiny)
+
+    local y = OFFER_PAD + titleLines * LINE_HEIGHT.small + 6
+    self.offerItem:ClearAllPoints()
+    self.offerItem:SetPoint("TOPLEFT", OFFER_PAD, -y)
+    self.offerItem:SetHeight(itemHeight)
+    self.offerItem:Show()
+    self.switchButton:Show()
+    self.keepButton:Show()
+    local height = y + itemHeight + 8 + 22 + OFFER_PAD
+    self.offerBox:SetHeight(height)
+    if not self.offerBox:IsShown() then
+        self.offerBox:Show()
+        Motion:Run(self.offerBox, "offer", 0.9, function(p)
+            Theme.SetHalo(self.offerBox, 0.7 + (0.3 - 0.7) * p, "accent")
+        end)
+    end
+    return height + 12
 end
 
 --- The panel's edge flares green and settles back, with the quest sound.
