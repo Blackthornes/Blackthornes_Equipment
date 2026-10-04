@@ -154,7 +154,9 @@ upgrade quest whose quest was handed in without its reward is dropped and
 skipped. Quest chains (Trent asked 2026-10-04): `Sources.QUESTS` also
 carries the quests before a reward quest (`p` = the quest before), and
 `Finder:Chain` walks back past what is done; the upgrade quest lists them
-as steps first and counts each as extra work when it picks. Not yet seen in
+as steps first and counts each as extra work when it picks. When something
+as good or better is worn first, the quest closes with a "You already beat
+this one" banner (not counted as done) and the next one is picked. Not yet seen in
 game; `/beq probe` lists the quest log calls it reads.
 
 ## Players' own stat weights
