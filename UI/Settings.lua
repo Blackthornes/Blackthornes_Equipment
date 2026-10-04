@@ -410,7 +410,25 @@ function SettingsUI:BuildHunting()
     Explain(controls.questReset, "Bring back skipped upgrades",
         "Upgrades you skipped can be picked again. Same as /beq quest reset.")
 
-    local anchor = panelRow
+    -- Which tab the panel shows, as clicking a tab or /beq quest vendor
+    -- (quest, dungeon, crafted) does.
+    local tabRow = CreateRow(frame, panelRow, "Quest tab",
+        "Each kind of source keeps its own upgrade. Pick the one the panel shows.")
+    controls.questTab = Widgets.CreateStepper(tabRow, {
+        min = 1, max = 4, step = 1, value = 1,
+        format = function(index)
+            local tab = ns.UpgradeQuest and ns.UpgradeQuest.TABS[index]
+            return tab and tab.name or "?"
+        end,
+        onChange = function(index)
+            local tab = ns.UpgradeQuest and ns.UpgradeQuest.TABS[index]
+            if tab then ns.HandleSlash("quest " .. tab.key) end
+        end,
+    })
+    controls.questTab:SetWidth(170)
+    controls.questTab:SetPoint("TOPLEFT", CONTROL_X, 0)
+
+    local anchor = tabRow
     for _, entry in ipairs(HUNTING) do
         local key, redraw = entry[1], entry[5]
         local row = CreateRow(frame, anchor, entry[2], entry[3])
@@ -450,6 +468,11 @@ function SettingsUI:Refresh()
     local on = quest and quest:IsEnabled()
     controls.questSkip:SetAlpha(on and quest:Current() and 1 or 0.45)
     controls.questSwitch:SetAlpha(on and quest:Offer() and 1 or 0.45)
+    if quest then
+        for index, tab in ipairs(quest.TABS) do
+            if tab.key == quest:Tab() then controls.questTab:SetValue(index, true) end
+        end
+    end
 
     local choices = self:SpecChoices()
     local picked = ns.charDB and ns.charDB.spec

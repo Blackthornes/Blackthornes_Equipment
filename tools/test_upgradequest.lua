@@ -16,7 +16,7 @@ local ITEMS = {
     ["item:2001"] = Gear("INVTYPE_CHEST", 40),  -- a dungeon drop, seen later
     ["item:9000"] = Gear("INVTYPE_CHEST", 50),  -- better than anything on offer
     ["item:3001"] = { loc = "INVTYPE_CHEST", class = 4, subclass = 2, stats = Agi(100), minLevel = 22 },
-    ["item:3002"] = { loc = "INVTYPE_CHEST", class = 4, subclass = 2, stats = Agi(32), minLevel = 22 },
+    ["item:3002"] = { loc = "INVTYPE_CHEST", class = 4, subclass = 2, stats = Agi(22), minLevel = 22 },
 }
 
 local ns = env.Load()
@@ -55,6 +55,13 @@ local realShow = ns.Toast.Show
 ns.Toast.Show = function(self, banner)
     toasts[#toasts + 1] = banner
     return realShow(self, banner)
+end
+
+-- Every tab's quest forgotten, as on a new character.
+local function Reset()
+    ns.charDB.upgradeQuestTabs = {}
+    ns.charDB.upgradeQuestTab = nil
+    ns.charDB.upgradeQuest = nil
 end
 
 local function StepTexts()
@@ -133,7 +140,7 @@ end)())
 -- Nothing on offer beats what is worn now.
 suite.check("and nothing left to chase", Quest:Current() == nil and Quest.state == "none", Quest.state)
 suite.check("the panel says so", Panel.empty:IsShown()
-    and Panel.empty:GetText():find("No upgrade to chase", 1, true) ~= nil, Panel.empty:GetText())
+    and Panel.empty:GetText():find("No quest reward that is an upgrade", 1, true) ~= nil, Panel.empty:GetText())
 suite.check("with Other ways still there", Panel.otherButton:IsShown() and not Panel.skipButton:IsShown())
 
 --------------------------------------------------------------------------------
@@ -146,9 +153,12 @@ ns.Finder:MarkStale()
 Quest:Update()
 suite.check("a new quest once there is an upgrade again", Quest:Current() and Quest:Current().itemID == 1002)
 ns.HandleSlash("quest skip")
-quest = Quest:Current()
-suite.check("skip moves to the next best", quest and quest.itemID == 1001, quest and quest.itemID)
+suite.check("skip leaves the tab with the next best: no other quest reward here", Quest:Current() == nil)
 suite.check("and remembers it", ns.charDB.upgradeQuestSkipped[1002] == true)
+ns.HandleSlash("quest vendor")
+quest = Quest:Current()
+suite.check("the Vendor tab has its own upgrade", Quest:Tab() == "vendor" and quest and quest.itemID == 1001,
+    quest and quest.itemID)
 suite.check("the vendor's steps", StepTexts() == "Travel to Elwynn Forest"
     .. " | Find Corina Steele (41.5, 65.9)"
     .. " | Buy item:1001 for |cffffd700" .. "1g|r |cffc7c7cf20s|r |cffeda55f50c|r"
@@ -198,7 +208,7 @@ env.worn[5] = "item:900"
 
 -- Beaten while the quest's item sits in the bags, not yet put on: the
 -- quest still closes rather than asking to put on the weaker one.
-ns.charDB.upgradeQuest = nil
+Reset()
 ns.Finder:MarkStale()
 Quest:Update()
 local beaten = Quest:Current()
@@ -219,7 +229,7 @@ _G.GetTime = function() return clock end
 local cached = false
 _G.C_Item.IsItemDataCachedByID = function() return cached end
 _G.C_Item.RequestLoadItemDataByID = function() return true end
-ns.charDB.upgradeQuest = nil
+Reset()
 ns.Finder:MarkStale()
 Quest:Update()
 suite.check("waits for the server's answers before picking", Quest:Current() == nil and Quest.state == "waiting",
@@ -281,8 +291,9 @@ ns.Crafts.ITEMS = {}
 env.bags[0] = {}
 env.worn[5] = "item:900"
 turnedIn = false
-ns.charDB.upgradeQuest = nil
+Reset()
 ns.charDB.upgradeQuestSkipped = {}
+ns.charDB.upgradeQuestTab = "quest"
 ns.Finder:MarkStale()
 Quest:Update()
 suite.check("the quest reward is picked again", Quest:Current() and Quest:Current().itemID == 1002)
@@ -297,7 +308,8 @@ Quest:Update()
 suite.check("still not in the bags: the quest is dropped",
     env.ChatText():find("that quest is already done", 1, true) ~= nil)
 suite.check("and never picked again", ns.charDB.upgradeQuestSkipped[1002] == true
-    and Quest:Current() and Quest:Current().itemID == 1001, Quest:Current() and Quest:Current().itemID)
+    and Quest:Current() == nil, Quest:Current() and Quest:Current().itemID)
+suite.check("the Vendor tab keeps its own", Quest:QuestOn("vendor") and Quest:QuestOn("vendor").itemID == 1001)
 _G.GetTime = nil
 turnedIn = false
 
@@ -331,7 +343,7 @@ S.QUESTS = {
     [12] = { "Bounty on Murlocs", 8, 10, 0, 0, "Guard Thomas", 12, 74, 72, "Report to Goldshire", p = 13 },
     [13] = { "Report to Goldshire", 1, 5, 0, 0, "Guard Thomas", 12, 74, 72, "" },
 }
-ns.charDB.upgradeQuest = nil
+Reset()
 ns.charDB.upgradeQuestSkipped = {}
 ns.charDB.questsTurnedIn = nil
 ns.Finder:MarkStale()
@@ -343,8 +355,10 @@ suite.check("and says so", ns.Finder:Describe(chained):find("after 3 earlier que
 Quest:Update()
 -- Three quests first make the bigger upgrade less worth the trip than the
 -- vendor's, a short walk away.
-suite.check("a long chain counts as more work", Quest:Current() and Quest:Current().itemID == 1001,
+suite.check("a long chain counts as more work: the Vendor tab is picked first",
+    Quest:Tab() == "vendor" and Quest:Current() and Quest:Current().itemID == 1001,
     Quest:Current() and Quest:Current().itemID)
+suite.check("the Quest tab still has the reward", Quest:QuestOn("quest") and Quest:QuestOn("quest").itemID == 1002)
 
 local chainQuest = { itemID = 1002, link = "item:1002", source = chained }
 steps, current = Quest:Steps(chainQuest)
@@ -382,13 +396,17 @@ S.QUESTS = { [10] = { "Wolves of the Forest", 15, 18, 0, 0, "Marshal Dughan", 12
 onQuest, ready, turnedIn = false, false, false
 ns.charDB.questsTurnedIn = {}
 ns.charDB.upgradeQuestSkipped = {}
-ns.charDB.upgradeQuest = nil
+Reset()
 env.worn[5] = "item:900"
 env.bags[0] = {}
 ns.Finder:MarkStale()
 Quest:Update()
 local following = Quest:Current()
 suite.check("following the quest reward", following and following.itemID == 1002, following and following.itemID)
+-- A level up offers a better upgrade on the tab shown: here the vendor's.
+Quest:SelectTab("vendor")
+following = Quest:Current()
+suite.check("the Vendor tab's upgrade", following and following.itemID == 1001, following and following.itemID)
 
 -- Level 22 opens a vest only a little better than the quest's reward:
 -- nothing is offered, and the quest stays.
@@ -396,7 +414,7 @@ S.ITEMS[3002] = { 22, 25, 0, 0, 500, v = { 1, 0 } }
 _G.UnitLevel = function() return 22 end
 ns.Finder:MarkStale()
 Quest:OnEvent("PLAYER_LEVEL_UP", 22)
-suite.check("a level up keeps the quest", Quest:Current() and Quest:Current().itemID == 1002)
+suite.check("a level up keeps the quest", Quest:Current() and Quest:Current().itemID == 1001)
 suite.check("a little better is not offered", Quest:Offer() == nil)
 S.ITEMS[3002] = nil
 
@@ -408,7 +426,7 @@ local shown = #toasts
 Quest:OnEvent("PLAYER_LEVEL_UP", 23)
 local offer = Quest:Offer()
 suite.check("a far better one is offered", offer and offer.pick.itemID == 3001, offer and offer.pick.itemID)
-suite.check("but not swapped in", Quest:Current().itemID == 1002)
+suite.check("but not swapped in", Quest:Current().itemID == 1001)
 suite.check("with the level it opened at", offer and offer.level == 23, offer and offer.level)
 suite.check("and a banner", #toasts > shown and toasts[#toasts].title == "New upgrade unlocked")
 suite.check("the panel shows the offer", Panel.offerBox:IsShown()
@@ -419,7 +437,7 @@ Quest:Update()
 suite.check("offered once, not again on every update", #toasts == shown + 1, #toasts - shown)
 
 Panel.keepButton:GetScript("OnClick")(Panel.keepButton)
-suite.check("Keep current leaves the quest", Quest:Current().itemID == 1002 and Quest:Offer() == nil)
+suite.check("Keep current leaves the quest", Quest:Current().itemID == 1001 and Quest:Offer() == nil)
 suite.check("and the box goes", not Panel.offerBox:IsShown())
 _G.UnitLevel = function() return 24 end
 ns.Finder:MarkStale()
@@ -444,9 +462,80 @@ suite.check("/beq quest switch with nothing on offer says so",
 
 S.ITEMS[3001] = nil
 _G.UnitLevel = function() return 20 end
-ns.charDB.upgradeQuest = nil
+Reset()
 ns.Finder:MarkStale()
 Quest:Update()
+
+--------------------------------------------------------------------------------
+-- Tabs: one upgrade per kind of source
+--------------------------------------------------------------------------------
+
+Reset()
+ns.charDB.upgradeQuestSkipped = {}
+ns.Finder:MarkStale()
+Quest:Update()
+suite.check("the first time, the tab most worth the trip is shown", Quest:Tab() == "quest"
+    and Quest:Current().itemID == 1002, Quest:Tab())
+suite.check("each tab keeps its own", Quest:QuestOn("vendor").itemID == 1001 and Quest:QuestOn("quest").itemID == 1002
+    and Quest:QuestOn("dungeon") == nil and Quest:QuestOn("craft") == nil)
+suite.check("the copy older versions read follows the tab shown", ns.charDB.upgradeQuest == Quest:Current())
+
+Panel:Refresh()
+suite.check("four tabs on the panel", #Panel.tabs == 4 and Panel.tabs[1].label:GetText() == "Vendor"
+    and Panel.tabs[3].label:GetText() == "Dungeons and Raids" and Panel.tabs[4].label:GetText() == "Crafted")
+suite.check("the one shown is lit", Panel.tabs[2].shown and not Panel.tabs[1].shown)
+suite.check("a tab with nothing on it is dimmed", Panel.tabs[3].empty and not Panel.tabs[1].empty)
+suite.check("the header names the tab", Panel.title:GetText() == "Quest", Panel.title:GetText())
+suite.check("tabs fit across the panel", (function()
+    local total = 0
+    for _, tab in ipairs(Panel.tabs) do total = total + tab:GetWidth() end
+    return total + 3 * 4 <= 340 - 20 + 0.01
+end)())
+suite.check("hovering a tab says what is on it", pcall(Panel.tabs[1]:GetScript("OnEnter"), Panel.tabs[1]))
+
+Panel.tabs[1]:GetScript("OnClick")(Panel.tabs[1])
+suite.check("clicking a tab shows its upgrade", Quest:Tab() == "vendor" and Quest:Current().itemID == 1001
+    and Panel.name:GetText() == "item:1001", Panel.name:GetText())
+suite.check("and the other tab's is kept", Quest:QuestOn("quest").itemID == 1002)
+Panel.tabs[2]:GetScript("OnClick")(Panel.tabs[2])
+suite.check("flipping back finds it as it was", Quest:Current().itemID == 1002)
+
+ns.HandleSlash("quest crafted")
+suite.check("/beq quest crafted shows the Crafted tab", Quest:Tab() == "craft"
+    and env.ChatText():find("showing the Crafted tab", 1, true) ~= nil)
+suite.check("which says when it has nothing", Panel.empty:IsShown()
+    and Panel.empty:GetText():find("No crafted upgrade right now", 1, true) ~= nil, Panel.empty:GetText())
+ns.HandleSlash("quest dungeons")
+suite.check("/beq quest dungeons", Quest:Tab() == "dungeon")
+
+-- Settings has the same choice.
+ns.SettingsUI:Show()
+suite.check("Settings shows the tab", ns.SettingsUI.controls.questTab.value == 3, ns.SettingsUI.controls.questTab.value)
+ns.SettingsUI.controls.questTab:SetValue(1)
+suite.check("and picks one", Quest:Tab() == "vendor", Quest:Tab())
+ns.SettingsUI:Hide()
+
+-- Worn, the same upgrade on two tabs is one quest done.
+local doneBefore = Quest:DoneCount()
+env.worn[5] = "item:1002"
+Quest:Update()
+suite.check("worn from another tab, it is done once", Quest:DoneCount() == doneBefore + 1, Quest:DoneCount())
+env.worn[5] = "item:900"
+
+-- A quest saved before there were tabs goes on its own tab.
+ns.charDB.upgradeQuestTabs = nil
+ns.charDB.upgradeQuestTab = nil
+ns.charDB.upgradeQuest = { itemID = 1002, link = "item:1002", source = { kind = "quest", questID = 10 } }
+suite.check("an older quest is kept, on its tab", Quest:QuestOn("quest") and Quest:QuestOn("quest").itemID == 1002
+    and Quest:Tab() == "quest")
+
+-- The close gem turns the quest off, its quests kept.
+Panel:Refresh()
+Panel.trim.closeButton:GetScript("OnClick")(Panel.trim.closeButton)
+suite.check("the close gem turns it off", ns.db.upgradeQuest == false and not Panel.frame:IsShown())
+suite.check("and says how to bring it back", env.ChatText():find("brings it back", 1, true) ~= nil)
+suite.check("keeping its quests", Quest:QuestOn("quest") ~= nil)
+ns.HandleSlash("quest")
 
 --------------------------------------------------------------------------------
 -- Text that wraps, and turning it off

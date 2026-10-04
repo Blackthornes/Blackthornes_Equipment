@@ -271,8 +271,10 @@ local DEFAULTS = {
 
     -- The upgrade quest: the best next upgrade handed out as a quest, with
     -- the steps to get it (Logic/UpgradeQuest.lua). Off unless the player
-    -- turns it on. The quest itself is kept per character
-    -- (`upgradeQuest`, `upgradeQuestSkipped`, `upgradeQuestsDone`), as are
+    -- turns it on. The quests are kept per character, one per tab
+    -- (`upgradeQuestTabs`, the tab shown in `upgradeQuestTab`, and a copy
+    -- of its quest in `upgradeQuest`, where versions before the tabs kept
+    -- it), with `upgradeQuestSkipped` and `upgradeQuestsDone`, as are
     -- the quests seen handed in (`questsTurnedIn`, Logic/Finder.lua), for a
     -- client that cannot say which quests are done.
     upgradeQuest = false,
