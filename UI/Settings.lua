@@ -31,7 +31,7 @@ local CONTROL_X = 150
 -- Two columns: the gear and the windows on the left, upgrade hunts on the
 -- right.
 local WIDTH = COLUMN_WIDTH * 2 + PADDING * 3
-local HEIGHT = 642
+local HEIGHT = 698
 
 local ROW_HEIGHT = 50
 local ROW_GAP = -6
@@ -345,6 +345,22 @@ function SettingsUI:BuildColumn()
         ns.db.debug = checked
     end, false)
     controls.debug:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    -- /beq perf and /beq perf clear as buttons.
+    local speedRow = CreateRow(frame, debugRow, "Speed check",
+        "If the game hitches, Show lists in chat what Equipment spent longest on. Clear starts the count again.")
+    controls.perfShow = Widgets.CreateButton(speedRow, "Show", function()
+        ns.HandleSlash("perf")
+    end, { width = 64, height = 20 })
+    controls.perfShow:SetPoint("TOPLEFT", CONTROL_X, 0)
+    Explain(controls.perfShow, "Show what took longest",
+        "Lists in chat the slowest things Equipment did since you logged in or last cleared. Same as /beq perf.")
+    controls.perfClear = Widgets.CreateButton(speedRow, "Clear", function()
+        ns.HandleSlash("perf clear")
+    end, { width = 64, height = 20 })
+    controls.perfClear:SetPoint("LEFT", controls.perfShow, "RIGHT", 12, 0)
+    Explain(controls.perfClear, "Start the count again",
+        "Forgets the times so far, so the next Show covers only what happens from now. Same as /beq perf clear.")
 end
 
 -- The right-hand column's switches: saved key, label, what it does, the

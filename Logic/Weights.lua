@@ -736,6 +736,8 @@ end
 --- redraw everything that shows a verdict.
 function Weights:Changed()
     merged = {}
+    -- Verdicts kept by the finder were judged with the old weights.
+    self.generation = (self.generation or 0) + 1
 
     if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
     if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end

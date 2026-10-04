@@ -364,7 +364,11 @@ function Finder:IsCached(itemID)
 end
 
 --- Ask the server about an item; GET_ITEM_INFO_RECEIVED answers.
+--- What was asked is remembered, so an answer about some other item (a chat
+--- link, another addon's window) does not set off a scan.
 function Finder:Request(itemID)
+    self.asked = self.asked or {}
+    self.asked[itemID] = true
     local C = _G.C_Item
     if Read(C and C.RequestLoadItemDataByID, itemID) == nil then
         Read(C and C.GetItemInfo or _G.GetItemInfo, itemID)
@@ -431,6 +435,60 @@ local function Remote(sources)
     return true
 end
 
+--- The verdicts kept from earlier scans, for gear, level, talents, weapon
+--- skills and stat weights as they are now. Judging thousands of items on
+--- every scan made the game hitch; most scans only need the few items whose
+--- details just arrived judged. Started afresh when any of those changes.
+local function WornStatsRead()
+    local read = 0
+    for slot = 1, 19 do
+        local link = Items:Equipped(slot)
+        if link and Items:Stats(link) then read = read + 1 end
+    end
+    return read
+end
+
+function Finder:Judged()
+    -- Worn gear whose stats had not loaded yet (just after login) scores
+    -- nothing, so its count is part of the key too.
+    local key = table.concat({
+        tostring(Items:WornSignature()), tostring(WornStatsRead()), tostring(Items:PlayerLevel()),
+        tostring(Weights.generation or 0), tostring(self.judgeGeneration or 0),
+    }, "|")
+    if key ~= self.judgedKey or type(self.judged) ~= "table" then
+        self.judgedKey, self.judged = key, {}
+    end
+    return self.judged
+end
+
+--- Forget the kept verdicts (talents or weapon skills changed).
+function Finder:ForgetVerdicts()
+    self.judgeGeneration = (self.judgeGeneration or 0) + 1
+    self.stale = true
+end
+
+--- One item's verdict, judged once per Judged() set. Gear with random rolls
+--- is judged at its best roll.
+-- @return best roll (or nil), ok, result
+function Finder:JudgeOnce(judged, itemID)
+    local kept = judged[itemID]
+    if kept then return kept.best, true, kept.result end
+    local best = ns.Rolls and ns.Rolls.Best and ns.Rolls:Best(itemID)
+    local link = best and best.link or ("item:%d"):format(itemID)
+    local ok, result = true, best and best.result
+    if not best then ok, result = pcall(Compare.Judge, Compare, link) end
+    -- Only a full answer is kept: an item still loading, or rolled gear with
+    -- rolls the client has not seen yet, is judged again next time.
+    local data = ns.RollData
+    local group = data and data.ITEMS and data.ITEMS[itemID]
+    local rolls = group and data.GROUPS and data.GROUPS[group]
+    local allRolls = not rolls or (best and (best.rolls or 0) * 2 >= #rolls)
+    if ok and result and allRolls then
+        judged[itemID] = { best = best, result = result }
+    end
+    return best, ok, result
+end
+
 --- Look for upgrades, from every kind of source or only `only` ("vendor",
 --- "quest", "dungeon" or "craft"), and `ahead` levels past the character's
 --- (0 or nil for now).
@@ -467,6 +525,8 @@ function Finder:Scan(only, ahead)
     -- to go and buy or farm again.
     local carried = self:Carried()
 
+    local judged = self:Judged()
+    local worn = Compare:WornIDs()
     local slots, checked, waiting, asked = {}, 0, 0, 0
     for _, candidate in ipairs(self:Candidates(plan, only)) do
         local itemID = candidate.itemID
@@ -478,12 +538,8 @@ function Finder:Scan(only, ahead)
                     asked = asked + 1
                     self:Request(itemID)
                 end
-            elseif not Compare:IsWornID(itemID) then
-                -- Gear with random rolls is judged at its best roll.
-                local best = ns.Rolls and ns.Rolls.Best and ns.Rolls:Best(itemID)
-                local link = best and best.link or ("item:%d"):format(itemID)
-                local ok, result = true, best and best.result
-                if not best then ok, result = pcall(Compare.Judge, Compare, link) end
+            elseif not worn[itemID] then
+                local best, ok, result = self:JudgeOnce(judged, itemID)
                 if ok and result then
                     checked = checked + 1
                     if Counts(result, reach, level) and result.slot then
@@ -548,6 +604,12 @@ function Finder:Latest()
     return self.latest
 end
 
+--- Was this item asked about by a scan? (GET_ITEM_INFO_RECEIVED's item.)
+function Finder:Asked(itemID)
+    local ok, id = pcall(function() return tonumber(itemID) end)
+    return ok and id ~= nil and self.asked ~= nil and self.asked[id] == true
+end
+
 function Finder:MarkStale()
     self.stale = true
 end
@@ -558,6 +620,8 @@ function Finder:OnEnable()
         ns.RegisterEvent(self, event, self.MarkStale)
     end
     ns.RegisterEvent(self, "QUEST_TURNED_IN", self.OnQuestTurnedIn)
+    ns.RegisterEvent(self, "TRAIT_CONFIG_UPDATED", self.ForgetVerdicts)
+    ns.RegisterEvent(self, "SKILL_LINES_CHANGED", self.ForgetVerdicts)
 end
 
 --------------------------------------------------------------------------------

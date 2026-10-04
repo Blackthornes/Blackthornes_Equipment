@@ -905,7 +905,22 @@ function UpgradeQuest:SetEnabled(on)
     end
 end
 
+--- Is an item answer from the server about gear the quest cares about: an
+--- item a finder scan asked for, or one of the tabs' upgrades?
+function UpgradeQuest:WantsItem(itemID)
+    if ns.Finder and ns.Finder:Asked(itemID) then return true end
+    local ok, id = pcall(function() return tonumber(itemID) end)
+    if not (ok and id) then return false end
+    for _, quest in pairs(self:Quests()) do
+        if type(quest) == "table" and quest.itemID == id then return true end
+    end
+    return false
+end
+
 function UpgradeQuest:OnEvent(event, level)
+    -- The client loads items for chat links, vendors and other addons all
+    -- the time; only answers this addon asked for are worth looking again.
+    if event == "GET_ITEM_INFO_RECEIVED" and not self:WantsItem(level) then return end
     if event == "PLAYER_LEVEL_UP" then
         -- Look for gear the new level opened, for a little while.
         self.levelledAt = ns.Finder and ns.Finder.Now() or Now()

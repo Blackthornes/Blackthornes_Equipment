@@ -362,6 +362,18 @@ end
 --- Is an item with this ID worn anywhere? Rings and trinkets have two
 --- slots, so a ring asked about by ID could otherwise be measured against the
 --- other ring and called an upgrade over itself.
+--- The item IDs worn now, as a set: read once for a long list, where asking
+--- IsWornID per item would read all nineteen slots each time.
+function Compare:WornIDs()
+    local ids = {}
+    for slot = 1, 19 do
+        local worn = Items:Equipped(slot)
+        local id = worn and tonumber(worn:match("item:(%d+)"))
+        if id then ids[id] = true end
+    end
+    return ids
+end
+
 function Compare:IsWornID(itemID)
     for slot = 1, 19 do
         local worn = Items:Equipped(slot)
