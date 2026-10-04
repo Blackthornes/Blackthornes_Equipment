@@ -4,6 +4,23 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.9.0
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- The upgrade quest panel wears the gold frame too: a gold rim, "Upgrade
+  quest" on a plate, a red close gem, and the quest in a sunk well.
+- The upgrade quest now has four tabs: Vendor, Quest, Dungeons and Raids,
+  and Crafted. Each keeps its own upgrade from that kind of source, and you
+  can flip between them freely. A tab with nothing on it is dimmed, and
+  hovering a tab names its upgrade. The first time, the tab most worth the
+  trip is shown.
+- Pick a tab with `/beq quest vendor` (or `quest`, `dungeon`, `crafted`),
+  or with the new Quest tab setting under Upgrade hunts.
+- The close gem turns the upgrade quest off and keeps its quests. A quest
+  you were already following moves onto its own tab, so nothing is lost.
+
 ## 0.8.0
 
 For WoW: Forever (interface 16001). This version adds files, so fully
