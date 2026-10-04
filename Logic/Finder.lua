@@ -120,6 +120,47 @@ function Finder:OnQuestTurnedIn(_, questID)
 end
 
 --------------------------------------------------------------------------------
+-- Quest chains
+--------------------------------------------------------------------------------
+
+-- How far back a chain is followed, as in tools/make_sources.py.
+local CHAIN_MOST = 20
+
+local function QuestPlace(questID)
+    local quest = ns.Sources.QUESTS[questID]
+    if not quest then return nil end
+    return {
+        questID = questID, title = quest[1], questLevel = quest[3], name = quest[6],
+        zone = ns.Sources.ZONES[quest[7]],
+        x = quest[8] ~= 0 and quest[8] or nil, y = quest[9] ~= 0 and quest[9] or nil,
+        group = quest[11],
+    }
+end
+
+--- The quests still to do before a quest opens, first one first: a list of
+--- { questID, title, questLevel, name, zone, x, y, group }. A quest earlier
+--- in the chain that the data does not have is named in the second return,
+--- by its title, so the player can still be told to do it.
+function Finder:Chain(questID)
+    local chain, unknown = {}, nil
+    local quest = ns.Sources.QUESTS[questID]
+    for _ = 1, CHAIN_MOST do
+        if not quest then break end
+        local before = quest.p
+        if not before then
+            -- Named, but not in the data: whether it is done cannot be
+            -- asked, so the steps let a later quest tick it off.
+            if quest[10] ~= "" then unknown = quest[10] end
+            break
+        end
+        if self:QuestDone(before) then break end
+        table.insert(chain, 1, QuestPlace(before))
+        quest = ns.Sources.QUESTS[before]
+    end
+    return chain, unknown
+end
+
+--------------------------------------------------------------------------------
 -- Sources
 --------------------------------------------------------------------------------
 
@@ -202,7 +243,9 @@ function Finder:SourcesFor(itemID, player)
         local quest = S.QUESTS[questID]
         if quest and quest[2] <= player.level and Allows(quest[4], player.raceBit)
             and Allows(quest[5], player.classBit) and not self:QuestDone(questID) then
+            local chain, unknown = self:Chain(questID)
             found[#found + 1] = {
+                chain = #chain + (unknown and 1 or 0), first = unknown or (chain[1] and chain[1].title),
                 kind = "quest", questID = questID, title = quest[1], questLevel = quest[3],
                 name = quest[6], zone = ZoneName(quest[7]),
                 x = quest[8] ~= 0 and quest[8] or nil, y = quest[9] ~= 0 and quest[9] or nil,
@@ -564,6 +607,11 @@ function Finder:Describe(source)
     elseif source.kind == "quest" then
         local text = ("%s (level %d)"):format(source.title, source.questLevel or 0)
         if source.group then text = text .. ", " .. source.group end
+        if (source.chain or 0) > 1 then
+            text = text .. (", after %d earlier quests"):format(source.chain)
+        elseif (source.chain or 0) == 1 and source.first then
+            text = text .. ", after " .. source.first
+        end
         local where = Place(source)
         if source.x then
             text = text .. ", from " .. source.name

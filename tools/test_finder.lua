@@ -122,7 +122,7 @@ local limited = Finder:SourcesFor(1009, player)[1]
 suite.check("limited stock says so", Finder:Describe(limited):find("(limited stock)", 1, true) ~= nil)
 local quest = Finder:SourcesFor(1003, player)[1]
 suite.check("a quest says its level, that it is for a group, and who gives it",
-    Finder:Describe(quest) == "Wolves of the Forest (level 18), group, from Marshal Dughan in Elwynn Forest (42.1, 65.9)",
+    Finder:Describe(quest) == "Wolves of the Forest (level 18), group, after Prowlers, from Marshal Dughan in Elwynn Forest (42.1, 65.9)",
     Finder:Describe(quest))
 suite.check("and the quest before it", quest.after == "Prowlers")
 S.ITEMS[1011] = { 0, 18, 0, 0, 0, q = { 15 } }

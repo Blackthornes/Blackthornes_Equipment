@@ -296,6 +296,65 @@ end)())
 _G.C_QuestLog = realLog
 
 --------------------------------------------------------------------------------
+-- Quest chains
+--------------------------------------------------------------------------------
+
+local done = {}
+_G.C_QuestLog = {
+    IsQuestFlaggedCompleted = function(id) return done[id] == true end,
+    IsOnQuest = function() return false end,
+}
+S.QUESTS = {
+    [10] = { "Wolves of the Forest", 15, 18, 0, 0, "Marshal Dughan", 12, 42.1, 65.9, "The Fargodeep Mine", p = 11 },
+    [11] = { "The Fargodeep Mine", 10, 12, 0, 0, "Marshal Dughan", 12, 42.1, 65.9, "Bounty on Murlocs", p = 12 },
+    [12] = { "Bounty on Murlocs", 8, 10, 0, 0, "Guard Thomas", 12, 74, 72, "Report to Goldshire", p = 13 },
+    [13] = { "Report to Goldshire", 1, 5, 0, 0, "Guard Thomas", 12, 74, 72, "" },
+}
+ns.charDB.upgradeQuest = nil
+ns.charDB.upgradeQuestSkipped = {}
+ns.charDB.questsTurnedIn = nil
+ns.Finder:MarkStale()
+local player = ns.Finder:Player()
+local chained = ns.Finder:SourcesFor(1002, player)[1]
+suite.check("the finder counts the quests before it", chained.chain == 3, chained.chain)
+suite.check("and says so", ns.Finder:Describe(chained):find("after 3 earlier quests", 1, true) ~= nil,
+    ns.Finder:Describe(chained))
+Quest:Update()
+-- Three quests first make the bigger upgrade less worth the trip than the
+-- vendor's, a short walk away.
+suite.check("a long chain counts as more work", Quest:Current() and Quest:Current().itemID == 1001,
+    Quest:Current() and Quest:Current().itemID)
+
+local chainQuest = { itemID = 1002, link = "item:1002", source = chained }
+steps, current = Quest:Steps(chainQuest)
+suite.check("the chain comes first, from its first quest",
+    steps[1].text == "Do Report to Goldshire: pick it up from Guard Thomas in Elwynn Forest (74, 72)"
+    and steps[2].text == "Do Bounty on Murlocs: pick it up from Guard Thomas in Elwynn Forest (74, 72)"
+    and steps[3].text == "Then 1 more quest in the chain, up to The Fargodeep Mine", StepTexts and steps[1].text)
+suite.check("saying how many", steps[1].note == "3 quests to do before Wolves of the Forest.", steps[1].note)
+suite.check("then the quest itself", steps[5].text:find("Pick up Wolves of the Forest", 1, true) ~= nil
+    and #steps == 8, #steps)
+suite.check("the first quest is the step to do now", current == 1 and steps[1].place.x == 74, current)
+
+done[13] = true
+steps = Quest:Steps(chainQuest)
+suite.check("a quest done drops off the chain", steps[1].text:find("Do Bounty on Murlocs", 1, true) == 1
+    and steps[2].text:find("Do The Fargodeep Mine", 1, true) == 1 and #steps == 7, steps[1].text)
+done[12], done[11] = true, true
+steps = Quest:Steps(chainQuest)
+suite.check("the whole chain done leaves the quest itself", steps[2].text:find("Pick up Wolves", 1, true) == 1
+    and #steps == 5, steps[1].text)
+
+-- An earlier quest the data only names.
+S.QUESTS[11] = { "The Fargodeep Mine", 10, 12, 0, 0, "Marshal Dughan", 12, 42.1, 65.9, "Lost Necklace" }
+done[11] = nil
+steps = Quest:Steps({ itemID = 1002, link = "item:1002", source = ns.Finder:SourcesFor(1002, player)[1] })
+suite.check("one only named is still a step", steps[1].text == "Do Lost Necklace"
+    and steps[1].note:find("Skip this one if you have done it", 1, true) ~= nil, steps[1].text)
+_G.C_QuestLog = realLog
+S.QUESTS = { [10] = { "Wolves of the Forest", 15, 18, 0, 0, "Marshal Dughan", 12, 42.1, 65.9, "" } }
+
+--------------------------------------------------------------------------------
 -- Text that wraps, and turning it off
 --------------------------------------------------------------------------------
 

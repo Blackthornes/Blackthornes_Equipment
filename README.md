@@ -67,7 +67,9 @@ the one most worth the trip, weighing how much better it is against how
 easy it is to get. A panel like the quest tracker lists the steps (travel
 there, find the vendor, pick up the quest, enter the dungeon, gather the
 materials, put it on), lights the one to do now and ticks each off as the
-game shows it done. **Show on map** pins the next place to go, **Skip**
+game shows it done. A quest reward at the end of a quest chain starts
+from the first quest you have not done, and a long chain counts as more
+work when the upgrade is picked. **Show on map** pins the next place to go, **Skip**
 moves on to the next best upgrade, and once you wear it a banner says the
 quest is complete and the next one is picked. It is off unless you turn it
 on, and the quest is kept per character.
