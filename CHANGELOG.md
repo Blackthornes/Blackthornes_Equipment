@@ -4,6 +4,21 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.8.0
+
+For WoW: Forever (interface 16001). This version adds files, so fully
+restart the game after updating; `/reload` is not enough.
+
+- New look: the gear window and the finder wear a gold metal frame with
+  corner gems, a round portrait holding a gold shield with an upgrade arrow,
+  a title plate across the top and a red gem to close it. Their lists sit in
+  a sunk well and rows light gold under the mouse. Settings and Stat weights
+  get the plate and close gem. Buttons are raised gold-edged metal and the
+  main action is solid gold. A light runs round the portrait as a window
+  opens and a glint slides along the rim. The upgrade quest panel, tracker,
+  banners, slot list and the bag, loot and map marks keep their own look.
+- The finder opens a little further from the gear window.
+
 ## 0.7.0
 
 For WoW: Forever (interface 16001). This version adds files, so fully
