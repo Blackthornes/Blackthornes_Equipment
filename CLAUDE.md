@@ -147,8 +147,12 @@ picks from `Finder:Scan()` by gain times how easy the source is, keeps that
 pick until it is worn, and works out the steps live from the saved source
 and the game (zone, quest log, bags). Kept per character in
 `BlackthornesEquipmentCharDB.upgradeQuest`, `.upgradeQuestSkipped` and
-`.upgradeQuestsDone` (never rename them). Not yet seen in game; `/beq probe`
-lists the quest log calls it reads.
+`.upgradeQuestsDone` (never rename them). Completed quests: the finder asks
+`C_QuestLog.IsQuestFlaggedCompleted` (unverified on Forever) and also
+remembers hand-ins it sees (`QUEST_TURNED_IN`) in `.questsTurnedIn`; an
+upgrade quest whose quest was handed in without its reward is dropped and
+skipped. Not yet seen in game; `/beq probe` lists the quest log calls it
+reads.
 
 ## Players' own stat weights
 

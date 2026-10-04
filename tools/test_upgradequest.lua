@@ -252,6 +252,50 @@ steps = Quest:Steps(craft)
 suite.check("an alt can make it", steps[1].text == "Ask Bob to make item:2001 (Leatherworking) and mail it to you")
 
 --------------------------------------------------------------------------------
+-- A quest handed in with another reward taken
+--------------------------------------------------------------------------------
+
+_G.GetRealZoneText = function() return "Elwynn Forest" end
+ns.Crafts.ITEMS = {}
+env.bags[0] = {}
+env.worn[5] = "item:900"
+turnedIn = false
+ns.charDB.upgradeQuest = nil
+ns.charDB.upgradeQuestSkipped = {}
+ns.Finder:MarkStale()
+Quest:Update()
+suite.check("the quest reward is picked again", Quest:Current() and Quest:Current().itemID == 1002)
+clock = 500
+_G.GetTime = function() return clock end
+turnedIn = true
+Quest:Update()
+suite.check("handed in, it waits a moment for the reward to reach the bags",
+    Quest:Current() and Quest:Current().itemID == 1002)
+clock = 506
+Quest:Update()
+suite.check("still not in the bags: the quest is dropped",
+    env.ChatText():find("that quest is already done", 1, true) ~= nil)
+suite.check("and never picked again", ns.charDB.upgradeQuestSkipped[1002] == true
+    and Quest:Current() and Quest:Current().itemID == 1001, Quest:Current() and Quest:Current().itemID)
+_G.GetTime = nil
+turnedIn = false
+
+-- A client that cannot say which quests are done: hand-ins seen are kept.
+local realLog = _G.C_QuestLog
+_G.C_QuestLog = {}
+suite.check("an unknown quest is not done", ns.Finder:QuestDone(10) == false)
+ns.Finder:OnQuestTurnedIn("QUEST_TURNED_IN", 10)
+suite.check("a quest seen handed in is done", ns.Finder:QuestDone(10) == true
+    and ns.charDB.questsTurnedIn[10] == true)
+suite.check("so the finder leaves its reward out", (function()
+    for _, source in ipairs(ns.Finder:SourcesFor(1002, ns.Finder:Player())) do
+        if source.kind == "quest" then return false end
+    end
+    return true
+end)())
+_G.C_QuestLog = realLog
+
+--------------------------------------------------------------------------------
 -- Text that wraps, and turning it off
 --------------------------------------------------------------------------------
 
