@@ -140,8 +140,10 @@ end
 
 --- One tab: raised metal in the source's colour along its foot, solid gold
 --- with dark lettering while it is the one shown.
-function QuestPanel:BuildTab(tab)
-    local button = CreateFrame("Button", nil, self.frame)
+-- Made while the panel is built, before self.frame is set, so the panel's
+-- frame is handed in: a tab with no parent floats at the screen's corner.
+function QuestPanel:BuildTab(frame, tab)
+    local button = CreateFrame("Button", nil, frame)
     button:SetHeight(TAB_HEIGHT)
     button.key = tab.key
     button.background = Theme.Fill(button, "row")
@@ -209,7 +211,7 @@ end
 
 --- Lay the tabs along one row, as wide as their names and sharing what is
 --- left over; in the smaller letters if the names would not fit.
-function QuestPanel:LayoutTabs()
+function QuestPanel:LayoutTabs(frame)
     local room = WIDTH - PAD * 2 - TAB_GAP * (#self.tabs - 1)
     local size = "small"
     local function Widths()
@@ -230,7 +232,7 @@ function QuestPanel:LayoutTabs()
     local x = PAD
     for index, button in ipairs(self.tabs) do
         button:ClearAllPoints()
-        button:SetPoint("TOPLEFT", x, -HEADER)
+        button:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -HEADER)
         button:SetWidth(widths[index] + extra)
         x = x + widths[index] + extra + TAB_GAP
     end
@@ -317,8 +319,8 @@ function QuestPanel:Build()
 
     -- A tab for each kind of source.
     self.tabs = {}
-    for index, tab in ipairs(ns.UpgradeQuest.TABS) do self.tabs[index] = self:BuildTab(tab) end
-    self:LayoutTabs()
+    for index, tab in ipairs(ns.UpgradeQuest.TABS) do self.tabs[index] = self:BuildTab(frame, tab) end
+    self:LayoutTabs(frame)
 
     -- Everything under the tabs, hidden when folded.
     local body = CreateFrame("Frame", nil, frame)

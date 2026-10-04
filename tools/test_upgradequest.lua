@@ -483,6 +483,14 @@ suite.check("the copy older versions read follows the tab shown", ns.charDB.upgr
 Panel:Refresh()
 suite.check("four tabs on the panel", #Panel.tabs == 4 and Panel.tabs[1].label:GetText() == "Vendor"
     and Panel.tabs[3].label:GetText() == "Dungeons and Raids" and Panel.tabs[4].label:GetText() == "Crafted")
+suite.check("the tabs hang from the panel, not the screen's corner", (function()
+    for _, tab in ipairs(Panel.tabs) do
+        if rawget(tab, "_parent") ~= Panel.frame then return false end
+        local point = rawget(tab, "_point")
+        if not (point and point[2] == Panel.frame) then return false end
+    end
+    return true
+end)())
 suite.check("the one shown is lit", Panel.tabs[2].shown and not Panel.tabs[1].shown)
 suite.check("a tab with nothing on it is dimmed", Panel.tabs[3].empty and not Panel.tabs[1].empty)
 suite.check("the header names the tab", Panel.title:GetText() == "Quest", Panel.title:GetText())
