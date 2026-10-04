@@ -4,6 +4,24 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.9.2
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- Fixed the game freezing for a split second now and then. Equipment
+  remembers how it judged each piece of gear until your gear, level,
+  talents or stat weights change, instead of judging everything again on
+  every search.
+- The full search for upgrades after you change gear or level now runs a
+  little at a time, so it no longer freezes the game. The upgrade quest
+  panel says "Looking for your next upgrade" until it is done.
+- Items the game loads for chat links or other addons no longer make
+  Equipment search for upgrades again.
+- New speed check: `/beq perf`, or Settings > Speed check > Show, lists in
+  chat what Equipment spent longest on since you logged in. Clear starts
+  the count again. If the game ever hitches, this shows why.
+
 ## 0.9.1
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
