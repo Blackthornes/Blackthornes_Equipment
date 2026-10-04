@@ -75,7 +75,9 @@ quest is complete and the next one is picked. When you level up, the
 quest you are on stays, but if the new level opens an upgrade clearly more
 worth the trip, a gold **New upgrade unlocked** box offers it: **Switch**
 follows it instead (or `/beq quest switch`), **Keep current** stays put. It
-is off unless you turn it on, and the quest is kept per character.
+is off unless you turn it on, and the quest is kept per character. Every
+`/beq quest` command is a button in Settings > Upgrade hunts too: Skip,
+Switch, Open (the panel) and Bring back (skipped upgrades).
 
 Where gear comes from is `Data/Sources.lua`, generated from Classic 1.12
 data by `tools/make_sources.py` (see below), and what can be crafted is

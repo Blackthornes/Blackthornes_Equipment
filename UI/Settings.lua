@@ -83,6 +83,17 @@ local function CreateRow(parent, anchor, labelText, description)
     return row
 end
 
+--- A button's tooltip: what it does, in clear white on the dark tooltip.
+local function Explain(button, title, text)
+    button:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(title, Theme.Unpack("accent"))
+        GameTooltip:AddLine(text, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    button:HookScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
 --------------------------------------------------------------------------------
 -- The spec choices
 --
@@ -351,7 +362,39 @@ function SettingsUI:BuildHunting()
     end, false)
     controls.upgradeQuest:SetPoint("TOPLEFT", CONTROL_X, -2)
 
-    local anchor = questRow
+    -- The /beq quest commands as buttons, each doing just what its command
+    -- does, chat line included.
+    local thisRow = CreateRow(frame, questRow, "This upgrade",
+        "Skip moves on to the next best. Switch takes the upgrade a level up opened, when one is on offer.")
+    controls.questSkip = Widgets.CreateButton(thisRow, "Skip", function()
+        ns.HandleSlash("quest skip")
+    end, { width = 64, height = 20 })
+    controls.questSkip:SetPoint("TOPLEFT", CONTROL_X, 0)
+    Explain(controls.questSkip, "Skip this upgrade",
+        "Leave the upgrade you are following and get a quest for the next best one. Same as /beq quest skip.")
+    controls.questSwitch = Widgets.CreateButton(thisRow, "Switch", function()
+        ns.HandleSlash("quest switch")
+    end, { width = 72, height = 20, primary = true })
+    controls.questSwitch:SetPoint("LEFT", controls.questSkip, "RIGHT", 12, 0)
+    Explain(controls.questSwitch, "Switch to the new upgrade",
+        "Follow the upgrade your new level opened instead. Lit when one is on offer. Same as /beq quest switch.")
+
+    local panelRow = CreateRow(frame, thisRow, "Quest panel",
+        "Open shows the panel (and turns the quest on). Bring back lets skipped upgrades come up again.")
+    controls.questOpen = Widgets.CreateButton(panelRow, "Open", function()
+        ns.HandleSlash("quest")
+    end, { width = 64, height = 20 })
+    controls.questOpen:SetPoint("TOPLEFT", CONTROL_X, 0)
+    Explain(controls.questOpen, "Open the quest panel",
+        "Shows the upgrade quest panel, unfolded, and turns the quest on if it is off. Same as /beq quest.")
+    controls.questReset = Widgets.CreateButton(panelRow, "Bring back", function()
+        ns.HandleSlash("quest reset")
+    end, { width = 84, height = 20 })
+    controls.questReset:SetPoint("LEFT", controls.questOpen, "RIGHT", 12, 0)
+    Explain(controls.questReset, "Bring back skipped upgrades",
+        "Upgrades you skipped can be picked again. Same as /beq quest reset.")
+
+    local anchor = panelRow
     for _, entry in ipairs(HUNTING) do
         local key, redraw = entry[1], entry[5]
         local row = CreateRow(frame, anchor, entry[2], entry[3])
@@ -385,6 +428,12 @@ function SettingsUI:Refresh()
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
     end
     controls.upgradeQuest:SetChecked(ns.db.upgradeQuest == true)
+    -- Dimmed while there is nothing for them to do; still clickable, so a
+    -- click says why.
+    local quest = ns.UpgradeQuest
+    local on = quest and quest:IsEnabled()
+    controls.questSkip:SetAlpha(on and quest:Current() and 1 or 0.45)
+    controls.questSwitch:SetAlpha(on and quest:Offer() and 1 or 0.45)
 
     local choices = self:SpecChoices()
     local picked = ns.charDB and ns.charDB.spec
@@ -399,6 +448,12 @@ end
 --------------------------------------------------------------------------------
 -- Position
 --------------------------------------------------------------------------------
+
+--- The upgrade quest changed (picked, skipped, an offer made): relight its
+--- buttons.
+function SettingsUI:OnUpgradeQuestChanged()
+    self:Refresh()
+end
 
 function SettingsUI:SavePosition()
     if not (ns.db and self.frame) then return end
