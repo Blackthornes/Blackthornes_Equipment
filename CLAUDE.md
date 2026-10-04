@@ -146,7 +146,7 @@ next upgrade with a guide to get it. Off by default (`upgradeQuest`). It
 picks from `Finder:Scan()` by gain times how easy the source is, keeps that
 pick until it is worn, and works out the steps live from the saved source
 and the game (zone, quest log, bags). Kept per character in
-`BlackthornesEquipmentCharDB.upgradeQuest`, `.upgradeQuestSkipped` and
+`BlackthornesEquipmentCharDB.upgradeQuest`, `.upgradeQuestTabs`, `.upgradeQuestTab`, `.upgradeQuestSkipped` and
 `.upgradeQuestsDone` (never rename them). Completed quests: the finder asks
 `C_QuestLog.IsQuestFlaggedCompleted` (unverified on Forever) and also
 remembers hand-ins it sees (`QUEST_TURNED_IN`) in `.questsTurnedIn`; an
@@ -161,7 +161,13 @@ this one" banner (not counted as done) and the next one is picked. On a level up
 while and, when an upgrade is worth 1.5 times the quest's (gain times
 ease), offers it in a box on the panel (Switch, Keep current; kept past
 ones are not offered again that session). Not yet seen in
-game; `/beq probe` lists the quest log calls it reads.
+game; `/beq probe` lists the quest log calls it reads. Tabs (asked
+2026-10-04): one quest per kind of source (Vendor, Quest, Dungeons and
+Raids, Crafted) in `.upgradeQuestTabs[tab]`, the tab shown in
+`.upgradeQuestTab`; `.upgradeQuest` is kept as a copy of the shown tab's
+quest, and a quest saved there before the tabs is read once onto its tab.
+The panel wears the Titanforged plate and close gem (the close gem turns
+the quest off). Every `/beq quest` command has a Settings button or control.
 
 ## Players' own stat weights
 

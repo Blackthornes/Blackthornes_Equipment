@@ -1,5 +1,10 @@
 -- Blackthornes Equipment -- UI/QuestPanel.lua
--- The upgrade quest's panel, like a quest in the quest tracker: the item
+-- The upgrade quest's panel, in the house frame (UI/Titanforged.lua): a
+-- gold rim, its name on a plate and a red gem that closes it (turning the
+-- upgrade quest off; Settings or /beq quest brings it back). Under the
+-- header, a tab for each kind of source (Vendor, Quest, Dungeons and Raids,
+-- Crafted), each with its own upgrade; click one to show it. Then, like a
+-- quest in the quest tracker: the item
 -- with how much better it is, a progress bar, and the steps to get it, the
 -- one to do now lit gold and the ones done ticked green.
 --
@@ -20,8 +25,14 @@ local Theme = ns.Theme
 local Widgets = ns.Widgets
 local Motion = ns.Motion
 
-local WIDTH = 300
-local HEADER = 28
+local WIDTH = 340
+-- The plate sits across the top edge and the close gem on the top right
+-- corner; the header's row starts below them.
+local HEADER_ROW = 24
+local HEADER = HEADER_ROW + 22 + 4
+local TAB_HEIGHT = 24
+local TAB_GAP = 4
+local TABS_HEIGHT = TAB_HEIGHT + 8
 local PAD = 10
 local ICON = 36
 local MARK = 14
@@ -123,6 +134,127 @@ function QuestPanel:BuildStep(index)
     return row
 end
 
+--------------------------------------------------------------------------------
+-- Tabs
+--------------------------------------------------------------------------------
+
+--- One tab: raised metal in the source's colour along its foot, solid gold
+--- with dark lettering while it is the one shown.
+function QuestPanel:BuildTab(tab)
+    local button = CreateFrame("Button", nil, self.frame)
+    button:SetHeight(TAB_HEIGHT)
+    button.key = tab.key
+    button.background = Theme.Fill(button, "row")
+    Theme.Border(button, "metal")
+    button.sheen = Theme.TopSheen(button, 0.10)
+    if Theme.Bevel then Theme.Bevel(button) end
+    Theme.Halo(button, 5, 0, "accent")
+
+    -- The source's colour, as the finder tags it.
+    local stripe = button:CreateTexture(nil, "OVERLAY")
+    stripe:SetPoint("BOTTOMLEFT", 1, 1)
+    stripe:SetPoint("BOTTOMRIGHT", -1, 1)
+    stripe:SetHeight(2)
+    stripe:SetColorTexture(Theme.Unpack(tab.color))
+    button.stripe = stripe
+
+    local label = Theme.CreateLabel(button, "small", "gilt", "CENTER")
+    label:SetPoint("CENTER", 0, 1)
+    label:SetText(tab.name)
+    button.label = label
+
+    --- How lit: 0 at rest, 1 under the mouse.
+    function button.Light(p)
+        local shown = rawget(button, "shown") == true
+        if shown then
+            button.background:SetColorTexture(Motion.Mix("accent", "accentHi", p))
+            for _, edge in ipairs(button.borderTextures or {}) do edge:SetColorTexture(Theme.Unpack("accentHi")) end
+            label:SetTextColor(Theme.Unpack("ink"))
+            Theme.SetHalo(button, 0.3 + 0.2 * p, "accent")
+        else
+            button.background:SetColorTexture(Motion.Mix("row", "rowActive", p))
+            local r, g, b, a = Motion.Mix("metal", "accentHi", p)
+            for _, edge in ipairs(button.borderTextures or {}) do edge:SetColorTexture(r, g, b, a) end
+            local rest = rawget(button, "empty") == true and "muted" or "gilt"
+            label:SetTextColor(Motion.Mix(rest, { 1, 0.953, 0.784 }, p))
+            Theme.SetHalo(button, 0.4 * p, "accent")
+        end
+    end
+
+    button:SetScript("OnEnter", function(self)
+        Motion:Blend(self, "hover", 1, 0.12, self.Light)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(tab.name, Theme.Unpack(tab.color))
+        local logic = ns.UpgradeQuest
+        local quest = logic and logic:QuestOn(tab.key)
+        if quest then
+            GameTooltip:AddLine(quest.link, 1, 1, 1, true)
+        else
+            GameTooltip:AddLine(logic and logic.NONE[tab.key] or "", 1, 1, 1, true)
+        end
+        if not rawget(self, "shown") then GameTooltip:AddLine("Click to show this tab.", 1, 1, 1) end
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function(self)
+        Motion:Blend(self, "hover", 0, 0.18, self.Light)
+        GameTooltip:Hide()
+    end)
+    button:SetScript("OnClick", function()
+        if ns.UpgradeQuest then ns.UpgradeQuest:SelectTab(tab.key) end
+    end)
+
+    button.Light(0)
+    return button
+end
+
+--- Lay the tabs along one row, as wide as their names and sharing what is
+--- left over; in the smaller letters if the names would not fit.
+function QuestPanel:LayoutTabs()
+    local room = WIDTH - PAD * 2 - TAB_GAP * (#self.tabs - 1)
+    local size = "small"
+    local function Widths()
+        local widths, total = {}, 0
+        for index, button in ipairs(self.tabs) do
+            widths[index] = Theme.TextWidth(size, button.label:GetText()) + 16
+            total = total + widths[index]
+        end
+        return widths, total
+    end
+    local widths, total = Widths()
+    if total > room then
+        size = "tiny"
+        for _, button in ipairs(self.tabs) do button.label:SetFont(Theme.FONT, Theme.sizes.tiny) end
+        widths, total = Widths()
+    end
+    local extra = math.max(0, room - total) / #self.tabs
+    local x = PAD
+    for index, button in ipairs(self.tabs) do
+        button:ClearAllPoints()
+        button:SetPoint("TOPLEFT", x, -HEADER)
+        button:SetWidth(widths[index] + extra)
+        x = x + widths[index] + extra + TAB_GAP
+    end
+    self.tabFont = size
+end
+
+--- Light the tab shown, and dim the names of tabs with nothing on them.
+function QuestPanel:FillTabs()
+    local logic = ns.UpgradeQuest
+    local shownTab = logic:Tab()
+    for _, button in ipairs(self.tabs) do
+        button.shown = button.key == shownTab
+        button.empty = logic:QuestOn(button.key) == nil
+        button.Light(Motion:Value(button, "hover") or 0)
+        button:SetShown(not self.folded)
+    end
+end
+
+--- The close gem: the upgrade quest goes off, its quests kept.
+function QuestPanel:Close()
+    if ns.UpgradeQuest then ns.UpgradeQuest:SetEnabled(false) end
+    ns.Print("upgrade quest off; its quests are kept. Settings or /beq quest brings it back.")
+end
+
 function QuestPanel:Build()
     if self.frame then return self.frame end
 
@@ -133,46 +265,75 @@ function QuestPanel:Build()
     frame:EnableMouse(true)
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
-    Theme.Window(frame)
+    Theme.Fill(frame, "window")
+
+    -- The house frame, as the gear window wears it: the plate names the
+    -- panel and the close gem turns the upgrade quest off.
+    if ns.Titanforged then
+        local trim = ns.Titanforged:Dress(frame, {
+            title = "Upgrade quest",
+            close = function() QuestPanel:Close() end,
+        })
+        self.trim = trim
+        local left, right, top, bottom = ns.Titanforged.Reach(trim)
+        if frame.SetClampRectInsets then frame:SetClampRectInsets(-left, right, top, -bottom) end
+    else
+        Theme.Border(frame, "borderLit")
+    end
+    Theme.Halo(frame, 10, 0.14)
+
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         QuestPanel:SavePosition()
     end)
 
-    local header = Theme.CreatePanel(frame, "header", false)
-    header:SetPoint("TOPLEFT")
-    header:SetPoint("TOPRIGHT")
-    header:SetHeight(HEADER)
-    Theme.HouseHeader(header, 16)
+    -- The header's row: the quest mark and how far along on the left, fold
+    -- on the right, all below the plate and the close gem.
+    local header = CreateFrame("Frame", nil, frame)
+    header:SetPoint("TOPLEFT", 0, -HEADER_ROW)
+    header:SetPoint("TOPRIGHT", 0, -HEADER_ROW)
+    header:SetHeight(22)
     header:EnableMouse(false)
 
     local badge = header:CreateTexture(nil, "ARTWORK")
     badge:SetSize(18, 18)
-    badge:SetPoint("LEFT", 8, 0)
+    badge:SetPoint("LEFT", PAD, 0)
     badge:SetTexture(QUEST_ICON)
 
     local fold = Widgets.CreateButton(header, "-", function() QuestPanel:ToggleFold() end,
-        { width = 20, height = 18 })
-    fold:SetPoint("RIGHT", -5, 0)
+        { width = 22, height = 20 })
+    fold:SetPoint("RIGHT", -PAD, 0)
     Explain(fold, "Fold", "Shrink the panel to its header. Click again to open it.")
     self.foldButton = fold
+
+    local title = Theme.CreateLabel(header, "small", "gilt")
+    title:SetPoint("LEFT", badge, "RIGHT", 6, 0)
+    self.title = title
 
     local progress = Theme.CreateLabel(header, "tiny", "text", "RIGHT")
     progress:SetPoint("RIGHT", fold, "LEFT", -8, 0)
     self.progress = progress
 
-    local title = Theme.CreateLabel(header, "small", "accent")
-    title:SetPoint("LEFT", badge, "RIGHT", 6, 0)
-    title:SetText("Upgrade quest")
-    self.title = title
+    -- A tab for each kind of source.
+    self.tabs = {}
+    for index, tab in ipairs(ns.UpgradeQuest.TABS) do self.tabs[index] = self:BuildTab(tab) end
+    self:LayoutTabs()
 
-    -- Everything under the header, hidden when folded.
+    -- Everything under the tabs, hidden when folded.
     local body = CreateFrame("Frame", nil, frame)
-    body:SetPoint("TOPLEFT", 0, -HEADER)
-    body:SetPoint("TOPRIGHT", 0, -HEADER)
+    body:SetPoint("TOPLEFT", 0, -(HEADER + TABS_HEIGHT))
+    body:SetPoint("TOPRIGHT", 0, -(HEADER + TABS_HEIGHT))
     body:SetHeight(1)
     self.body = body
+
+    -- The quest sits sunk into the panel, as the finder's list does.
+    local well = Theme.CreatePanel(body, "panel", "border")
+    well:SetPoint("TOPLEFT", PAD - 4, 0)
+    well:SetPoint("TOPRIGHT", -(PAD - 4), 0)
+    Theme.Recess(well)
+    pcall(well.SetFrameLevel, well, math.max(0, (body:GetFrameLevel() or 1) - 1))
+    self.well = well
 
     -- A level up opened something better: offered, never swapped in.
     local offer = CreateFrame("Frame", nil, body)
@@ -387,6 +548,11 @@ function QuestPanel:Refresh()
     local quest = logic:Current()
     self.foldButton:SetText(self.folded and "+" or "-")
     self.body:SetShown(not self.folded)
+    local shownTab = logic:Tab()
+    for _, tab in ipairs(logic.TABS) do
+        if tab.key == shownTab then self.title:SetText(tab.name) end
+    end
+    self:FillTabs()
 
     local steps, current = {}, 0
     if quest then steps, current = logic:Steps(quest) end
@@ -398,7 +564,7 @@ function QuestPanel:Refresh()
 
     local height = HEADER
     if not self.folded then
-        height = height + self:FillBody(quest, steps, current, done)
+        height = height + TABS_HEIGHT + self:FillBody(quest, steps, current, done)
     end
     self.frame:SetHeight(height)
 
@@ -430,12 +596,14 @@ function QuestPanel:FillBody(quest, steps, current, done)
         if state == "waiting" then
             text = "Looking for your next upgrade..."
         else
-            text = "No upgrade to chase right now. A new one comes up as you level, or open Other ways for gear that waits on a reputation."
+            text = (ns.UpgradeQuest.NONE[ns.UpgradeQuest:Tab()] or "No upgrade to chase right now.")
+                .. " A new one comes up as you level. Try another tab, or open Other ways for gear that waits on a reputation."
         end
         self.empty:SetText(text)
         self.empty:Show()
         local lines = QuestPanel.Lines("small", text, WIDTH - PAD * 2)
         local y = PAD + lines * LINE_HEIGHT.small + 10
+        self.well:SetHeight(y - 4)
         self.otherButton:ClearAllPoints()
         self.otherButton:SetPoint("TOPLEFT", PAD, -y)
         self.otherButton:Show()
@@ -470,8 +638,10 @@ function QuestPanel:FillBody(quest, steps, current, done)
         y = y + stepHeight + STEP_GAP
     end
 
-    -- Buttons along the bottom: Show on map only when there is a place.
-    y = y + 4
+    -- Buttons along the bottom, under the well: Show on map only when there
+    -- is a place.
+    self.well:SetHeight(y)
+    y = y + 8
     local place = ns.UpgradeQuest:NextPlace()
     self.mapButton:ClearAllPoints()
     self.otherButton:ClearAllPoints()

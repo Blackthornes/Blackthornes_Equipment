@@ -11,10 +11,20 @@
 -- put it on) ticks itself off as the game shows it done. Once the item is
 -- worn the quest is complete, a banner says so, and the next one is picked.
 --
+-- One quest per kind of source, each on a tab of the panel: Vendor, Quest,
+-- Dungeons and Raids, Crafted. The player flips between them freely; each
+-- tab keeps its own upgrade until it is worn, and the panel shows the one
+-- picked. The first time, the tab with the upgrade most worth the trip is
+-- picked.
+--
 -- Kept per character, in BlackthornesEquipmentCharDB:
---   upgradeQuest         { itemID, link, slot, at, howMuch, source } the
---                        quest being followed; `source` is the finder's
---                        source it was picked for
+--   upgradeQuestTabs     { [tab] = quest } the quest on each tab, a quest
+--                        being { itemID, link, slot, at, howMuch, source };
+--                        `source` is the finder's source it was picked for
+--   upgradeQuestTab      the tab picked ("vendor", "quest", "dungeon",
+--                        "craft")
+--   upgradeQuest         a copy of the picked tab's quest, as versions
+--                        before the tabs kept it; read once into the tabs
 --   upgradeQuestSkipped  { [itemID] = true } upgrades the player skipped
 --   upgradeQuestsDone    how many upgrade quests this character finished
 -- Made the first time they are needed, and never renamed or cleared by an
@@ -27,6 +37,30 @@ local UpgradeQuest = ns.NewModule("UpgradeQuest")
 -- Upgrades a level up offered that the player chose not to switch to, this
 -- session: { [itemID] = true }.
 UpgradeQuest.declined = {}
+
+-- The tabs, in the panel's order: the finder's source kind each holds (a
+-- raid is a dungeon), its name and its colour, as in the upgrade finder.
+UpgradeQuest.TABS = {
+    { key = "vendor", name = "Vendor", color = "accent" },
+    { key = "quest", name = "Quest", color = "quest" },
+    { key = "dungeon", name = "Dungeons and Raids", color = "dungeon" },
+    { key = "craft", name = "Crafted", color = "craft" },
+}
+local TABS = UpgradeQuest.TABS
+local IS_TAB = {}
+for _, tab in ipairs(TABS) do IS_TAB[tab.key] = tab end
+
+-- How each tab says it has nothing to chase.
+local NONE = {
+    vendor = "No upgrade a vendor sells right now.",
+    quest = "No quest reward that is an upgrade right now.",
+    dungeon = "No dungeon or raid drop that is an upgrade right now.",
+    craft = "No crafted upgrade right now.",
+}
+UpgradeQuest.NONE = NONE
+
+-- Where each tab stands: "active", "waiting" or "none". Not saved.
+UpgradeQuest.states = {}
 
 local Items = ns.Items
 
@@ -97,12 +131,65 @@ function UpgradeQuest:IsEnabled()
     return ns.db ~= nil and ns.db.upgradeQuest == true
 end
 
---- The quest being followed, or nil.
-function UpgradeQuest:Current()
-    local char = ns.charDB
-    local quest = char and char.upgradeQuest
+local function Valid(quest)
     if type(quest) == "table" and tonumber(quest.itemID) then return quest end
     return nil
+end
+
+--- The tab a source belongs on, or nil.
+function UpgradeQuest.TabOf(source)
+    local kind = type(source) == "table" and source.kind
+    return IS_TAB[kind] and kind or nil
+end
+
+--- Each tab's quest: { [tab] = quest }. A quest saved before there were
+--- tabs goes on its own tab, picked.
+function UpgradeQuest:Quests()
+    local char = ns.charDB
+    if not char then return {} end
+    if type(char.upgradeQuestTabs) ~= "table" then
+        char.upgradeQuestTabs = {}
+        local old = Valid(char.upgradeQuest)
+        local tab = old and self.TabOf(old.source)
+        if tab then
+            char.upgradeQuestTabs[tab] = old
+            if not IS_TAB[char.upgradeQuestTab] then char.upgradeQuestTab = tab end
+        end
+    end
+    return char.upgradeQuestTabs
+end
+
+--- The tab picked: "vendor" until one is.
+function UpgradeQuest:Tab()
+    local tab = ns.charDB and ns.charDB.upgradeQuestTab
+    return IS_TAB[tab] and tab or "vendor"
+end
+
+--- The quest on the picked tab, or nil.
+function UpgradeQuest:Current()
+    return Valid(self:Quests()[self:Tab()])
+end
+
+--- The quest on a tab, or nil.
+function UpgradeQuest:QuestOn(tab)
+    return Valid(self:Quests()[tab])
+end
+
+--- Keep the copy older versions read in step with the picked tab.
+function UpgradeQuest:Mirror()
+    if ns.charDB then ns.charDB.upgradeQuest = self:Current() end
+end
+
+--- Show another tab; it gets its quest at once if it has none yet.
+function UpgradeQuest:SelectTab(tab)
+    if not (IS_TAB[tab] and ns.charDB) then return false end
+    if tab == self:Tab() and ns.charDB.upgradeQuestTab then return true end
+    ns.charDB.upgradeQuestTab = tab
+    self.offer = nil
+    self.lastStep = nil
+    self:Mirror()
+    if self:IsEnabled() then self:Update() else self:Changed() end
+    return true
 end
 
 function UpgradeQuest:Skipped()
@@ -140,12 +227,15 @@ function UpgradeQuest.Ease(source, zone)
     return ease
 end
 
---- The easiest of a pick's sources, and how easy it is.
-function UpgradeQuest.BestSource(sources, zone)
+--- The easiest of a pick's sources (only those for one tab, when `tab` is
+--- given), and how easy it is.
+function UpgradeQuest.BestSource(sources, zone, tab)
     local best, bestEase
     for _, source in ipairs(sources or {}) do
-        local ease = UpgradeQuest.Ease(source, zone)
-        if not best or ease > bestEase then best, bestEase = source, ease end
+        if not tab or source.kind == tab then
+            local ease = UpgradeQuest.Ease(source, zone)
+            if not best or ease > bestEase then best, bestEase = source, ease end
+        end
     end
     return best, bestEase or 0
 end
@@ -161,8 +251,8 @@ end
 --- From a finder scan, the pick most worth going after: { pick, source },
 --- or nil. Gear that waits on a reputation, that nobody on the account can
 --- make, or that the player skipped is left out, and so is anything in
---- `except` ({ [itemID] = true }).
-function UpgradeQuest:Choose(found, except)
+--- `except` ({ [itemID] = true }). With `tab`, only that tab's sources count.
+function UpgradeQuest:Choose(found, except, tab)
     if type(found) ~= "table" or type(found.slots) ~= "table" then return nil end
     local skipped = self:Skipped()
     local zone = found.player and found.player.zone
@@ -171,7 +261,7 @@ function UpgradeQuest:Choose(found, except)
         for _, pick in ipairs(list) do
             if not pick.needs and not pick.remote and not pick.at and not skipped[pick.itemID]
                 and not (except and except[pick.itemID]) then
-                local source, ease = self.BestSource(pick.sources, zone)
+                local source, ease = self.BestSource(pick.sources, zone, tab)
                 if source then
                     local worth = Worth(pick.result, pick.gain or 0, ease)
                     if not best or worth > best.worth
@@ -185,10 +275,11 @@ function UpgradeQuest:Choose(found, except)
     return best
 end
 
---- Make a pick the quest being followed.
+--- Make a pick the quest on its source's tab.
 function UpgradeQuest:Start(pick, source)
     local char = ns.charDB
-    if not (char and pick) then return nil end
+    local tab = self.TabOf(source)
+    if not (char and pick and tab) then return nil end
     local quest = {
         itemID = pick.itemID,
         link = Items.PlainLink(pick.link) or ("item:%d"):format(pick.itemID),
@@ -197,14 +288,15 @@ function UpgradeQuest:Start(pick, source)
         howMuch = pick.result and ns.Compare:HowMuch(pick.result) or nil,
         source = Copy(source),
     }
-    char.upgradeQuest = quest
+    self:Quests()[tab] = quest
+    self:Mirror()
     return quest
 end
 
---- Look for the next upgrade. Waits a little for the server to answer
+--- A finder scan to pick from. Waits a little for the server to answer
 --- about gear the client has not seen, so the pick is made from all of it.
--- @return the new quest, or nil and "waiting" or "none"
-function UpgradeQuest:PickNext()
+-- @return the scan, or nil and "waiting" or "none"
+function UpgradeQuest:Look()
     local found = ns.Finder and ns.Finder:Scan()
     if not found then
         self.lookingSince = nil
@@ -215,9 +307,42 @@ function UpgradeQuest:PickNext()
         return nil, "waiting"
     end
     self.lookingSince = nil
-    local best = self:Choose(found)
-    if not best then return nil, "none" end
-    return self:Start(best.pick, best.source)
+    return found
+end
+
+--- Give every tab without a quest its best upgrade, and pick the tab the
+--- first time: the one whose upgrade is most worth the trip.
+function UpgradeQuest:PickEmpty()
+    local quests = self:Quests()
+    local empty = {}
+    for _, tab in ipairs(TABS) do
+        if not Valid(quests[tab.key]) then empty[#empty + 1] = tab.key end
+    end
+    if #empty == 0 and IS_TAB[ns.charDB.upgradeQuestTab] then return end
+
+    local found, why = self:Look()
+    if not found then
+        for _, tab in ipairs(empty) do self.states[tab] = why end
+        return
+    end
+    for _, tab in ipairs(empty) do
+        local best = self:Choose(found, nil, tab)
+        if best then self:Start(best.pick, best.source) end
+        self.states[tab] = best and "active" or "none"
+    end
+    if not IS_TAB[ns.charDB.upgradeQuestTab] then
+        local best = self:Choose(found)
+        ns.charDB.upgradeQuestTab = best and self.TabOf(best.source) or "vendor"
+    end
+end
+
+--- The picked tab's next upgrade, when it has none.
+-- @return the quest, or nil and "waiting" or "none"
+function UpgradeQuest:PickNext()
+    self:PickEmpty()
+    local quest = self:Current()
+    if quest then return quest end
+    return nil, self.states[self:Tab()] or "none"
 end
 
 --------------------------------------------------------------------------------
@@ -548,7 +673,8 @@ function UpgradeQuest:LookForBetter(quest)
 
     local except = { [quest.itemID] = true }
     for itemID in pairs(self.declined) do except[itemID] = true end
-    local best = self:Choose(found, except)
+    local tab = self.TabOf(quest.source) or self:Tab()
+    local best = self:Choose(found, except, tab)
     local worth = self:QuestWorth(quest, found.player and found.player.zone)
     if not (best and worth) or best.worth < worth * CLEARLY_BETTER then return end
     if self.offer and self.offer.pick.itemID == best.pick.itemID then return end
@@ -631,56 +757,62 @@ function UpgradeQuest:Check()
         return
     end
 
-    local quest = self:Current()
-    local before = quest and quest.itemID
+    local quests = self:Quests()
+    local shownBefore = self:Current()
+    local before = shownBefore and shownBefore.itemID
+    local beforeTab = self:Tab()
+    local firstPick = not IS_TAB[ns.charDB.upgradeQuestTab]
     local lastStep = self.lastStep
+    local completed = {}
 
-    if quest and self.Worn(quest.itemID) then
-        ns.charDB.upgradeQuest = nil
-        ns.charDB.upgradeQuestsDone = self:DoneCount() + 1
-        self.lastStep = nil
-        if ns.Toast then
-            ns.Toast:Show({ title = "Upgrade quest complete", link = quest.link,
-                text = ("Upgrade quests done: %d. Picking your next one."):format(self:DoneCount()) })
+    for _, tab in ipairs(TABS) do
+        local quest = Valid(quests[tab.key])
+        local shown = tab.key == beforeTab
+        if quest and self.Worn(quest.itemID) then
+            quests[tab.key] = nil
+            -- The same upgrade on two tabs is one quest done.
+            if not completed[quest.itemID] then
+                completed[quest.itemID] = true
+                ns.charDB.upgradeQuestsDone = self:DoneCount() + 1
+                if ns.Toast then
+                    ns.Toast:Show({ title = "Upgrade quest complete", link = quest.link,
+                        text = ("Upgrade quests done: %d. Picking your next one."):format(self:DoneCount()) })
+                end
+            end
+            if ns.Finder then ns.Finder:MarkStale() end
+        elseif quest and not self:StillWanted(quest) then
+            -- Something as good or better was put on first (looted, bought,
+            -- made): this one is beaten, carried or not. Only the tab on
+            -- show says so; the others quietly pick again.
+            quests[tab.key] = nil
+            if shown then
+                ns.Print(("dropped the upgrade quest for %s: you wear something as good now."):format(quest.link))
+                if ns.Toast then
+                    ns.Toast:Show({ title = "You already beat this one", link = quest.link,
+                        text = "You wear something as good. Picking your next upgrade." })
+                end
+            end
+            if ns.Finder then ns.Finder:MarkStale() end
+        elseif quest and self:HandedInWithout(quest) then
+            -- The quest was handed in and another reward taken: it cannot be
+            -- done again, so this upgrade is out of reach.
+            quests[tab.key] = nil
+            self:Skipped()[quest.itemID] = true
+            ns.Print(("dropped the upgrade quest for %s: that quest is already done."):format(quest.link))
         end
-        if ns.Finder then ns.Finder:MarkStale() end
-        quest = nil
-    elseif quest and not self:StillWanted(quest) then
-        -- Something as good or better was put on first (looted, bought,
-        -- made): this one is beaten, carried or not.
-        ns.charDB.upgradeQuest = nil
-        self.lastStep = nil
-        ns.Print(("dropped the upgrade quest for %s: you wear something as good now."):format(quest.link))
-        if ns.Toast then
-            ns.Toast:Show({ title = "You already beat this one", link = quest.link,
-                text = "You wear something as good. Picking your next upgrade." })
-        end
-        if ns.Finder then ns.Finder:MarkStale() end
-        quest = nil
-    elseif quest and self:HandedInWithout(quest) then
-        -- The quest was handed in and another reward taken: it cannot be
-        -- done again, so this upgrade is out of reach.
-        ns.charDB.upgradeQuest = nil
-        self:Skipped()[quest.itemID] = true
-        self.lastStep = nil
-        ns.Print(("dropped the upgrade quest for %s: that quest is already done."):format(quest.link))
-        quest = nil
+        if Valid(quests[tab.key]) then self.states[tab.key] = "active" end
     end
 
-    if not quest then
-        local why
-        quest, why = self:PickNext()
-        self.state = quest and "active" or why
-        if quest then
-            self.lastStep = nil
-            if ns.Toast then
-                ns.Toast:Show({ title = "New upgrade quest", link = quest.link,
-                    text = quest.howMuch and ("%s over what you wear now."):format(quest.howMuch)
-                        or "Follow the steps on the quest panel." })
-            end
+    self:PickEmpty()
+    local quest = self:Current()
+    self.state = quest and "active" or self.states[self:Tab()] or "none"
+    if quest and quest.itemID ~= before and (firstPick or beforeTab == self:Tab()) then
+        self.lastStep = nil
+        if ns.Toast then
+            ns.Toast:Show({ title = "New upgrade quest", link = quest.link,
+                text = quest.howMuch and ("%s over what you wear now."):format(quest.howMuch)
+                    or "Follow the steps on the quest panel." })
         end
-    else
-        self.state = "active"
     end
 
     -- An offer is only for the quest it was made against.
@@ -697,6 +829,7 @@ function UpgradeQuest:Check()
         self.lastStep = current
     end
 
+    self:Mirror()
     self:Changed()
 end
 
@@ -719,12 +852,12 @@ function UpgradeQuest:UpdateSoon(delay)
     end)
 end
 
---- Leave this upgrade and pick another.
+--- Leave this upgrade and pick another for the tab.
 function UpgradeQuest:Skip()
     local quest = self:Current()
     if not quest then return false end
     self:Skipped()[quest.itemID] = true
-    ns.charDB.upgradeQuest = nil
+    self:Quests()[self:Tab()] = nil
     self.lastStep = nil
     self:Update()
     return true
@@ -768,8 +901,24 @@ end
 -- /beq quest
 --------------------------------------------------------------------------------
 
-ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip, switch, or reset)", function(rest)
+-- The words that pick a tab.
+local TAB_WORDS = {
+    vendor = "vendor", vendors = "vendor",
+    quest = "quest", quests = "quest", reward = "quest", rewards = "quest",
+    dungeon = "dungeon", dungeons = "dungeon", raid = "dungeon", raids = "dungeon",
+    craft = "craft", crafted = "craft", crafting = "craft",
+}
+
+ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip, switch, reset, or a tab: vendor, quest, dungeon, crafted)", function(rest)
     local word = (rest or ""):lower():match("^%s*(%a*)") or ""
+    local tab = TAB_WORDS[word]
+    if tab then
+        if not UpgradeQuest:IsEnabled() then UpgradeQuest:SetEnabled(true) end
+        UpgradeQuest:SelectTab(tab)
+        ns.Print(("upgrade quest: showing the %s tab."):format(IS_TAB[tab].name))
+        if ns.QuestPanel then ns.QuestPanel:Unfold() end
+        return
+    end
     if word == "off" then
         UpgradeQuest:SetEnabled(false)
         ns.Print("upgrade quest off. /beq quest turns it back on.")

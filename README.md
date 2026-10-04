@@ -71,13 +71,19 @@ game shows it done. A quest reward at the end of a quest chain starts
 from the first quest you have not done, and a long chain counts as more
 work when the upgrade is picked. **Show on map** pins the next place to go, **Skip**
 moves on to the next best upgrade, and once you wear it a banner says the
-quest is complete and the next one is picked. When you level up, the
+quest is complete and the next one is picked. The panel wears the gold
+house frame and has a tab for each kind of source: **Vendor**, **Quest**,
+**Dungeons and Raids** and **Crafted**. Each tab keeps its own upgrade, so
+you can flip between them as you like (or type `/beq quest vendor`,
+`quest`, `dungeon` or `crafted`); the first time, the tab most worth the
+trip is shown. The red gem closes the panel and turns the quest off,
+keeping its quests for when you turn it back on. When you level up, the
 quest you are on stays, but if the new level opens an upgrade clearly more
 worth the trip, a gold **New upgrade unlocked** box offers it: **Switch**
 follows it instead (or `/beq quest switch`), **Keep current** stays put. It
 is off unless you turn it on, and the quest is kept per character. Every
 `/beq quest` command is a button in Settings > Upgrade hunts too: Skip,
-Switch, Open (the panel) and Bring back (skipped upgrades).
+Switch, Open (the panel), Bring back (skipped upgrades) and the tab shown.
 
 Where gear comes from is `Data/Sources.lua`, generated from Classic 1.12
 data by `tools/make_sources.py` (see below), and what can be crafted is
@@ -131,7 +137,7 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq bags       list every piece of gear in your bags with its verdict
 /beq find       where to get upgrades: vendors, quests, dungeons and crafting
 /beq tracked    the upgrades you are tracking (/beq tracked clear stops them all)
-/beq quest      a quest for your next upgrade (/beq quest off, skip, switch, or reset)
+/beq quest      a quest for your next upgrade (/beq quest off, skip, switch, reset, or a tab: vendor, quest, dungeon, crafted)
 /beq weights    change how much each stat counts (also in the settings window)
 /beq probe      check what this client supports; it only reads
 /beq settings   open the settings window (so does right-clicking the minimap button)

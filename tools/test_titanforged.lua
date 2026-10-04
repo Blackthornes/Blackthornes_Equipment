@@ -13,8 +13,9 @@
 --   5. Every kind of button keeps its label readable on its own face, at
 --      rest and under the mouse: a primary button is gold with dark ink.
 --   6. The gear window and the finder wear the whole frame, settings and
---      the stat weights the plate and close gem, and the panels that stay
---      on screen while playing keep their own look.
+--      the stat weights and the upgrade quest panel the plate and close
+--      gem, and the other panels that stay on screen while playing keep
+--      their own look.
 
 local ns = {}
 
@@ -383,8 +384,14 @@ for _, entry in ipairs({ { "settings", addon.SettingsUI }, { "the stat weights",
     check("but no portrait", rawget(dressed, "portrait"), nil)
 end
 
-for _, entry in ipairs({ { "the upgrade quest", addon.QuestPanel }, { "the tracker", addon.TrackerPanel },
-        { "a toast", addon.Toast } }) do
+-- The upgrade quest panel was asked to match too (2026-10-04).
+local quest = Titan(addon.QuestPanel.frame)
+check("the upgrade quest gets the plate and close gem",
+    quest ~= nil and rawget(quest, "plate") ~= nil and rawget(quest, "closeButton") ~= nil, true)
+check("named on its plate", quest.plate.label._text, "Upgrade quest")
+check("with no portrait, to stay small", rawget(quest, "portrait"), nil)
+
+for _, entry in ipairs({ { "the tracker", addon.TrackerPanel }, { "a toast", addon.Toast } }) do
     check(entry[1] .. " keeps its own look", Titan(entry[2].frame), nil)
 end
 
