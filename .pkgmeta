@@ -18,7 +18,7 @@ ignore:
   # Notes for Claude about working on the addon, shared with the other
   # addons' projects. Not for players.
   - CLAUDE.md
-  # The README is for working on the addon: it names Trent's own folders.
+  # The README is for working on the addon: it names the owner's own folders.
   # Players read the CurseForge description instead.
   - README.md
 
