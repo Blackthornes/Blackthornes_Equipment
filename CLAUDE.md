@@ -201,8 +201,9 @@ all four.
 
 The gear window and the finder wear the whole frame (portrait, plate,
 close gem), with their lists sunk in a well (`Theme.Recess`); settings and
-the stat weights get the plate and close gem only. The panels that stay on
-screen while playing (upgrade quest, tracker, toasts, the character
+the stat weights get the plate and close gem only, and so does the upgrade
+quest panel (asked 2026-10-04; its quest sits in a well too). The other
+panels that stay on screen while playing (tracker, toasts, the character
 sheet's slot list) keep `Theme.Window` and only share the restyled
 buttons. Equipment has no Window effects
 setting, so `Motion.Level()` is always full and the glint and the
