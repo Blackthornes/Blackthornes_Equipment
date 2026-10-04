@@ -9,6 +9,10 @@
 local _, ns = ...
 
 ns.Sources.FOREVER = {
-    [5124] = { { "Deviate Stalker", "43", 0 } },
-    [6443] = { { "Deviate Slayer", "43", 0 } },
+    [2608] = { { "Deviate Lurker", "43", 0 } },
+    [3180] = { { "Deviate Creeper", "43", 0 } },
+    [5124] = { { "Deviate Creeper", "43", 0 }, { "Deviate Stalker", "43", 0 } },
+    [6443] = { { "Deviate Coiler", "43", 0 }, { "Deviate Creeper", "43", 0 }, { "Deviate Slayer", "43", 0 } },
+    [6470] = { { "Deviate Stalker", "43", 0 } },
+    [17056] = { { "Deviate Coiler", "43", 0 } },
 }
