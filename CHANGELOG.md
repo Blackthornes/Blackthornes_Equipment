@@ -4,6 +4,20 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.9.1
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- Fixed the game hanging for a moment after every arrow or bullet shot.
+  A change in ammo count no longer makes Equipment recheck your gear.
+- Fixed a small hitch when looting. An upgrade quest tab with nothing to
+  chase no longer searches again on every loot, zone change or quest log
+  update; it looks again when your gear, level, talents or recipes change.
+- The upgrade quest's Vendor, Quest, Dungeons and Raids and Crafted tabs
+  sit on the panel again, instead of floating in the top left corner of
+  the screen.
+
 ## 0.9.0
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
