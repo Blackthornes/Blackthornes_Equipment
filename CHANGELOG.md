@@ -4,6 +4,36 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.7.0
+
+For WoW: Forever (interface 16001). This version adds files, so fully
+restart the game after updating; `/reload` is not enough.
+
+- **Upgrade quest** (off by default; turn it on in Settings > Upgrade hunts
+  or with `/beq quest`). Equipment picks your best next upgrade, weighing
+  how much better it is against how easy it is to get, and walks you there
+  on a panel styled like the quest tracker: the item, how much better it
+  is, a progress bar and steps such as "Travel to Elwynn Forest", "Buy it
+  for 1g 20s 50c" and "Put it on". The current step is lit gold and done
+  steps get a green tick. **Show on map** pins the next place to go,
+  **Skip** moves on to the next best upgrade, and **Other ways** opens the
+  finder. Put the item on and a banner says the quest is complete, then the
+  next one is picked.
+- Quest chains: a reward at the end of a chain starts from the first quest
+  you haven't done, with who gives it and where, and each step drops off as
+  you hand it in. Where to get upgrades says "after 3 earlier quests". A
+  long chain counts as more work when the next upgrade is picked.
+- Equipment remembers every quest it sees you hand in, so finished quests
+  stay out of the finder. If you take a different reward, the upgrade quest
+  moves on to the next upgrade.
+- If you put on something as good or better, or already have the item in
+  your bags, the quest closes with "You already beat this one".
+- When a level up opens a much better upgrade, a gold "New upgrade unlocked
+  at level N" box offers **Switch** or **Keep current** (`/beq quest switch`
+  does the same).
+- Settings > Upgrade hunts has buttons for the upgrade quest: Skip, Switch,
+  Open and Bring back.
+
 ## 0.6.1
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
