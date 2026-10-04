@@ -47,6 +47,14 @@ local EASE = {
 -- Somewhere in the zone the character is standing in is worth this much more.
 local HERE = 1.25
 
+-- Each quest still to do before a quest reward opens makes it this much
+-- more work: a reward at the end of four quests counts at half.
+local PER_CHAIN_QUEST = 0.25
+
+-- How many quests before the one with the reward are listed as steps of
+-- their own; the rest are one step.
+local CHAIN_SHOWN = 2
+
 local function Read(fn, ...)
     if type(fn) ~= "function" then return nil end
     local result = { pcall(fn, ...) }
@@ -109,6 +117,12 @@ function UpgradeQuest.Ease(source, zone)
     -- A rare drop means many runs.
     if source.kind == "dungeon" and source.chance and source.chance < 10 then
         ease = ease * (0.5 + source.chance / 20)
+    end
+    -- A reward at the end of a chain is more work.
+    if source.kind == "quest" and source.questID and ns.Finder then
+        local chain, unknown = ns.Finder:Chain(source.questID)
+        local count = #chain + (unknown and 1 or 0)
+        ease = ease / (1 + PER_CHAIN_QUEST * count)
     end
     if zone and source.zone == zone then ease = ease * HERE end
     return ease
@@ -243,14 +257,6 @@ local function QuestReady(questID)
     return Read(log and log.IsComplete, questID) == true
 end
 
---- The quest that comes before one, by its title: its ID, or nil.
-function UpgradeQuest.QuestByTitle(title)
-    if not title then return nil end
-    for questID, quest in pairs(ns.Sources.QUESTS or {}) do
-        if quest[1] == title then return questID end
-    end
-    return nil
-end
 
 --------------------------------------------------------------------------------
 -- The steps
@@ -290,6 +296,8 @@ function UpgradeQuest:Steps(quest)
     local function Travel(where)
         if where and where.zone then
             Add(("Travel to %s"):format(where.zone), zone == where.zone, { zone = where.zone, name = where.zone })
+            -- Standing in the zone says nothing about the steps before it.
+            steps[#steps].soft = true
         end
     end
 
@@ -305,11 +313,41 @@ function UpgradeQuest:Steps(quest)
         local questID = source.questID
         local turnedIn = questID and ns.Finder and ns.Finder:QuestDone(questID)
         local onQuest = questID and OnQuest(questID)
-        if source.after then
-            local before = self.QuestByTitle(source.after)
-            Add(("Finish %s first"):format(source.after),
-                before and ns.Finder and ns.Finder:QuestDone(before), nil,
-                "This quest only opens after that one.")
+        -- The quests before it in its chain, first one first. The first
+        -- two are spelled out; the rest wait as one step, so a long chain
+        -- does not bury the quest it leads to.
+        local chain, unknown = {}, nil
+        if questID and ns.Finder then chain, unknown = ns.Finder:Chain(questID) end
+        local count = #chain + (unknown and 1 or 0)
+        local lead = count > 1 and ("%d quests to do before %s."):format(count, source.title or "it") or nil
+        if unknown then
+            local after = chain[1] and chain[1].questID or questID
+            Add(("Do %s"):format(unknown), OnQuest(after), nil,
+                (lead and lead .. " " or "") .. "Skip this one if you have done it.")
+            lead = nil
+        end
+        for index, before in ipairs(chain) do
+            if index > CHAIN_SHOWN then
+                local rest = #chain - CHAIN_SHOWN
+                Add(("Then %d more quest%s in the chain, up to %s"):format(rest, rest == 1 and "" or "s",
+                    chain[#chain].title or "it"), false, nil,
+                    ("The quests come one after another; %s opens after them."):format(source.title or "the quest"))
+                break
+            end
+            local spot = before.x and { zone = before.zone, x = before.x, y = before.y, name = before.name } or nil
+            local text
+            if OnQuest(before.questID) then
+                text = ("Complete %s (level %d)"):format(before.title, before.questLevel or 0)
+            elseif spot then
+                text = ("Do %s: pick it up from %s in %s%s"):format(before.title, before.name or "?",
+                    before.zone or "?", At(spot))
+            else
+                text = ("Do %s: it starts from %s"):format(before.title, before.name or "an item")
+            end
+            local note = lead
+            lead = nil
+            if before.group == "group" then note = (note and note .. " " or "") .. "Needs a group." end
+            Add(text, false, spot, note)
         end
         local place = source.x and { zone = source.zone, x = source.x, y = source.y, name = source.name } or nil
         if place then Travel(place) end
@@ -389,7 +427,7 @@ function UpgradeQuest:Steps(quest)
     -- found once the item is bought, wherever the character is now.
     local furthest = 0
     for index, step in ipairs(steps) do
-        if step.done then furthest = index end
+        if step.done and not step.soft then furthest = index end
     end
     local current = #steps
     for index, step in ipairs(steps) do

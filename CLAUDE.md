@@ -151,8 +151,11 @@ and the game (zone, quest log, bags). Kept per character in
 `C_QuestLog.IsQuestFlaggedCompleted` (unverified on Forever) and also
 remembers hand-ins it sees (`QUEST_TURNED_IN`) in `.questsTurnedIn`; an
 upgrade quest whose quest was handed in without its reward is dropped and
-skipped. Not yet seen in game; `/beq probe` lists the quest log calls it
-reads.
+skipped. Quest chains (Trent asked 2026-10-04): `Sources.QUESTS` also
+carries the quests before a reward quest (`p` = the quest before), and
+`Finder:Chain` walks back past what is done; the upgrade quest lists them
+as steps first and counts each as extra work when it picks. Not yet seen in
+game; `/beq probe` lists the quest log calls it reads.
 
 ## Players' own stat weights
 

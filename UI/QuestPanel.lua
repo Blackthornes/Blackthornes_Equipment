@@ -24,7 +24,7 @@ local PAD = 10
 local ICON = 36
 local MARK = 14
 local STEP_GAP = 6
-local MOST_STEPS = 8
+local MOST_STEPS = 10
 local FOOTER = 34
 local BAR = 4
 

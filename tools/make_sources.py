@@ -22,7 +22,8 @@ Kept:
   vendors   every white or better piece of gear sold by an NPC who stands
             somewhere in the world (not in an instance)
   quests    every white or better gear reward, choice or fixed, of a quest
-            that has a known start; seasonal event quests are left out
+            that has a known start, and the quests before it in its chain;
+            seasonal event quests are left out
   dungeons  green or better gear that drops from a creature in one of the
             dungeons or raids below at 1% or more, which in practice is the
             bosses and the few trash mobs with their own loot
@@ -50,6 +51,10 @@ ALLIANCE_RACES = 1 | 4 | 8 | 64
 HORDE_RACES = 2 | 16 | 32 | 128
 
 DROP_CHANCE_MIN = 1.0   # percent
+
+# How far back a quest chain is followed. The longest gear chains in Classic
+# run to about a dozen quests.
+QUEST_CHAIN_MOST = 20
 
 # The dungeons, by map ID: name, recommended levels, the zone the entrance is
 # in, and the faction that can reach it without fighting through a city
@@ -306,8 +311,8 @@ def main():
         rewards = [r[f"RewChoiceItemId{i}"] for i in range(1, 7)] + \
                   [r[f"RewItemId{i}"] for i in range(1, 5)]
         rewards = [i for i in rewards if i in items]
-        if not rewards:
-            continue
+        # A quest with no gear is still kept, in case it opens the way to
+        # one with gear: the finder walks the chain back through it.
         title = (quest_text[qid] and quest_text[qid]["T"]) or r["Title"]
         if not title or BAD_TITLE.search(title):
             continue
@@ -346,11 +351,10 @@ def main():
         after = ""
         if prev and prev > 0 and quest_text[prev] and quest_text[prev]["T"]:
             after = quest_text[prev]["T"]
-        if giver[1]:
-            used_zones.add(giver[1])
         quests[qid] = (title, r["MinLevel"], r["QuestLevel"], races,
                        r["RequiredClasses"] or 0, giver[0], giver[1], giver[2], giver[3],
-                       after, {1: "group", 81: "group", 62: "raid"}.get(r["Type"], ""))
+                       after, {1: "group", 81: "group", 62: "raid"}.get(r["Type"], ""),
+                       prev if prev and prev > 0 else 0)
         for itemID in rewards:
             sources[itemID]["q"].append(qid)
 
@@ -443,6 +447,22 @@ def main():
 
     # Write it.
     keep = {i: s for i, s in sources.items() if s["v"] or s["q"] or s["d"]}
+
+    # The quests that give gear, and every quest before them in their
+    # chains, so the finder can walk a chain back to its first quest.
+    used_quests = set()
+    for s in keep.values():
+        used_quests.update(s["q"])
+    for qid in list(used_quests):
+        prev = quests[qid][11]
+        for _ in range(QUEST_CHAIN_MOST):
+            if not prev or prev not in quests or prev in used_quests:
+                break
+            used_quests.add(prev)
+            prev = quests[prev][11]
+    for qid in used_quests:
+        if quests[qid][6]:
+            used_zones.add(quests[qid][6])
     out = []
     w = out.append
     w("-- Blackthornes Equipment -- Data/Sources.lua")
@@ -499,16 +519,17 @@ def main():
     w("-- Quests: title, level you can take it, quest level, races (0 for all),")
     w("-- classes (0 for all), who or what starts it, zone, x, y (0 when it starts")
     w("-- from an item), the quest that comes before it, and \"group\" or \"raid\"")
-    w("-- when it needs one.")
+    w("-- when it needs one; then p = the ID of the quest before it, when that")
+    w("-- one is here too. Quests that give no gear are here because they open")
+    w("-- the way to one that does.")
     w("Sources.QUESTS = {")
-    used_quests = set()
-    for s in keep.values():
-        used_quests.update(s["q"])
     for qid in sorted(used_quests):
-        t, mn, lv, races, classes, giver, zone, x, y, after, group = quests[qid]
+        t, mn, lv, races, classes, giver, zone, x, y, after, group, prev = quests[qid]
+        prev = prev if prev in used_quests else 0
         w(f"    [{qid}] = {{ {lua_string(t)}, {mn}, {lv}, {races}, {classes}, "
           f"{lua_string(giver)}, {zone}, {num(x)}, {num(y)}, {lua_string(after)}"
-          f"{(', ' + lua_string(group)) if group else ''} }},")
+          f"{(', ' + lua_string(group)) if group else ''}"
+          f"{(', p = ' + str(prev)) if prev else ''} }},")
     w("}")
     w("")
     w("-- Items: required level, item level, classes (0 for all), races (0 for")
