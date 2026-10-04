@@ -71,8 +71,11 @@ game shows it done. A quest reward at the end of a quest chain starts
 from the first quest you have not done, and a long chain counts as more
 work when the upgrade is picked. **Show on map** pins the next place to go, **Skip**
 moves on to the next best upgrade, and once you wear it a banner says the
-quest is complete and the next one is picked. It is off unless you turn it
-on, and the quest is kept per character.
+quest is complete and the next one is picked. When you level up, the
+quest you are on stays, but if the new level opens an upgrade clearly more
+worth the trip, a gold **New upgrade unlocked** box offers it: **Switch**
+follows it instead (or `/beq quest switch`), **Keep current** stays put. It
+is off unless you turn it on, and the quest is kept per character.
 
 Where gear comes from is `Data/Sources.lua`, generated from Classic 1.12
 data by `tools/make_sources.py` (see below), and what can be crafted is
@@ -126,7 +129,7 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq bags       list every piece of gear in your bags with its verdict
 /beq find       where to get upgrades: vendors, quests, dungeons and crafting
 /beq tracked    the upgrades you are tracking (/beq tracked clear stops them all)
-/beq quest      a quest for your next upgrade (/beq quest off, skip, or reset)
+/beq quest      a quest for your next upgrade (/beq quest off, skip, switch, or reset)
 /beq weights    change how much each stat counts (also in the settings window)
 /beq probe      check what this client supports; it only reads
 /beq settings   open the settings window (so does right-clicking the minimap button)

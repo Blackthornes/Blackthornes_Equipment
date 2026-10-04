@@ -24,6 +24,10 @@ local _, ns = ...
 
 local UpgradeQuest = ns.NewModule("UpgradeQuest")
 
+-- Upgrades a level up offered that the player chose not to switch to, this
+-- session: { [itemID] = true }.
+UpgradeQuest.declined = {}
+
 local Items = ns.Items
 
 -- How long to wait for the server to answer about gear before picking
@@ -54,6 +58,14 @@ local PER_CHAIN_QUEST = 0.25
 -- How many quests before the one with the reward are listed as steps of
 -- their own; the rest are one step.
 local CHAIN_SHOWN = 2
+
+-- After a level up, how long to keep looking for gear the new level opened,
+-- while the server answers about gear the client has not seen.
+local LEVEL_LOOK = 20
+
+-- How much more an upgrade the new level opened has to be worth than the
+-- quest being followed before it is offered in its place.
+local CLEARLY_BETTER = 1.5
 
 local function Read(fn, ...)
     if type(fn) ~= "function" then return nil end
@@ -138,23 +150,30 @@ function UpgradeQuest.BestSource(sources, zone)
     return best, bestEase or 0
 end
 
+--- How much a pick is worth going after: how much better it is, times how
+--- easy its source is.
+local function Worth(result, gain, ease)
+    -- Filling an empty slot counts as a big step up.
+    if result and result.empty then gain = math.max(gain, 1) * 1.5 end
+    return gain * ease
+end
+
 --- From a finder scan, the pick most worth going after: { pick, source },
 --- or nil. Gear that waits on a reputation, that nobody on the account can
---- make, or that the player skipped is left out.
-function UpgradeQuest:Choose(found)
+--- make, or that the player skipped is left out, and so is anything in
+--- `except` ({ [itemID] = true }).
+function UpgradeQuest:Choose(found, except)
     if type(found) ~= "table" or type(found.slots) ~= "table" then return nil end
     local skipped = self:Skipped()
     local zone = found.player and found.player.zone
     local best
     for _, list in pairs(found.slots) do
         for _, pick in ipairs(list) do
-            if not pick.needs and not pick.remote and not pick.at and not skipped[pick.itemID] then
+            if not pick.needs and not pick.remote and not pick.at and not skipped[pick.itemID]
+                and not (except and except[pick.itemID]) then
                 local source, ease = self.BestSource(pick.sources, zone)
                 if source then
-                    -- Filling an empty slot counts as a big step up.
-                    local gain = pick.gain or 0
-                    if pick.result and pick.result.empty then gain = math.max(gain, 1) * 1.5 end
-                    local worth = gain * ease
+                    local worth = Worth(pick.result, pick.gain or 0, ease)
                     if not best or worth > best.worth
                         or (worth == best.worth and pick.itemID < best.pick.itemID) then
                         best = { pick = pick, source = source, worth = worth }
@@ -492,6 +511,89 @@ function UpgradeQuest:HandedInWithout(quest)
     return now - self.missingSince >= 5
 end
 
+--------------------------------------------------------------------------------
+-- A level up that opens something better
+--------------------------------------------------------------------------------
+
+--- How much the quest being followed is worth now, judged like a pick.
+function UpgradeQuest:QuestWorth(quest, zone)
+    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    if not (ok and result) then return nil end
+    local gain = (result.score or 0) - (result.against or 0)
+    return Worth(result, gain, self.Ease(quest.source or {}, zone))
+end
+
+--- After a level up: is there now an upgrade clearly more worth the trip
+--- than the quest being followed? The quest is kept either way; a better
+--- one is only offered, for the player to switch to or not.
+function UpgradeQuest:LookForBetter(quest)
+    local found = ns.Finder and ns.Finder:Scan()
+    if not found then
+        self.levelledAt = nil
+        return
+    end
+    local now = ns.Finder.Now()
+    local looking = now - self.levelledAt < LEVEL_LOOK
+    -- The scan was made before the client caught up with the new level.
+    if looking and self.newLevel and found.player and (found.player.level or 0) < self.newLevel then
+        ns.Finder:MarkStale()
+        self.recheck = true
+        return
+    end
+    if looking and found.waiting > 0 then
+        self.recheck = true
+    else
+        self.levelledAt = nil
+    end
+
+    local except = { [quest.itemID] = true }
+    for itemID in pairs(self.declined) do except[itemID] = true end
+    local best = self:Choose(found, except)
+    local worth = self:QuestWorth(quest, found.player and found.player.zone)
+    if not (best and worth) or best.worth < worth * CLEARLY_BETTER then return end
+    if self.offer and self.offer.pick.itemID == best.pick.itemID then return end
+
+    self.offer = {
+        pick = best.pick,
+        source = best.source,
+        questItemID = quest.itemID,
+        level = (found.player and found.player.level) or self.newLevel,
+        howMuch = best.pick.result and ns.Compare:HowMuch(best.pick.result) or nil,
+    }
+    if ns.Toast then
+        ns.Toast:Show({ title = "New upgrade unlocked", link = best.pick.link,
+            text = "Your new level opened a better upgrade. Switch to it on the quest panel." })
+    end
+end
+
+--- The upgrade the last level up opened, while it is on offer, or nil:
+--- { pick, source, level, howMuch }.
+function UpgradeQuest:Offer()
+    return self.offer
+end
+
+--- Follow the upgrade on offer instead of the quest being followed.
+function UpgradeQuest:SwitchToOffer()
+    local offer = self.offer
+    if not offer then return false end
+    self.offer = nil
+    self:Start(offer.pick, offer.source)
+    self.lastStep = nil
+    self:Update()
+    return true
+end
+
+--- Keep the quest being followed: the upgrade on offer is not offered
+--- again this session.
+function UpgradeQuest:KeepCurrent()
+    local offer = self.offer
+    if not offer then return false end
+    self.declined[offer.pick.itemID] = true
+    self.offer = nil
+    self:Changed()
+    return true
+end
+
 --- Look at the quest: finish it when the item is worn, drop it when it is
 --- no longer an upgrade, and pick the next one when there is none.
 function UpgradeQuest:Update()
@@ -581,6 +683,10 @@ function UpgradeQuest:Check()
         self.state = "active"
     end
 
+    -- An offer is only for the quest it was made against.
+    if self.offer and not (quest and self.offer.questItemID == quest.itemID) then self.offer = nil end
+    if quest and quest.itemID == before and self.levelledAt then self:LookForBetter(quest) end
+
     -- A step ticked off since last time: a little cheer.
     if quest and quest.itemID == before then
         local _, current = self:Steps(quest)
@@ -636,7 +742,16 @@ function UpgradeQuest:SetEnabled(on)
     end
 end
 
-function UpgradeQuest:OnEvent()
+function UpgradeQuest:OnEvent(event, level)
+    if event == "PLAYER_LEVEL_UP" then
+        -- Look for gear the new level opened, for a little while.
+        self.levelledAt = ns.Finder and ns.Finder.Now() or Now()
+        local ok, value = pcall(function()
+            local number = tonumber(level)
+            if number and number > 0 and number < 1000 then return number end
+        end)
+        self.newLevel = ok and value or nil
+    end
     self:UpdateSoon()
 end
 
@@ -653,7 +768,7 @@ end
 -- /beq quest
 --------------------------------------------------------------------------------
 
-ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip, or reset)", function(rest)
+ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip, switch, or reset)", function(rest)
     local word = (rest or ""):lower():match("^%s*(%a*)") or ""
     if word == "off" then
         UpgradeQuest:SetEnabled(false)
@@ -665,6 +780,14 @@ ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip
             ns.Print("skipped that upgrade.")
         else
             ns.Print("there is no upgrade quest to skip.")
+        end
+        return
+    end
+    if word == "switch" then
+        if UpgradeQuest:SwitchToOffer() then
+            ns.Print("switched to the upgrade your new level opened.")
+        else
+            ns.Print("no new upgrade is on offer.")
         end
         return
     end
