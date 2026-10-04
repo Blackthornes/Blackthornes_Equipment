@@ -135,7 +135,7 @@ local POSITION_KEYS = {
     { "point", "relativePoint", "x", "y" },
     { "settingsPoint", "settingsRelativePoint", "settingsX", "settingsY" },
     { "weightsPoint", "weightsRelativePoint", "weightsX", "weightsY" },
-    { "finderPoint", "finderRelativePoint", "finderX", "finderY" },
+    { "finderPoint", "finderRelativePoint", "finderX", "finderY", "finderMoved" },
     { "trackerPoint", "trackerRelativePoint", "trackerX", "trackerY" },
 }
 

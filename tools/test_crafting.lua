@@ -177,6 +177,31 @@ UI:SetFilter("craft")
 suite.check("the window has a Crafted filter", ns.db.finderShow == "craft" and UI.rows[1]:IsShown())
 suite.check("crafted rows say so", UI.rows[1].source:GetText():find("Crafted", 1, true) ~= nil,
     UI.rows[1].source:GetText())
+-- The row's second line wraps rather than being cut, and the materials
+-- line on the tooltip is a light colour, passed whole.
+local long = ("word "):rep(math.floor(UI.rows[1].sourceWidth / 30) + 10)
+suite.check("a line longer than the row still shows in full",
+    UI.Fit("tiny", long, UI.rows[1].sourceWidth * 2 - 60) == long)
+local colours = {}
+local realAdd = _G.GameTooltip.AddLine
+_G.GameTooltip.AddLine = function(self, text, r, g, b, wrap)
+    colours[#colours + 1] = { text = text, r = r, g = g, b = b, wrap = wrap }
+    return realAdd(self, text)
+end
+for _, row in ipairs(UI.rows) do
+    local pick = rawget(row, "pick")
+    if type(pick) == "table" and pick.itemID == 3001 then row:GetScript("OnEnter")(row) end
+end
+local materials
+for _, line in ipairs(colours) do
+    if type(line.text) == "string" and line.text:find("Materials:", 1, true) then materials = line end
+end
+local tr, tg, tb = ns.Theme.Unpack("text")
+suite.check("the tooltip lists the materials", materials ~= nil)
+suite.check("in the light text colour, wrapped", materials and materials.r == tr and materials.g == tg
+    and materials.b == tb and materials.wrap == true)
+_G.GameTooltip.AddLine = realAdd
+
 UI.ahead:SetValue(5)
 suite.check("the stepper plans ahead", ns.db.finderAhead == 5 and UI.specLabel:GetText():find("planning for 25", 1, true),
     UI.specLabel:GetText())

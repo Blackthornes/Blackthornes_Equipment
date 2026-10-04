@@ -19,7 +19,7 @@ local Motion = ns.Motion
 
 local WIDTH = 260
 local HEADER = 26
-local ROW_HEIGHT = 34
+local ROW_HEIGHT = 44
 local ICON = 24
 local MOST_ROWS = 8
 local PAD = 8
@@ -76,6 +76,9 @@ function TrackerPanel:BuildRow(index)
     local where = Theme.CreateLabel(row, "tiny", "muted")
     where:SetPoint("TOPLEFT", ICON + 10, -18)
     where:SetWidth(WIDTH - PAD * 2 - ICON - 14)
+    -- Two lines rather than a cut.
+    where:SetWordWrap(true)
+    pcall(where.SetMaxLines, where, 2)
     row.where = where
     row.textWidth = WIDTH - PAD * 2 - ICON - 14
 
@@ -216,7 +219,7 @@ function TrackerPanel:Refresh()
             shown = shown + 1
             Theme.SetItemIcon(row.icon, hunt.link)
             row.item:SetText(hunt.link or "?")
-            row.where:SetText(Fit("tiny", TrackerPanel.WhereText(hunt), row.textWidth))
+            row.where:SetText(Fit("tiny", TrackerPanel.WhereText(hunt), row.textWidth * 2 - 50))
             row:Show()
         else
             row:Hide()
