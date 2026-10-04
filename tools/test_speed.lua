@@ -102,6 +102,55 @@ suite.check("an answer a scan asked for looks again", updates == 1, updates)
 Quest.Update = realUpdate
 
 --------------------------------------------------------------------------------
+-- The full scan runs a slice per frame
+--------------------------------------------------------------------------------
+
+-- More gear, so one frame's share cannot cover it all.
+for id = 2001, 2060 do
+    ITEMS["item:" .. id] = Chest(10 + id % 40)
+    S.ITEMS[id] = { 15, 15, 0, 0, 100, v = { 1, 0 } }
+end
+local frames, realAfter = {}, _G.C_Timer.After
+_G.C_Timer.After = function(_, fn) frames[#frames + 1] = fn end
+local tick = 0
+_G.debugprofilestop = function() tick = tick + 1 return tick end   -- 1 ms per look at the clock
+ns.Perf:Reset()
+
+ns.charDB.upgradeQuestTabs, ns.charDB.upgradeQuestTab, ns.charDB.upgradeQuest = nil, nil, nil
+Quest.states = {}
+Quest.rescan = true
+ns.Finder:MarkStale()
+Quest:Update()
+suite.check("the quest waits while the scan runs", Quest.state == "waiting" and Finder:Scanning(), Quest.state)
+local slices = 0
+while #frames > 0 and slices < 500 do
+    local fn = table.remove(frames, 1)
+    fn()
+    if Finder:Scanning() then slices = slices + 1 end
+end
+suite.check("the scan took several frames", slices > 3, slices)
+suite.check("and then the quest is picked", not Finder:Scanning() and Quest:Current() ~= nil
+    and Quest.state == "active", Quest.state)
+local slice = ns.Perf.rows["Finder:background slice"]
+suite.check("no frame's slice ran long", slice and slice.worst <= 12, slice and slice.worst)
+
+-- Gear changing mid-scan makes the result stale; the quest looks again.
+frames = {}
+Quest.rescan = true
+ns.Finder:MarkStale()
+Quest:Skip()
+suite.check("a skip starts a new scan", Finder:Scanning())
+env.worn[5] = "item:901"
+ns.Finder:MarkStale()
+while #frames > 0 do table.remove(frames, 1)() end
+suite.check("a scan made stale mid-way is not used", Quest:Current() == nil and not Finder:Scanning(),
+    Quest:Current() and Quest:Current().itemID)
+
+_G.C_Timer.After = realAfter
+_G.debugprofilestop = nil
+env.worn[5] = "item:900"
+
+--------------------------------------------------------------------------------
 -- /beq perf
 --------------------------------------------------------------------------------
 

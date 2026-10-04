@@ -307,11 +307,41 @@ function UpgradeQuest:Start(pick, source)
     return quest
 end
 
+--- The finder's latest full scan, when nothing has changed since. If there
+--- is none, one is started in the background (a slice per frame, so the
+--- game never stops for it) and the quest looks again when it is done.
+-- @return the scan, or nil and "waiting" (scanning) or "none"
+function UpgradeQuest:FreshScan()
+    local finder = ns.Finder
+    if not finder then return nil, "none" end
+    local found = finder:Fresh()
+    if found then return found end
+    if not finder:Scanning() then
+        finder:ScanInBackground(function(result)
+            UpgradeQuest.scanFailed = not result
+            -- Something changed while it ran. After a few in a row (item
+            -- answers still pouring in), the last one is good enough.
+            UpgradeQuest.staleScans = finder:Fresh() and 0 or (UpgradeQuest.staleScans or 0) + 1
+            -- Finished at once (no timers): the caller picks it up below.
+            if not UpgradeQuest.updating then UpgradeQuest:UpdateSoon(0) end
+        end)
+    end
+    found = finder:Fresh()
+    if found then return found end
+    if not finder:Scanning() and (self.staleScans or 0) >= 3 and finder.latest then
+        self.staleScans = 0
+        return finder.latest
+    end
+    if not finder:Scanning() and self.scanFailed then return nil, "none" end
+    return nil, "waiting"
+end
+
 --- A finder scan to pick from. Waits a little for the server to answer
 --- about gear the client has not seen, so the pick is made from all of it.
 -- @return the scan, or nil and "waiting" or "none"
 function UpgradeQuest:Look()
-    local found = ns.Finder and ns.Finder:Scan()
+    local found, why = self:FreshScan()
+    if why == "waiting" then return nil, "waiting" end
     if not found then
         self.lookingSince = nil
         return nil, "none"
@@ -680,7 +710,8 @@ end
 --- than the quest being followed? The quest is kept either way; a better
 --- one is only offered, for the player to switch to or not.
 function UpgradeQuest:LookForBetter(quest)
-    local found = ns.Finder and ns.Finder:Scan()
+    local found, why = self:FreshScan()
+    if why == "waiting" then return end
     if not found then
         self.levelledAt = nil
         return
