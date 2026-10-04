@@ -1,6 +1,6 @@
 """Check a built package is clear to post before anything is uploaded.
 
-Trent (2026-09-25): "always check that it's clear to post." The release
+House rule (2026-09-25): "always check that it's clear to post." The release
 workflow builds the package without uploading, runs this over it, and only
 uploads if it passes:
 
@@ -51,7 +51,7 @@ PRIVATE = [
     # The owner's own name never goes out to players, in a comment or
     # anywhere else. Spelt in two halves so this line does not carry it.
     ("the owner's name", re.compile(r"\b" + "Tr" + r"ent\b", re.I)),
-    # Trent's rule: another gear addon is never named in what ships.
+    # The house rule: another gear addon is never named in what ships.
     ("another gear addon's name", re.compile(r"gear\s*" + "quest", re.I)),
     ("an API key or token", re.compile(
         r"(api[_-]?key|api[_-]?token|secret|password)\s*[=:]\s*[\"'][^\"']{8,}",
