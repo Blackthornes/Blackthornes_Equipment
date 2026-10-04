@@ -102,7 +102,21 @@ function Finder:QuestDone(questID)
     local log = _G.C_QuestLog
     local done = Read(log and log.IsQuestFlaggedCompleted, questID)
     if done == nil then done = Read(_G.IsQuestFlaggedCompleted, questID) end
-    return done == true
+    if done == true then return true end
+    -- Quests seen handed in, for a client that cannot say.
+    local seen = ns.charDB and ns.charDB.questsTurnedIn
+    return type(seen) == "table" and seen[questID] == true
+end
+
+--- Remember a quest handed in (QUEST_TURNED_IN), kept per character in
+--- `questsTurnedIn`, in case the client has no call to ask.
+function Finder:OnQuestTurnedIn(_, questID)
+    local ok, id = pcall(function() return tonumber(questID) end)
+    if ok and id and ns.charDB then
+        if type(ns.charDB.questsTurnedIn) ~= "table" then ns.charDB.questsTurnedIn = {} end
+        ns.charDB.questsTurnedIn[id] = true
+    end
+    self:MarkStale()
 end
 
 --------------------------------------------------------------------------------
@@ -497,9 +511,10 @@ end
 
 function Finder:OnEnable()
     for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "BAG_UPDATE_DELAYED",
-        "QUEST_TURNED_IN", "TRAIT_CONFIG_UPDATED", "GET_ITEM_INFO_RECEIVED" }) do
+        "TRAIT_CONFIG_UPDATED", "GET_ITEM_INFO_RECEIVED" }) do
         ns.RegisterEvent(self, event, self.MarkStale)
     end
+    ns.RegisterEvent(self, "QUEST_TURNED_IN", self.OnQuestTurnedIn)
 end
 
 --------------------------------------------------------------------------------

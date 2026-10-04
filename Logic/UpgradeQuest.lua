@@ -435,6 +435,25 @@ function UpgradeQuest:StillWanted(quest)
     return true
 end
 
+--- Was the quest that gives this upgrade handed in, with the upgrade
+--- neither carried nor worn? Only after a few seconds of it missing, since
+--- the reward can reach the bags a moment after the hand-in.
+function UpgradeQuest:HandedInWithout(quest)
+    local source = quest.source
+    if not (source and source.kind == "quest" and source.questID and ns.Finder) then return false end
+    if not ns.Finder:QuestDone(source.questID) or self.Count(quest.itemID) > 0 then
+        self.missingSince = nil
+        return false
+    end
+    local now = ns.Finder.Now()
+    if not self.missingSince then
+        self.missingSince = now
+        self.recheck = true
+        return false
+    end
+    return now - self.missingSince >= 5
+end
+
 --- Look at the quest: finish it when the item is worn, drop it when it is
 --- no longer an upgrade, and pick the next one when there is none.
 function UpgradeQuest:Update()
@@ -444,7 +463,10 @@ function UpgradeQuest:Update()
     if not ok then error(err, 0) end
     -- Still waiting on the server: look again shortly, in case no more
     -- answers come in to prompt it.
-    if self.state == "waiting" then self:RetrySoon() end
+    if self.state == "waiting" or self.recheck then
+        self.recheck = nil
+        self:RetrySoon()
+    end
 end
 
 function UpgradeQuest:RetrySoon()
@@ -452,7 +474,7 @@ function UpgradeQuest:RetrySoon()
     if self.retryPending or type(after) ~= "function" then return end
     self.retryPending = true
     local scheduling = true
-    after(2, function()
+    after(6, function()
         UpgradeQuest.retryPending = false
         -- Run at once, by a client without real timers: looking again now
         -- would only go round in circles.
@@ -487,6 +509,14 @@ function UpgradeQuest:Check()
         ns.charDB.upgradeQuest = nil
         self.lastStep = nil
         ns.Print(("dropped the upgrade quest for %s: you wear something as good now."):format(quest.link))
+        quest = nil
+    elseif quest and self:HandedInWithout(quest) then
+        -- The quest was handed in and another reward taken: it cannot be
+        -- done again, so this upgrade is out of reach.
+        ns.charDB.upgradeQuest = nil
+        self:Skipped()[quest.itemID] = true
+        self.lastStep = nil
+        ns.Print(("dropped the upgrade quest for %s: that quest is already done."):format(quest.link))
         quest = nil
     end
 
