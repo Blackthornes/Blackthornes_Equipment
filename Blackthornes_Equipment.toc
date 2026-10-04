@@ -35,6 +35,7 @@ Logic\UpgradeQuest.lua
 
 UI\Theme.lua
 UI\Widgets.lua
+UI\Titanforged.lua
 UI\Minimap.lua
 UI\Settings.lua
 UI\WeightsWindow.lua

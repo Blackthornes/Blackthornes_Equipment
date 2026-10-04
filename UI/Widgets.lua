@@ -48,10 +48,17 @@ function Motion.Lerp(from, to, p)
     return from + (to - from) * p
 end
 
---- Two palette colours mixed, `p` of the way from `a` to `b`.
+--- Two colours mixed, `p` of the way from `a` to `b`. Each is a palette key
+--- or an { r, g, b[, a] } table.
 function Motion.Mix(a, b, p, alphaA, alphaB)
-    local r1, g1, b1, a1 = Theme.Unpack(a, alphaA)
-    local r2, g2, b2, a2 = Theme.Unpack(b, alphaB)
+    local r1, g1, b1, a1
+    if type(a) == "table" then r1, g1, b1, a1 = a[1], a[2], a[3], alphaA or a[4] or 1
+    else r1, g1, b1, a1 = Theme.Unpack(a, alphaA) end
+
+    local r2, g2, b2, a2
+    if type(b) == "table" then r2, g2, b2, a2 = b[1], b[2], b[3], alphaB or b[4] or 1
+    else r2, g2, b2, a2 = Theme.Unpack(b, alphaB) end
+
     return r1 + (r2 - r1) * p, g1 + (g2 - g1) * p, b1 + (b2 - b1) * p, a1 + (a2 - a1) * p
 end
 
@@ -240,30 +247,48 @@ end
 
 local HOVER_TIME = 0.12
 
---- A flat button in the house style.
+--- A button in the house style.
 --
--- opts: width, height; primary (gold-tinted, gold edge, gold text, for the
--- one button on a screen that does the main thing); danger (lights red under
--- the mouse, for a close button); labelKey (the label's resting colour).
+-- opts: width, height; primary (solid gold with dark lettering, for the one
+-- button on a screen that does the main thing); danger (lights red under
+-- the mouse, for a close button); labelKey (the label's resting colour);
+-- baseColor (an explicit { r, g, b, a } resting face, for a button that sits
+-- over the game world and keeps to its own look).
 function Widgets.CreateButton(parent, text, onClick, opts)
     opts = opts or {}
 
     local button = CreateFrame("Button", nil, parent)
     button:SetSize(opts.width or 80, opts.height or 22)
 
-    local baseKey = opts.primary and "rowActive" or "row"
-    local edgeKey = opts.primary and "accent" or "border"
-    local edgeAlpha = opts.primary and 0.55 or 1
-    local hotEdge = (opts.danger and "loss") or (opts.primary and "accent") or "borderLit"
-    local labelKey = opts.labelKey or (opts.primary and "accent") or "text"
+    -- Titanforged (2026-10-04): every button is raised metal, a dark face
+    -- in a gold edge with a gold label, lit and glowing under the mouse. The
+    -- primary action is solid gold with dark lettering, so the one button
+    -- that does the main thing on a screen stands out at a glance.
+    --
+    -- Dark lettering only on a gold face: a primary button given its own
+    -- dark face (opts.baseColor) keeps the gold label, or its text would be
+    -- dark on dark and the button would read as an empty box.
+    local goldFace = opts.primary and not opts.baseColor
+    local baseKey = opts.baseColor or (goldFace and "accent") or "row"
+    local hotFill = opts.baseColor and "rowHover" or goldFace and "accentHi"
+        or opts.danger and "rowHover" or "rowActive"
+    local edgeKey = goldFace and "accentHi" or "metal"
+    local hotEdge = (opts.danger and "loss") or "accentHi"
+    local labelKey = goldFace and "ink" or opts.labelKey or "gilt"
+    local labelHot = goldFace and "ink" or opts.danger and "loss" or { 1, 0.953, 0.784 }
 
-    button.background = Theme.Fill(button, baseKey)
-    Theme.Border(button, edgeKey, opts.primary and edgeAlpha or nil)
-    button.sheen = Theme.TopSheen(button)
+    -- Painted by Light below, from baseKey.
+    button.background = Theme.Fill(button, "row")
+    Theme.Border(button, edgeKey)
+    button.sheen = Theme.TopSheen(button, 0.10)
+    if Theme.Bevel then Theme.Bevel(button) end
 
-    -- The one button on a screen that does the main thing glows gold
-    -- round its edge under the mouse.
-    if opts.primary then Theme.Halo(button, 4, 0) end
+    -- Every button glows round its edge under the mouse; the primary one
+    -- glows a little even at rest. One with its own face keeps to its look.
+    local haloRest = goldFace and 0.12 or 0
+    if Theme.Halo and not opts.baseColor then
+        Theme.Halo(button, 5, haloRest, opts.danger and "loss" or "accent")
+    end
 
     button.label = Theme.CreateLabel(button, "small", labelKey, "CENTER")
     button.label:SetPoint("CENTER")
@@ -276,19 +301,25 @@ function Widgets.CreateButton(parent, text, onClick, opts)
     end
     Fit(text)
 
-    --- How lit the button is: 0 at rest, 1 under the mouse.
+    --- How lit the button is: 0 at rest, 1 under the mouse. The face, the
+    --- edge, the label and the glow are all drawn from this one number.
     local function Light(p)
-        button.background:SetColorTexture(Motion.Mix(baseKey, "rowHover", p))
+        button.background:SetColorTexture(Motion.Mix(baseKey, hotFill, p))
 
-        local r, g, b, a = Motion.Mix(edgeKey, hotEdge, p, edgeAlpha, 1)
+        local r, g, b, a = Motion.Mix(edgeKey, hotEdge, p)
         for _, edge in ipairs(button.borderTextures or {}) do
             edge:SetColorTexture(r, g, b, a)
         end
 
-        if opts.danger then
-            button.label:SetTextColor(Motion.Mix(labelKey, "loss", p))
+        -- A dimmed label (a stepper at the end of its range) stays dim.
+        if rawget(button, "dimmed") == true then
+            button.label:SetTextColor(Theme.Unpack("dim"))
+        else
+            button.label:SetTextColor(Motion.Mix(labelKey, labelHot, p))
         end
-        if opts.primary then Theme.SetHalo(button, 0.32 * p) end
+        if rawget(button, "haloTextures") then
+            Theme.SetHalo(button, haloRest + (0.4 - haloRest) * p)
+        end
     end
     button.Light = Light
 
@@ -331,12 +362,20 @@ function Widgets.CreateButton(parent, text, onClick, opts)
     end
 
     --- The label's resting colour, for a button whose text means something
-    --- (an upgrade in green, say).
+    --- (an upgrade in green, say). A gold face keeps its dark lettering.
     function button:SetLabelColor(key)
-        labelKey = key
-        self.label:SetTextColor(Theme.Unpack(key))
+        if not goldFace then labelKey = key end
+        Light(Motion:Value(self, "hover"))
     end
 
+    --- Grey the label out (true) or bring it back, as a stepper's - and +
+    --- do at the ends of their range. The button still takes clicks.
+    function button:SetDimmed(dimmed)
+        self.dimmed = dimmed and true or false
+        Light(Motion:Value(self, "hover"))
+    end
+
+    Light(0)
     return button
 end
 
@@ -353,13 +392,25 @@ function Widgets.CreateCheckbox(parent, text, onToggle, initial)
     local box = CreateFrame("Frame", nil, checkbox)
     box:SetSize(14, 14)
     box:SetPoint("LEFT")
-    box.background = Theme.Fill(box, "row")
-    Theme.Border(box, "border")
+    -- A small dark well in a gold edge, glowing when ticked (Titanforged).
+    box.background = Theme.Fill(box, "well")
+    Theme.Border(box, "metal")
+    Theme.Halo(box, 4, 0)
 
     local tick = box:CreateTexture(nil, "OVERLAY")
     tick:SetPoint("CENTER")
     tick:SetSize(8, 8)
     tick:SetColorTexture(Theme.Unpack("accent"))
+
+    local function PaintBox(hovered)
+        tick:SetShown(checkbox.checked)
+        tick:SetColorTexture(Theme.Unpack(checkbox.checked and "accentHi" or "accent"))
+        Theme.SetBorderColor(box, checkbox.checked and "accentHi"
+            or hovered and "accent" or "metal")
+        if rawget(box, "haloTextures") then
+            Theme.SetHalo(box, checkbox.checked and 0.3 or hovered and 0.15 or 0)
+        end
+    end
 
     local label = Theme.CreateLabel(checkbox, "small", "text")
     label:SetPoint("LEFT", box, "RIGHT", 6, 0)
@@ -369,11 +420,11 @@ function Widgets.CreateCheckbox(parent, text, onToggle, initial)
     checkbox:SetWidth((label:GetStringWidth() or 60) + 24)
     checkbox.checked = initial and true or false
     checkbox.disabled = false
-    tick:SetShown(checkbox.checked)
+    PaintBox(false)
 
     function checkbox:SetChecked(value)
         self.checked = value and true or false
-        tick:SetShown(self.checked)
+        PaintBox(rawget(self, "hovered") == true)
     end
 
     function checkbox:GetChecked()
@@ -405,14 +456,16 @@ function Widgets.CreateCheckbox(parent, text, onToggle, initial)
 
     checkbox:SetScript("OnEnter", function(self)
         if not self.disabled then
+            self.hovered = true
             label:SetTextColor(Theme.Unpack("accent"))
-            Theme.SetBorderColor(box, "accent", 0.7)
+            PaintBox(true)
         end
     end)
 
     checkbox:SetScript("OnLeave", function(self)
+        self.hovered = false
         label:SetTextColor(Theme.Unpack(self.disabled and "dim" or "text"))
-        Theme.SetBorderColor(box, "border")
+        PaintBox(false)
     end)
 
     return checkbox
@@ -444,10 +497,12 @@ function Widgets.CreateStepper(parent, opts)
     local plus = Widgets.CreateButton(stepper, "+", nil, { width = 22, height = 20 })
     plus:SetPoint("RIGHT")
 
+    -- The value sits sunk into the window between the two buttons.
     local well = Theme.CreatePanel(stepper, "panel", "border")
     well:SetPoint("LEFT", minus, "RIGHT", 4, 0)
     well:SetPoint("RIGHT", plus, "LEFT", -4, 0)
     well:SetHeight(20)
+    Theme.Recess(well)
 
     local text = Theme.CreateLabel(well, "small", "text", "CENTER")
     text:SetPoint("CENTER")
@@ -471,8 +526,8 @@ function Widgets.CreateStepper(parent, opts)
         self.value = Clamp(tonumber(value) or low)
         text:SetText(opts.format and opts.format(self.value) or tostring(self.value))
 
-        minus.label:SetTextColor(Theme.Unpack(self.value <= low and "dim" or "text"))
-        plus.label:SetTextColor(Theme.Unpack(self.value >= high and "dim" or "text"))
+        minus:SetDimmed(self.value <= low)
+        plus:SetDimmed(self.value >= high)
 
         if not silent and opts.onChange then opts.onChange(self.value) end
     end
