@@ -280,3 +280,11 @@ The merchant and loot arrows read `C_MerchantFrame.GetItemLink` or
 `GetMerchantItemLink`, and `GetLootSlotLink`, on the game's
 `MerchantItemNItemButton` and `LootButtonN` frames. A client that builds
 those windows differently simply gets no arrows there.
+
+## 2026-10-05: feral druids and weapons (from guides, not a probe)
+
+Forever's druid guides agree that, unlike classic, cat and bear attacks
+scale with the weapon's damage (Cat Form gives 12 attack power of its own
+instead of 40), and that druids can train polearms from level 20 (Woo Ping
+in Stormwind, Archibald in Undercity). So feral weighs `meleeDps` like a
+rogue does, and the druid's weapon list has polearms. Not yet seen in game.

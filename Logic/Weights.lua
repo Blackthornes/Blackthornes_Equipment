@@ -329,7 +329,8 @@ local SPECS = {
         columns = CLASSIC_COLUMNS,
         -- 8 is an idol.
         armor = { [0] = 0, [1] = 0, [2] = 0, [8] = 0 },
-        weapons = { [4] = 0, [5] = 0, [10] = 0, [13] = 0, [15] = 0 },
+        -- Forever lets druids train polearms, from 20 (classic never did).
+        weapons = { [4] = 0, [5] = 0, [6] = 20, [10] = 0, [13] = 0, [15] = 0 },
         balance = {
             name = "Balance",
             weights = {
@@ -338,16 +339,15 @@ local SPECS = {
             },
         },
         feral = {
-            -- Classic's cat and bear forms ignore the weapon's damage, so a
-            -- weapon is worth its stats: 3 agility outweighs 20 more dps.
-            -- Weapon dps still counts a little (asked 2026-10-05): with none
-            -- at all, a weapon without strength or agility never showed as a
-            -- main-hand upgrade, however far behind the worn one was.
+            -- On Forever, unlike classic, cat and bear attacks scale with the
+            -- weapon's damage, and Cat Form gives far less attack power of
+            -- its own, so weapon dps counts about as it does for a rogue
+            -- (checked 2026-10-05 against several Forever druid guides).
             name = "Feral Combat",
             weights = {
                 agility = 1.0, strength = 1.0, stamina = 0.8, attackPower = 0.5,
                 crit = 14, hit = 12, armor = 0.05, dodge = 6, defense = 0.4,
-                meleeDps = 0.1,
+                meleeDps = 5,
             },
         },
         resto = {
