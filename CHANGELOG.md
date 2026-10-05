@@ -4,6 +4,21 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.9.3
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- Feral druids now get main-hand and two-hand upgrades. On Forever, cat and
+  bear attacks use the weapon's damage, so weapon damage now counts for
+  Feral Combat.
+- Druids can use polearms on Forever (trained from level 20), and polearms
+  now show as druid gear instead of "Druids can't use this".
+- Druids, paladins and shamans are never offered a wand, bow, gun or thrown
+  weapon. Their idols, librams and totems still show in that slot.
+- A weapon whose type the game hasn't reported is no longer called an
+  upgrade.
+
 ## 0.9.2
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
