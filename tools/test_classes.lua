@@ -96,8 +96,8 @@ suite.check("a mage cannot use a shield", ns.Compare:Judge("item:5").verdict == 
 
 ns = As("DRUID", { [16] = "item:8" })
 result = ns.Compare:Judge("item:7")
-suite.check("a feral druid counts weapon damage for little", result.score > 0 and result.score < 3, result.score)
-suite.check("so a bigger stick does not beat a little agility", result.verdict == "downgrade", result.verdict)
+suite.check("a feral druid's weapon damage counts in forms on Forever", result.score == 100, result.score)
+suite.check("so a much bigger stick beats a little agility", result.verdict == "upgrade", result.verdict)
 
 -- A player's level 38 feral druid was offered a wand and never a main-hand
 -- weapon (2026-10-05).
@@ -113,7 +113,7 @@ ITEMS["item:14"] = { loc = "INVTYPE_RANGEDRIGHT", stats = { ITEM_MOD_STAMINA_SHO
 ITEMS["item:15"] = { loc = "INVTYPE_RANGEDRIGHT", class = WEAPON, subclass = 10,
     stats = { ITEM_MOD_STAMINA_SHORT = 5 } }
 ITEMS["item:16"] = { loc = "INVTYPE_WEAPON", class = WEAPON, subclass = 4,
-    stats = { ITEM_MOD_STRENGTH_SHORT = 4 } }
+    stats = { ITEM_MOD_STRENGTH_SHORT = 4, ITEM_MOD_DAMAGE_PER_SECOND_SHORT = 10 } }
 ITEMS["item:17"] = { loc = "INVTYPE_RELIC", class = ARMOR, subclass = 8,
     stats = { ITEM_MOD_STRENGTH_SHORT = 2 } }
 
@@ -121,7 +121,7 @@ ns = As("DRUID", { [16] = "item:10" }, 38)
 result = ns.Compare:Judge("item:7")
 suite.check("a feral druid's bigger stat-less staff is a main-hand upgrade",
     result.verdict == "upgrade" and result.slot == 16, result.verdict)
-suite.check("and so is a mace with strength", ns.Compare:Judge("item:16").verdict == "upgrade")
+suite.check("and so is a faster-hitting mace", ns.Compare:Judge("item:16").verdict == "upgrade")
 suite.check("a feral druid is never offered a wand", ns.Compare:Judge("item:11").verdict == "cantuse")
 suite.check("so the bag arrow never shows on one", not ns.Compare:IsUpgradeNow("item:11"))
 suite.check("nor a bow", ns.Compare:Judge("item:12").verdict == "cantuse")
@@ -153,6 +153,15 @@ for _, class in ipairs(CLASSES) do
     suite.check(class .. " is never offered a staff that claims the ranged slot",
         ns.Compare:Judge("item:15").verdict == "cantuse")
 end
+
+-- Forever's druids train polearms from 20.
+ITEMS["item:18"] = { loc = "INVTYPE_2HWEAPON", class = WEAPON, subclass = 6,
+    stats = { ITEM_MOD_DAMAGE_PER_SECOND_SHORT = 30 } }
+ns = As("DRUID", { [16] = "item:10" }, 38)
+suite.check("a druid can use a polearm on Forever", ns.Compare:Judge("item:18").verdict == "upgrade")
+ns = As("DRUID", {}, 15)
+result = ns.Compare:Judge("item:18")
+suite.check("from level 20", result.verdict == "upgrade" and result.level == 20, result.level)
 
 -- The finder never asks about a wand for a druid.
 ns = As("DRUID", {}, 38)
