@@ -157,7 +157,7 @@ function Compare:Judge(link)
         specName = Weights.SPECS[class][spec].name,
     }
 
-    local usable, fromLevel = Weights:CanUse(class, info.classID, info.subclassID)
+    local usable, fromLevel = Weights:CanUse(class, info.classID, info.subclassID, info.equipLoc)
     -- An off-hand-only weapon needs dual wield, which most classes never
     -- get and the rest learn from a trainer. The client has the last word
     -- when it says this character can.

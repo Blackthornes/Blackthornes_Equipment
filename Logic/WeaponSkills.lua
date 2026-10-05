@@ -83,7 +83,7 @@ function WeaponSkills:TrainerFor(link)
     local skill = WeaponTrainers.SKILLS[info.subclassID]
     if not skill then return nil end
 
-    local usable = Weights:CanUse(Weights:PlayerClass(), info.classID, info.subclassID)
+    local usable = Weights:CanUse(Weights:PlayerClass(), info.classID, info.subclassID, info.equipLoc)
     if not usable then return nil end
 
     local faction = self:Faction()

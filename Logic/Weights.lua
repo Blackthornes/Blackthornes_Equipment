@@ -338,12 +338,16 @@ local SPECS = {
             },
         },
         feral = {
-            -- Cat and bear forms ignore the weapon's damage, so it counts for
-            -- nothing here.
+            -- Classic's cat and bear forms ignore the weapon's damage, so a
+            -- weapon is worth its stats: 3 agility outweighs 20 more dps.
+            -- Weapon dps still counts a little (asked 2026-10-05): with none
+            -- at all, a weapon without strength or agility never showed as a
+            -- main-hand upgrade, however far behind the worn one was.
             name = "Feral Combat",
             weights = {
                 agility = 1.0, strength = 1.0, stamina = 0.8, attackPower = 0.5,
                 crit = 14, hit = 12, armor = 0.05, dodge = 6, defense = 0.4,
+                meleeDps = 0.1,
             },
         },
         resto = {
@@ -759,11 +763,26 @@ end
 -- The client's item classes that `armor` and `weapons` above describe.
 local CLASS_WEAPON, CLASS_ARMOR = 2, 4
 
---- Can this class equip an item of this kind?
+-- Only a weapon goes in these slots, whatever the client says the item is.
+local WEAPON_SLOTS = {
+    INVTYPE_WEAPON = true, INVTYPE_2HWEAPON = true, INVTYPE_WEAPONMAINHAND = true,
+    INVTYPE_WEAPONOFFHAND = true, INVTYPE_RANGED = true, INVTYPE_RANGEDRIGHT = true,
+    INVTYPE_THROWN = true,
+}
+
+-- The ranged slot's weapons: bows, guns, thrown, crossbows and wands.
+local RANGED_SLOTS = { INVTYPE_RANGED = true, INVTYPE_RANGEDRIGHT = true, INVTYPE_THROWN = true }
+local RANGED_WEAPONS = { [2] = true, [3] = true, [16] = true, [18] = true, [19] = true }
+
+--- Can this class equip an item of this kind? `equipLoc` is where it goes,
+--- when known: a weapon slot makes it a weapon even when the client's class
+--- for it is missing, and the ranged slot takes only ranged weapons, so a
+--- druid, paladin or shaman is never offered a wand, bow or gun.
 -- @return false if never; else true and the level it opens at, or nil when
 --         it is open from the start
-function Weights:CanUse(class, classID, subclassID)
+function Weights:CanUse(class, classID, subclassID, equipLoc)
     local specs = class and SPECS[class]
+    if WEAPON_SLOTS[equipLoc] then classID = CLASS_WEAPON end
     local list
     if classID == CLASS_ARMOR then
         list = specs and specs.armor
@@ -773,6 +792,11 @@ function Weights:CanUse(class, classID, subclassID)
     -- Anything else that goes in a slot (a shirt, a quiver) is not judged by
     -- class, and a class with no list yet is not second-guessed.
     if not list then return true end
+
+    -- A weapon of a kind the client did not say, or something in the ranged
+    -- slot that is not a ranged weapon, is never called wearable.
+    if subclassID == nil then return false, nil end
+    if RANGED_SLOTS[equipLoc] and not RANGED_WEAPONS[subclassID] then return false, nil end
 
     local level = list[subclassID]
     if not level then return false, nil end
@@ -829,7 +853,9 @@ function Weights:Score(stats, weights, ranged)
     for name, value in pairs(stats or {}) do
         local weight
         if name == "dps" then
-            weight = ranged and weights.rangedDps or weights.meleeDps
+            -- Not `ranged and rangedDps or meleeDps`: a spec with no ranged
+            -- weight would then count a bow's damage as melee damage.
+            if ranged then weight = weights.rangedDps else weight = weights.meleeDps end
         else
             weight = weights[name]
         end
