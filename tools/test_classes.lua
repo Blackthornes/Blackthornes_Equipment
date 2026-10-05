@@ -96,8 +96,70 @@ suite.check("a mage cannot use a shield", ns.Compare:Judge("item:5").verdict == 
 
 ns = As("DRUID", { [16] = "item:8" })
 result = ns.Compare:Judge("item:7")
-suite.check("a feral druid ignores weapon damage", result.score == 0, result.score)
-suite.check("so a bigger stick is not better", result.verdict == "downgrade", result.verdict)
+suite.check("a feral druid counts weapon damage for little", result.score > 0 and result.score < 3, result.score)
+suite.check("so a bigger stick does not beat a little agility", result.verdict == "downgrade", result.verdict)
+
+-- A player's level 38 feral druid was offered a wand and never a main-hand
+-- weapon (2026-10-05).
+ITEMS["item:10"] = { loc = "INVTYPE_2HWEAPON", class = WEAPON, subclass = 10,
+    stats = { ITEM_MOD_DAMAGE_PER_SECOND_SHORT = 6 } }
+ITEMS["item:11"] = { loc = "INVTYPE_RANGEDRIGHT", class = WEAPON, subclass = 19,
+    stats = { ITEM_MOD_STAMINA_SHORT = 5, ITEM_MOD_DAMAGE_PER_SECOND_SHORT = 20 } }
+ITEMS["item:12"] = { loc = "INVTYPE_RANGED", class = WEAPON, subclass = 2,
+    stats = { ITEM_MOD_AGILITY_SHORT = 5 } }
+ITEMS["item:13"] = { loc = "INVTYPE_THROWN", class = WEAPON, subclass = 16,
+    stats = { ITEM_MOD_AGILITY_SHORT = 5 } }
+ITEMS["item:14"] = { loc = "INVTYPE_RANGEDRIGHT", stats = { ITEM_MOD_STAMINA_SHORT = 5 } }
+ITEMS["item:15"] = { loc = "INVTYPE_RANGEDRIGHT", class = WEAPON, subclass = 10,
+    stats = { ITEM_MOD_STAMINA_SHORT = 5 } }
+ITEMS["item:16"] = { loc = "INVTYPE_WEAPON", class = WEAPON, subclass = 4,
+    stats = { ITEM_MOD_STRENGTH_SHORT = 4 } }
+ITEMS["item:17"] = { loc = "INVTYPE_RELIC", class = ARMOR, subclass = 8,
+    stats = { ITEM_MOD_STRENGTH_SHORT = 2 } }
+
+ns = As("DRUID", { [16] = "item:10" }, 38)
+result = ns.Compare:Judge("item:7")
+suite.check("a feral druid's bigger stat-less staff is a main-hand upgrade",
+    result.verdict == "upgrade" and result.slot == 16, result.verdict)
+suite.check("and so is a mace with strength", ns.Compare:Judge("item:16").verdict == "upgrade")
+suite.check("a feral druid is never offered a wand", ns.Compare:Judge("item:11").verdict == "cantuse")
+suite.check("so the bag arrow never shows on one", not ns.Compare:IsUpgradeNow("item:11"))
+suite.check("nor a bow", ns.Compare:Judge("item:12").verdict == "cantuse")
+suite.check("nor a thrown weapon", ns.Compare:Judge("item:13").verdict == "cantuse")
+suite.check("but an idol goes in that slot", ns.Compare:Judge("item:17").verdict == "upgrade")
+suite.check("a ranged-slot item whose kind the client did not say is not offered",
+    ns.Compare:Judge("item:14").verdict == "cantuse")
+for _, spec in ipairs({ "balance", "resto" }) do
+    ns.HandleSlash("spec " .. spec)
+    suite.check(spec .. " druids are never offered a wand either",
+        ns.Compare:Judge("item:11").verdict == "cantuse")
+end
+
+-- Every class: nothing in the ranged slot unless it is a ranged weapon the
+-- class can use.
+local RANGED = { ["item:11"] = 19, ["item:12"] = 2, ["item:13"] = 16 }
+local CAN = {
+    WARRIOR = { [2] = true, [16] = true }, HUNTER = { [2] = true, [16] = true },
+    ROGUE = { [2] = true, [16] = true }, PRIEST = { [19] = true }, MAGE = { [19] = true },
+    WARLOCK = { [19] = true }, PALADIN = {}, SHAMAN = {}, DRUID = {},
+}
+for _, class in ipairs(CLASSES) do
+    ns = As(class, {}, 38)
+    for link, kind in pairs(RANGED) do
+        local verdict = ns.Compare:Judge(link).verdict
+        suite.check(("%s and ranged weapon kind %d"):format(class, kind),
+            (verdict ~= "cantuse") == (CAN[class][kind] == true), verdict)
+    end
+    suite.check(class .. " is never offered a staff that claims the ranged slot",
+        ns.Compare:Judge("item:15").verdict == "cantuse")
+end
+
+-- The finder never asks about a wand for a druid.
+ns = As("DRUID", {}, 38)
+local wearable = ns.Weights:CanUse("DRUID", WEAPON, 19, "INVTYPE_RANGEDRIGHT")
+suite.check("the finder's wear check refuses a wand for a druid", wearable == false)
+suite.check("and a weapon with no kind given",
+    ns.Weights:CanUse("DRUID", nil, nil, "INVTYPE_2HWEAPON") == false)
 
 ns = As("PALADIN", {})
 suite.check("a paladin can use a libram", ns.Compare:Judge("item:9").verdict == "upgrade")

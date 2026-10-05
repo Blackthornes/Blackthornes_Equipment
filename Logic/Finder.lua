@@ -383,7 +383,7 @@ local function Wearable(class, itemID)
     local info = Items:Info(("item:%d"):format(itemID))
     if not info then return nil end
     if not Compare.SLOTS[info.equipLoc] then return false end
-    local usable = Weights:CanUse(class, info.classID, info.subclassID)
+    local usable = Weights:CanUse(class, info.classID, info.subclassID, info.equipLoc)
     return usable and true or false
 end
 
