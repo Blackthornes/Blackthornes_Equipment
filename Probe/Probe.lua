@@ -325,6 +325,17 @@ function Probe:Run()
                 if #unknown > 0 then
                     Line("  not weighted", table.concat(unknown, ", "))
                 end
+
+                -- School spell damage, read off the tooltip (Items:SchoolDamage).
+                local schools = ns.Items and ns.Items:SchoolDamage(link)
+                if schools and next(schools) then
+                    local parts = {}
+                    for name, amount in pairs(schools) do
+                        parts[#parts + 1] = ("%s=%d"):format(name, amount)
+                    end
+                    table.sort(parts)
+                    Line("  school damage", table.concat(parts, ", "))
+                end
             end
         end
     end

@@ -84,6 +84,73 @@ function Items:Stats(link)
     return nil
 end
 
+--------------------------------------------------------------------------------
+-- Spell damage for one school ("Increases damage done by Frost spells and
+-- effects by up to 10.")
+--
+-- Classic's school damage is an Equip: line, not one of the stats
+-- GetItemStats hands back, so it is read off the item's tooltip. Kept per
+-- link, because the finder judges hundreds of items a scan.
+--------------------------------------------------------------------------------
+
+local SCHOOLS = {
+    arcane = "arcaneDamage", fire = "fireDamage", frost = "frostDamage",
+    nature = "natureDamage", shadow = "shadowDamage", holy = "holyDamage",
+}
+Items.SCHOOLS = SCHOOLS
+
+local schoolCache = {}
+
+--- The school a line names and by how much, or nil for any other line.
+function Items.SchoolLine(text)
+    if type(text) ~= "string" then return nil end
+    local school, amount = text:match("[Ii]ncreases damage done by (%a+) spells and effects by up to (%d+)")
+    local stat = school and SCHOOLS[school:lower()]
+    if stat then return stat, tonumber(amount) end
+    return nil
+end
+
+--- What one tooltip line says, inside a pcall: in an instance the text can
+--- be a secret value that raises when read.
+local function LineText(line)
+    local ok, text = pcall(function()
+        if type(line) ~= "table" then return nil end
+        local left = line.leftText
+        if type(left) ~= "string" then return nil end
+        return left .. ""
+    end)
+    return ok and text or nil
+end
+
+--- School spell damage on an item, as { frostDamage = 10 }, or nil when the
+--- tooltip cannot be read. An empty table when it has none.
+function Items:SchoolDamage(link)
+    link = self.PlainLink(link)
+    if not link then return nil end
+    local known = schoolCache[link]
+    if known then return known end
+
+    -- By link first, so a random roll's own line is read; by item ID when
+    -- the client has only that (Tradeskills reads sell prices that way).
+    local data = Call({ "C_TooltipInfo.GetHyperlink" }, link)
+    if type(data) ~= "table" then
+        local itemID = tonumber(link:match("item:(%d+)"))
+        if itemID then data = Call({ "C_TooltipInfo.GetItemByID" }, itemID) end
+    end
+    if type(data) ~= "table" or type(data.lines) ~= "table" then return nil end
+
+    local found, lines = {}, 0
+    for _, line in ipairs(data.lines) do
+        lines = lines + 1
+        local stat, amount = Items.SchoolLine(LineText(line))
+        if stat then found[stat] = (found[stat] or 0) + amount end
+    end
+    -- A tooltip for an item the client has not loaded yet is one line
+    -- ("Retrieving item information"); that is not "none", so not kept.
+    if lines > 1 then schoolCache[link] = found end
+    return found
+end
+
 --- The link of what is worn in an inventory slot, or nil when it is empty.
 function Items:Equipped(slot)
     return self.PlainLink(Call({ "GetInventoryItemLink" }, "player", slot))

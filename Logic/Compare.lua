@@ -65,6 +65,7 @@ function Compare:ScoreOf(link, weights)
 
     local info = Items:Info(link)
     local stats = Weights:Normalize(raw)
+    Weights:AddSchools(stats, Items:SchoolDamage(link))
     return Weights:Score(stats, weights, info and RANGED[info.equipLoc] or false)
 end
 

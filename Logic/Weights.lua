@@ -154,6 +154,7 @@ local SPECS = {
             weights = {
                 intellect = 1.0, healing = 0.8, spellPower = 0.9, spirit = 0.5,
                 stamina = 0.3, mp5 = 2, spellCrit = 10, armor = 0.005,
+                holyDamage = 0.3,
             },
         },
         prot = {
@@ -162,6 +163,7 @@ local SPECS = {
                 stamina = 1.0, strength = 0.5, agility = 0.4, intellect = 0.3,
                 armor = 0.08, defense = 1.0, dodge = 10, parry = 8, block = 6,
                 blockValue = 0.3, spellPower = 0.5, meleeDps = 2,
+                holyDamage = 0.5,
             },
         },
         ret = {
@@ -169,7 +171,7 @@ local SPECS = {
             weights = {
                 strength = 1.0, agility = 0.5, stamina = 0.5, intellect = 0.3,
                 attackPower = 0.45, crit = 12, hit = 12, spellPower = 0.3,
-                armor = 0.02, meleeDps = 7,
+                armor = 0.02, meleeDps = 7, holyDamage = 0.3,
             },
         },
     },
@@ -217,6 +219,7 @@ local SPECS = {
             weights = {
                 intellect = 1.0, spirit = 0.7, stamina = 0.4, healing = 0.8,
                 spellPower = 0.8, mp5 = 2, spellCrit = 8, rangedDps = 2,
+                holyDamage = 0.3, shadowDamage = 0.3,
             },
         },
         holy = {
@@ -224,6 +227,7 @@ local SPECS = {
             weights = {
                 intellect = 1.0, spirit = 0.9, stamina = 0.3, healing = 1.0,
                 spellPower = 0.8, mp5 = 2.5, spellCrit = 10, rangedDps = 2,
+                holyDamage = 0.3, shadowDamage = 0.2,
             },
         },
         shadow = {
@@ -231,6 +235,7 @@ local SPECS = {
             weights = {
                 intellect = 0.8, spirit = 0.8, stamina = 0.6, spellPower = 1.1,
                 spellHit = 12, spellCrit = 4, mp5 = 1.5, rangedDps = 3,
+                shadowDamage = 1.1, holyDamage = 0.2,
             },
         },
     },
@@ -247,6 +252,7 @@ local SPECS = {
             weights = {
                 intellect = 1.0, stamina = 0.5, spirit = 0.3, spellPower = 1.1,
                 spellCrit = 12, spellHit = 12, mp5 = 2, armor = 0.01, meleeDps = 1,
+                natureDamage = 1.0, fireDamage = 0.3, frostDamage = 0.2,
             },
         },
         enhancement = {
@@ -276,6 +282,7 @@ local SPECS = {
             weights = {
                 intellect = 1.0, spirit = 0.4, stamina = 0.5, spellPower = 1.2,
                 spellCrit = 10, spellHit = 12, mp5 = 1.5, rangedDps = 3,
+                arcaneDamage = 0.6, frostDamage = 0.6, fireDamage = 0.4,
             },
         },
         fire = {
@@ -283,6 +290,7 @@ local SPECS = {
             weights = {
                 intellect = 0.9, spirit = 0.4, stamina = 0.5, spellPower = 1.2,
                 spellCrit = 14, spellHit = 12, mp5 = 1.5, rangedDps = 3,
+                fireDamage = 1.2, frostDamage = 0.2, arcaneDamage = 0.2,
             },
         },
         frost = {
@@ -290,6 +298,7 @@ local SPECS = {
             weights = {
                 intellect = 0.9, spirit = 0.5, stamina = 0.6, spellPower = 1.2,
                 spellCrit = 10, spellHit = 12, mp5 = 1.5, rangedDps = 3,
+                frostDamage = 1.2, fireDamage = 0.2, arcaneDamage = 0.2,
             },
         },
     },
@@ -305,6 +314,7 @@ local SPECS = {
             weights = {
                 stamina = 0.8, intellect = 0.8, spirit = 0.4, spellPower = 1.2,
                 spellHit = 12, spellCrit = 5, mp5 = 1, rangedDps = 3,
+                shadowDamage = 1.2, fireDamage = 0.3,
             },
         },
         demo = {
@@ -312,6 +322,7 @@ local SPECS = {
             weights = {
                 stamina = 1.0, intellect = 0.8, spirit = 0.4, spellPower = 1.1,
                 spellHit = 12, spellCrit = 5, mp5 = 1, rangedDps = 3,
+                shadowDamage = 1.1, fireDamage = 0.4,
             },
         },
         destro = {
@@ -319,6 +330,7 @@ local SPECS = {
             weights = {
                 stamina = 0.7, intellect = 0.8, spirit = 0.3, spellPower = 1.2,
                 spellHit = 12, spellCrit = 12, mp5 = 1, rangedDps = 3,
+                shadowDamage = 1.2, fireDamage = 0.6,
             },
         },
     },
@@ -336,6 +348,7 @@ local SPECS = {
             weights = {
                 intellect = 1.0, spirit = 0.5, stamina = 0.4, spellPower = 1.1,
                 spellCrit = 10, spellHit = 10, mp5 = 2,
+                natureDamage = 0.7, arcaneDamage = 0.6,
             },
         },
         feral = {
@@ -437,6 +450,12 @@ local STAT_ORDER = {
     { key = "meleeDps", name = "Melee weapon dps" },
     { key = "rangedDps", name = "Ranged weapon dps" },
     { key = "spellPower", name = "Spell power" },
+    { key = "arcaneDamage", name = "Arcane spell damage" },
+    { key = "fireDamage", name = "Fire spell damage" },
+    { key = "frostDamage", name = "Frost spell damage" },
+    { key = "natureDamage", name = "Nature spell damage" },
+    { key = "shadowDamage", name = "Shadow spell damage" },
+    { key = "holyDamage", name = "Holy spell damage" },
     { key = "healing", name = "Healing" },
     { key = "spellCrit", name = "Spell crit", per = true },
     { key = "spellHit", name = "Spell hit", per = true },
@@ -833,12 +852,30 @@ end
 -- Scoring
 --------------------------------------------------------------------------------
 
+-- In case the client does hand school damage over as a stat: a key that
+-- names a school (and is not a resistance) is that school's spell damage.
+-- /beq probe prints every key it finds, so the real name can be added above.
+local SCHOOL_WORDS = {
+    ARCANE = "arcaneDamage", FIRE = "fireDamage", FROST = "frostDamage",
+    NATURE = "natureDamage", SHADOW = "shadowDamage", HOLY = "holyDamage",
+}
+
+local function SchoolKey(key)
+    if type(key) ~= "string" then return nil end
+    local upper = key:upper()
+    if upper:find("RESIST", 1, true) or not upper:find("DAMAGE", 1, true) then return nil end
+    for word, name in pairs(SCHOOL_WORDS) do
+        if upper:find(word, 1, true) then return name end
+    end
+    return nil
+end
+
 --- Convert what GetItemStats returned into the names above. Keys this addon
 --- does not know are returned separately so the probe can show them.
 function Weights:Normalize(clientStats)
     local stats, unknown = {}, {}
     for key, value in pairs(clientStats or {}) do
-        local name = STAT_KEYS[key]
+        local name = STAT_KEYS[key] or SchoolKey(key)
         if name and type(value) == "number" then
             stats[name] = (stats[name] or 0) + value
         else
@@ -847,6 +884,17 @@ function Weights:Normalize(clientStats)
     end
     table.sort(unknown)
     return stats, unknown
+end
+
+--- Lay school damage read off the tooltip (Items:SchoolDamage) over the
+--- normalized stats. A school the client's stats already gave is left as it
+--- is, so the same line is never counted twice.
+function Weights:AddSchools(stats, schools)
+    if type(stats) ~= "table" or type(schools) ~= "table" then return stats end
+    for name, value in pairs(schools) do
+        if stats[name] == nil and type(value) == "number" then stats[name] = value end
+    end
+    return stats
 end
 
 --- One number for how good a set of stats is: each stat times its weight.

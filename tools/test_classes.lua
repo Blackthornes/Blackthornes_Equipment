@@ -13,9 +13,10 @@ local ns = env.Load()
 local Weights = ns.Weights
 
 -- Every stat a weight may name: what STAT_KEYS maps to, plus the two ways
--- weapon damage is split.
+-- weapon damage is split, plus school spell damage read off the tooltip.
 local KNOWN = { rangedDps = true, meleeDps = true }
 for _, name in pairs(Weights.STAT_KEYS) do KNOWN[name] = true end
+for _, name in pairs(ns.Items.SCHOOLS) do KNOWN[name] = true end
 
 local used = {}
 for _, class in ipairs(CLASSES) do
