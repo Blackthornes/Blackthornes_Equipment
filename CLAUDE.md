@@ -167,7 +167,11 @@ Raids, Crafted) in `.upgradeQuestTabs[tab]`, the tab shown in
 `.upgradeQuestTab`; `.upgradeQuest` is kept as a copy of the shown tab's
 quest, and a quest saved there before the tabs is read once onto its tab.
 The panel wears the Titanforged plate and close gem (the close gem turns
-the quest off). Every `/beq quest` command has a Settings button or control.
+the quest off). A plain click on a finder row (asked 2026-10-06, a player's
+request) follows that upgrade: `UpgradeQuest:Follow` puts it on its source's
+tab, shows that tab and turns the quest on; `UpgradeQuest.CanFollow` says why
+not for gear that waits on a reputation, a level or another player's craft.
+Right-click still tracks and Alt-click still pins. Every `/beq quest` command has a Settings button or control.
 
 ## Players' own stat weights
 

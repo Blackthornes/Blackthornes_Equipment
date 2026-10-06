@@ -307,6 +307,61 @@ function UpgradeQuest:Start(pick, source)
     return quest
 end
 
+--- Can a pick from the upgrade finder be followed as an upgrade quest?
+--- Gear that waits on a reputation, a level or another player's craft
+--- cannot be yet.
+-- @return the source to follow, or nil and why not
+function UpgradeQuest.CanFollow(pick)
+    if type(pick) ~= "table" or not tonumber(pick.itemID) then return nil, "nothing to follow" end
+    if pick.needs then
+        return nil, ("it needs %s with %s first"):format(tostring(pick.needs.standing),
+            tostring(pick.needs.faction))
+    end
+    if pick.at then return nil, ("you can wear it from level %d"):format(pick.at) end
+    local usable = {}
+    for _, source in ipairs(pick.sources or {}) do
+        if not (source.kind == "craft" and source.state == "other") then usable[#usable + 1] = source end
+    end
+    local source = UpgradeQuest.BestSource(usable, UpgradeQuest.Zone())
+    if not (source and UpgradeQuest.TabOf(source)) then
+        return nil, "only another player can make it"
+    end
+    return source
+end
+
+--- Follow a pick the player chose in the upgrade finder: it becomes the
+--- quest on its source's tab, that tab is shown, and the upgrade quest is
+--- turned on. The quest it replaces is not skipped, so it can come back.
+-- @return the quest, or nil and why not
+function UpgradeQuest:Follow(pick)
+    if not (ns.db and ns.charDB) then return nil, "not loaded yet" end
+    local source, why = self.CanFollow(pick)
+    if not source then return nil, why end
+    self:Skipped()[pick.itemID] = nil
+    self.declined[pick.itemID] = nil
+    local quest = self:Start(pick, source)
+    if not quest then return nil, "nothing to follow" end
+    ns.charDB.upgradeQuestTab = self.TabOf(source)
+    -- Chosen by hand: no level-up offer to swap it straight away.
+    self.offer = nil
+    self.levelledAt = nil
+    self.lastStep = nil
+    self:Mirror()
+    ns.db.upgradeQuest = true
+    self:Update()
+    if ns.QuestPanel and ns.QuestPanel.Unfold then pcall(ns.QuestPanel.Unfold, ns.QuestPanel) end
+    return quest
+end
+
+--- Is an item the quest on one of the tabs?
+function UpgradeQuest:IsFollowing(itemID)
+    if not self:IsEnabled() then return false end
+    for _, quest in pairs(self:Quests()) do
+        if type(quest) == "table" and quest.itemID == itemID then return true end
+    end
+    return false
+end
+
 --- The finder's latest full scan, when nothing has changed since. If there
 --- is none, one is started in the background (a slice per frame, so the
 --- game never stops for it) and the quest looks again when it is done.
@@ -660,7 +715,7 @@ end
 
 --- Tell whatever shows the quest to draw it again.
 function UpgradeQuest:Changed()
-    for _, name in ipairs({ "QuestPanel", "MapPins", "SettingsUI" }) do
+    for _, name in ipairs({ "QuestPanel", "MapPins", "SettingsUI", "FinderUI" }) do
         local module = ns[name]
         if module and module.OnUpgradeQuestChanged then pcall(module.OnUpgradeQuestChanged, module) end
     end
