@@ -35,6 +35,16 @@ after everything else, saying which standing it needs. Hovering a row shows
 the item and every place to get it; somewhere in the zone you are standing in
 is listed first.
 
+**Quest level**, on the row under the source buttons, sets how far above
+your level a quest may be and still be offered: up to 4 levels by default,
+from "Up to my level" to "Any". Beside it, tick **Solo quests only** (also
+in Settings under Upgrade hunts) to leave out quests that need a group, a dungeon, a raid or a
+battleground, and quests that come after one, say while you get ready for a
+dungeon run. The upgrade quest follows both. Which quests need others comes
+from Classic's quest data: its own group, dungeon, raid and PvP marks, plus
+quests whose kills, objects or items are inside an instance and quests to
+kill an elite, which count as group quests. Forever may have changed some.
+
 Crafted gear is listed too, under **Crafted**: what you can make now, what
 an alt on your side can make (when Blackthornes Tradeskills is loaded and
 has seen their recipes), what you could learn (the trainer, the recipe's

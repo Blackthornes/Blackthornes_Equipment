@@ -114,6 +114,14 @@ local LEVEL_LOOK = 20
 -- quest being followed before it is offered in its place.
 local CLEARLY_BETTER = 1.5
 
+-- The note on a quest step that needs more than the player.
+local NEED_NOTES = {
+    group = "Needs a group.",
+    dungeon = "Done in a dungeon, so bring a group.",
+    raid = "Needs a raid.",
+    battleground = "Done in a battleground.",
+}
+
 local function Read(fn, ...)
     if type(fn) ~= "function" then return nil end
     local result = { pcall(fn, ...) }
@@ -548,7 +556,8 @@ function UpgradeQuest:Steps(quest)
             end
             local note = lead
             lead = nil
-            if before.group == "group" then note = (note and note .. " " or "") .. "Needs a group." end
+            local need = NEED_NOTES[before.group]
+            if need then note = (note and note .. " " or "") .. need end
             Add(text, false, spot, note)
         end
         local place = source.x and { zone = source.zone, x = source.x, y = source.y, name = source.name } or nil
@@ -560,9 +569,7 @@ function UpgradeQuest:Steps(quest)
             Add(("Pick up %s: it starts from %s"):format(source.title or "the quest", source.name or "an item"),
                 onQuest, nil)
         end
-        local note
-        if source.group == "group" then note = "Needs a group." end
-        if source.group == "raid" then note = "Needs a raid." end
+        local note = NEED_NOTES[source.group]
         Add(("Complete %s (level %d)"):format(source.title or "the quest", source.questLevel or 0),
             questID and QuestReady(questID), nil, note)
         -- Classic's data names who starts a quest, not always who takes it
@@ -939,6 +946,35 @@ function UpgradeQuest:SetEnabled(on)
         self.state = nil
         self:Changed()
     end
+end
+
+--- A quest filter changed ("Solo quests only", or how far above the
+--- character a quest may be). A tab following a quest the filters now
+--- leave out lets it go (not skipped, so it can come back) and picks
+--- again; either way the empty tabs look again.
+function UpgradeQuest:OnQuestFilterChanged()
+    local finder = ns.Finder
+    if not finder then return end
+    local player = finder:Player()
+    local quests = self:Quests()
+    for _, tab in ipairs(TABS) do
+        local quest = Valid(quests[tab.key])
+        local source = quest and quest.source
+        if source and source.kind == "quest" then
+            local allowed = finder:QuestAllowed(source, player and player.level)
+            if allowed and finder:SoloOnly() and source.questID then
+                for _, before in ipairs((finder:Chain(source.questID))) do
+                    if finder.Need(before.group) then allowed = false end
+                end
+            end
+            if not allowed then quests[tab.key] = nil end
+        end
+    end
+    self:Mirror()
+    self.rescan = true
+    self.offer = nil
+    self.lastStep = nil
+    if self:IsEnabled() then self:Update() else self:Changed() end
 end
 
 --- Is an item answer from the server about gear the quest cares about: an

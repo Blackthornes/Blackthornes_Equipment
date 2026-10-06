@@ -27,6 +27,8 @@ local HEADER = 36
 -- the header sits inside it.
 local RIM = 6
 local FILTERS = 30
+-- The quest filters' row, under the source buttons.
+local QUEST_ROW = 28
 local ROW_HEIGHT = 50
 local VISIBLE = 9
 local FOOTER = 48
@@ -46,7 +48,7 @@ local SCROLL_WIDTH = 4
 -- Some gear is sold by a dozen vendors; the tooltip lists this many.
 local TOOLTIP_SOURCES = 8
 
-local HEIGHT = HEADER + 10 + FILTERS + 8 + VISIBLE * ROW_HEIGHT + FOOTER
+local HEIGHT = HEADER + 10 + FILTERS + QUEST_ROW + 8 + VISIBLE * ROW_HEIGHT + FOOTER
 
 -- The tag in front of a source, in its own colour.
 local KIND_COLORS = { vendor = "accent", quest = "quest", dungeon = "dungeon", craft = "craft" }
@@ -289,7 +291,7 @@ function FinderUI:Build()
     self:BuildHeader()
     self:BuildFilters()
 
-    self.listTop = -(HEADER + 10 + FILTERS + 8)
+    self.listTop = -(HEADER + 10 + FILTERS + QUEST_ROW + 8)
 
     -- The list sits sunk into the window, as the game's inset lists do.
     local well = Theme.CreatePanel(frame, "panel", "border")
@@ -401,6 +403,69 @@ function FinderUI:BuildFilters()
     })
     ahead:SetPoint("TOPRIGHT", -PADDING, -(HEADER + 14))
     self.ahead = ahead
+
+    -- The quest filters, on a row of their own: how far above the
+    -- character a quest may be, then the solo tick box. The upgrade quest
+    -- follows both.
+    local rowY = -(HEADER + 13 + FILTERS + 1)
+    local levelLabel = Theme.CreateLabel(self.frame, "small", "muted")
+    levelLabel:SetPoint("TOPLEFT", PADDING, rowY - 4)
+    levelLabel:SetText("Quest level")
+    self.levelLabel = levelLabel
+
+    local questLevels = Widgets.CreateStepper(self.frame, {
+        min = 0, max = Finder.QUEST_LEVELS_ANY, step = 1, value = self:QuestLevelsValue(),
+        format = function(value) return FinderUI.QuestLevelsText(value) end,
+        onChange = function(value) Finder:SetQuestLevelsAbove(value) end,
+    })
+    questLevels:SetWidth(150)
+    questLevels:SetPoint("LEFT", levelLabel, "RIGHT", 10, 0)
+    questLevels:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:AddLine("Quest level", Theme.Unpack("accent"))
+        GameTooltip:AddLine("How far above your level a quest may be and still be offered. "
+            .. "Quests 5 or more levels up show in red in your quest log.", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    questLevels:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    self.questLevels = questLevels
+
+    -- Hide quests that need a group, a dungeon, a raid or a battleground.
+    -- The same switch as in Settings.
+    local solo = Widgets.CreateCheckbox(self.frame, "Solo quests only", function(checked)
+        Finder:SetSoloOnly(checked)
+    end, Finder:SoloOnly())
+    solo:SetPoint("LEFT", questLevels, "RIGHT", 24, 0)
+    solo:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:AddLine("Solo quests only", Theme.Unpack("accent"))
+        GameTooltip:AddLine("Hides quests that need a group, a dungeon, a raid or a battleground, "
+            .. "and quests that come after one. Quests to kill an elite count as group quests.",
+            1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    solo:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    self.solo = solo
+end
+
+--- "Solo quests only" changed, here or in Settings.
+function FinderUI:OnQuestFilterChanged()
+    if self.solo then self.solo:SetChecked(Finder:SoloOnly()) end
+    if self.questLevels then self.questLevels:SetValue(self:QuestLevelsValue(), true) end
+    self.offset = 0
+    self:Refresh()
+end
+
+--- The quest level stepper's place: 0 to 10 levels up, or 11 for any.
+function FinderUI:QuestLevelsValue()
+    return Finder:QuestLevelsAbove() or Finder.QUEST_LEVELS_ANY
+end
+
+--- Its words: "Up to my level", "Up to +4" or "Any".
+function FinderUI.QuestLevelsText(value)
+    if (value or 0) >= Finder.QUEST_LEVELS_ANY then return "Any" end
+    if (value or 0) <= 0 then return "Up to my level" end
+    return ("Up to +%d"):format(value)
 end
 
 --- How many levels ahead the window looks (0 for now).

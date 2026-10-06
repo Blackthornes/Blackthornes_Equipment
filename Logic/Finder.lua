@@ -142,7 +142,7 @@ local function QuestPlace(questID)
         questID = questID, title = quest[1], questLevel = quest[3], name = quest[6],
         zone = ns.Sources.ZONES[quest[7]],
         x = quest[8] ~= 0 and quest[8] or nil, y = quest[9] ~= 0 and quest[9] or nil,
-        group = quest[11],
+        group = Finder.Need(quest[11]),
     }
 end
 
@@ -167,6 +167,84 @@ function Finder:Chain(questID)
         quest = ns.Sources.QUESTS[before]
     end
     return chain, unknown
+end
+
+--------------------------------------------------------------------------------
+-- Solo quests
+--------------------------------------------------------------------------------
+
+-- What a quest can need besides the player, as Data/Sources.lua marks it
+-- (tools/make_sources.py works it out from Classic's quest data).
+Finder.NEEDS = { group = true, dungeon = true, raid = true, battleground = true }
+
+--- What a quest needs besides the player ("group", "dungeon", "raid" or
+--- "battleground"), or nil when it can be done alone.
+function Finder.Need(group)
+    return Finder.NEEDS[group] and group or nil
+end
+
+--- Can a source be got alone? Everything but a quest that needs a group,
+--- a dungeon, a raid or a battleground, or comes after one that does.
+function Finder.Solo(source)
+    if type(source) ~= "table" or source.kind ~= "quest" then return true end
+    return not (Finder.Need(source.group) or Finder.Need(source.chainGroup))
+end
+
+--- Does the player want only quests they can do alone? Saved account wide
+--- as `soloQuestsOnly`, off unless ticked.
+function Finder:SoloOnly()
+    return ns.db ~= nil and ns.db.soloQuestsOnly == true
+end
+
+--- Tell everything that shows where upgrades come from that the quest
+--- filters changed.
+function Finder:QuestFilterChanged()
+    self:MarkStale()
+    for _, name in ipairs({ "FinderUI", "UpgradeQuest", "SettingsUI" }) do
+        local module = ns[name]
+        if module and module.OnQuestFilterChanged then pcall(module.OnQuestFilterChanged, module) end
+    end
+end
+
+--- Tick or untick "Solo quests only", for the finder window, the upgrade
+--- quest and everything else that shows where upgrades come from.
+function Finder:SetSoloOnly(on)
+    if not ns.db then return end
+    ns.db.soloQuestsOnly = on and true or false
+    self:QuestFilterChanged()
+end
+
+-- How far above the character's level a quest may be, as the finder's
+-- stepper sets it: 0 to QUEST_LEVELS_MOST, or QUEST_LEVELS_ANY for no limit.
+-- Classic shows a quest 5 or more levels up in red.
+Finder.QUEST_LEVELS_MOST = 10
+Finder.QUEST_LEVELS_ANY = 11
+Finder.QUEST_LEVELS_DEFAULT = 4
+
+--- How many levels above the character a quest may be, or nil for any.
+--- Saved account wide as `questLevelsAbove`.
+function Finder:QuestLevelsAbove()
+    local value = tonumber(ns.db and ns.db.questLevelsAbove) or self.QUEST_LEVELS_DEFAULT
+    value = math.max(0, math.min(self.QUEST_LEVELS_ANY, math.floor(value)))
+    if value >= self.QUEST_LEVELS_ANY then return nil end
+    return value
+end
+
+function Finder:SetQuestLevelsAbove(value)
+    if not ns.db then return end
+    value = math.max(0, math.min(self.QUEST_LEVELS_ANY, math.floor(tonumber(value) or 0)))
+    ns.db.questLevelsAbove = value
+    self:QuestFilterChanged()
+end
+
+--- Does a quest source pass the quest filters at `level`? Anything that
+--- is not a quest always does.
+function Finder:QuestAllowed(source, level)
+    if type(source) ~= "table" or source.kind ~= "quest" then return true end
+    if self:SoloOnly() and not Finder.Solo(source) then return false end
+    local above = self:QuestLevelsAbove()
+    if above and level and (tonumber(source.questLevel) or 0) > level + above then return false end
+    return true
 end
 
 --------------------------------------------------------------------------------
@@ -253,13 +331,20 @@ function Finder:SourcesFor(itemID, player)
         if quest and quest[2] <= player.level and Allows(quest[4], player.raceBit)
             and Allows(quest[5], player.classBit) and not self:QuestDone(questID) then
             local chain, unknown = self:Chain(questID)
-            found[#found + 1] = {
+            -- The first quest still to do in the chain that needs others.
+            local chainGroup
+            for _, before in ipairs(chain) do
+                chainGroup = chainGroup or Finder.Need(before.group)
+            end
+            local source = {
                 chain = #chain + (unknown and 1 or 0), first = unknown or (chain[1] and chain[1].title),
                 kind = "quest", questID = questID, title = quest[1], questLevel = quest[3],
                 name = quest[6], zone = ZoneName(quest[7]),
                 x = quest[8] ~= 0 and quest[8] or nil, y = quest[9] ~= 0 and quest[9] or nil,
-                after = quest[10] ~= "" and quest[10] or nil, group = quest[11],
+                after = quest[10] ~= "" and quest[10] or nil, group = Finder.Need(quest[11]),
+                chainGroup = chainGroup,
             }
+            if self:QuestAllowed(source, player.level) then found[#found + 1] = source end
         end
     end
 
@@ -791,7 +876,8 @@ function Finder:Describe(source)
         return text
     elseif source.kind == "quest" then
         local text = ("%s (level %d)"):format(source.title, source.questLevel or 0)
-        if source.group then text = text .. ", " .. source.group end
+        local need = Finder.Need(source.group)
+        if need then text = text .. ", " .. need end
         if (source.chain or 0) > 1 then
             text = text .. (", after %d earlier quests"):format(source.chain)
         elseif (source.chain or 0) == 1 and source.first then

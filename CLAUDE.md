@@ -110,6 +110,19 @@ standing it needs (`Finder:Needs`, read through
 `C_Reputation.GetFactionDataByID` or `GetFactionInfoByID`). Not yet seen in
 game.
 
+Solo quests (a player asked, the owner agreed 2026-10-06): a quest's
+11th field in `Sources.QUESTS` says what it needs besides the player
+("group", "dungeon", "raid", "battleground", or nothing), worked out by
+`make_sources.py` from Classic's quest type, suggested players, and
+objectives inside an instance or on an elite. "Solo quests only"
+(`soloQuestsOnly`, account wide, off by default; `Finder:SetSoloOnly`) is a
+tick box in the finder and a Settings row; `Finder:SourcesFor` leaves out
+quests that need others or come after one, and the upgrade quest lets such
+a quest go (not skipped) when it is ticked. Asked the same day, the
+finder's "Quest level" stepper (`questLevelsAbove`, 0 to 10 levels above
+the character, 11 for any, default 4; `Finder:QuestAllowed`) works the same
+way.
+
 Forever's own boss drops: `tools/forever_drops.py` reads Farmer's
 `Data/Data_Harvested.lua` (no player names in it) and writes
 `Data/ForeverDrops.lua`, rows looted inside a known dungeon or raid by mob
