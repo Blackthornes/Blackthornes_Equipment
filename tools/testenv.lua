@@ -177,6 +177,7 @@ function env.InstallClient()
     _G.GetItemInfoInstant = nil
     _G.TooltipDataProcessor = nil
     _G.TooltipUtil = nil
+    _G.C_TooltipInfo = nil
     _G.Enum = nil
     _G.C_Texture = nil
     _G.hooksecurefunc = nil

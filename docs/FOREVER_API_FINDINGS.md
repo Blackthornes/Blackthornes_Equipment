@@ -288,3 +288,9 @@ scale with the weapon's damage (Cat Form gives 12 attack power of its own
 instead of 40), and that druids can train polearms from level 20 (Woo Ping
 in Stormwind, Archibald in Undercity). So feral weighs `meleeDps` like a
 rogue does, and the druid's weapon list has polearms. Not yet seen in game.
+
+## 2026-10-06, a player's Frost mage (from their screenshot, not a probe)
+
+| Question | Answer | What it means here |
+|---|---|---|
+| School spell damage ("Increases damage done by Frost spells and effects by up to 10") | The game's own comparison lists it as "Frost Damage", but nothing here counted it, so Azure Silk Pants scored as Intellect alone | `Items:SchoolDamage` reads the Equip: line off `C_TooltipInfo.GetHyperlink` (by item ID if that is missing), and `Weights:Normalize` also takes any stat key naming a school. Not yet seen in game: `/beq probe` prints a `school damage` line under each worn slot that has some, and any school key `C_Item.GetItemStats` hands over. |
