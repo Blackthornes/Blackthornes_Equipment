@@ -305,6 +305,10 @@ function SettingsUI:BuildColumn()
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
         if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
         if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
+        if ns.MoreMarks then
+            pcall(ns.MoreMarks.RefreshMerchant, ns.MoreMarks)
+            pcall(ns.MoreMarks.RefreshLoot, ns.MoreMarks)
+        end
     end, true)
     controls.arrows:SetPoint("TOPLEFT", CONTROL_X, -2)
 

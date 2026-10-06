@@ -65,6 +65,15 @@ Finder.KINDS = { "vendor", "quest", "dungeon", "craft" }
 -- The character
 --------------------------------------------------------------------------------
 
+--- A plain copy of a client string, or nil (a secret value raises when used).
+local function Plain(value)
+    local ok, copy = pcall(function()
+        if type(value) == "string" and value ~= "" then return value .. "" end
+    end)
+    if ok then return copy end
+    return nil
+end
+
 local function Read(fn, ...)
     if type(fn) ~= "function" then return nil end
     local result = { pcall(fn, ...) }
@@ -77,9 +86,9 @@ end
 function Finder:Player()
     local level = Items:PlayerLevel()
 
-    local faction = Read(_G.UnitFactionGroup, "player")
+    local faction = Plain(Read(_G.UnitFactionGroup, "player"))
     local _, raceFile = Read(_G.UnitRace, "player")
-    local raceBit = RACE_BITS[raceFile]
+    local raceBit = RACE_BITS[Plain(raceFile) or ""]
     if faction ~= "Alliance" and faction ~= "Horde" and raceBit then
         faction = Band(raceBit, ALLIANCE_RACES) ~= 0 and "Alliance" or "Horde"
     end
@@ -537,6 +546,9 @@ function Finder:Build(only, ahead, pause)
     local carried = self:Carried()
 
     local judged = self:Judged()
+    -- The key these verdicts were made under; a scan made meanwhile may move
+    -- self.judgedKey on before this one finishes.
+    local judgedKey = self.judgedKey
     local worn = Compare:WornIDs()
     local slots, checked, waiting, asked = {}, 0, 0, 0
     for _, candidate in ipairs(self:Candidates(plan, only, pause)) do
@@ -593,7 +605,7 @@ function Finder:Build(only, ahead, pause)
         reach = reach,
     }
     if not only and reach == level then
-        self.latest, self.latestAt, self.latestKey = found, self.Now(), self.judgedKey
+        self.latest, self.latestAt, self.latestKey = found, self.Now(), judgedKey
     end
     return found
 end

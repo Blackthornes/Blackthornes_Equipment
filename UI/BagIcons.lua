@@ -263,10 +263,11 @@ function BagIcons:Describe()
 end
 
 -- Anything that can change what is an upgrade: the bags, what is worn, the
--- level, the talents, and an item's details arriving from the server.
+-- level, the talents, weapon skills (Dual Wield) and an item's details
+-- arriving from the server.
 local EVENTS = {
     "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
-    "GET_ITEM_INFO_RECEIVED", "TRAIT_CONFIG_UPDATED",
+    "GET_ITEM_INFO_RECEIVED", "TRAIT_CONFIG_UPDATED", "SKILL_LINES_CHANGED",
 }
 
 function BagIcons:OnEnable()

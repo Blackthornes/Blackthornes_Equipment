@@ -876,7 +876,12 @@ function UpgradeQuest:Check()
 
     -- An offer is only for the quest it was made against.
     if self.offer and not (quest and self.offer.questItemID == quest.itemID) then self.offer = nil end
-    if quest and quest.itemID == before and self.levelledAt then self:LookForBetter(quest) end
+    if quest and quest.itemID == before and self.levelledAt then
+        self:LookForBetter(quest)
+    elseif not (quest and quest.itemID == before) then
+        -- A quest picked after the level up already counts the new level.
+        self.levelledAt = nil
+    end
 
     -- A step ticked off since last time: a little cheer.
     if quest and quest.itemID == before then
