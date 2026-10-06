@@ -86,7 +86,9 @@ house frame and has a tab for each kind of source: **Vendor**, **Quest**,
 **Dungeons and Raids** and **Crafted**. Each tab keeps its own upgrade, so
 you can flip between them as you like (or type `/beq quest vendor`,
 `quest`, `dungeon` or `crafted`); the first time, the tab most worth the
-trip is shown. The red gem closes the panel and turns the quest off,
+trip is shown. To pick one yourself, click it in **Where to get upgrades**:
+it becomes the quest on its tab and the panel opens on it (this turns the
+quest on if it was off). The red gem closes the panel and turns the quest off,
 keeping its quests for when you turn it back on. When you level up, the
 quest you are on stays, but if the new level opens an upgrade clearly more
 worth the trip, a gold **New upgrade unlocked** box offers it: **Switch**

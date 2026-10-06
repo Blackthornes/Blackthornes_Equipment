@@ -2,7 +2,8 @@
 -- The "Where to get upgrades" window: for each slot, the best gear a vendor
 -- sells, a quest gives, a dungeon drops or a crafter makes that beats what
 -- is worn, and where to go for it. The stepper beside the filters looks a
--- few levels ahead. Right-click a row to track it (Logic/Tracking.lua),
+-- few levels ahead. Click a row to follow it as the upgrade quest
+-- (Logic/UpgradeQuest.lua), right-click to track it (Logic/Tracking.lua),
 -- Alt-click to pin its spot on the map (Logic/Waypoints.lua).
 --
 -- Opened from the gear window's "Find upgrades" button and /beq find. Built
@@ -140,6 +141,18 @@ local function ShowTooltip(row)
         end
     end
     GameTooltip:AddLine(" ")
+    local quest = ns.UpgradeQuest
+    if quest then
+        local _, why = quest.CanFollow(pick)
+        if quest:IsFollowing(pick.itemID) then
+            GameTooltip:AddLine("Your upgrade quest: click to show it on the quest panel", Theme.Unpack("good"))
+        elseif why then
+            local r, g, b = Theme.Unpack("warn")
+            GameTooltip:AddLine("Not a quest yet: " .. why, r, g, b, true)
+        else
+            GameTooltip:AddLine("Click to follow it on the quest panel", Theme.Unpack("good"))
+        end
+    end
     local tracked = ns.Tracking and ns.Tracking:IsTracked(pick.itemID)
     GameTooltip:AddLine(tracked and "Right-click to stop tracking it" or "Right-click to track it",
         Theme.Unpack("muted"))
@@ -234,8 +247,14 @@ function FinderUI:BuildRow(index)
         end
         if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
             local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
-            if ok and chatLink then pcall(ChatEdit_InsertLink, pick.link) end
+            if ok and chatLink then
+                pcall(ChatEdit_InsertLink, pick.link)
+                return
+            end
         end
+        -- A plain click follows it on the upgrade quest panel (asked 2026-10-06).
+        FinderUI:Follow(pick)
+        if rawget(self, "over") == true then ShowTooltip(self) end
     end)
     if row.RegisterForClicks then row:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
 
@@ -331,7 +350,7 @@ function FinderUI:Build()
     local hint = Theme.CreateLabel(frame, "tiny", "dim")
     hint:SetPoint("BOTTOMLEFT", PADDING, 10)
     hint:SetWidth(WIDTH - PADDING * 2)
-    hint:SetText("Places and prices are from Classic, so Forever may differ. Right-click to track, Alt-click for the map.")
+    hint:SetText("Places and prices are from Classic. Click to follow as a quest, right-click to track, Alt-click for the map.")
     self.hint = hint
 
     frame:Hide()
@@ -552,6 +571,7 @@ function FinderUI:FillRow(row, line)
     row.pick = {
         link = line.pick.link, sources = line.sources, itemID = line.pick.itemID,
         needs = line.pick.needs, result = line.pick.result, roll = line.pick.roll, at = line.pick.at,
+        gain = line.pick.gain,
     }
     row.slot:SetText(line.first and line.slotName or "")
     Theme.SetItemIcon(row.icon, line.pick.link)
@@ -567,6 +587,9 @@ function FinderUI:FillRow(row, line)
     local text = FinderUI.SourceLine(line.sources[1])
     if ns.Tracking and ns.Tracking:IsTracked(line.pick.itemID) then
         text = Colored("accent", "Tracking") .. "  " .. text
+    end
+    if ns.UpgradeQuest and ns.UpgradeQuest:IsFollowing(line.pick.itemID) then
+        text = Colored("good", "Quest") .. "  " .. text
     end
     if line.pick.needs then
         text = Colored("warn", ("Needs %s with %s"):format(line.pick.needs.standing,
@@ -756,6 +779,23 @@ end
 
 function FinderUI:OnTrackingChanged()
     if self.frame and self.frame:IsShown() then self:Draw() end
+end
+
+function FinderUI:OnUpgradeQuestChanged()
+    self:OnTrackingChanged()
+end
+
+--- Follow a row's pick on the upgrade quest panel, or say why it cannot be.
+function FinderUI:Follow(pick)
+    local logic = ns.UpgradeQuest
+    if not logic then return nil end
+    local quest, why = logic:Follow(pick)
+    if quest then
+        ns.Print(("following %s on the upgrade quest panel."):format(pick.link or quest.link))
+    else
+        ns.Print(("%s can't be an upgrade quest yet: %s."):format(pick.link or "that", why or "unknown"))
+    end
+    return quest
 end
 
 local EVENTS = {
