@@ -4,6 +4,29 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.10.0
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- Left-click a row in Where to get upgrades to make it the upgrade quest on
+  its tab. The quest panel opens on that tab, and rows you follow are
+  marked **Quest**. The tooltip says what a click does, or why an item
+  can't be followed yet. Right-click still tracks and Alt-click still pins
+  on the map.
+- New quest filters under the source buttons. **Quest level** sets how far
+  above your level a quest may be ("Up to my level", +1 to +10, or "Any";
+  +4 by default). **Solo quests only** (also in Settings) leaves out
+  quests that need a group, dungeon, raid or battleground. The upgrade
+  quest follows both, and quest lines now say "dungeon", "raid" or
+  "battleground" instead of "group".
+- Spell damage for one school ("Increases damage done by Frost spells...",
+  and Fire, Arcane, Shadow, Nature and Holy) now counts for the specs that
+  cast that school. The six schools are new weights in the stat weights
+  window.
+- The minimap button now sits on the minimap's ring beside other addons'
+  buttons, instead of floating just outside it.
+
 ## 0.9.5
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
