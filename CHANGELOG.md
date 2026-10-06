@@ -4,6 +4,25 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.9.5
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- A new banner no longer fades away when it arrives while the last one is
+  fading out.
+- After changing a stat weight or spec, Where to get upgrades and the
+  character sheet's slot upgrades show the new picks straight away.
+- Unticking **Upgrade arrows** now also clears them from an open vendor or
+  loot window.
+- Bag arrows redraw after training a new weapon skill such as Dual Wield.
+- "Show on map" no longer gets stuck on "map not found" for a zone after
+  trying it during a loading screen or on a flight.
+- The weapon master line says when a skill opens, for example "Learn
+  Polearms at level 20 from the weapon master in ...".
+- A late "better upgrade" offer no longer pops up after a level-up when
+  there was no quest to compare it with.
+
 ## 0.9.4
 
 For WoW: Forever (interface 16001). Nothing in the addon itself changed, so
