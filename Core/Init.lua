@@ -388,6 +388,9 @@ local DEFAULTS = {
     -- Only quests a player can do alone, in the finder and the upgrade
     -- quest (Finder:SoloOnly). Off unless ticked.
     soloQuestsOnly = false,
+    -- How many levels above the character a quest the finder offers may
+    -- be, 0 to 10, or 11 for any (Finder:QuestLevelsAbove).
+    questLevelsAbove = 4,
 
     -- Upgrade hunts: the banner when an upgrade or a tracked one lands in
     -- the bags, the tracker panel and where it sits, pins on the world map,

@@ -118,7 +118,10 @@ objectives inside an instance or on an elite. "Solo quests only"
 (`soloQuestsOnly`, account wide, off by default; `Finder:SetSoloOnly`) is a
 tick box in the finder and a Settings row; `Finder:SourcesFor` leaves out
 quests that need others or come after one, and the upgrade quest lets such
-a quest go (not skipped) when it is ticked.
+a quest go (not skipped) when it is ticked. Asked the same day, the
+finder's "Quest level" stepper (`questLevelsAbove`, 0 to 10 levels above
+the character, 11 for any, default 4; `Finder:QuestAllowed`) works the same
+way.
 
 Forever's own boss drops: `tools/forever_drops.py` reads Farmer's
 `Data/Data_Harvested.lua` (no player names in it) and writes

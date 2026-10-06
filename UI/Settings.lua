@@ -524,7 +524,7 @@ function SettingsUI:OnUpgradeQuestChanged()
 end
 
 --- "Solo quests only" was ticked or unticked in Where to get upgrades.
-function SettingsUI:OnSoloChanged()
+function SettingsUI:OnQuestFilterChanged()
     self:Refresh()
 end
 

@@ -948,29 +948,29 @@ function UpgradeQuest:SetEnabled(on)
     end
 end
 
---- "Solo quests only" was ticked or unticked. Ticked, a tab following a
---- quest that needs others lets it go (not skipped, so it can come back)
---- and picks again; either way the empty tabs look again.
-function UpgradeQuest:OnSoloChanged()
+--- A quest filter changed ("Solo quests only", or how far above the
+--- character a quest may be). A tab following a quest the filters now
+--- leave out lets it go (not skipped, so it can come back) and picks
+--- again; either way the empty tabs look again.
+function UpgradeQuest:OnQuestFilterChanged()
     local finder = ns.Finder
     if not finder then return end
-    if finder:SoloOnly() then
-        local quests = self:Quests()
-        for _, tab in ipairs(TABS) do
-            local quest = Valid(quests[tab.key])
-            local source = quest and quest.source
-            if source and source.kind == "quest" then
-                local alone = finder.Solo(source)
-                if alone and source.questID then
-                    for _, before in ipairs((finder:Chain(source.questID))) do
-                        if finder.Need(before.group) then alone = false end
-                    end
+    local player = finder:Player()
+    local quests = self:Quests()
+    for _, tab in ipairs(TABS) do
+        local quest = Valid(quests[tab.key])
+        local source = quest and quest.source
+        if source and source.kind == "quest" then
+            local allowed = finder:QuestAllowed(source, player and player.level)
+            if allowed and finder:SoloOnly() and source.questID then
+                for _, before in ipairs((finder:Chain(source.questID))) do
+                    if finder.Need(before.group) then allowed = false end
                 end
-                if not alone then quests[tab.key] = nil end
             end
+            if not allowed then quests[tab.key] = nil end
         end
-        self:Mirror()
     end
+    self:Mirror()
     self.rescan = true
     self.offer = nil
     self.lastStep = nil

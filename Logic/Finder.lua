@@ -196,16 +196,55 @@ function Finder:SoloOnly()
     return ns.db ~= nil and ns.db.soloQuestsOnly == true
 end
 
+--- Tell everything that shows where upgrades come from that the quest
+--- filters changed.
+function Finder:QuestFilterChanged()
+    self:MarkStale()
+    for _, name in ipairs({ "FinderUI", "UpgradeQuest", "SettingsUI" }) do
+        local module = ns[name]
+        if module and module.OnQuestFilterChanged then pcall(module.OnQuestFilterChanged, module) end
+    end
+end
+
 --- Tick or untick "Solo quests only", for the finder window, the upgrade
 --- quest and everything else that shows where upgrades come from.
 function Finder:SetSoloOnly(on)
     if not ns.db then return end
     ns.db.soloQuestsOnly = on and true or false
-    self:MarkStale()
-    for _, name in ipairs({ "FinderUI", "UpgradeQuest", "SettingsUI" }) do
-        local module = ns[name]
-        if module and module.OnSoloChanged then pcall(module.OnSoloChanged, module) end
-    end
+    self:QuestFilterChanged()
+end
+
+-- How far above the character's level a quest may be, as the finder's
+-- stepper sets it: 0 to QUEST_LEVELS_MOST, or QUEST_LEVELS_ANY for no limit.
+-- Classic shows a quest 5 or more levels up in red.
+Finder.QUEST_LEVELS_MOST = 10
+Finder.QUEST_LEVELS_ANY = 11
+Finder.QUEST_LEVELS_DEFAULT = 4
+
+--- How many levels above the character a quest may be, or nil for any.
+--- Saved account wide as `questLevelsAbove`.
+function Finder:QuestLevelsAbove()
+    local value = tonumber(ns.db and ns.db.questLevelsAbove) or self.QUEST_LEVELS_DEFAULT
+    value = math.max(0, math.min(self.QUEST_LEVELS_ANY, math.floor(value)))
+    if value >= self.QUEST_LEVELS_ANY then return nil end
+    return value
+end
+
+function Finder:SetQuestLevelsAbove(value)
+    if not ns.db then return end
+    value = math.max(0, math.min(self.QUEST_LEVELS_ANY, math.floor(tonumber(value) or 0)))
+    ns.db.questLevelsAbove = value
+    self:QuestFilterChanged()
+end
+
+--- Does a quest source pass the quest filters at `level`? Anything that
+--- is not a quest always does.
+function Finder:QuestAllowed(source, level)
+    if type(source) ~= "table" or source.kind ~= "quest" then return true end
+    if self:SoloOnly() and not Finder.Solo(source) then return false end
+    local above = self:QuestLevelsAbove()
+    if above and level and (tonumber(source.questLevel) or 0) > level + above then return false end
+    return true
 end
 
 --------------------------------------------------------------------------------
@@ -287,7 +326,6 @@ function Finder:SourcesFor(itemID, player)
         end
     end
 
-    local soloOnly = self:SoloOnly()
     for _, questID in ipairs(item.q or {}) do
         local quest = S.QUESTS[questID]
         if quest and quest[2] <= player.level and Allows(quest[4], player.raceBit)
@@ -306,7 +344,7 @@ function Finder:SourcesFor(itemID, player)
                 after = quest[10] ~= "" and quest[10] or nil, group = Finder.Need(quest[11]),
                 chainGroup = chainGroup,
             }
-            if not soloOnly or Finder.Solo(source) then found[#found + 1] = source end
+            if self:QuestAllowed(source, player.level) then found[#found + 1] = source end
         end
     end
 
