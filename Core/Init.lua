@@ -385,6 +385,9 @@ local DEFAULTS = {
     finderShow = "all",
     -- How many levels ahead the finder looks (0 for now).
     finderAhead = 0,
+    -- Only quests a player can do alone, in the finder and the upgrade
+    -- quest (Finder:SoloOnly). Off unless ticked.
+    soloQuestsOnly = false,
 
     -- Upgrade hunts: the banner when an upgrade or a tracked one lands in
     -- the bags, the tracker panel and where it sits, pins on the world map,

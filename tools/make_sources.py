@@ -353,8 +353,7 @@ def main():
             after = quest_text[prev]["T"]
         quests[qid] = (title, r["MinLevel"], r["QuestLevel"], races,
                        r["RequiredClasses"] or 0, giver[0], giver[1], giver[2], giver[3],
-                       after, {1: "group", 81: "group", 62: "raid"}.get(r["Type"], ""),
-                       prev if prev and prev > 0 else 0)
+                       after, r, prev if prev and prev > 0 else 0)
         for itemID in rewards:
             sources[itemID]["q"].append(qid)
 
@@ -403,6 +402,63 @@ def main():
 
     creature_loot = loot_lists("creature_loot_template")
     reference_loot = loot_lists("reference_loot_template")
+
+    # What each quest needs besides the player, for the finder's "Solo
+    # quests only": "raid", "dungeon", "battleground" or "group", or "".
+    # Classic marks most of them by type (Group, Dungeon, Raid, PvP); the
+    # rest are caught by what they ask for: something to kill or use inside
+    # an instance, an item only creatures in one drop, or an elite to kill.
+    instance_objects = {}
+    for r in rows(mangos / "gameobject.sql", "gameobject"):
+        if r["map"] in INSTANCES:
+            instance_objects.setdefault(r["id"], r["map"])
+    # Items a chest, a plant or a container gives too: their creature
+    # drops say nothing about where the item has to be got.
+    from_elsewhere = {r["item"] for r in rows(mangos / "gameobject_loot_template.sql",
+                                              "gameobject_loot_template")}
+    from_elsewhere |= {r["item"] for r in rows(mangos / "item_loot_template.sql",
+                                               "item_loot_template")}
+    loot_users = collections.defaultdict(set)
+    for uid, template in templates.items():
+        if template["LootId"]:
+            loot_users[template["LootId"]].add(uid)
+    dropped_by = collections.defaultdict(set)
+    for loot_id, entries in creature_loot.items():
+        for item, _, _, mincount, _ in entries:
+            if mincount >= 0:
+                dropped_by[item] |= loot_users.get(loot_id, set())
+
+    def elite(uid):
+        return templates.get(uid, {}).get("Rank", 0) in (1, 2, 3)
+
+    def needs(r):
+        maps, elites = set(), False
+        for i in range(1, 5):
+            target = r[f"ReqCreatureOrGOId{i}"]
+            if target > 0 and target in where_map:
+                maps.add(where_map[target])
+            elif target > 0 and elite(target):
+                elites = True
+            elif target < 0 and -target in instance_objects:
+                maps.add(instance_objects[-target])
+            item = r[f"ReqItemId{i}"]
+            owners = dropped_by.get(item) if item and item not in from_elsewhere else None
+            if owners and all(o in where_map for o in owners):
+                maps.update(where_map[o] for o in owners)
+            elif owners and all(o in where_map or elite(o) for o in owners):
+                elites = True
+        if r["Type"] == 62 or maps & RAIDS.keys():
+            return "raid"
+        if r["Type"] == 41:
+            return "battleground"
+        if r["Type"] == 81 or maps:
+            return "dungeon"
+        if r["Type"] == 1 or r["SuggestedPlayers"] > 1 or elites:
+            return "group"
+        return ""
+
+    for qid, quest in quests.items():
+        quests[qid] = quest[:10] + (needs(quest[10]),) + quest[11:]
 
     # Who uses each reference list: a list shared by many creatures, or
     # across dungeons, is world-drop loot, not a boss's own.
@@ -518,8 +574,9 @@ def main():
     w("")
     w("-- Quests: title, level you can take it, quest level, races (0 for all),")
     w("-- classes (0 for all), who or what starts it, zone, x, y (0 when it starts")
-    w("-- from an item), the quest that comes before it, and \"group\" or \"raid\"")
-    w("-- when it needs one; then p = the ID of the quest before it, when that")
+    w("-- from an item), the quest that comes before it, and what it needs besides")
+    w("-- the player: \"group\", \"dungeon\", \"raid\" or \"battleground\" (none")
+    w("-- when it can be done alone); then p = the ID of the quest before it, when that")
     w("-- one is here too. Quests that give no gear are here because they open")
     w("-- the way to one that does.")
     w("Sources.QUESTS = {")

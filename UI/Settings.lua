@@ -448,7 +448,15 @@ function SettingsUI:BuildHunting()
     controls.questTab:SetWidth(170)
     controls.questTab:SetPoint("TOPLEFT", CONTROL_X, 0)
 
-    local anchor = tabRow
+    -- The same switch as the tick box in Where to get upgrades.
+    local soloRow = CreateRow(frame, tabRow, "Solo quests",
+        "Leaves out quests that need a group, a dungeon, a raid or a battleground.")
+    controls.soloQuests = Widgets.CreateCheckbox(soloRow, "Only these", function(checked)
+        if ns.Finder then ns.Finder:SetSoloOnly(checked) end
+    end, false)
+    controls.soloQuests:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    local anchor = soloRow
     for _, entry in ipairs(HUNTING) do
         local key, redraw = entry[1], entry[5]
         local row = CreateRow(frame, anchor, entry[2], entry[3])
@@ -482,6 +490,7 @@ function SettingsUI:Refresh()
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
     end
     controls.upgradeQuest:SetChecked(ns.db.upgradeQuest == true)
+    controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
     -- Dimmed while there is nothing for them to do; still clickable, so a
     -- click says why.
     local quest = ns.UpgradeQuest
@@ -511,6 +520,11 @@ end
 --- The upgrade quest changed (picked, skipped, an offer made): relight its
 --- buttons.
 function SettingsUI:OnUpgradeQuestChanged()
+    self:Refresh()
+end
+
+--- "Solo quests only" was ticked or unticked in Where to get upgrades.
+function SettingsUI:OnSoloChanged()
     self:Refresh()
 end
 

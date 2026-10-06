@@ -401,6 +401,30 @@ function FinderUI:BuildFilters()
     })
     ahead:SetPoint("TOPRIGHT", -PADDING, -(HEADER + 14))
     self.ahead = ahead
+
+    -- Hide quests that need a group, a dungeon, a raid or a battleground.
+    -- The same switch as in Settings; the upgrade quest follows it too.
+    local solo = Widgets.CreateCheckbox(self.frame, "Solo quests only", function(checked)
+        Finder:SetSoloOnly(checked)
+    end, Finder:SoloOnly())
+    solo:SetPoint("RIGHT", ahead, "LEFT", -16, 0)
+    solo:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:AddLine("Solo quests only", Theme.Unpack("accent"))
+        GameTooltip:AddLine("Hides quests that need a group, a dungeon, a raid or a battleground, "
+            .. "and quests that come after one. Quests to kill an elite count as group quests.",
+            1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    solo:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    self.solo = solo
+end
+
+--- "Solo quests only" changed, here or in Settings.
+function FinderUI:OnSoloChanged()
+    if self.solo then self.solo:SetChecked(Finder:SoloOnly()) end
+    self.offset = 0
+    self:Refresh()
 end
 
 --- How many levels ahead the window looks (0 for now).

@@ -142,7 +142,7 @@ local function QuestPlace(questID)
         questID = questID, title = quest[1], questLevel = quest[3], name = quest[6],
         zone = ns.Sources.ZONES[quest[7]],
         x = quest[8] ~= 0 and quest[8] or nil, y = quest[9] ~= 0 and quest[9] or nil,
-        group = quest[11],
+        group = Finder.Need(quest[11]),
     }
 end
 
@@ -167,6 +167,45 @@ function Finder:Chain(questID)
         quest = ns.Sources.QUESTS[before]
     end
     return chain, unknown
+end
+
+--------------------------------------------------------------------------------
+-- Solo quests
+--------------------------------------------------------------------------------
+
+-- What a quest can need besides the player, as Data/Sources.lua marks it
+-- (tools/make_sources.py works it out from Classic's quest data).
+Finder.NEEDS = { group = true, dungeon = true, raid = true, battleground = true }
+
+--- What a quest needs besides the player ("group", "dungeon", "raid" or
+--- "battleground"), or nil when it can be done alone.
+function Finder.Need(group)
+    return Finder.NEEDS[group] and group or nil
+end
+
+--- Can a source be got alone? Everything but a quest that needs a group,
+--- a dungeon, a raid or a battleground, or comes after one that does.
+function Finder.Solo(source)
+    if type(source) ~= "table" or source.kind ~= "quest" then return true end
+    return not (Finder.Need(source.group) or Finder.Need(source.chainGroup))
+end
+
+--- Does the player want only quests they can do alone? Saved account wide
+--- as `soloQuestsOnly`, off unless ticked.
+function Finder:SoloOnly()
+    return ns.db ~= nil and ns.db.soloQuestsOnly == true
+end
+
+--- Tick or untick "Solo quests only", for the finder window, the upgrade
+--- quest and everything else that shows where upgrades come from.
+function Finder:SetSoloOnly(on)
+    if not ns.db then return end
+    ns.db.soloQuestsOnly = on and true or false
+    self:MarkStale()
+    for _, name in ipairs({ "FinderUI", "UpgradeQuest", "SettingsUI" }) do
+        local module = ns[name]
+        if module and module.OnSoloChanged then pcall(module.OnSoloChanged, module) end
+    end
 end
 
 --------------------------------------------------------------------------------
@@ -248,18 +287,26 @@ function Finder:SourcesFor(itemID, player)
         end
     end
 
+    local soloOnly = self:SoloOnly()
     for _, questID in ipairs(item.q or {}) do
         local quest = S.QUESTS[questID]
         if quest and quest[2] <= player.level and Allows(quest[4], player.raceBit)
             and Allows(quest[5], player.classBit) and not self:QuestDone(questID) then
             local chain, unknown = self:Chain(questID)
-            found[#found + 1] = {
+            -- The first quest still to do in the chain that needs others.
+            local chainGroup
+            for _, before in ipairs(chain) do
+                chainGroup = chainGroup or Finder.Need(before.group)
+            end
+            local source = {
                 chain = #chain + (unknown and 1 or 0), first = unknown or (chain[1] and chain[1].title),
                 kind = "quest", questID = questID, title = quest[1], questLevel = quest[3],
                 name = quest[6], zone = ZoneName(quest[7]),
                 x = quest[8] ~= 0 and quest[8] or nil, y = quest[9] ~= 0 and quest[9] or nil,
-                after = quest[10] ~= "" and quest[10] or nil, group = quest[11],
+                after = quest[10] ~= "" and quest[10] or nil, group = Finder.Need(quest[11]),
+                chainGroup = chainGroup,
             }
+            if not soloOnly or Finder.Solo(source) then found[#found + 1] = source end
         end
     end
 
@@ -791,7 +838,8 @@ function Finder:Describe(source)
         return text
     elseif source.kind == "quest" then
         local text = ("%s (level %d)"):format(source.title, source.questLevel or 0)
-        if source.group then text = text .. ", " .. source.group end
+        local need = Finder.Need(source.group)
+        if need then text = text .. ", " .. need end
         if (source.chain or 0) > 1 then
             text = text .. (", after %d earlier quests"):format(source.chain)
         elseif (source.chain or 0) == 1 and source.first then
