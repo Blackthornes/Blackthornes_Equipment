@@ -364,7 +364,7 @@ local DEFAULTS = {
     -- whether it is there at all. A little further round than Farmer's and
     -- Tradeskills' buttons, so the three do not start stacked.
     minimapAngle = math.rad(230),
-    minimapGap = 16,
+    minimapGap = 16, -- kept for old saves; the button now sits on the ring
     minimapHidden = false,
 
     -- The verdict on gear: a line on its tooltip, and an arrow on it in the
