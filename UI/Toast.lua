@@ -99,6 +99,8 @@ end
 function Toast:Present(banner)
     self:Build()
     self.link = banner.link
+    -- The mouse left with the last banner, even if the client said nothing.
+    self.hovered = false
     self.title:SetText(banner.title or "")
     self.item:SetText(banner.link or "")
     self.text:SetText(banner.text or "")
@@ -133,6 +135,8 @@ end
 
 --- Close the banner, and show the next one waiting.
 function Toast:Dismiss()
+    -- A fade still running would dim, then close, the next banner.
+    Motion:Stop(self.frame, "fade")
     self.fading = false
     if self.frame then self.frame:Hide() end
     local queue = self.queue or {}

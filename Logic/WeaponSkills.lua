@@ -75,7 +75,8 @@ end
 
 --- Where to learn the weapon skill an item needs, when this character's
 --- class can learn it and has not.
--- @return the skill's name and a list of cities, or nil
+-- @return the skill's name, a list of cities and the level it opens at
+-- (when that is above the character's), or nil
 function WeaponSkills:TrainerFor(link)
     local info = Items:Info(link)
     if not info or info.classID ~= CLASS_WEAPON then return nil end
@@ -83,8 +84,10 @@ function WeaponSkills:TrainerFor(link)
     local skill = WeaponTrainers.SKILLS[info.subclassID]
     if not skill then return nil end
 
-    local usable = Weights:CanUse(Weights:PlayerClass(), info.classID, info.subclassID, info.equipLoc)
+    local usable, from = Weights:CanUse(Weights:PlayerClass(), info.classID, info.subclassID, info.equipLoc)
     if not usable then return nil end
+    local level = Items:PlayerLevel()
+    if not (from and level and level < from) then from = nil end
 
     local faction = self:Faction()
     if not faction then return nil end
@@ -94,7 +97,7 @@ function WeaponSkills:TrainerFor(link)
 
     local cities = WeaponTrainers:Cities(faction, info.subclassID)
     if #cities == 0 then return nil end
-    return skill.name, cities
+    return skill.name, cities, from
 end
 
 --- "A", "A or B", "A, B or C".
@@ -105,7 +108,10 @@ end
 
 --- The tooltip line for an item, and its colour, or nil.
 function WeaponSkills:Describe(link)
-    local name, cities = self:TrainerFor(link)
+    local name, cities, from = self:TrainerFor(link)
     if not name then return nil end
+    if from then
+        return ("Learn %s at level %d from the weapon master in %s"):format(name, from, List(cities)), "warn"
+    end
     return ("Learn %s from the weapon master in %s"):format(name, List(cities)), "warn"
 end

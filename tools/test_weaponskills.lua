@@ -66,6 +66,21 @@ suite.check("and swords are not",
 _G.UnitFactionGroup = function() error("secret value") end
 suite.check("a faction that raises says nothing", ns.WeaponSkills:Describe("item:2") == nil)
 
+-- A skill that opens later says when: a level 12 druid and a polearm.
+ns = Load("Alliance", {})
+_G.UnitClass = function() return "Druid", "DRUID" end
+env.InstallItems({ ["item:7"] = { loc = "INVTYPE_2HWEAPON", class = 2, subclass = 6,
+    stats = { ITEM_MOD_AGILITY_SHORT = 3 } } }, {})
+_G.UnitLevel = function() return 12 end
+_G.IsPlayerSpell = function(id) return id == 227 end   -- staves
+local polearm = ns.WeaponSkills:Describe("item:7")
+suite.check("polearms below 20 say the level",
+    polearm == "Learn Polearms at level 20 from the weapon master in Stormwind", polearm)
+_G.UnitLevel = function() return 20 end
+polearm = ns.WeaponSkills:Describe("item:7")
+suite.check("and at 20 just where",
+    polearm == "Learn Polearms from the weapon master in Stormwind", polearm)
+
 -- On the tooltip, under the verdict and wrapped.
 ns = Load("Horde")
 _G.Enum = { TooltipDataType = { Item = 0 } }

@@ -747,6 +747,9 @@ function Weights:Changed()
     if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
     if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
     if ns.UI then pcall(ns.UI.Refresh, ns.UI) end
+    -- The finder's kept picks and the character sheet's slots too.
+    if ns.Finder then pcall(ns.Finder.MarkStale, ns.Finder) end
+    if ns.FinderUI then pcall(ns.FinderUI.RefreshSoon, ns.FinderUI) end
 
     -- Tradeskills keeps its upgrade arrows per item until gear or talents
     -- change; tell it to ask again. Read only, inside a pcall, and nothing

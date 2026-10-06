@@ -92,7 +92,9 @@ function Waypoints:MapFor(zone)
         end
     end
 
-    self.found[zone] = mapID or false
+    -- Only a search that ran is kept: on a loading screen or a taxi the
+    -- client has no map yet, and that must not hide the zone until /reload.
+    if map and top then self.found[zone] = mapID or false end
     return mapID
 end
 
