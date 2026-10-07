@@ -273,6 +273,21 @@ now. The dungeon
 level ranges, and the few bosses a script summons rather than spawns, are the
 only parts typed in by hand, at the top of the script.
 
+Where vendors and trainers stand on Forever is learned in game: whenever a
+merchant or trainer window opens, the addon keeps the NPC's ID, the map and
+the spot the character stands on in the account save (`npcSpots`), and the
+finder shows that spot ahead of the Classic one. To share them with every
+player, log out and run the tool on the account's saved file:
+
+```bash
+python tools/forever_npcs.py <WTF/Account/<account>/SavedVariables/Blackthornes_Equipment.lua>
+```
+
+It writes `Data/ForeverNPCs.lua`, keeping the spots already there and
+leaving out any that match the Classic data. Only NPC IDs, NPC names, map
+names and numbers are copied. A spot read off the map by hand can be added
+with `--spot <NPC ID> "<Map>" <x> <y>`.
+
 The tests load the addon against a stub client (`tools/testenv.lua`), reading
 the file list straight from the TOC. A new test is a new `tools/test_*.lua`
 file and nothing else.
