@@ -65,11 +65,29 @@ def shipped(lua):
     return found
 
 
+# A save is read as data: run in an empty table with nothing to call, so a
+# file that is not what it seems can reach neither the disk nor Python.
+# Compiled chunks are refused, since they could get round that.
+READ_SAVE = """
+function(text)
+    if text:sub(1, 1) == "\\27" then return nil, "a compiled file, not a save" end
+    local chunk, err = loadstring(text, "=save")
+    if not chunk then return nil, err end
+    local env = {}
+    setfenv(chunk, env)
+    local ok, why = pcall(chunk)
+    if not ok then return nil, why end
+    return env.BlackthornesEquipmentDB, false
+end
+"""
+
+
 def from_save(lua, path):
     """The npcSpots table in one account save, checked row by row."""
-    lua.execute("BlackthornesEquipmentDB = nil")
-    lua.execute(open(path, encoding="utf-8").read())
-    db = lua.eval("BlackthornesEquipmentDB")
+    with open(path, encoding="utf-8") as f:
+        db, why = lua.eval(READ_SAVE)(f.read())
+    if why:
+        print(f"could not read {path}: {why}", file=sys.stderr)
     spots = db and db.npcSpots
     found = {}
     for npc_id in spots or {}:
@@ -83,7 +101,8 @@ def from_save(lua, path):
 
 
 def lua_string(s):
-    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    s = s.replace("\\", "\\\\").replace('"', '\\"')
+    return '"' + s.replace("\n", "\\n").replace("\r", "\\r") + '"'
 
 
 def num(x):
@@ -110,7 +129,7 @@ def main(argv):
             saves.append(arg)
             i += 1
 
-    lua = lua51.LuaRuntime(unpack_returned_tuples=True)
+    lua = lua51.LuaRuntime(unpack_returned_tuples=True, register_eval=False)
     classic = classic_spots(lua)
     spots = shipped(lua)
     for path in saves:

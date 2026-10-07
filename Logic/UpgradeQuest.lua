@@ -466,6 +466,9 @@ function UpgradeQuest:PickEmpty()
         if not Valid(quests[tab.key]) then empty[#empty + 1] = tab.key end
     end
     if #empty == 0 and IS_TAB[ns.charDB.upgradeQuestTab] then return end
+    -- "This zone only" on a flight: the zone below is not where the player
+    -- is going, so the tabs wait for the landing.
+    if self:ZoneOnly() and self.OnTaxi() then return end
     if not self:WorthLooking(empty) then return end
 
     local found, why = self:Look()
@@ -1062,12 +1065,34 @@ function UpgradeQuest:OnQuestFilterChanged()
     if self:IsEnabled() then self:Update() else self:Changed() end
 end
 
+--- Is the character only passing through: on a flight, or inside a
+--- dungeon or raid? Then the zone it is in says nothing about where it
+--- will look for gear, so "This zone only" lets go of nothing. Unreadable
+--- counts as passing: keeping a quest a little longer does no harm.
+function UpgradeQuest.Passing()
+    local ok, passing = pcall(function()
+        if type(_G.UnitOnTaxi) == "function" and _G.UnitOnTaxi("player") then return true end
+        if type(_G.IsInInstance) == "function" and _G.IsInInstance() then return true end
+        return false
+    end)
+    return not ok or passing == true
+end
+
+--- Is the character on a flight?
+function UpgradeQuest.OnTaxi()
+    local ok, flying = pcall(function()
+        return type(_G.UnitOnTaxi) == "function" and _G.UnitOnTaxi("player") and true or false
+    end)
+    return ok and flying == true
+end
+
 --- Let go of the tabs' quests that are not in the zone the character is
 --- in (not skipped: they come back in their own zone), while "This zone
---- only" is ticked. A quest followed from Where to get upgrades stays.
+--- only" is ticked. A quest followed from Where to get upgrades stays, and
+--- nothing is let go on a flight or inside a dungeon (UpgradeQuest.Passing).
 -- @return true when one was let go
 function UpgradeQuest:LetGoOutOfZone()
-    if not self:ZoneOnly() then return false end
+    if not self:ZoneOnly() or self.Passing() then return false end
     local here = self.Zone()
     if not here then return false end
     local quests = self:Quests()
@@ -1118,6 +1143,13 @@ function UpgradeQuest:WantsItem(itemID)
 end
 
 function UpgradeQuest:OnEvent(event, level)
+    -- Control comes back after every stun and fear; it only matters at the
+    -- end of a flight that crossed a zone.
+    if event == "PLAYER_CONTROL_GAINED" then
+        if not self.landing then return end
+        self.landing = nil
+        event = "ZONE_CHANGED_NEW_AREA"
+    end
     -- The client loads items for chat links, vendors and other addons all
     -- the time; only answers this addon asked for are worth looking again.
     if event == "GET_ITEM_INFO_RECEIVED" and not self:WantsItem(level) then return end
@@ -1132,7 +1164,13 @@ function UpgradeQuest:OnEvent(event, level)
     end
     if RESCAN_ON[event] then self.rescan = true end
     -- A new zone has its own upgrades while "This zone only" is ticked.
+    -- On a flight, every zone flown over would pick (and announce) its own,
+    -- so that waits for the landing.
     if event == "ZONE_CHANGED_NEW_AREA" and self:ZoneOnly() then
+        if self.OnTaxi() then
+            self.landing = true
+            return
+        end
         self:LetGoOutOfZone()
         self:Mirror()
         self.rescan = true
@@ -1144,7 +1182,8 @@ end
 function UpgradeQuest:OnEnable()
     for _, event in ipairs({ "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
         "ZONE_CHANGED_NEW_AREA", "QUEST_ACCEPTED", "QUEST_LOG_UPDATE", "QUEST_TURNED_IN",
-        "GET_ITEM_INFO_RECEIVED", "SKILL_LINES_CHANGED", "NEW_RECIPE_LEARNED", "TRAIT_CONFIG_UPDATED" }) do
+        "GET_ITEM_INFO_RECEIVED", "SKILL_LINES_CHANGED", "NEW_RECIPE_LEARNED", "TRAIT_CONFIG_UPDATED",
+        "PLAYER_CONTROL_GAINED" }) do
         ns.RegisterEvent(self, event, self.OnEvent)
     end
     if self:IsEnabled() then self:UpdateSoon(3) end

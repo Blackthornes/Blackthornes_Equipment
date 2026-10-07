@@ -154,6 +154,61 @@ Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
 suite.check("unticked, travelling changes nothing", On("quest") == 1004, On("quest"))
 
 --------------------------------------------------------------------------------
+-- Flights and dungeons: passing through lets nothing go
+--------------------------------------------------------------------------------
+
+zone = "Elwynn Forest"
+Quest:SetZoneOnly(true)
+Quest:Quests().vendor = nil
+Quest:Update()
+suite.check("ticked again, home picks here", On("vendor") == 1001 and On("quest") == 1003,
+    tostring(On("vendor")) .. "," .. tostring(On("quest")))
+
+local toasts = 0
+local show = ns.Toast.Show
+ns.Toast.Show = function(...) toasts = toasts + 1 return show(...) end
+
+local flying = true
+_G.UnitOnTaxi = function() return flying end
+zone = "Westfall"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+zone = "Duskwood"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+suite.check("flying over zones lets nothing go", On("vendor") == 1001 and On("quest") == 1003,
+    tostring(On("vendor")) .. "," .. tostring(On("quest")))
+suite.check("and announces nothing", toasts == 0, toasts)
+Quest:OnEvent("BAG_UPDATE_DELAYED")
+suite.check("other events on the flight pick nothing either", On("vendor") == 1001, On("vendor"))
+
+zone = "Westfall"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+flying = false
+Quest:OnEvent("PLAYER_CONTROL_GAINED")
+suite.check("landed, the tabs pick from where the flight ended", On("vendor") == 1002 and On("quest") == 1004,
+    tostring(On("vendor")) .. "," .. tostring(On("quest")))
+local after = toasts
+Quest:OnEvent("PLAYER_CONTROL_GAINED")
+suite.check("control back after a stun changes nothing", On("vendor") == 1002 and toasts == after)
+
+local inside = false
+_G.IsInInstance = function() return inside end
+inside = true
+zone = "The Deadmines"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+suite.check("inside a dungeon, the tabs keep their quests", On("vendor") == 1002 and On("quest") == 1004,
+    tostring(On("vendor")) .. "," .. tostring(On("quest")))
+inside = false
+zone = "Westfall"
+local before = toasts
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+suite.check("and come out with them, no new quest announced", On("vendor") == 1002 and toasts == before,
+    toasts - before)
+
+_G.UnitOnTaxi, _G.IsInInstance = nil, nil
+ns.Toast.Show = show
+Quest:SetZoneOnly(false)
+
+--------------------------------------------------------------------------------
 -- The shared quest filters
 --------------------------------------------------------------------------------
 
