@@ -47,6 +47,8 @@ local APIS = {
     -- and how many of an item the bags hold.
     "C_QuestLog.IsOnQuest", "C_QuestLog.GetLogIndexForQuestID", "C_QuestLog.IsComplete",
     "C_QuestLog.ReadyForTurnIn", "C_Item.GetItemCount", "GetItemCount",
+    -- Learning where vendors and trainers stand (Logic/NPCSpots.lua).
+    "C_Map.GetPlayerMapPosition",
 }
 
 local function Has(path)
@@ -367,6 +369,17 @@ function Probe:Upgrades()
         local mapID = type(zone) == "string" and ns.Waypoints:MapFor(zone)
         Line("map pin", ns.Waypoints:CanPin() and ("can pin; this zone's map " .. tostring(mapID or "not found"))
             or "this client cannot pin")
+    end
+    if ns.NPCSpots then
+        -- Target a vendor (or any NPC) before probing to see what would be kept.
+        local spots = ns.NPCSpots
+        local zone, x, y, mapID = spots:Here()
+        Line("standing at", zone and ("%s (%s, %s), map %s"):format(zone, x, y, tostring(mapID))
+            or "not readable here (inside an instance?)")
+        local seen = spots:Read("target")
+        Line("target NPC", seen and ("%s, ID %d"):format(seen.name or "unnamed", seen.npcID)
+            or "none (target an NPC to see its ID)")
+        Line("vendor spots learned", spots:Count())
     end
 end
 

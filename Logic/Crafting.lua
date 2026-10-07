@@ -222,7 +222,9 @@ end
 local function NPCPlace(npcID, faction)
     local npc = ns.Crafts.NPCS[npcID]
     if not npc or not npc[5]:find(faction, 1, true) then return nil end
-    return { name = npc[1], zone = ns.Crafts.ZONES[npc[2]], x = npc[3], y = npc[4] }
+    local name, zone, x, y = npc[1], ns.Crafts.ZONES[npc[2]], npc[3], npc[4]
+    if ns.NPCSpots then name, zone, x, y = ns.NPCSpots:Place(npcID, name, zone, x, y) end
+    return { name = name, zone = zone, x = x, y = y }
 end
 
 --- The best of a list of places: one in the zone the character is in, else

@@ -319,8 +319,11 @@ function Finder:SourcesFor(itemID, player)
     for i = 1, #vendors, 2 do
         local npc = S.NPCS[vendors[i]]
         if npc and npc[5]:find(player.faction, 1, true) then
+            -- Where Forever has the vendor, when seen there (Logic/NPCSpots.lua).
+            local name, zone, x, y = npc[1], ZoneName(npc[2]), npc[3], npc[4]
+            if ns.NPCSpots then name, zone, x, y = ns.NPCSpots:Place(vendors[i], name, zone, x, y) end
             found[#found + 1] = {
-                kind = "vendor", name = npc[1], zone = ZoneName(npc[2]), x = npc[3], y = npc[4],
+                kind = "vendor", name = name, zone = zone, x = x, y = y,
                 price = item[5], limited = vendors[i + 1] > 0,
             }
         end
