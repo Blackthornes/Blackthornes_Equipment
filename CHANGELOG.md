@@ -4,6 +4,23 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.12.0
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- The upgrade quest panel can now be resized, text and all, from 50% to
+  150%. Drag the gold grip below its bottom right corner (right-click it
+  for Normal), use the Small, Normal and Large buttons under **Panel size**
+  in Settings > Upgrade hunts, or type
+  `/beq quest size small|normal|large|<percent>`. It never grows past the
+  screen.
+- With **This zone only** ticked, a flight no longer swaps the quests in
+  every zone it crosses and pops "New upgrade quest" toasts mid-flight.
+  The tabs pick again when you land. Inside a dungeon or raid the tabs now
+  keep their quests instead of dropping them and picking them again on the
+  way out.
+
 ## 0.11.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game
