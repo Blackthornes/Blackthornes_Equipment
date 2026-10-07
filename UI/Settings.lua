@@ -430,9 +430,33 @@ function SettingsUI:BuildHunting()
     Explain(controls.questReset, "Bring back skipped upgrades",
         "Upgrades you skipped can be picked again. Same as /beq quest reset.")
 
+    -- The upgrade quest panel's size, as its gold corner grip and /beq quest
+    -- size set it (the owner asked 2026-10-07). The size in use is lit green
+    -- and named in the line under it, a dragged one by its percent.
+    local questSizeRow = CreateRow(frame, panelRow, "Panel size", "")
+    self.questSizeRow = questSizeRow
+    controls.questSizes = {}
+    local previous
+    for _, size in ipairs(ns.QuestPanel and ns.QuestPanel.SIZES or {}) do
+        local button = Widgets.CreateButton(questSizeRow, size.text, function()
+            ns.HandleSlash("quest size " .. size.key)
+        end, { width = 54, height = 20 })
+        if previous then
+            button:SetPoint("LEFT", previous, "RIGHT", 6, 0)
+        else
+            button:SetPoint("TOPLEFT", CONTROL_X, 0)
+        end
+        Explain(button, ("%s quest panel"):format(size.text),
+            ("Draws the upgrade quest panel at %d%%, text and all. Same as /beq quest size %s."):format(
+                math.floor(size.scale * 100 + 0.5), size.key))
+        button.scale = size.scale
+        controls.questSizes[#controls.questSizes + 1] = button
+        previous = button
+    end
+
     -- Which tab the panel shows, as clicking a tab or /beq quest vendor
     -- (quest, dungeon, crafted) does.
-    local tabRow = CreateRow(frame, panelRow, "Quest tab",
+    local tabRow = CreateRow(frame, questSizeRow, "Quest tab",
         "Each kind of source keeps its own upgrade. Pick the one the panel shows.")
     controls.questTab = Widgets.CreateStepper(tabRow, {
         min = 1, max = 4, step = 1, value = 1,
@@ -490,6 +514,7 @@ function SettingsUI:Refresh()
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
     end
     controls.upgradeQuest:SetChecked(ns.db.upgradeQuest == true)
+    self:RefreshQuestSize()
     controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
     -- Dimmed while there is nothing for them to do; still clickable, so a
     -- click says why.
@@ -511,6 +536,18 @@ function SettingsUI:Refresh()
     end
     controls.spec:SetValue(index, true)
     self.specRow.hint:SetText(self:SpecHint())
+end
+
+--- The quest panel's size buttons and the line under them.
+function SettingsUI:RefreshQuestSize()
+    local panel = ns.QuestPanel
+    if not (panel and self.questSizeRow) then return end
+    local scale = panel:GetScale()
+    for _, button in ipairs(self.controls.questSizes) do
+        button:SetLabelColor(math.abs(button.scale - scale) < 0.005 and "good" or "gilt")
+    end
+    self.questSizeRow.hint:SetText(("Now %s. Or drag the gold corner below the panel; right-click it for Normal."):format(
+        panel.ScaleText(scale)))
 end
 
 --------------------------------------------------------------------------------

@@ -394,6 +394,10 @@ local DEFAULTS = {
     -- The upgrade quest panel's "This zone only": each tab picks only from
     -- the zone the character is in (UpgradeQuest:ZoneOnly). Off: anywhere.
     upgradeQuestZoneOnly = false,
+    -- How big the upgrade quest panel is drawn, 1 being its normal size
+    -- (0.5 to 1.5): its gold corner grip, Settings or /beq quest size. Its
+    -- saved spot keeps the size it was taken at in questScaleAt.
+    questScale = 1,
 
     -- Upgrade hunts: the banner when an upgrade or a tracked one lands in
     -- the bags, the tracker panel and where it sits, pins on the world map,

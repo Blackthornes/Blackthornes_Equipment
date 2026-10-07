@@ -1201,8 +1201,23 @@ local TAB_WORDS = {
     craft = "craft", crafted = "craft", crafting = "craft",
 }
 
-ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip, switch, reset, or a tab: vendor, quest, dungeon, crafted)", function(rest)
+ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip, switch, reset, size, or a tab: vendor, quest, dungeon, crafted)", function(rest)
     local word = (rest or ""):lower():match("^%s*(%a*)") or ""
+    -- How big the panel is drawn: small, normal, large or a percent, as its
+    -- gold corner grip and the Settings row do (UI/QuestPanel.lua).
+    if word == "size" then
+        local panel = ns.QuestPanel
+        if not panel then return end
+        local scale = panel.ParseSize((rest or ""):lower():match("^%s*size%s*(.-)%s*$"))
+        if not scale then
+            ns.Print(("the quest panel is at %s. /beq quest size small, normal, large or a percent from 50%% to 150%% changes it, or drag the gold corner below its bottom right."):format(
+                panel.ScaleText(panel:GetScale())))
+            return
+        end
+        panel:Build()
+        ns.Print(("quest panel size: %s."):format(panel.ScaleText(panel:SetPanelScale(scale))))
+        return
+    end
     local tab = TAB_WORDS[word]
     if tab then
         if not UpgradeQuest:IsEnabled() then UpgradeQuest:SetEnabled(true) end

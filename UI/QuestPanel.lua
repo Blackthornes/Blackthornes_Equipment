@@ -52,6 +52,20 @@ local OFFER_ICON = 24
 local OFFER_PAD = 8
 local OFFER_TEXT = WIDTH - PAD * 2 - OFFER_PAD * 2 - OFFER_ICON - 8
 
+-- How big the panel can be drawn, as a share of its normal size: dragged by
+-- the gold grip below its bottom right corner, picked in Settings or typed
+-- with /beq quest size (the owner asked 2026-10-07, after Tradeskills' window
+-- got the same). Drawn smaller or larger as a whole, so its layout and text
+-- stay as they are. Saved as `questScale`, account wide.
+local SCALE_MIN = 0.5
+local SCALE_MAX = 1.5
+QuestPanel.SIZES = {
+    { key = "small", text = "Small", scale = 0.8 },
+    { key = "normal", text = "Normal", scale = 1 },
+    { key = "large", text = "Large", scale = 1.2 },
+}
+local GRIP_SIZE = 20
+
 local QUEST_ICON = [[Interface\GossipFrame\AvailableQuestIcon]]
 local DONE_ICON = [[Interface\RaidFrame\ReadyCheck-Ready]]
 local NOW_ICON = [[Interface\GossipFrame\AvailableQuestIcon]]
@@ -375,6 +389,7 @@ function QuestPanel:Build()
 
     local frame = CreateFrame("Frame", "BlackthornesEquipmentQuest", UIParent)
     frame:SetSize(WIDTH, HEADER)
+    frame:SetScale(self:GetScale())
     frame:SetFrameStrata("MEDIUM")
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
@@ -590,6 +605,7 @@ function QuestPanel:Build()
     self.skipButton = skip
 
     self.frame = frame
+    self:BuildSizeGrip()
     self:RestorePosition()
     frame:Hide()
     return frame
@@ -877,15 +893,265 @@ function QuestPanel:SavePosition()
     local point, _, relativePoint, x, y = self.frame:GetPoint()
     ns.db.questPoint, ns.db.questRelativePoint = point, relativePoint
     ns.db.questX, ns.db.questY = x, y
+    -- The offsets are in the panel's own units, which change with its
+    -- size, so the size they were taken at goes with them.
+    ns.db.questScaleAt = QuestPanel.ScaleOf(self.frame)
 end
 
 function QuestPanel:RestorePosition()
     if not self.frame then return end
     local db = ns.db or {}
     self.frame:ClearAllPoints()
+    -- Saved at another size (or before there were sizes, at 1): the same
+    -- spot on the screen, in the units of the size it is now. The starting
+    -- spot is in screen units, so it is divided by the size too.
+    local factor = QuestPanel.PositionFactor(db.questX and db.questScaleAt or 1,
+        QuestPanel.ScaleOf(self.frame))
     -- Below the upgrade tracker's starting spot, so the two do not overlap.
     self.frame:SetPoint(db.questPoint or "RIGHT", UIParent, db.questRelativePoint or "RIGHT",
-        db.questX or -40, db.questY or -120)
+        (db.questX or -40) * factor, (db.questY or -120) * factor)
+end
+
+--------------------------------------------------------------------------------
+-- Size
+--------------------------------------------------------------------------------
+
+--- A frame's own scale, or 1 when it cannot say.
+function QuestPanel.ScaleOf(frame)
+    local ok, scale = pcall(function() return frame:GetScale() end)
+    if ok and type(scale) == "number" and scale > 0 then return scale end
+    return 1
+end
+
+--- How much to multiply a saved offset by, taken at `saved` size and put
+--- back at `now`.
+function QuestPanel.PositionFactor(saved, now)
+    saved = tonumber(saved) or 1
+    now = tonumber(now) or 1
+    if saved <= 0 or now <= 0 then return 1 end
+    return saved / now
+end
+
+--- A size kept within bounds and to a whole percent.
+function QuestPanel.ClampScale(value)
+    value = tonumber(value)
+    if not value or value ~= value then return 1 end
+    value = math.max(SCALE_MIN, math.min(SCALE_MAX, value))
+    return math.floor(value * 100 + 0.5) / 100
+end
+
+--- The largest size at which the whole panel, rim and plate included,
+--- still fits on the screen; never under the normal size for a panel that
+--- fits at it, and SCALE_MAX when the screen cannot be measured.
+function QuestPanel:FitScale()
+    local ok, width, height = pcall(function()
+        return UIParent:GetWidth(), UIParent:GetHeight()
+    end)
+    if not (ok and type(width) == "number" and type(height) == "number"
+        and width > 0 and height > 0) then
+        return SCALE_MAX
+    end
+    local tall = HEADER
+    local frame = self.frame
+    if frame then
+        local okHeight, now = pcall(frame.GetHeight, frame)
+        if okHeight and type(now) == "number" and now > tall then tall = now end
+    end
+    -- The plate reaches above the top edge and the grip hangs below.
+    local fit = math.min(width / (WIDTH + 20), height / (tall + 20 + GRIP_SIZE + 10))
+    return math.max(SCALE_MIN, math.min(SCALE_MAX, math.floor(fit * 100) / 100))
+end
+
+--- The size the panel is drawn at: the saved one, kept on the screen.
+function QuestPanel:GetScale()
+    local saved = ns.db and ns.db.questScale
+    return math.min(QuestPanel.ClampScale(saved or 1), self:FitScale())
+end
+
+--- The name of a size, "Small (80%)", or "87%" for one dragged to.
+function QuestPanel.ScaleText(scale)
+    local percent = math.floor((tonumber(scale) or 1) * 100 + 0.5)
+    for _, size in ipairs(QuestPanel.SIZES) do
+        if math.floor(size.scale * 100 + 0.5) == percent then
+            return ("%s (%d%%)"):format(size.text, percent)
+        end
+    end
+    return ("%d%%"):format(percent)
+end
+
+--- "small", "normal", "large", "80", "80%" or "0.8" as a size, or nil.
+function QuestPanel.ParseSize(text)
+    text = (text or ""):lower():gsub("%s", ""):gsub("%%$", "")
+    if text == "" then return nil end
+    for _, size in ipairs(QuestPanel.SIZES) do
+        if size.key == text then return size.scale end
+    end
+    local number = tonumber(text)
+    if not number or number <= 0 then return nil end
+    -- 80 means 80%; 0.8 means the same.
+    if number > 5 then number = number / 100 end
+    return number
+end
+
+--- Draw the panel at `scale` with its top left corner where it was, so it
+--- grows and shrinks toward the bottom right, as it does from the grip.
+function QuestPanel:ApplyScale(scale)
+    local frame = self.frame
+    if not frame then return end
+
+    scale = math.min(QuestPanel.ClampScale(scale or self:GetScale()), self:FitScale())
+    local old = QuestPanel.ScaleOf(frame)
+    if math.abs(old - scale) < 0.001 then return end
+
+    -- Still rising into place from opening: land it first.
+    if Motion and Motion.Stop then pcall(Motion.Stop, Motion, frame, "open", true) end
+
+    local left, top = frame:GetLeft(), frame:GetTop()
+    frame:SetScale(scale)
+    if type(left) == "number" and type(top) == "number" then
+        frame:ClearAllPoints()
+        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left * old / scale, top * old / scale)
+        self:SavePosition()
+    else
+        self:RestorePosition()
+    end
+end
+
+--- Save a size and draw the panel at it. Returns the size it ended up at.
+function QuestPanel:SetPanelScale(value)
+    local scale = QuestPanel.ClampScale(value)
+    if ns.db then ns.db.questScale = scale end
+    self:ApplyScale(scale)
+    if ns.SettingsUI and ns.SettingsUI.Refresh then ns.SettingsUI:Refresh() end
+    return math.min(scale, self:FitScale())
+end
+
+--- The grip below the bottom right corner: drag it to make the panel bigger
+--- or smaller, right-click it for the normal size.
+function QuestPanel:BuildSizeGrip()
+    local frame = self.frame
+    local below = 3
+    if self.trim and ns.Titanforged and ns.Titanforged.Reach then
+        local _, _, _, bottom = ns.Titanforged.Reach(self.trim)
+        if type(bottom) == "number" then below = bottom + 3 end
+    end
+
+    local grip = Theme.CreatePanel(frame, "panel", "borderLit")
+    grip:SetSize(GRIP_SIZE, GRIP_SIZE)
+    grip:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", -6, -below)
+    grip:SetFrameLevel((frame:GetFrameLevel() or 0) + 20)
+    grip:EnableMouse(true)
+    Theme.TopSheen(grip)
+    self.sizeGrip = grip
+
+    -- Six gold dots in a stair down to the bottom right corner, the shape
+    -- every resizable window in the game wears, drawn from plain colour.
+    local dots = {}
+    for row = 0, 2 do
+        for column = 2 - row, 2 do
+            local dot = grip:CreateTexture(nil, "ARTWORK")
+            dot:SetSize(3, 3)
+            dot:SetPoint("BOTTOMRIGHT", grip, "BOTTOMRIGHT", -3 - (2 - column) * 5, 3 + (2 - row) * 5)
+            dot:SetColorTexture(Theme.Unpack("accent"))
+            dots[#dots + 1] = dot
+        end
+    end
+
+    local function Light(on)
+        Theme.SetBorderColor(grip, on and "accent" or "borderLit")
+        for _, dot in ipairs(dots) do
+            dot:SetColorTexture(Theme.Unpack(on and "accentHi" or "accent"))
+        end
+    end
+
+    local function Track(self)
+        local cx, cy = GetCursorPosition()
+        local uiScale = UIParent:GetEffectiveScale()
+        if not (cx and cy and type(uiScale) == "number" and uiScale > 0) then return end
+        cx, cy = cx / uiScale, cy / uiScale
+
+        -- Where the corner would be for the cursor to sit on the grip as it
+        -- did when the drag began, then the size that puts it there: the
+        -- width's and the height's answers averaged, so a drag off the
+        -- diagonal still feels right.
+        local width = cx - self.grabX - self.anchorLeft
+        local height = self.anchorTop - (cy + self.grabY)
+        local scale = QuestPanel.ClampScale((width / WIDTH + height / self.tall) / 2)
+        scale = math.min(scale, self.fit)
+        if math.abs(scale - QuestPanel.ScaleOf(frame)) < 0.005 then return end
+
+        frame:SetScale(scale)
+        frame:ClearAllPoints()
+        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.anchorLeft / scale, self.anchorTop / scale)
+
+        if GameTooltip:IsOwned(self) then
+            GameTooltip:SetText(QuestPanel.ScaleText(scale), Theme.Unpack("accentHi"))
+            GameTooltip:Show()
+        end
+    end
+
+    local function StopSizing(self)
+        if not self.sizing then return end
+        self.sizing = false
+        self:SetScript("OnUpdate", nil)
+        if ns.db then ns.db.questScale = QuestPanel.ClampScale(QuestPanel.ScaleOf(frame)) end
+        QuestPanel:SavePosition()
+        if ns.SettingsUI and ns.SettingsUI.Refresh then ns.SettingsUI:Refresh() end
+    end
+
+    grip:SetScript("OnMouseDown", function(self, button)
+        if button == "RightButton" then
+            QuestPanel:SetPanelScale(1)
+            return
+        end
+        if button ~= "LeftButton" then return end
+
+        if Motion and Motion.Stop then pcall(Motion.Stop, Motion, frame, "open", true) end
+
+        local scale = QuestPanel.ScaleOf(frame)
+        local left, top = frame:GetLeft(), frame:GetTop()
+        local cx, cy = GetCursorPosition()
+        local uiScale = UIParent:GetEffectiveScale()
+        if not (type(left) == "number" and type(top) == "number" and cx and cy
+            and type(uiScale) == "number" and uiScale > 0) then
+            return
+        end
+
+        -- The panel is as tall as its quest, so its height at the start of
+        -- the drag is the one to size by.
+        local okHeight, tall = pcall(frame.GetHeight, frame)
+        self.tall = (okHeight and type(tall) == "number" and tall > 0) and tall or HEADER
+
+        -- All in the screen's units, which do not change with the panel's.
+        self.anchorLeft, self.anchorTop = left * scale, top * scale
+        self.grabX = cx / uiScale - (self.anchorLeft + WIDTH * scale)
+        self.grabY = (self.anchorTop - self.tall * scale) - cy / uiScale
+        self.fit = QuestPanel:FitScale()
+
+        frame:ClearAllPoints()
+        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+
+        self.sizing = true
+        self:SetScript("OnUpdate", Track)
+    end)
+    grip:SetScript("OnMouseUp", StopSizing)
+    grip:SetScript("OnHide", StopSizing)
+
+    grip:SetScript("OnEnter", function(self)
+        Light(true)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(QuestPanel.ScaleText(QuestPanel.ScaleOf(frame)), Theme.Unpack("accentHi"))
+        GameTooltip:AddLine("Drag to make the panel bigger or smaller.", 1, 1, 1, true)
+        GameTooltip:AddLine("Right-click: back to the normal size.", 1, 1, 1, true)
+        GameTooltip:AddLine("Also in Settings, and /beq quest size.", Theme.Unpack("accent"))
+        GameTooltip:Show()
+    end)
+    grip:SetScript("OnLeave", function()
+        Light(false)
+        GameTooltip:Hide()
+    end)
+
+    return grip
 end
 
 function QuestPanel:OnEnable()
