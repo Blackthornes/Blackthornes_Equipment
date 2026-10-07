@@ -597,6 +597,9 @@ end
 --             sources, needs, roll, at }: `roll` for gear with random rolls
 --             (Logic/Rolls.lua's best), `at` the level it can be worn from
 --             when that is still ahead
+--   all       { [inventory slot] = { pick, ... } } the same, every pick
+--             kept, for the upgrade quest's "This zone only", whose best
+--             here is seldom among the best anywhere
 --   count     how many picks in all
 --   checked   how many items were judged
 --   waiting   how many the server has still to answer about
@@ -670,7 +673,7 @@ function Finder:Build(only, ahead, pause)
         end
     end
 
-    local count = 0
+    local count, all = 0, {}
     for slot, list in pairs(slots) do
         -- What can be had now comes before gear that waits on a reputation,
         -- and both before gear someone else would have to make.
@@ -680,13 +683,16 @@ function Finder:Build(only, ahead, pause)
             if a.gain ~= b.gain then return a.gain > b.gain end
             return a.itemID < b.itemID
         end)
+        local copy = {}
+        for i, pick in ipairs(list) do copy[i] = pick end
+        all[slot] = copy
         for i = #list, PER_SLOT + 1, -1 do list[i] = nil end
         count = count + #list
         slots[slot] = list
     end
 
     local found = {
-        slots = slots, count = count, checked = checked, waiting = waiting, player = player,
+        slots = slots, all = all, count = count, checked = checked, waiting = waiting, player = player,
         reach = reach,
     }
     if not only and reach == level then

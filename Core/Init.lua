@@ -391,6 +391,9 @@ local DEFAULTS = {
     -- How many levels above the character a quest the finder offers may
     -- be, 0 to 10, or 11 for any (Finder:QuestLevelsAbove).
     questLevelsAbove = 4,
+    -- The upgrade quest panel's "This zone only": each tab picks only from
+    -- the zone the character is in (UpgradeQuest:ZoneOnly). Off: anywhere.
+    upgradeQuestZoneOnly = false,
 
     -- Upgrade hunts: the banner when an upgrade or a tracked one lands in
     -- the bags, the tracker panel and where it sits, pins on the world map,

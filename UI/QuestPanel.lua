@@ -3,7 +3,11 @@
 -- gold rim, its name on a plate and a red gem that closes it (turning the
 -- upgrade quest off; Settings or /beq quest brings it back). Under the
 -- header, a tab for each kind of source (Vendor, Quest, Dungeons and Raids,
--- Crafted), each with its own upgrade; click one to show it. Then, like a
+-- Crafted), each with its own upgrade; click one to show it. Under the tabs,
+-- what the quest may pick from: "This zone only" (only upgrades from the
+-- zone the character is in), "Solo quests only" and the "Quest level" limit
+-- (the same two as in Where to get upgrades, so both follow one setting),
+-- and a Settings button. Then, like a
 -- quest in the quest tracker: the item
 -- with how much better it is, a progress bar, and the steps to get it, the
 -- one to do now lit gold and the ones done ticked green.
@@ -33,6 +37,10 @@ local HEADER = HEADER_ROW + 22 + 4
 local TAB_HEIGHT = 24
 local TAB_GAP = 4
 local TABS_HEIGHT = TAB_HEIGHT + 8
+-- The filters: two rows of tick boxes and the level stepper.
+local FILTER_ROW = 22
+local FILTER_GAP = 6
+local FILTERS_HEIGHT = FILTER_ROW * 2 + FILTER_GAP + 8
 local PAD = 10
 local ICON = 36
 local MARK = 14
@@ -251,6 +259,111 @@ function QuestPanel:FillTabs()
     end
 end
 
+--------------------------------------------------------------------------------
+-- Filters
+--------------------------------------------------------------------------------
+
+--- A tick box's or stepper's tooltip, below it so it never covers the tabs.
+local function ExplainBelow(control, title, text)
+    control:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:AddLine(title, Theme.Unpack("accent"))
+        GameTooltip:AddLine(text, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    control:HookScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
+--- The quest level stepper's place: 0 to 10 levels up, or 11 for any.
+function QuestPanel.QuestLevelsValue()
+    local finder = ns.Finder
+    if not finder then return 4 end
+    return finder:QuestLevelsAbove() or finder.QUEST_LEVELS_ANY
+end
+
+--- Its words, as Where to get upgrades says them.
+function QuestPanel.QuestLevelsText(value)
+    if ns.FinderUI and ns.FinderUI.QuestLevelsText then return ns.FinderUI.QuestLevelsText(value) end
+    return tostring(value)
+end
+
+--- Under the tabs: "This zone only" and "Solo quests only" on one row;
+--- "Quest level" and the Settings button on the next.
+-- Made while the panel is built, so the panel's frame is handed in.
+function QuestPanel:BuildFilters(frame)
+    local top = HEADER + TABS_HEIGHT
+    local strip = CreateFrame("Frame", nil, frame)
+    strip:SetPoint("TOPLEFT", 0, -top)
+    strip:SetPoint("TOPRIGHT", 0, -top)
+    strip:SetHeight(FILTERS_HEIGHT)
+    self.filters = strip
+
+    local zone = Widgets.CreateCheckbox(strip, "This zone only", function(checked)
+        if ns.UpgradeQuest then ns.UpgradeQuest:SetZoneOnly(checked) end
+    end, ns.UpgradeQuest and ns.UpgradeQuest:ZoneOnly())
+    zone:SetPoint("TOPLEFT", PAD, -2)
+    ExplainBelow(zone, "This zone only",
+        "Only upgrades from the zone you are in: a vendor, a quest giver or a dungeon's entrance here. "
+            .. "Each tab picks again as you travel. Untick it to look anywhere. "
+            .. "An upgrade you chose in Where to get upgrades stays either way.")
+    self.zoneBox = zone
+
+    -- The same switch as in Where to get upgrades and Settings.
+    local solo = Widgets.CreateCheckbox(strip, "Solo quests only", function(checked)
+        if ns.Finder then ns.Finder:SetSoloOnly(checked) end
+    end, ns.Finder and ns.Finder:SoloOnly())
+    solo:SetPoint("LEFT", zone, "RIGHT", 16, 0)
+    ExplainBelow(solo, "Solo quests only",
+        "Hides quests that need a group, a dungeon, a raid or a battleground, and quests that come after one. "
+            .. "The same switch as in Where to get upgrades.")
+    self.soloBox = solo
+
+    local rowY = -(FILTER_ROW + FILTER_GAP)
+    local levelLabel = Theme.CreateLabel(strip, "small", "muted")
+    levelLabel:SetPoint("TOPLEFT", PAD, rowY - 4)
+    levelLabel:SetText("Quest level")
+    self.levelLabel = levelLabel
+
+    -- As wide as its longest words, measured.
+    local finder = ns.Finder
+    local most = finder and finder.QUEST_LEVELS_ANY or 11
+    local widest = 0
+    for value = 0, most do
+        widest = math.max(widest, Theme.TextWidth("small", QuestPanel.QuestLevelsText(value)))
+    end
+    local levels = Widgets.CreateStepper(strip, {
+        min = 0, max = most, step = 1, value = QuestPanel.QuestLevelsValue(),
+        format = function(value) return QuestPanel.QuestLevelsText(value) end,
+        onChange = function(value)
+            if ns.Finder then ns.Finder:SetQuestLevelsAbove(value) end
+        end,
+    })
+    levels:SetWidth(math.max(118, widest + 22 * 2 + 4 * 2 + 16))
+    levels:SetPoint("LEFT", levelLabel, "RIGHT", 8, 0)
+    ExplainBelow(levels, "Quest level",
+        "How far above your level a quest may be and still be picked. Quests 5 or more levels up show in red "
+            .. "in your quest log. The same limit as in Where to get upgrades.")
+    self.levelStepper = levels
+
+    local settingsText = "Settings"
+    local settings = Widgets.CreateButton(strip, settingsText, function()
+        if ns.SettingsUI then ns.SettingsUI:Show() end
+    end, { width = Theme.TextWidth("small", settingsText) + 24, height = 20 })
+    settings:SetPoint("TOPRIGHT", -PAD, rowY - 1)
+    Explain(settings, "Settings", "Open Equipment's settings, with the upgrade quest's under Upgrade hunts.")
+    self.settingsButton = settings
+end
+
+--- Put the filters back in step with what is saved: any of them can be
+--- changed elsewhere too.
+function QuestPanel:FillFilters()
+    if not self.filters then return end
+    self.filters:SetShown(not self.folded)
+    if self.zoneBox then self.zoneBox:SetChecked(ns.UpgradeQuest:ZoneOnly()) end
+    if self.soloBox and ns.Finder then self.soloBox:SetChecked(ns.Finder:SoloOnly()) end
+    if self.levelStepper then self.levelStepper:SetValue(QuestPanel.QuestLevelsValue(), true) end
+end
+
 --- The close gem: the upgrade quest goes off, its quests kept.
 function QuestPanel:Close()
     if ns.UpgradeQuest then ns.UpgradeQuest:SetEnabled(false) end
@@ -321,11 +434,12 @@ function QuestPanel:Build()
     self.tabs = {}
     for index, tab in ipairs(ns.UpgradeQuest.TABS) do self.tabs[index] = self:BuildTab(frame, tab) end
     self:LayoutTabs(frame)
+    self:BuildFilters(frame)
 
-    -- Everything under the tabs, hidden when folded.
+    -- Everything under the filters, hidden when folded.
     local body = CreateFrame("Frame", nil, frame)
-    body:SetPoint("TOPLEFT", 0, -(HEADER + TABS_HEIGHT))
-    body:SetPoint("TOPRIGHT", 0, -(HEADER + TABS_HEIGHT))
+    body:SetPoint("TOPLEFT", 0, -(HEADER + TABS_HEIGHT + FILTERS_HEIGHT))
+    body:SetPoint("TOPRIGHT", 0, -(HEADER + TABS_HEIGHT + FILTERS_HEIGHT))
     body:SetHeight(1)
     self.body = body
 
@@ -555,6 +669,7 @@ function QuestPanel:Refresh()
         if tab.key == shownTab then self.title:SetText(tab.name) end
     end
     self:FillTabs()
+    self:FillFilters()
 
     local steps, current = {}, 0
     if quest then steps, current = logic:Steps(quest) end
@@ -566,7 +681,7 @@ function QuestPanel:Refresh()
 
     local height = HEADER
     if not self.folded then
-        height = height + TABS_HEIGHT + self:FillBody(quest, steps, current, done)
+        height = height + TABS_HEIGHT + FILTERS_HEIGHT + self:FillBody(quest, steps, current, done)
     end
     self.frame:SetHeight(height)
 
@@ -597,6 +712,9 @@ function QuestPanel:FillBody(quest, steps, current, done)
         local text
         if state == "waiting" then
             text = "Looking for your next upgrade..."
+        elseif ns.UpgradeQuest:ZoneOnly() then
+            text = (ns.UpgradeQuest.NONE[ns.UpgradeQuest:Tab()] or "No upgrade to chase right now.")
+                .. " Only this zone is searched: untick This zone only to look anywhere, or try another tab."
         else
             text = (ns.UpgradeQuest.NONE[ns.UpgradeQuest:Tab()] or "No upgrade to chase right now.")
                 .. " A new one comes up as you level. Try another tab, or open Other ways for gear that waits on a reputation."
