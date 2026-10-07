@@ -95,7 +95,11 @@ worth the trip, a gold **New upgrade unlocked** box offers it: **Switch**
 follows it instead (or `/beq quest switch`), **Keep current** stays put. It
 is off unless you turn it on, and the quest is kept per character. Every
 `/beq quest` command is a button in Settings > Upgrade hunts too: Skip,
-Switch, Open (the panel), Bring back (skipped upgrades) and the tab shown.
+Switch, Open (the panel), Bring back (skipped upgrades), the panel's size
+and the tab shown. To make the panel bigger or smaller, text and all, drag
+the gold grip below its bottom-right corner, anywhere from 50% to 150%;
+right-click it for the normal size, or type `/beq quest size` with `small`,
+`normal`, `large` or a percent. It never grows past the screen.
 Under the tabs, tick **This zone only** to have each tab pick only from the
 zone you are in (a vendor, a quest giver or a dungeon's entrance there); the
 tabs pick again as you travel, and an upgrade you clicked in Where to get
@@ -155,7 +159,7 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq bags       list every piece of gear in your bags with its verdict
 /beq find       where to get upgrades: vendors, quests, dungeons and crafting
 /beq tracked    the upgrades you are tracking (/beq tracked clear stops them all)
-/beq quest      a quest for your next upgrade (/beq quest off, skip, switch, reset, or a tab: vendor, quest, dungeon, crafted)
+/beq quest      a quest for your next upgrade (/beq quest off, skip, switch, reset, size, or a tab: vendor, quest, dungeon, crafted)
 /beq weights    change how much each stat counts (also in the settings window)
 /beq probe      check what this client supports; it only reads
 /beq perf       what took longest this session, if the game hitches (/beq perf clear starts over; also Settings > Speed check)
