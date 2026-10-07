@@ -128,7 +128,9 @@ sharing the same saved values, beside "This zone only"
 zone the character is in (`UpgradeQuest.InZone`; a dungeon counts from its
 entrance's zone and inside, a craft with no place anywhere), across every
 pick (`found.all`, not the finder's top three per slot), and
-`ZONE_CHANGED_NEW_AREA` lets go of tabs' quests elsewhere. A quest followed
+`ZONE_CHANGED_NEW_AREA` lets go of tabs' quests elsewhere (not on a
+flight, which waits for `PLAYER_CONTROL_GAINED` at the landing, and not
+inside a dungeon or raid: `UpgradeQuest.Passing`). A quest followed
 from the finder (`quest.followed`) stays; quests picked while ticked
 (`quest.here`) are let go when it is unticked. A Settings button sits
 beside them.
