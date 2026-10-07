@@ -19,14 +19,19 @@
 --
 -- Kept per character, in BlackthornesEquipmentCharDB:
 --   upgradeQuestTabs     { [tab] = quest } the quest on each tab, a quest
---                        being { itemID, link, slot, at, howMuch, source };
---                        `source` is the finder's source it was picked for
+--                        being { itemID, link, slot, at, howMuch, source,
+--                        here, followed }; `source` is the finder's source
+--                        it was picked for, `here` set when it was picked
+--                        while "This zone only" was ticked, `followed` when
+--                        the player chose it in Where to get upgrades
 --   upgradeQuestTab      the tab picked ("vendor", "quest", "dungeon",
 --                        "craft")
 --   upgradeQuest         a copy of the picked tab's quest, as versions
 --                        before the tabs kept it; read once into the tabs
 --   upgradeQuestSkipped  { [itemID] = true } upgrades the player skipped
 --   upgradeQuestsDone    how many upgrade quests this character finished
+-- And account wide, in BlackthornesEquipmentDB: `upgradeQuestZoneOnly`, the
+-- quest panel's "This zone only" box (off: upgrades from anywhere).
 -- Made the first time they are needed, and never renamed or cleared by an
 -- update.
 
@@ -249,12 +254,26 @@ function UpgradeQuest.Ease(source, zone)
     return ease
 end
 
+--- Is "This zone only" ticked on the quest panel? Saved account wide as
+--- `upgradeQuestZoneOnly`, off unless ticked (the quest looks anywhere).
+function UpgradeQuest:ZoneOnly()
+    return ns.db ~= nil and ns.db.upgradeQuestZoneOnly == true
+end
+
+--- Is a source in the zone `here`? A dungeon counts from its entrance's
+--- zone and from inside. Gear made from what you know has no place, so it
+--- is in every zone, and so is anything when the zone is not known.
+function UpgradeQuest.InZone(source, here)
+    if not here or type(source) ~= "table" or not source.zone then return true end
+    return source.zone == here or source.dungeon == here
+end
+
 --- The easiest of a pick's sources (only those for one tab, when `tab` is
---- given), and how easy it is.
-function UpgradeQuest.BestSource(sources, zone, tab)
+--- given, and only those in the zone `here`, when it is), and how easy it is.
+function UpgradeQuest.BestSource(sources, zone, tab, here)
     local best, bestEase
     for _, source in ipairs(sources or {}) do
-        if not tab or source.kind == tab then
+        if (not tab or source.kind == tab) and UpgradeQuest.InZone(source, here) then
             local ease = UpgradeQuest.Ease(source, zone)
             if not best or ease > bestEase then best, bestEase = source, ease end
         end
@@ -273,17 +292,23 @@ end
 --- From a finder scan, the pick most worth going after: { pick, source },
 --- or nil. Gear that waits on a reputation, that nobody on the account can
 --- make, or that the player skipped is left out, and so is anything in
---- `except` ({ [itemID] = true }). With `tab`, only that tab's sources count.
+--- `except` ({ [itemID] = true }). With `tab`, only that tab's sources count;
+--- with "This zone only" ticked, only those in the zone the character is in.
 function UpgradeQuest:Choose(found, except, tab)
     if type(found) ~= "table" or type(found.slots) ~= "table" then return nil end
     local skipped = self:Skipped()
     local zone = found.player and found.player.zone
+    -- Read now: the scan may be from before the last zone change.
+    local here = self:ZoneOnly() and (self.Zone() or zone) or nil
+    -- Only a few of the best per slot are kept for the finder's window; the
+    -- best in this zone is seldom among them, so look at them all.
+    local slots = here and type(found.all) == "table" and found.all or found.slots
     local best
-    for _, list in pairs(found.slots) do
+    for _, list in pairs(slots) do
         for _, pick in ipairs(list) do
             if not pick.needs and not pick.remote and not pick.at and not skipped[pick.itemID]
                 and not (except and except[pick.itemID]) then
-                local source, ease = self.BestSource(pick.sources, zone, tab)
+                local source, ease = self.BestSource(pick.sources, zone, tab, here)
                 if source then
                     local worth = Worth(pick.result, pick.gain or 0, ease)
                     if not best or worth > best.worth
@@ -309,6 +334,9 @@ function UpgradeQuest:Start(pick, source)
         at = Now(),
         howMuch = pick.result and ns.Compare:HowMuch(pick.result) or nil,
         source = Copy(source),
+        -- Picked while "This zone only" was ticked: let go when it is
+        -- unticked, so the tab picks again from anywhere.
+        here = self:ZoneOnly() or nil,
     }
     self:Quests()[tab] = quest
     self:Mirror()
@@ -349,6 +377,8 @@ function UpgradeQuest:Follow(pick)
     self.declined[pick.itemID] = nil
     local quest = self:Start(pick, source)
     if not quest then return nil, "nothing to follow" end
+    -- Picked by hand: "This zone only" never lets it go.
+    quest.followed = true
     ns.charDB.upgradeQuestTab = self.TabOf(source)
     -- Chosen by hand: no level-up offer to swap it straight away.
     self.offer = nil
@@ -1032,6 +1062,49 @@ function UpgradeQuest:OnQuestFilterChanged()
     if self:IsEnabled() then self:Update() else self:Changed() end
 end
 
+--- Let go of the tabs' quests that are not in the zone the character is
+--- in (not skipped: they come back in their own zone), while "This zone
+--- only" is ticked. A quest followed from Where to get upgrades stays.
+-- @return true when one was let go
+function UpgradeQuest:LetGoOutOfZone()
+    if not self:ZoneOnly() then return false end
+    local here = self.Zone()
+    if not here then return false end
+    local quests = self:Quests()
+    local any = false
+    for _, tab in ipairs(TABS) do
+        local quest = Valid(quests[tab.key])
+        if quest and not quest.followed and not self.InZone(quest.source, here) then
+            quests[tab.key] = nil
+            any = true
+        end
+    end
+    return any
+end
+
+--- Tick or untick "This zone only". Ticked, the tabs' quests elsewhere are
+--- let go and each tab picks again from the zone the character is in;
+--- unticked, the quests it picked are let go and every tab picks again
+--- from anywhere. A quest followed from Where to get upgrades stays.
+function UpgradeQuest:SetZoneOnly(on)
+    if not ns.db then return end
+    ns.db.upgradeQuestZoneOnly = on and true or false
+    if on then
+        self:LetGoOutOfZone()
+    else
+        local quests = self:Quests()
+        for _, tab in ipairs(TABS) do
+            local quest = Valid(quests[tab.key])
+            if quest and quest.here and not quest.followed then quests[tab.key] = nil end
+        end
+    end
+    self:Mirror()
+    self.rescan = true
+    self.offer = nil
+    self.lastStep = nil
+    if self:IsEnabled() then self:Update() else self:Changed() end
+end
+
 --- Is an item answer from the server about gear the quest cares about: an
 --- item a finder scan asked for, or one of the tabs' upgrades?
 function UpgradeQuest:WantsItem(itemID)
@@ -1058,6 +1131,12 @@ function UpgradeQuest:OnEvent(event, level)
         self.newLevel = ok and value or nil
     end
     if RESCAN_ON[event] then self.rescan = true end
+    -- A new zone has its own upgrades while "This zone only" is ticked.
+    if event == "ZONE_CHANGED_NEW_AREA" and self:ZoneOnly() then
+        self:LetGoOutOfZone()
+        self:Mirror()
+        self.rescan = true
+    end
     if event == "BAG_UPDATE_DELAYED" then self.bagsChanged = true end
     self:UpdateSoon()
 end

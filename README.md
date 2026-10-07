@@ -96,6 +96,12 @@ follows it instead (or `/beq quest switch`), **Keep current** stays put. It
 is off unless you turn it on, and the quest is kept per character. Every
 `/beq quest` command is a button in Settings > Upgrade hunts too: Skip,
 Switch, Open (the panel), Bring back (skipped upgrades) and the tab shown.
+Under the tabs, tick **This zone only** to have each tab pick only from the
+zone you are in (a vendor, a quest giver or a dungeon's entrance there); the
+tabs pick again as you travel, and an upgrade you clicked in Where to get
+upgrades stays wherever you go. Untick it to look anywhere again. Beside it
+are the same **Solo quests only** and **Quest level** as in Where to get
+upgrades (changing either here changes it there), and a **Settings** button.
 
 Where gear comes from is `Data/Sources.lua`, generated from Classic 1.12
 data by `tools/make_sources.py` (see below), and what can be crafted is

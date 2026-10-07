@@ -121,7 +121,17 @@ quests that need others or come after one, and the upgrade quest lets such
 a quest go (not skipped) when it is ticked. Asked the same day, the
 finder's "Quest level" stepper (`questLevelsAbove`, 0 to 10 levels above
 the character, 11 for any, default 4; `Finder:QuestAllowed`) works the same
-way.
+way. The upgrade quest panel (asked 2026-10-07) shows both under its tabs,
+sharing the same saved values, beside "This zone only"
+(`upgradeQuestZoneOnly`, account wide, off by default;
+`UpgradeQuest:SetZoneOnly`): `Choose` then looks only at sources in the
+zone the character is in (`UpgradeQuest.InZone`; a dungeon counts from its
+entrance's zone and inside, a craft with no place anywhere), across every
+pick (`found.all`, not the finder's top three per slot), and
+`ZONE_CHANGED_NEW_AREA` lets go of tabs' quests elsewhere. A quest followed
+from the finder (`quest.followed`) stays; quests picked while ticked
+(`quest.here`) are let go when it is unticked. A Settings button sits
+beside them.
 
 Forever's own boss drops: `tools/forever_drops.py` reads Farmer's
 `Data/Data_Harvested.lua` (no player names in it) and writes
