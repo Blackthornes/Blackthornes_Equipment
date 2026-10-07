@@ -4,6 +4,25 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.11.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- New **This zone only** tick box on the upgrade quest panel, off by
+  default. When it's ticked, each tab picks only from the zone you're in (a
+  vendor, a quest giver or a dungeon entrance there) and picks again as you
+  travel. An upgrade you chose yourself in Where to get upgrades is kept
+  wherever you go.
+- The upgrade quest panel now has the **Solo quests only** tick box and the
+  **Quest level** stepper too, shared with Where to get upgrades, and a
+  **Settings** button.
+- Vendors and trainers that Forever moved now show in the right place in
+  Where to get upgrades, on the map pin and in the upgrade quest. Varg in
+  Bloodhoof Village, for example, is at Mulgore 45.3, 62.1. Whenever you
+  open a merchant or trainer window, the addon also remembers where that
+  NPC stands and uses that spot from then on.
+
 ## 0.10.0
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
