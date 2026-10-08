@@ -604,9 +604,23 @@ function UpgradeQuest:Steps(quest)
         Travel(place)
         local text = ("Find %s%s"):format(source.name or "the vendor", At(place))
         Add(text, false, place)
-        local price = money(source.price)
+        -- What a merchant window showed on Forever beats the Classic price
+        -- saved with the quest.
+        local cost = (ns.NPCSpots and ns.NPCSpots:Price(itemID)) or source.price
+        local price = money(cost)
+        local notes = {}
+        local short = not have and ns.Finder and money(ns.Finder.Short(cost))
+        if short then
+            local held = money(ns.Finder.MoneyHeld()) or "no money"
+            notes[#notes + 1] = ("|c%sNot enough money:|r you have %s and need %s more.")
+                :format(ns.COLORS.downgrade, held, short)
+        end
+        if source.limited then
+            notes[#notes + 1] = "Limited stock: if it is sold out, wait for the vendor to restock."
+        end
         Add(("Buy %s%s"):format(link, price and (" for " .. price) or ""), have, place,
-            source.limited and "Limited stock: if it is sold out, wait for the vendor to restock." or nil)
+            #notes > 0 and table.concat(notes, " ") or nil)
+        steps[#steps].short = short and true or nil
     elseif source.kind == "quest" then
         local questID = source.questID
         local turnedIn = questID and ns.Finder and ns.Finder:QuestDone(questID)

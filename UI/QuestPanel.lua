@@ -1201,6 +1201,30 @@ function QuestPanel:BuildSizeGrip()
     return grip
 end
 
+--- Refresh once, a moment from now, while the panel shows: for money
+--- changes and prices learned at a merchant.
+function QuestPanel:RefreshSoon()
+    if not (self.frame and self.frame:IsShown()) or self.pending then return end
+    self.pending = true
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.5, function()
+            QuestPanel.pending = false
+            QuestPanel:Refresh()
+        end)
+    else
+        self.pending = false
+        self:Refresh()
+    end
+end
+
+--- Money only matters to a vendor quest that is shown and not yet bought.
+function QuestPanel:OnMoney()
+    if self.folded or not self:IsEnabled() then return end
+    local quest = ns.UpgradeQuest:Current()
+    if quest and quest.source and quest.source.kind == "vendor" then self:RefreshSoon() end
+end
+
 function QuestPanel:OnEnable()
     self:Refresh()
+    ns.RegisterEvent(self, "PLAYER_MONEY", function() QuestPanel:OnMoney() end)
 end

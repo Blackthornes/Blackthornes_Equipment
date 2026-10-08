@@ -322,9 +322,11 @@ function Finder:SourcesFor(itemID, player)
             -- Where Forever has the vendor, when seen there (Logic/NPCSpots.lua).
             local name, zone, x, y = npc[1], ZoneName(npc[2]), npc[3], npc[4]
             if ns.NPCSpots then name, zone, x, y = ns.NPCSpots:Place(vendors[i], name, zone, x, y) end
+            -- What the vendor charges on Forever, once a merchant window showed it.
+            local seenPrice = ns.NPCSpots and ns.NPCSpots:Price(itemID)
             found[#found + 1] = {
                 kind = "vendor", name = name, zone = zone, x = x, y = y,
-                price = item[5], limited = vendors[i + 1] > 0,
+                price = seenPrice or item[5], priceSeen = seenPrice ~= nil, limited = vendors[i + 1] > 0,
             }
         end
     end
@@ -864,6 +866,26 @@ function Finder.Money(copper)
     return table.concat(parts, " ")
 end
 
+--- The character's money in copper, or nil when it can't be read.
+function Finder.MoneyHeld()
+    local ok, copper = pcall(function()
+        local money = _G.GetMoney and _G.GetMoney()
+        local n = tonumber(money)
+        if n and n == n then return n + 0 end
+    end)
+    return ok and copper or nil
+end
+
+--- How much more copper the character needs to buy at `price`, or nil when
+--- they can afford it or either side is unknown.
+function Finder.Short(price)
+    price = tonumber(price)
+    if not price or price <= 0 then return nil end
+    local held = Finder.MoneyHeld()
+    if not held or held >= price then return nil end
+    return price - held
+end
+
 local function Place(source)
     if not source.zone then return nil end
     if source.x and source.y then
@@ -881,6 +903,8 @@ function Finder:Describe(source)
         if where then text = text .. ", " .. where end
         local price = self.Money(source.price)
         if price then text = text .. "  " .. price end
+        local short = self.Money(self.Short(source.price))
+        if short then text = text .. ("  |c%sneed|r %s |c%smore|r"):format(ns.COLORS.downgrade, short, ns.COLORS.downgrade) end
         if source.limited then text = text .. "  (limited stock)" end
         return text
     elseif source.kind == "quest" then

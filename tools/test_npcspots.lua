@@ -102,4 +102,82 @@ v = Vendor()
 suite.check("an unreadable saved spot is skipped, not deleted",
     v.x == 45.8 and ns.db.npcSpots[3079][1] == "broken", v.x)
 
+--------------------------------------------------------------------------------
+-- What vendors charge
+--------------------------------------------------------------------------------
+
+ns.db.npcSpots = {}
+suite.check("the Classic price stands until a merchant shows one",
+    Vendor().price == 500 and not Vendor().priceSeen and Spots:Price(1001) == nil)
+
+local wares = {
+    { id = 1001, price = 450, stack = 1 },
+    { id = 1002, price = 90, stack = 1 },             -- no vendor in the data
+    { id = 1003, price = 0, stack = 1, extended = true },
+}
+S.ITEMS[1003] = { 10, 18, 0, 0, 0, v = { 3079, 0 } }
+_G.GetMerchantNumItems = function() return #wares end
+_G.GetMerchantItemID = function(i) return wares[i] and wares[i].id end
+_G.C_MerchantFrame = { GetItemInfo = function(i)
+    local w = wares[i]
+    return w and { price = w.price, stackCount = w.stack, hasExtendedCost = w.extended or false }
+end }
+
+suite.check("a merchant window keeps the gear's price", Spots:LearnPrices() == 1)
+suite.check("by item ID, in copper", ns.db.vendorPrices[1001] == 450 and Spots:PriceCount() == 1)
+suite.check("not gear the finder has no vendor for", ns.db.vendorPrices[1002] == nil)
+suite.check("nor what costs tokens", ns.db.vendorPrices[1003] == nil)
+v = Vendor()
+suite.check("the price seen in game wins over Classic's", v.price == 450 and v.priceSeen, v.price)
+suite.check("seeing the same price again changes nothing", Spots:LearnPrices() == 0)
+
+_G.C_MerchantFrame = nil
+_G.GetMerchantItemID = nil
+_G.GetMerchantItemLink = function(i) return wares[i] and ("|cffffffff|Hitem:%d::|h[x]|h|r"):format(wares[i].id) end
+_G.GetMerchantItemInfo = function(i)
+    local w = wares[i]
+    return "x", 1, w.price, w.stack, -1, true, true, w.extended or false
+end
+wares[1].price = 405
+suite.check("the older merchant calls work too", Spots:LearnPrices() == 1 and Spots:Price(1001) == 405)
+_G.GetMerchantItemInfo = function() error("secret value") end
+wares[1].price = 1
+suite.check("a merchant slot that raises is skipped", Spots:LearnPrices() == 0 and Spots:Price(1001) == 405)
+
+--------------------------------------------------------------------------------
+-- Can the character pay
+--------------------------------------------------------------------------------
+
+local Finder = ns.Finder
+local held = 1000
+_G.GetMoney = function() return held end
+suite.check("nothing is short when the money is there", Finder.Short(405) == nil)
+held = 100
+suite.check("the shortfall in copper when it is not", Finder.Short(405) == 305)
+suite.check("the finder row says how much more",
+    (Finder:Describe(Vendor()):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")):find("need 3s 5c more", 1, true),
+    Finder:Describe(Vendor()))
+_G.GetMoney = function() error("secret value") end
+suite.check("unreadable money says nothing", Finder.Short(405) == nil
+    and not Finder:Describe(Vendor()):find("need", 1, true))
+
+held = 100
+_G.GetMoney = function() return held end
+local quest = { itemID = 1001, link = "[Vest]", source = { kind = "vendor", name = "Varg", zone = "Mulgore",
+    x = 40, y = 50, price = 500 } }
+local function BuyStep()
+    for _, step in ipairs(ns.UpgradeQuest:Steps(quest)) do
+        if step.text:find("^Buy") then return step end
+    end
+end
+local buy = BuyStep()
+local plain = function(text) return (text or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") end
+suite.check("the quest's buy step shows the price seen in game", plain(buy.text) == "Buy [Vest] for 4s 5c",
+    plain(buy.text))
+suite.check("and says the character can't pay yet", buy.short and plain(buy.note)
+    == "Not enough money: you have 1s and need 3s 5c more.", plain(buy.note))
+held = 5000
+buy = BuyStep()
+suite.check("with the money, no warning", not buy.short and buy.note == nil, buy.note)
+
 suite.done()

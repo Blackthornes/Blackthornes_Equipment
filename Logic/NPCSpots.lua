@@ -14,6 +14,13 @@
 -- tools/forever_npcs.py (NPC IDs, map names and numbers only), so every
 -- player gets them.
 --
+-- What vendors charge is learned the same way: when a merchant window opens,
+-- the gold price of every piece of gear the finder knows a vendor for is
+-- kept, account wide, in `BlackthornesEquipmentDB.vendorPrices[itemID]` =
+-- copper. A price seen in game wins over Classic's (`Price`), and the latest
+-- one seen wins, so a reputation discount or a Forever price change is
+-- followed. Items that cost tokens or honor are not kept.
+--
 -- Every client value is read inside a pcall and copied: in an instance the
 -- game hands out secret values that raise when touched. One merchant window
 -- is one read, so nothing here runs on bag events.
@@ -140,7 +147,94 @@ function NPCSpots:Place(npcID, name, zone, x, y)
     return seenName, spot[2], spot[3], spot[4]
 end
 
+--------------------------------------------------------------------------------
+-- What vendors charge
+--------------------------------------------------------------------------------
+
+local function ItemIDFromLink(link)
+    local ok, id = pcall(function()
+        if type(link) ~= "string" then return nil end
+        return tonumber(link:match("item:(%d+)"))
+    end)
+    return ok and id or nil
+end
+
+--- One merchant slot as item ID, gold price in copper and stack size, or
+--- nil when it is unreadable or costs something besides gold. Asks the
+--- newer C_MerchantFrame.GetItemInfo first, then GetMerchantItemInfo.
+function NPCSpots.MerchantItem(index)
+    local itemID = Number(Read(_G.GetMerchantItemID, index))
+        or ItemIDFromLink(Plain(Read(_G.GetMerchantItemLink, index)))
+    if not itemID then return nil end
+    local price, stack, extended
+    local frame = type(_G.C_MerchantFrame) == "table" and _G.C_MerchantFrame or nil
+    local info = frame and Read(frame.GetItemInfo, index)
+    if type(info) == "table" then
+        local ok = pcall(function()
+            price, stack = Number(info.price), Number(info.stackCount)
+            extended = info.hasExtendedCost and true or false
+        end)
+        if not ok then return nil end
+    else
+        local result = { pcall(_G.GetMerchantItemInfo or error, index) }
+        if not result[1] then return nil end
+        local ok = pcall(function()
+            price, stack = Number(result[4]), Number(result[5])
+            extended = result[9] and true or false
+        end)
+        if not ok then return nil end
+    end
+    if extended or not price or price <= 0 then return nil end
+    return itemID, price, stack or 1
+end
+
+--- Keep what the open merchant charges for the gear the finder knows a
+--- vendor for. Returns how many prices changed.
+function NPCSpots:LearnPrices()
+    local db = ns.db
+    local items = ns.Sources and ns.Sources.ITEMS
+    if type(db) ~= "table" or type(items) ~= "table" then return 0 end
+    local count = Number(Read(_G.GetMerchantNumItems)) or 0
+    local changed = 0
+    for index = 1, math.min(count, 200) do
+        local itemID, price, stack = self.MerchantItem(index)
+        local known = itemID and items[itemID]
+        if known and known.v and stack == 1 then
+            if type(db.vendorPrices) ~= "table" then db.vendorPrices = {} end
+            if db.vendorPrices[itemID] ~= price then
+                db.vendorPrices[itemID] = price
+                changed = changed + 1
+            end
+        end
+    end
+    if changed > 0 and ns.QuestPanel and ns.QuestPanel.RefreshSoon then ns.QuestPanel:RefreshSoon() end
+    return changed
+end
+
+--- What a vendor charges for an item on Forever, in copper, when a merchant
+--- window has shown it on this account; nil when not seen.
+function NPCSpots:Price(itemID)
+    local prices = type(ns.db) == "table" and type(ns.db.vendorPrices) == "table" and ns.db.vendorPrices
+    local price = prices and itemID and prices[itemID]
+    if type(price) == "number" and price > 0 then return price end
+    return nil
+end
+
+--- How many vendor prices this account has learned.
+function NPCSpots:PriceCount()
+    local n = 0
+    for _ in pairs(type(ns.db) == "table" and type(ns.db.vendorPrices) == "table" and ns.db.vendorPrices or {}) do
+        n = n + 1
+    end
+    return n
+end
+
 function NPCSpots:OnEnable()
-    ns.RegisterEvent(self, "MERCHANT_SHOW", function() NPCSpots:Learn("npc") end)
+    ns.RegisterEvent(self, "MERCHANT_SHOW", function()
+        NPCSpots:Learn("npc")
+        NPCSpots:LearnPrices()
+    end)
+    -- Item details can arrive after the window opens.
+    ns.RegisterEvent(self, "MERCHANT_UPDATE", function() NPCSpots:LearnPrices() end)
     ns.RegisterEvent(self, "TRAINER_SHOW", function() NPCSpots:Learn("npc") end)
 end
