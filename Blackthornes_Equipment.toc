@@ -19,6 +19,7 @@ Core\Init.lua
 Data\Items.lua
 Data\WeaponTrainers.lua
 Data\Sources.lua
+Data\QuestStarts.lua
 Data\ForeverDrops.lua
 Data\ForeverNPCs.lua
 Data\Crafts.lua

@@ -669,6 +669,44 @@ local function At(place)
     return ""
 end
 
+--- Where to get the item that starts a quest (Data/QuestStarts.lua), for a
+--- quest that starts from an item rather than a person: { itemID, item,
+--- total, places }, each place { kind, name, zone, x, y, low, high, chance,
+--- rank, forever, door }, `door` the zone a boss's dungeon opens from.
+--- Nil when the data has nothing for the quest.
+function UpgradeQuest.Starter(questID)
+    local starts = ns.Sources and ns.Sources.STARTS
+    local row = type(starts) == "table" and starts[questID]
+    if type(row) ~= "table" then return nil end
+    local places = {}
+    for index = 4, #row do
+        local p = row[index]
+        if type(p) == "table" then
+            local place = { kind = p[1], name = p[2], zone = p[3], low = p[6], high = p[7],
+                chance = p[8], rank = p[9] ~= "" and p[9] or nil, forever = p.f and true or nil }
+            if (tonumber(p[4]) or 0) > 0 then place.x, place.y = p[4], p[5] end
+            if place.kind == "boss" then
+                for _, dungeon in pairs(ns.Sources.DUNGEONS or {}) do
+                    if dungeon[1] == place.zone then place.door = dungeon[4] end
+                end
+            end
+            places[#places + 1] = place
+        end
+    end
+    return { itemID = row[1], item = row[2], total = tonumber(row[3]) or #places, places = places }
+end
+
+--- "level 12" or "levels 10 to 12", and ", rare" for a rare.
+local function LevelText(place)
+    local parts = {}
+    if (place.low or 0) > 0 then
+        parts[#parts + 1] = place.high and place.high > place.low
+            and ("levels %d to %d"):format(place.low, place.high) or ("level %d"):format(place.low)
+    end
+    if place.rank then parts[#parts + 1] = place.rank end
+    return #parts > 0 and (" (%s)"):format(table.concat(parts, ", ")) or ""
+end
+
 local function Who(names)
     if type(names) ~= "table" or #names == 0 then return "An alt" end
     if #names == 1 then return names[1] end
@@ -701,6 +739,56 @@ function UpgradeQuest:Steps(quest)
             -- Standing in the zone says nothing about the steps before it.
             steps[#steps].soft = true
         end
+    end
+
+    -- A quest that starts from an item: where to get the item (the first
+    -- place the data gives, Forever's before Classic's), then using it.
+    -- With the item in the bags, only the using is left.
+    local function StartFromItem(questID, title, itemName, started, travel, lead)
+        title = title or "the quest"
+        local starter = questID and UpgradeQuest.Starter(questID)
+        itemName = (starter and starter.item) or itemName or "an item"
+        local held = starter and UpgradeQuest.Count(starter.itemID) > 0
+        local first = starter and starter.places[1]
+        if not first and not held then
+            Add(("Find %s, the item that starts %s"):format(itemName, title), started, nil,
+                (lead and lead .. " " or "") .. "Where it drops is not known. Right-click it in your bags to start the quest.")
+            return
+        end
+        if first and not held and not started then
+            local place
+            if first.kind == "boss" then
+                place = first.door and { zone = first.door, name = first.zone } or nil
+            else
+                place = { zone = first.zone, x = first.x, y = first.y, name = first.name }
+            end
+            if travel then Travel(place) end
+            local verb = first.kind == "vendor" and "Buy" or "Get"
+            local where = first.kind == "boss" and (" in %s"):format(first.zone)
+                or (" in %s%s"):format(first.zone, At(first))
+            local notes = { lead }
+            if first.kind == "boss" then
+                notes[#notes + 1] = first.zone == first.door and "Bring a group." or "A dungeon boss: bring a group."
+            elseif first.rank == "rare" or first.rank == "rare elite" then
+                notes[#notes + 1] = "A rare: it may not be up when you get there."
+            end
+            local chance = tonumber(first.chance)
+            if chance and chance < 100 and first.kind ~= "vendor" then
+                notes[#notes + 1] = ("A %s%% drop."):format(tostring(chance))
+            end
+            if first.forever then notes[#notes + 1] = "Seen dropping on Forever." end
+            local others = {}
+            for index = 2, #starter.places do others[#others + 1] = starter.places[index].name end
+            if #others > 0 then
+                local more = starter.total - #starter.places
+                notes[#notes + 1] = ("Also from %s%s."):format(table.concat(others, " and "),
+                    more > 0 and (" and %d more"):format(more) or "")
+            end
+            Add(("%s %s from %s%s%s"):format(verb, itemName, first.name or "?", LevelText(first), where),
+                false, place, table.concat(notes, " "))
+            lead = nil
+        end
+        Add(("Right-click %s in your bags to start %s"):format(itemName, title), started, nil, lead)
     end
 
     if source.kind == "vendor" then
@@ -757,14 +845,16 @@ function UpgradeQuest:Steps(quest)
             elseif spot then
                 text = ("Do %s: pick it up from %s in %s%s"):format(before.title, before.name or "?",
                     before.zone or "?", At(spot))
-            else
-                text = ("Do %s: it starts from %s"):format(before.title, before.name or "an item")
             end
             local note = lead
             lead = nil
             local need = NEED_NOTES[before.group]
             if need then note = (note and note .. " " or "") .. need end
-            Add(text, false, spot, note)
+            if text then
+                Add(text, false, spot, note)
+            else
+                StartFromItem(before.questID, before.title, before.name, false, false, note)
+            end
         end
         local place = source.x and { zone = source.zone, x = source.x, y = source.y, name = source.name } or nil
         if place then Travel(place) end
@@ -772,8 +862,7 @@ function UpgradeQuest:Steps(quest)
             Add(("Pick up %s from %s%s"):format(source.title or "the quest", source.name or "?", At(place)),
                 onQuest, place)
         else
-            Add(("Pick up %s: it starts from %s"):format(source.title or "the quest", source.name or "an item"),
-                onQuest, nil)
+            StartFromItem(questID, source.title, source.name, onQuest, true)
         end
         local note = NEED_NOTES[source.group]
         Add(("Complete %s (level %d)"):format(source.title or "the quest", source.questLevel or 0),
