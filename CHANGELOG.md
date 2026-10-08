@@ -4,6 +4,37 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.13.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- New **quest arrow**: an **Arrow** button beside Show on map on the
+  upgrade quest panel brings up a gold dial that turns as you turn and
+  points at the next place in the quest's steps (the vendor, quest giver
+  or trainer), with the distance in yards and a green check once you are
+  there. A step with only a zone points at the middle of that zone and
+  says so. Click a step on the panel to aim at it, click the dial for the
+  next tab's quest, right-click it for the next place, and close it with
+  its red gem. It hides inside dungeons and is off until turned on
+  (Settings > Upgrade hunts, or `/beq arrow on|off|next|check|reset`).
+- Only one Blackthornes arrow is on screen at a time: with Farmer's goal
+  arrow or Pets' beast arrow also showing, the one turned on or aimed most
+  recently is drawn and the others wait.
+- The upgrade quest now offers reputation gear last: on each tab it picks
+  gear from a reputation quartermaster only when nothing else will do.
+  You can still follow one yourself from Where to get upgrades.
+- Vendor prices seen on Forever: once a merchant window has shown an item,
+  the upgrade quest's Buy step and Where to get upgrades use that price
+  instead of Classic's. When the character is short, the Buy step says
+  "Not enough money: you have X and need Y more", and the finder row adds
+  "need Y more" in red.
+- The upgrade quest's Skip button is now **Ignore**, and says the upgrade
+  won't be offered again on this character. Settings > Upgrade hunts has an
+  **Ignored** button with the count that opens a list of every ignored
+  upgrade, with a **Restore** button on each row and **Restore all**.
+  Items skipped before this update show up as ignored.
+
 ## 0.12.0
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
