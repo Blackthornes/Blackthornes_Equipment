@@ -564,13 +564,16 @@ local controls = ns.SettingsUI.controls
 local function Click(button) button:GetScript("OnClick")(button) end
 local skippedID = Quest:Current() and Quest:Current().itemID
 Click(controls.questSkip)
-suite.check("the Skip button skips", skippedID and ns.charDB.upgradeQuestSkipped[skippedID] == true
+suite.check("the Ignore button ignores", skippedID and ns.charDB.upgradeQuestSkipped[skippedID] == true
     and (Quest:Current() == nil or Quest:Current().itemID ~= skippedID))
 Click(controls.questSwitch)
 suite.check("the Switch button with nothing on offer says so",
     env.ChatText():find("no new upgrade is on offer", 1, true) ~= nil)
 Click(controls.questReset)
-suite.check("the Bring back button brings skipped ones back", next(ns.charDB.upgradeQuestSkipped) == nil)
+suite.check("the Ignored button lists them", ns.IgnoredUI.frame and ns.IgnoredUI.frame:IsShown())
+Click(ns.IgnoredUI.restoreAll)
+suite.check("and Restore all brings them back", next(ns.charDB.upgradeQuestSkipped) == nil)
+ns.IgnoredUI:Hide()
 ns.HandleSlash("quest off")
 Click(controls.questOpen)
 suite.check("the Open button turns it on and shows the panel", ns.db.upgradeQuest == true

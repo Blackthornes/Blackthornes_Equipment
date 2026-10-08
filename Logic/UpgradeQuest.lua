@@ -28,7 +28,10 @@
 --                        "craft")
 --   upgradeQuest         a copy of the picked tab's quest, as versions
 --                        before the tabs kept it; read once into the tabs
---   upgradeQuestSkipped  { [itemID] = true } upgrades the player skipped
+--   upgradeQuestSkipped  { [itemID] = true } upgrades the player ignored
+--                        (the panel's Ignore, once called Skip), never
+--                        offered again until restored in Settings or picked
+--                        by hand in Where to get upgrades
 --   upgradeQuestsDone    how many upgrade quests this character finished
 -- And account wide, in BlackthornesEquipmentDB: `upgradeQuestZoneOnly`, the
 -- quest panel's "This zone only" box (off: upgrades from anywhere).
@@ -224,6 +227,70 @@ function UpgradeQuest:Skipped()
     if not char then return {} end
     if type(char.upgradeQuestSkipped) ~= "table" then char.upgradeQuestSkipped = {} end
     return char.upgradeQuestSkipped
+end
+
+--- The upgrades this character ignored, for Settings' list: each
+--- { itemID, name, link }, by name. `link` is nil and `name` "Item 123"
+--- while the client has not sent the item yet; it is asked for, and
+--- GET_ITEM_INFO_RECEIVED says when it arrives.
+function UpgradeQuest:IgnoredList()
+    local list = {}
+    local Items = ns.Items
+    for itemID in pairs(self:Skipped()) do
+        local id = tonumber(itemID)
+        if id then
+            local name, link
+            if Items then
+                local rawName, rawLink = Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, id)
+                link = Items.PlainLink(rawLink)
+                local ok, copy = pcall(function()
+                    if type(rawName) == "string" and rawName ~= "" then return rawName .. "" end
+                end)
+                name = ok and copy or nil
+            end
+            if not name then
+                local C = _G.C_Item
+                if C and type(C.RequestLoadItemDataByID) == "function" then
+                    pcall(C.RequestLoadItemDataByID, id)
+                end
+            end
+            list[#list + 1] = { itemID = id, name = name or ("Item %d"):format(id), link = link }
+        end
+    end
+    table.sort(list, function(a, b)
+        if a.name ~= b.name then return a.name < b.name end
+        return a.itemID < b.itemID
+    end)
+    return list
+end
+
+--- Let an ignored upgrade be offered again.
+-- @return true when it was ignored
+function UpgradeQuest:Restore(itemID)
+    itemID = tonumber(itemID)
+    local skipped = self:Skipped()
+    if not (itemID and skipped[itemID]) then return false end
+    skipped[itemID] = nil
+    self:Restored()
+    return true
+end
+
+--- Let every ignored upgrade be offered again.
+-- @return how many there were
+function UpgradeQuest:RestoreAll()
+    local count = 0
+    for _ in pairs(self:Skipped()) do count = count + 1 end
+    if ns.charDB then ns.charDB.upgradeQuestSkipped = {} end
+    self:Restored()
+    return count
+end
+
+--- After a restore: look again, so a restored upgrade can be picked for a
+--- tab with nothing to chase, and tell the windows.
+function UpgradeQuest:Restored()
+    self.rescan = true
+    if self:IsEnabled() then pcall(self.Update, self) end
+    self:Changed()
 end
 
 function UpgradeQuest:DoneCount()
@@ -755,7 +822,7 @@ end
 
 --- Tell whatever shows the quest to draw it again.
 function UpgradeQuest:Changed()
-    for _, name in ipairs({ "QuestPanel", "MapPins", "SettingsUI", "FinderUI", "QuestArrow" }) do
+    for _, name in ipairs({ "QuestPanel", "MapPins", "SettingsUI", "FinderUI", "QuestArrow", "IgnoredUI" }) do
         local module = ns[name]
         if module and module.OnUpgradeQuestChanged then pcall(module.OnUpgradeQuestChanged, module) end
     end
@@ -1011,7 +1078,8 @@ function UpgradeQuest:UpdateSoon(delay)
     end)
 end
 
---- Leave this upgrade and pick another for the tab.
+--- Ignore this upgrade for good (until restored) and pick another for the
+--- tab.
 function UpgradeQuest:Skip()
     local quest = self:Current()
     if not quest then return false end
@@ -1201,7 +1269,7 @@ local TAB_WORDS = {
     craft = "craft", crafted = "craft", crafting = "craft",
 }
 
-ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip, switch, reset, size, or a tab: vendor, quest, dungeon, crafted)", function(rest)
+ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, ignore, ignored, restore, switch, size, or a tab: vendor, quest, dungeon, crafted)", function(rest)
     local word = (rest or ""):lower():match("^%s*(%a*)") or ""
     -- How big the panel is drawn: small, normal, large or a percent, as its
     -- gold corner grip and the Settings row do (UI/QuestPanel.lua).
@@ -1231,12 +1299,19 @@ ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip
         ns.Print("upgrade quest off. /beq quest turns it back on.")
         return
     end
-    if word == "skip" then
+    -- "skip" was the word before Ignore and still works.
+    if word == "ignore" or word == "skip" then
+        local quest = UpgradeQuest:Current()
         if UpgradeQuest:Skip() then
-            ns.Print("skipped that upgrade.")
+            ns.Print(("ignored %s: it will not be offered again. Settings > Upgrade hunts > Ignored brings it back."):format(
+                quest and quest.link or "that upgrade"))
         else
-            ns.Print("there is no upgrade quest to skip.")
+            ns.Print("there is no upgrade quest to ignore.")
         end
+        return
+    end
+    if word == "ignored" then
+        if ns.IgnoredUI then ns.IgnoredUI:Show() end
         return
     end
     if word == "switch" then
@@ -1247,11 +1322,10 @@ ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, skip
         end
         return
     end
-    if word == "reset" then
-        if ns.charDB then ns.charDB.upgradeQuestSkipped = {} end
-        ns.Print("skipped upgrades can come up again.")
-        UpgradeQuest.rescan = true
-        UpgradeQuest:Update()
+    -- "reset" was the word before Restore all and still works.
+    if word == "restore" or word == "reset" then
+        UpgradeQuest:RestoreAll()
+        ns.Print("ignored upgrades can come up again.")
         return
     end
     if not UpgradeQuest:IsEnabled() then
