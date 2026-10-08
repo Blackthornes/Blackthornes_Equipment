@@ -206,6 +206,41 @@ suite.check("and come out with them, no new quest announced", On("vendor") == 10
 
 _G.UnitOnTaxi, _G.IsInInstance = nil, nil
 ns.Toast.Show = show
+
+--------------------------------------------------------------------------------
+-- Change on a new zone (asked 2026-10-08): untick it and quests stay
+--------------------------------------------------------------------------------
+
+suite.check("on by default", ns.db.upgradeQuestZoneSwap == nil and Quest:ZoneSwap())
+Panel:Refresh()
+suite.check("the panel shows it ticked", Panel.swapBox:GetChecked())
+Panel.swapBox:GetScript("OnClick")(Panel.swapBox)
+suite.check("unticking saves it", ns.db.upgradeQuestZoneSwap == false and not Quest:ZoneSwap())
+suite.check("and lets nothing go yet", On("vendor") == 1002 and On("quest") == 1004)
+zone = "Elwynn Forest"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+suite.check("unticked, a new zone keeps the quests", On("vendor") == 1002 and On("quest") == 1004,
+    tostring(On("vendor")) .. "," .. tostring(On("quest")))
+Quest:Quests().vendor = nil
+Quest:Update()
+suite.check("an empty tab still picks from the zone it is in", On("vendor") == 1001, On("vendor"))
+ns.SettingsUI:Show()
+suite.check("Settings shows it unticked", not ns.SettingsUI.controls.questZoneSwap:GetChecked())
+local T = ns.Theme
+suite.check("both Settings boxes fit their row", 150 + 20 + T.TextWidth("small", "Solo only") <= 150 + 92 - 6
+    and 150 + 92 + 20 + T.TextWidth("small", "Zone swap") <= 330,
+    T.TextWidth("small", "Solo only") .. " " .. T.TextWidth("small", "Zone swap"))
+suite.check("the panel's box fits", 20 + T.TextWidth("small", "Change on a new zone") <= 340 - 20)
+ns.SettingsUI.controls.questZoneSwap:GetScript("OnClick")(ns.SettingsUI.controls.questZoneSwap)
+suite.check("Settings ticks it back on", ns.db.upgradeQuestZoneSwap == true and Quest:ZoneSwap())
+Panel:Refresh()
+suite.check("and the panel follows", Panel.swapBox:GetChecked())
+ns.SettingsUI:Hide()
+zone = "Westfall"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+suite.check("ticked, a new zone changes them again", On("quest") == 1004 and On("vendor") == 1002,
+    tostring(On("vendor")) .. "," .. tostring(On("quest")))
+
 Quest:SetZoneOnly(false)
 
 --------------------------------------------------------------------------------

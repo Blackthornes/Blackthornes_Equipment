@@ -34,7 +34,9 @@
 --                        by hand in Where to get upgrades
 --   upgradeQuestsDone    how many upgrade quests this character finished
 -- And account wide, in BlackthornesEquipmentDB: `upgradeQuestZoneOnly`, the
--- quest panel's "This zone only" box (off: upgrades from anywhere).
+-- quest panel's "This zone only" box (off: upgrades from anywhere), and
+-- `upgradeQuestZoneSwap`, its "Change on a new zone" box (on unless
+-- unticked: with This zone only, a new zone lets go of quests elsewhere).
 -- Made the first time they are needed, and never renamed or cleared by an
 -- update.
 
@@ -325,6 +327,23 @@ end
 --- `upgradeQuestZoneOnly`, off unless ticked (the quest looks anywhere).
 function UpgradeQuest:ZoneOnly()
     return ns.db ~= nil and ns.db.upgradeQuestZoneOnly == true
+end
+
+--- Does a new zone let go of the tabs' quests elsewhere while "This zone
+--- only" is ticked? Saved account wide as `upgradeQuestZoneSwap`, on
+--- unless unticked (the owner asked 2026-10-08 for a way to stop it).
+--- Off, the quests stay as the character travels; a tab with nothing to
+--- chase still picks from the zone it is in.
+function UpgradeQuest:ZoneSwap()
+    return ns.db == nil or ns.db.upgradeQuestZoneSwap ~= false
+end
+
+--- Tick or untick "Change on a new zone". Nothing is let go straight away:
+--- the next new zone does that.
+function UpgradeQuest:SetZoneSwap(on)
+    if not ns.db then return end
+    ns.db.upgradeQuestZoneSwap = on and true or false
+    self:Changed()
 end
 
 --- Is a source in the zone `here`? A dungeon counts from its entrance's
@@ -1266,7 +1285,8 @@ function UpgradeQuest:OnEvent(event, level)
     -- A new zone has its own upgrades while "This zone only" is ticked.
     -- On a flight, every zone flown over would pick (and announce) its own,
     -- so that waits for the landing.
-    if event == "ZONE_CHANGED_NEW_AREA" and self:ZoneOnly() then
+    -- Unless "Change on a new zone" is unticked: then the quests stay.
+    if event == "ZONE_CHANGED_NEW_AREA" and self:ZoneOnly() and self:ZoneSwap() then
         if self.OnTaxi() then
             self.landing = true
             return
