@@ -1,0 +1,415 @@
+-- Blackthornes Equipment -- UI/QuestArrow.lua
+-- The quest arrow's dial (2026-10-08), Farmer's arrow brought over: a gold
+-- ring with corner gems and a glowing arrow that turns as you turn,
+-- pointing at the next place in the upgrade quest's steps.
+-- Logic/QuestArrow.lua works out where and how far; this file only draws
+-- it. The art is Media/Arrow/*.tga, drawn by tools/make_arrow_art.py.
+--
+-- The upgrade sits on a plate across the top of the ring, the distance
+-- under it, then the place and which step it is. Click for the next tab's
+-- quest, right-click for the next place, drag to move. Once you are there
+-- the arrow gives way to a green check.
+--
+-- Off until turned on (the Arrow button on the quest panel, a click on a
+-- step with a place, /beq arrow or Settings), closed with its red gem, and
+-- hidden inside dungeons and while the tab shown has no quest.
+
+local ADDON, ns = ...
+
+local ArrowUI = ns.NewModule("QuestArrowUI")
+
+local Theme = ns.Theme
+
+local MEDIA = ([[Interface\AddOns\%s\Media\]]):format(ADDON)
+ArrowUI.RING = MEDIA .. [[Arrow\Ring]]
+ArrowUI.ARROW = MEDIA .. [[Arrow\Arrow]]
+ArrowUI.GLOW = MEDIA .. [[Frame\Glow]]
+local CHECK = [[Interface\RaidFrame\ReadyCheck-Ready]]
+
+local RING = 92
+local ARROW = 50
+local PLATE_HEIGHT = 22
+local MIN_WIDTH = 170
+local MAX_WIDTH = 320
+
+-- Redrawn this often, seconds: smooth to the eye, cheap to run.
+local STEP = 0.03
+
+-- Gold while it points the way, green once you are there, pale blue when it
+-- cannot point (far away, no position).
+local TINTS = {
+    point = { 1.00, 0.82, 0.32 },
+    arrived = { 0.31, 0.95, 0.55 },
+    rest = { 0.55, 0.65, 1.00 },
+}
+
+--------------------------------------------------------------------------------
+-- Building
+--------------------------------------------------------------------------------
+
+local function Additive(texture)
+    pcall(texture.SetBlendMode, texture, "ADD")
+    return texture
+end
+
+function ArrowUI:Build()
+    if self.frame then return self.frame end
+
+    local frame = CreateFrame("Frame", "BlackthornesEquipmentQuestArrow", UIParent)
+    frame:SetSize(MIN_WIDTH, RING + PLATE_HEIGHT + 56)
+    frame:SetFrameStrata("MEDIUM")
+    frame:SetClampedToScreen(true)
+    frame:EnableMouse(true)
+    frame:SetMovable(true)
+    frame:RegisterForDrag("LeftButton")
+
+    -- The dial: a breathing glow behind the ring, the ring, then the arrow
+    -- with its own glow.
+    local dial = CreateFrame("Frame", nil, frame)
+    dial:SetSize(RING, RING)
+    dial:SetPoint("TOP", frame, "TOP", 0, -(PLATE_HEIGHT / 2 + 2))
+    self.dial = dial
+
+    local halo = Additive(dial:CreateTexture(nil, "BACKGROUND"))
+    halo:SetTexture(ArrowUI.GLOW)
+    halo:SetSize(RING * 1.6, RING * 1.6)
+    halo:SetPoint("CENTER")
+    self.halo = halo
+
+    local ring = dial:CreateTexture(nil, "ARTWORK")
+    ring:SetTexture(ArrowUI.RING)
+    ring:SetAllPoints(dial)
+    self.ring = ring
+
+    local arrowGlow = Additive(dial:CreateTexture(nil, "OVERLAY", nil, 1))
+    arrowGlow:SetTexture(ArrowUI.ARROW)
+    arrowGlow:SetSize(ARROW * 1.35, ARROW * 1.35)
+    arrowGlow:SetPoint("CENTER")
+    self.arrowGlow = arrowGlow
+
+    local arrow = dial:CreateTexture(nil, "OVERLAY", nil, 2)
+    arrow:SetTexture(ArrowUI.ARROW)
+    arrow:SetSize(ARROW, ARROW)
+    arrow:SetPoint("CENTER")
+    self.arrow = arrow
+
+    local check = dial:CreateTexture(nil, "OVERLAY", nil, 3)
+    check:SetTexture(CHECK)
+    check:SetSize(40, 40)
+    check:SetPoint("CENTER")
+    check:Hide()
+    self.check = check
+
+    local mark = Theme.CreateLabel(dial, "title", "accentHi", "CENTER")
+    pcall(mark.SetFont, mark, Theme.FONT, 30, "OUTLINE")
+    mark:SetPoint("CENTER", 0, 1)
+    mark:SetText("?")
+    mark:Hide()
+    self.mark = mark
+
+    -- The plate across the ring's top: the upgrade.
+    local plate = CreateFrame("Frame", nil, frame)
+    plate:SetHeight(PLATE_HEIGHT)
+    plate:SetPoint("TOP", frame, "TOP", 0, 0)
+    plate:SetFrameLevel(dial:GetFrameLevel() + 5)
+    Theme.Fill(plate, "ink", 0.96)
+    Theme.Border(plate, "accentHi")
+    Theme.Halo(plate, 5, 0.18)
+    self.plate = plate
+
+    -- The house close gem, just past the plate's right end, clear of the
+    -- upgrade's name: turns it off.
+    if ns.Titanforged and ns.Titanforged.CloseGem then
+        local close = ns.Titanforged.CloseGem(frame, function() ArrowUI:Close() end)
+        close:SetSize(20, 20)
+        close:ClearAllPoints()
+        close:SetPoint("LEFT", plate, "RIGHT", 4, 0)
+        close:SetFrameLevel(plate:GetFrameLevel() + 1)
+        self.close = close
+    end
+
+    local title = Theme.CreateLabel(plate, "normal", "gilt", "CENTER")
+    title:SetPoint("CENTER", 0, 0)
+    self.title = title
+
+    -- Under the ring: how far, where, and which step.
+    local distance = Theme.CreateLabel(frame, "large", "text", "CENTER")
+    pcall(distance.SetFont, distance, Theme.FONT, 15, "OUTLINE")
+    distance:SetPoint("TOP", dial, "BOTTOM", 0, -4)
+    self.distance = distance
+
+    local place = Theme.CreateLabel(frame, "small", "muted", "CENTER")
+    pcall(place.SetFont, place, Theme.FONT, Theme.sizes.small, "OUTLINE")
+    place:SetPoint("TOP", distance, "BOTTOM", 0, -3)
+    self.place = place
+
+    local note = Theme.CreateLabel(frame, "tiny", "good", "CENTER")
+    pcall(note.SetFont, note, Theme.FONT, Theme.sizes.small, "OUTLINE")
+    note:SetPoint("TOP", place, "BOTTOM", 0, -2)
+    self.note = note
+
+    frame:SetScript("OnDragStart", function(self)
+        self.dragging = true
+        self:StartMoving()
+    end)
+    frame:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        ArrowUI:SavePosition()
+        -- The button coming up after a drag is not a click.
+        self.dragged = true
+    end)
+    frame:SetScript("OnMouseUp", function(self, button)
+        if self.dragged then
+            self.dragged, self.dragging = nil, nil
+            return
+        end
+        ArrowUI:OnClick(button)
+    end)
+    frame:SetScript("OnEnter", function(self) ArrowUI:ShowTooltip(self) end)
+    frame:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    frame:SetScript("OnUpdate", function(_, elapsed) ArrowUI:Step(elapsed) end)
+
+    self.frame = frame
+    self:RestorePosition()
+    frame:Hide()
+    return frame
+end
+
+--------------------------------------------------------------------------------
+-- Clicks and the tooltip
+--------------------------------------------------------------------------------
+
+function ArrowUI:OnClick(button)
+    local Arrow = ns.QuestArrow
+    if button == "RightButton" then
+        if not Arrow:NextPlace() then ns.Print("no other place in this quest's steps.") end
+    elseif not Arrow:NextTab() then
+        ns.Print("no other tab has an upgrade quest.")
+    end
+    self.since = STEP
+    self:Draw(true)
+end
+
+--- The close gem: the arrow off until turned on again.
+function ArrowUI:Close()
+    ns.QuestArrow:SetOn(false)
+    ns.Print("quest arrow off. The Arrow button on the quest panel, /beq arrow or Settings brings it back.")
+end
+
+function ArrowUI:ShowTooltip(owner)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(owner, "ANCHOR_BOTTOM")
+    GameTooltip:AddLine("Quest arrow", Theme.Unpack("accent"))
+    local state = self.state
+    local target = state and state.target
+    if target and target.text then GameTooltip:AddLine(target.text, 1, 1, 1, true) end
+    if state and state.count and state.count > 1 then
+        GameTooltip:AddLine(("Place %d of %d"):format(state.index or 1, state.count), 1, 1, 1)
+    end
+    GameTooltip:AddLine("Click for the next tab's upgrade quest.", 0.9, 0.9, 0.9)
+    GameTooltip:AddLine("Right-click for the next place.", 0.9, 0.9, 0.9)
+    GameTooltip:AddLine("Drag to move it. The red gem closes it.", 0.9, 0.9, 0.9)
+    GameTooltip:Show()
+end
+
+--------------------------------------------------------------------------------
+-- Drawing
+--------------------------------------------------------------------------------
+
+local function Clock()
+    if type(GetTime) ~= "function" then return 0 end
+    local ok, now = pcall(GetTime)
+    return ok and tonumber(now) or 0
+end
+
+--- The words for a state with nothing to point at.
+function ArrowUI.Words(state)
+    local mode = state.mode
+    if mode == "blind" then
+        return "Can't see you here", "The game won't say where you are", "/beq arrow check", "muted"
+    end
+    if mode == "nowhere" then
+        return "Nowhere to go", state.step or "No step left has a place", "", "muted"
+    end
+    return state.distance or "", state.place or "", state.note or "", state.noteColor or "muted"
+end
+
+--- Lay the labels out and size the frame to the widest, measured.
+function ArrowUI:Fit()
+    local widest = Theme.TextWidth("normal", self.title:GetText()) + 28
+    self.plate:SetWidth(math.max(RING + 16, widest))
+
+    for _, entry in ipairs({ { "large", self.distance }, { "small", self.place }, { "small", self.note } }) do
+        widest = math.max(widest, Theme.TextWidth(entry[1], entry[2]:GetText()) + 16)
+    end
+
+    local width = math.min(MAX_WIDTH, math.max(MIN_WIDTH, math.ceil(widest)))
+    self.frame:SetWidth(width)
+    -- Wrapped rather than cut off when a long place name runs past the most.
+    for _, label in ipairs({ self.distance, self.place, self.note }) do
+        label:SetWidth(width - 8)
+        label:SetWordWrap(true)
+    end
+end
+
+--- Draw the state now. `force` relays the words even when they read the
+--- same.
+function ArrowUI:Draw(force)
+    local frame = self.frame
+    if not frame then return end
+
+    local state = ns.QuestArrow:State(Clock())
+    self.state = state
+
+    -- No quest: nothing to follow, so out of the way until there is one.
+    if state.mode == "off" or state.mode == "inside" or state.mode == "none" then
+        frame:Hide()
+        return
+    end
+
+    -- The plate carries the upgrade or nothing: never a name for the dial.
+    local title = state.name or ""
+    self.plate:SetShown(title ~= "")
+    local distance, place, note, noteColor = ArrowUI.Words(state)
+
+    local key = table.concat({ title, distance, place, note, noteColor }, "\n")
+    if force or key ~= self.drawnKey then
+        self.drawnKey = key
+        self.title:SetText(title)
+        self.distance:SetText(distance)
+        self.place:SetText(place)
+        self.note:SetText(note)
+        self.note:SetTextColor(Theme.Unpack(noteColor))
+        self.distance:SetTextColor(Theme.Unpack(state.mode == "arrived" and "good" or "text"))
+        self:Fit()
+    end
+
+    local pointing = state.mode == "point"
+    local arrived = state.mode == "arrived"
+    self.arrow:SetShown(pointing)
+    self.arrowGlow:SetShown(pointing)
+    self.check:SetShown(arrived)
+    self.mark:SetShown(not pointing and not arrived)
+
+    local tint = pointing and TINTS.point or arrived and TINTS.arrived or TINTS.rest
+    self.arrow:SetVertexColor(tint[1], tint[2], tint[3])
+    self.arrowGlow:SetVertexColor(tint[1], tint[2], tint[3])
+    self.halo:SetVertexColor(tint[1], tint[2], tint[3])
+    self.mark:SetTextColor(tint[1], tint[2], tint[3])
+
+    if pointing and state.turn then
+        self:Turn(state.turn)
+    end
+
+    frame:Show()
+end
+
+--- Turn the arrow toward `turn` (radians, anticlockwise). Eased on Full so
+--- it swings rather than snaps; straight there otherwise.
+function ArrowUI:Turn(turn)
+    local shown = self.shownTurn
+    if shown and ns.Motion.Level() == "full" then
+        local gap = turn - shown
+        while gap > math.pi do gap = gap - 2 * math.pi end
+        while gap < -math.pi do gap = gap + 2 * math.pi end
+        turn = shown + gap * 0.35
+    end
+    self.shownTurn = turn
+    pcall(self.arrow.SetRotation, self.arrow, turn)
+    pcall(self.arrowGlow.SetRotation, self.arrowGlow, turn)
+end
+
+--- The glow: breathing on Full, still otherwise, brighter once you are there.
+function ArrowUI:Breathe(now)
+    local level = ns.Motion.Level()
+    local arrived = self.state and self.state.mode == "arrived"
+    local rest = arrived and 0.55 or 0.32
+    local alpha = rest
+    if level == "full" then
+        local speed = arrived and 5 or 2.2
+        alpha = rest + 0.16 * math.sin(now * speed)
+    elseif level == "off" then
+        alpha = rest * 0.6
+    end
+    self.halo:SetAlpha(alpha)
+    self.arrowGlow:SetAlpha(math.min(1, alpha + 0.25))
+end
+
+function ArrowUI:Step(elapsed)
+    self.since = (self.since or 0) + (elapsed or 0)
+    if self.since < STEP then return end
+    self.since = 0
+
+    local ok, err = pcall(self.Draw, self)
+    if not ok then ns.Debug("quest arrow:", tostring(err)) end
+    if self.frame:IsShown() then pcall(self.Breathe, self, Clock()) end
+end
+
+--- Show or hide it as the switch and the quest say. The dial keeps itself
+--- current while shown; a hidden dial is woken by its driver below.
+function ArrowUI:Refresh()
+    if not ns.db then return end
+    if not ns.QuestArrow.IsOn() then
+        if self.frame then self.frame:Hide() end
+        return
+    end
+    self:Build()
+    local ok, err = pcall(self.Draw, self, true)
+    if not ok then ns.Debug("quest arrow:", tostring(err)) end
+end
+
+--------------------------------------------------------------------------------
+-- Position
+--------------------------------------------------------------------------------
+
+function ArrowUI:SavePosition()
+    local frame = self.frame
+    local ok, x, y = pcall(function() return frame:GetCenter() end)
+    if not (ok and type(x) == "number" and type(y) == "number") then return end
+
+    frame:ClearAllPoints()
+    frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
+    ns.db.questArrowX, ns.db.questArrowY = x, y
+end
+
+function ArrowUI:RestorePosition()
+    local frame = self.frame
+    if not frame then return end
+    frame:ClearAllPoints()
+    if ns.db.questArrowX and ns.db.questArrowY then
+        frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", ns.db.questArrowX, ns.db.questArrowY)
+    else
+        -- Top middle, a little lower than Farmer's, so both can be up.
+        frame:SetPoint("TOP", UIParent, "TOP", 0, -330)
+    end
+end
+
+function ArrowUI:ResetPosition()
+    ns.db.questArrowX, ns.db.questArrowY = nil, nil
+    self:RestorePosition()
+end
+
+--------------------------------------------------------------------------------
+-- Keeping up
+--------------------------------------------------------------------------------
+
+function ArrowUI:OnEnable()
+    -- The dial's own OnUpdate stops while it is hidden, so a small driver
+    -- wakes it once a second: leaving a dungeon, or a quest picked while it
+    -- had none. It does nothing while the arrow is off.
+    local driver = CreateFrame("Frame", nil, UIParent)
+    driver.since = 0
+    driver:SetScript("OnUpdate", function(selfDriver, elapsed)
+        selfDriver.since = selfDriver.since + (elapsed or 0)
+        if selfDriver.since < 1 then return end
+        selfDriver.since = 0
+        if ns.QuestArrow.IsOn() and not (ArrowUI.frame and ArrowUI.frame:IsShown()) then
+            ArrowUI:Refresh()
+        end
+    end)
+    driver:Show()
+    self.driver = driver
+
+    self:Refresh()
+    ns.RegisterEvent(self, "PLAYER_ENTERING_WORLD", function() ArrowUI:Refresh() end)
+end

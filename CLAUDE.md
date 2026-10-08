@@ -213,6 +213,20 @@ tab, shows that tab and turns the quest on; `UpgradeQuest.CanFollow` says why
 not for gear that waits on a reputation, a level or another player's craft.
 Right-click still tracks and Alt-click still pins. Every `/beq quest` command has a Settings button or control.
 
+The quest arrow (the owner asked 2026-10-08 for Farmer's goal arrow here):
+`Logic/QuestArrow.lua` and `UI/QuestArrow.lua` are Farmer's
+`Logic/Arrow.lua` and `UI/Arrow.lua` brought over as a copy (no call into
+Farmer), and `tools/make_arrow_art.py` is Farmer's tool, drawing the same
+`Media/Arrow/*.tga`. It follows the quest on the tab shown and points at
+the places its steps carry (`UpgradeQuest:Steps`), from the step to do now
+on, a spot beating a zone-only step for the same zone; a zone with no spot
+gets its middle, labelled so; it never makes up a coordinate. Off by default
+(`questArrow`, account wide; spot `questArrowX`/`questArrowY`); the panel's
+Arrow button, a click on a step with a place (`QuestArrow:Aim`), `/beq
+arrow` and a Settings row turn it on. A fix to the dial in one addon belongs
+in the other. Not yet seen in game; `/beq arrow check` reports the calls it
+reads (`GetWorldPosFromMapPos`, `GetMapWorldSize`, `GetPlayerFacing`).
+
 ## Players' own stat weights
 
 Kept in `BlackthornesEquipmentDB.customWeights[CLASS][spec][stat]`, account
