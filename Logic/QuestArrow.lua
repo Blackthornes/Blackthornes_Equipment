@@ -78,6 +78,8 @@ end
 
 function QuestArrow:SetOn(on)
     ns.db.questArrow = on and true or false
+    -- Turned on, it goes over any other Blackthornes arrow (UI/QuestArrow.lua).
+    if on and ns.QuestArrowUI and ns.QuestArrowUI.Claim then ns.QuestArrowUI:Claim() end
     self:Changed(true)
     for _, name in ipairs({ "QuestPanel", "SettingsUI" }) do
         local module = ns[name]
@@ -192,6 +194,7 @@ function QuestArrow:Aim(index)
         zone = place.zone, x = tonumber(place.x), y = tonumber(place.y), name = place.name,
         step = index, text = step.text } }
     self.choice = nil
+    if ns.QuestArrowUI and ns.QuestArrowUI.Claim then ns.QuestArrowUI:Claim() end
     self:Changed(false)
     return true
 end

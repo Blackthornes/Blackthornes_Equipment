@@ -89,7 +89,8 @@ ts.Prices:GetValue(itemID)             -- material and auction prices, copper
 Without Tradeskills, crafted gear is still listed, known recipes are read
 from the spellbook, and materials are priced at vendor only. If one of these
 changes in Tradeskills, change `Logic/Crafting.lua` too. Nothing else here
-calls the other addons.
+calls the other addons, apart from the shared arrow table (see the quest
+arrow below).
 
 ## Where to get upgrades (the finder)
 
@@ -226,6 +227,16 @@ Arrow button, a click on a step with a place (`QuestArrow:Aim`), `/beq
 arrow` and a Settings row turn it on. A fix to the dial in one addon belongs
 in the other. Not yet seen in game; `/beq arrow check` reports the calls it
 reads (`GetWorldPosFromMapPos`, `GetMapWorldSize`, `GetPlayerFacing`).
+Pets has the same dial (its beast arrow).
+
+Only one Blackthornes arrow is on screen at a time (the owner asked
+2026-10-08): Farmer's goal arrow, Equipment's quest arrow and Pets' beast
+arrow agree through one global table, `_G.BlackthornesArrows`
+(`wants[addon]` while that arrow has something to show, `claims[addon]` the
+`GetTime()` it was last turned on or aimed). The one wanting to show with
+the latest claim is drawn; the others wait hidden. The lines are the same
+in each dial's file (`ArrowUI:Claim`, `ArrowUI.Wins`); a change to them
+belongs in all three.
 
 ## Players' own stat weights
 

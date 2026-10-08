@@ -98,6 +98,9 @@ function env.InstallClient()
     env.chat = {}
 
     _G.UIParent = Stub()
+    -- The arrows' shared table (one Blackthornes arrow at a time) would
+    -- carry one suite's arrow into the next.
+    _G.BlackthornesArrows = nil
 
     -- A default-sized minimap, and a cursor parked somewhere unambiguous so a
     -- simulated drag lands at a known angle.
