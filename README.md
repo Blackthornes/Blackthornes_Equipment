@@ -297,6 +297,19 @@ now. The dungeon
 level ranges, and the few bosses a script summons rather than spawns, are the
 only parts typed in by hand, at the top of the script.
 
+The upgrade quest's directions come from pfQuest and the same Farmer
+checkout. After `make_sources.py`, run:
+
+```bash
+python tools/make_quest_starts.py <pfQuest> ../Blackthornes_Farmer
+python tools/make_quest_ends.py <pfQuest> ../Blackthornes_Farmer
+```
+
+`Data/QuestStarts.lua` says where to get the item that starts a quest, and
+`Data/QuestEnds.lua` where each quest is done and who takes it back, so a
+quest in the log points at its objective or its hand-in rather than its
+giver. Every spot is a real spawn from the data; none is made up.
+
 Where vendors and trainers stand on Forever is learned in game: whenever a
 merchant or trainer window opens, the addon keeps the NPC's ID, the map and
 the spot the character stands on in the account save (`npcSpots`), and the
