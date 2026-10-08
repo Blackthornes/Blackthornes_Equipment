@@ -278,6 +278,14 @@ function Finder:Standing(factionID)
     return nil, name
 end
 
+--- Does an item ask for a standing with a faction at all, reached or not?
+--- The upgrade quest offers such gear last.
+function Finder.Rep(itemID)
+    local item = ns.Sources.ITEMS[itemID]
+    local craft = ns.Crafts and ns.Crafts.ITEMS[itemID]
+    return ((item and item.r) or (craft and craft.f)) ~= nil
+end
+
 --- What an item asks of the character's reputation that they do not have
 --- yet: { faction, standing, have } in words, or nil when nothing.
 function Finder:Needs(itemID)
@@ -440,7 +448,9 @@ function Finder:Candidates(player, only, pause)
                 sources = kept
             end
             if #sources > 0 then
-                list[#list + 1] = { itemID = itemID, sources = sources, needs = self:Needs(itemID) }
+                list[#list + 1] = {
+                    itemID = itemID, sources = sources, needs = self:Needs(itemID), rep = Finder.Rep(itemID),
+                }
             end
         end
     end
@@ -597,7 +607,8 @@ end
 -- @return nil and why, or a table:
 --   slots     { [inventory slot] = { pick, ... } } best first, at most
 --             PER_SLOT each; a pick is { itemID, link, result, gain,
---             sources, needs, roll, at }: `roll` for gear with random rolls
+--             sources, needs, rep, roll, at }: `rep` for gear tied to
+--             a reputation (reached or not), `roll` for gear with random rolls
 --             (Logic/Rolls.lua's best), `at` the level it can be worn from
 --             when that is still ahead
 --   all       { [inventory slot] = { pick, ... } } the same, every pick
@@ -664,7 +675,7 @@ function Finder:Build(only, ahead, pause)
                             itemID = itemID, link = best and RolledLink(best.link, itemID) or LinkFor(itemID),
                             result = result,
                             gain = (result.score or 0) - (result.against or 0),
-                            sources = candidate.sources, needs = candidate.needs,
+                            sources = candidate.sources, needs = candidate.needs, rep = candidate.rep,
                             roll = best, at = result.level, remote = Remote(candidate.sources),
                         }
                     end
