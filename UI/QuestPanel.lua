@@ -16,7 +16,8 @@
 -- (UI/QuestArrow.lua), which points the way there, and a click on a step
 -- with a place aims the arrow at it. Ignore leaves this upgrade for good
 -- for the next best (Settings lists what was ignored, to bring back);
--- Other ways opens Where to get upgrades. When a level up opens
+-- Change (Pick one while the tab has nothing) opens Where to get upgrades,
+-- where a click on a row follows that upgrade instead. When a level up opens
 -- an upgrade clearly more worth the trip, a gold box at the top offers it:
 -- Switch follows it instead, Keep current leaves the quest as it is. Shift-click the item
 -- to link it in chat. The panel is there while the "Upgrade quest" setting
@@ -625,10 +626,12 @@ function QuestPanel:Build()
     Explain(arrow, "Quest arrow", "A dial that turns as you turn, pointing the way to the next place. Click a step with a place to aim it there. Click again to hide it.")
     self.arrowButton = arrow
 
-    local other = Widgets.CreateButton(body, "Other ways", function()
+    -- Was "Other ways" (renamed 2026-10-08, the owner asked): it opens Where to
+    -- get upgrades to pick a different one. Reads "Pick one" on an empty tab.
+    local other = Widgets.CreateButton(body, "Change", function()
         if ns.FinderUI then ns.FinderUI:Show() end
     end, { width = 80, height = 22 })
-    Explain(other, "Other ways", "Open Where to get upgrades for every upgrade on offer.")
+    Explain(other, "Pick a different upgrade", "Opens Where to get upgrades with every upgrade on offer. Click one there to follow it instead.")
     self.otherButton = other
 
     -- Ignore was Skip, and keeps its saved list and its name in the code.
@@ -773,7 +776,7 @@ function QuestPanel:FillBody(quest, steps, current, done)
                 .. " Only this zone is searched: untick This zone only to look anywhere, or try another tab."
         else
             text = (ns.UpgradeQuest.NONE[ns.UpgradeQuest:Tab()] or "No upgrade to chase right now.")
-                .. " A new one comes up as you level. Try another tab, or open Other ways for gear that waits on a reputation."
+                .. " A new one comes up as you level. Try another tab, or click Pick one to choose from every upgrade on offer, gear that waits on a reputation included."
         end
         self.empty:SetText(text)
         self.empty:Show()
@@ -782,6 +785,7 @@ function QuestPanel:FillBody(quest, steps, current, done)
         self.well:SetHeight(y - 4)
         self.otherButton:ClearAllPoints()
         self.otherButton:SetPoint("TOPLEFT", PAD, -y)
+        self.otherButton:SetText("Pick one")
         self.otherButton:Show()
         local height = y + 22 + PAD
         self.body:SetHeight(height)
@@ -826,6 +830,7 @@ function QuestPanel:FillBody(quest, steps, current, done)
     self.skipButton:SetPoint("TOPRIGHT", -PAD, -y)
     self.skipButton:Show()
     self.otherButton:SetPoint("RIGHT", self.skipButton, "LEFT", -6, 0)
+    self.otherButton:SetText("Change")
     self.otherButton:Show()
     if place then
         self.mapButton:SetPoint("TOPLEFT", PAD, -y)
