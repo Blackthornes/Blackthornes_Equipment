@@ -807,4 +807,8 @@ function FinderUI:OnEnable()
     for _, event in ipairs(EVENTS) do
         ns.RegisterEvent(self, event, self.RefreshSoon)
     end
+    -- Only the "need ... more" on vendor rows changes: redraw, no rescan.
+    ns.RegisterEvent(self, "PLAYER_MONEY", function()
+        if FinderUI.frame and FinderUI.frame:IsShown() then FinderUI:Draw() end
+    end)
 end

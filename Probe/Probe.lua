@@ -49,6 +49,9 @@ local APIS = {
     "C_QuestLog.ReadyForTurnIn", "C_Item.GetItemCount", "GetItemCount",
     -- Learning where vendors and trainers stand (Logic/NPCSpots.lua).
     "C_Map.GetPlayerMapPosition",
+    -- Learning what vendors charge, and whether the character can pay.
+    "GetMerchantNumItems", "C_MerchantFrame.GetItemInfo", "GetMerchantItemInfo", "GetMerchantItemID",
+    "GetMoney",
     -- The quest arrow (Logic/QuestArrow.lua): world coordinates, a map's
     -- size in yards, and which way the character faces.
     "C_Map.GetWorldPosFromMapPos", "C_Map.GetMapWorldSize", "CreateVector2D", "GetPlayerFacing",
@@ -384,6 +387,7 @@ function Probe:Upgrades()
         Line("target NPC", seen and ("%s, ID %d"):format(seen.name or "unnamed", seen.npcID)
             or "none (target an NPC to see its ID)")
         Line("vendor spots learned", spots:Count())
+        Line("vendor prices learned", spots:PriceCount())
     end
 end
 

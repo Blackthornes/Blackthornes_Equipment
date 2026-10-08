@@ -196,6 +196,10 @@ function env.InstallClient()
     _G.OpenWorldMap = nil
     _G.WorldMapFrame = nil
     _G.GetMerchantItemLink = nil
+    _G.GetMerchantNumItems = nil
+    _G.GetMerchantItemInfo = nil
+    _G.GetMerchantItemID = nil
+    _G.GetMoney = nil
     _G.C_MerchantFrame = nil
     _G.MerchantFrame = nil
     _G.MerchantFrame_UpdateMerchantInfo = nil
