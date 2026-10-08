@@ -361,32 +361,50 @@ end
 --- make, or that the player skipped is left out, and so is anything in
 --- `except` ({ [itemID] = true }). With `tab`, only that tab's sources count;
 --- with "This zone only" ticked, only those in the zone the character is in.
+--- Gear tied to a reputation, even one already reached, comes last: it is
+--- picked only when nothing else will do (the player can still follow one
+--- from the finder by hand).
 function UpgradeQuest:Choose(found, except, tab)
     if type(found) ~= "table" or type(found.slots) ~= "table" then return nil end
     local skipped = self:Skipped()
     local zone = found.player and found.player.zone
     -- Read now: the scan may be from before the last zone change.
     local here = self:ZoneOnly() and (self.Zone() or zone) or nil
+    local everything = type(found.all) == "table" and found.all or nil
     -- Only a few of the best per slot are kept for the finder's window; the
     -- best in this zone is seldom among them, so look at them all.
-    local slots = here and type(found.all) == "table" and found.all or found.slots
-    local best
-    for _, list in pairs(slots) do
+    local slots = here and everything or found.slots
+    local best, bestRep
+    -- The slots whose short list holds reputation gear.
+    local crowded = {}
+    local function Look(slot, list, repToo)
         for _, pick in ipairs(list) do
+            if pick.rep then crowded[slot] = true end
             if not pick.needs and not pick.remote and not pick.at and not skipped[pick.itemID]
-                and not (except and except[pick.itemID]) then
+                and not (except and except[pick.itemID]) and (repToo or not pick.rep) then
                 local source, ease = self.BestSource(pick.sources, zone, tab, here)
                 if source then
                     local worth = Worth(pick.result, pick.gain or 0, ease)
-                    if not best or worth > best.worth
-                        or (worth == best.worth and pick.itemID < best.pick.itemID) then
-                        best = { pick = pick, source = source, worth = worth }
+                    local held = best
+                    if pick.rep then held = bestRep end
+                    if not held or worth > held.worth
+                        or (worth == held.worth and pick.itemID < held.pick.itemID) then
+                        held = { pick = pick, source = source, worth = worth }
+                        if pick.rep then bestRep = held else best = held end
                     end
                 end
             end
         end
     end
-    return best
+    for slot, list in pairs(slots) do Look(slot, list, true) end
+    -- Reputation gear among a slot's few best may have pushed the rest of
+    -- that slot out of the short list, so those slots are looked at whole.
+    if slots ~= everything and everything then
+        for slot in pairs(crowded) do
+            if type(everything[slot]) == "table" then Look(slot, everything[slot], false) end
+        end
+    end
+    return best or bestRep
 end
 
 --- Make a pick the quest on its source's tab.

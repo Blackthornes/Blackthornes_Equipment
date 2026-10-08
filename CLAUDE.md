@@ -196,7 +196,12 @@ under Upgrade hunts): the owner asked (2026-10-04) for an optional quest for the
 next upgrade with a guide to get it. Off by default (`upgradeQuest`). It
 picks from `Finder:Scan()` by gain times how easy the source is, keeps that
 pick until it is worn, and works out the steps live from the saved source
-and the game (zone, quest log, bags). Kept per character in
+and the game (zone, quest log, bags). Gear tied to a reputation (`Finder.Rep`,
+the item's `r` or the craft's `f`, reached or not; picks carry `rep`)
+comes last (the owner asked 2026-10-08): `Choose` takes it only when nothing
+else on the tab will do, and looks past the finder's short list in a slot
+that reputation gear filled. Gear whose standing is not reached is never
+picked; reached gear can still be followed from the finder by hand. Kept per character in
 `BlackthornesEquipmentCharDB.upgradeQuest`, `.upgradeQuestTabs`, `.upgradeQuestTab`, `.upgradeQuestSkipped` and
 `.upgradeQuestsDone` (never rename them). Completed quests: the finder asks
 `C_QuestLog.IsQuestFlaggedCompleted` (unverified on Forever) and also
