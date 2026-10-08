@@ -696,6 +696,61 @@ function UpgradeQuest.Starter(questID)
     return { itemID = row[1], item = row[2], total = tonumber(row[3]) or #places, places = places }
 end
 
+--- A place from Data/QuestEnds.lua as the steps use it: a boss's place is
+--- its dungeon, found from the zone its door opens in.
+local function EndPlace(p)
+    if type(p) ~= "table" then return nil end
+    local place = { kind = p[1], name = p[2], zone = p[3] }
+    if (tonumber(p[4]) or 0) > 0 then place.x, place.y = p[4], p[5] end
+    if place.kind == "boss" then
+        place.dungeon = place.zone
+        place.zone = nil
+        for _, dungeon in pairs(ns.Sources.DUNGEONS or {}) do
+            if dungeon[1] == place.dungeon then place.zone = dungeon[4] end
+        end
+        if not place.zone then return nil end
+    end
+    place.item = p[6]
+    return place
+end
+
+--- Where a quest is worked on and handed in (Data/QuestEnds.lua): { hand,
+--- goal }, each a place { kind, name, zone, x, y }, `goal` with the `item`
+--- to collect when that is the objective and `dungeon` for a boss. Either
+--- can be nil; nil when the data has nothing for the quest.
+function UpgradeQuest.Ender(questID)
+    local ends = ns.Sources and ns.Sources.ENDS
+    local row = type(ends) == "table" and questID and ends[questID]
+    if type(row) ~= "table" then return nil end
+    local hand = row[1] and EndPlace(row) or nil
+    if hand then hand.item = nil end
+    return { hand = hand, goal = EndPlace(row.o) }
+end
+
+--- "to Morin Cloudstalker in Mulgore (51.9, 59.6)", "at" for an object.
+local function HandText(hand, withZone)
+    local where = withZone and (" in %s"):format(hand.zone) or ""
+    return ("%s %s%s%s"):format(hand.kind == "object" and "at" or "to", hand.name, where, At(hand))
+end
+
+--- What to do for a quest's objective: "collect Fizsprocket's Clipboard
+--- from Supervisor Fizsprocket in Mulgore (64.9, 43.3)".
+local function GoalText(goal)
+    local where = goal.dungeon and (" in %s"):format(goal.dungeon)
+        or (" in %s%s"):format(goal.zone, At(goal))
+    if goal.item then
+        local verb = goal.kind == "vendor" and "buy" or "collect"
+        return ("%s %s from %s%s"):format(verb, goal.item, goal.name, where)
+    end
+    return ("find %s%s"):format(goal.name, where)
+end
+
+--- A place for the map and the arrow, as the other steps carry it.
+local function Spot(place)
+    if not place then return nil end
+    return { zone = place.zone, x = place.x, y = place.y, name = place.dungeon or place.name }
+end
+
 --- "level 12" or "levels 10 to 12", and ", rare" for a rare.
 local function LevelText(place)
     local parts = {}
@@ -840,14 +895,38 @@ function UpgradeQuest:Steps(quest)
             end
             local spot = before.x and { zone = before.zone, x = before.x, y = before.y, name = before.name } or nil
             local text
-            if OnQuest(before.questID) then
-                text = ("Complete %s (level %d)"):format(before.title, before.questLevel or 0)
-            elseif spot then
-                text = ("Do %s: pick it up from %s in %s%s"):format(before.title, before.name or "?",
-                    before.zone or "?", At(spot))
-            end
             local note = lead
             lead = nil
+            if OnQuest(before.questID) then
+                -- In the log: the giver is behind the player. Send them to
+                -- the objective, or to whoever takes it back once it is done
+                -- (or when it has nothing else to do).
+                local ender = UpgradeQuest.Ender(before.questID) or {}
+                local hand, goal = ender.hand, ender.goal
+                local title = ("%s (level %d)"):format(before.title, before.questLevel or 0)
+                if hand and QuestReady(before.questID) then
+                    text = ("Hand in %s %s"):format(before.title, HandText(hand, true))
+                    spot = Spot(hand)
+                elseif goal then
+                    text = ("Complete %s: %s"):format(title, GoalText(goal))
+                    spot = Spot(goal)
+                    if hand then
+                        note = (note and note .. " " or "") .. ("Then hand it in %s."):format(HandText(hand))
+                    end
+                elseif hand then
+                    text = ("Complete %s and hand it in %s"):format(title, HandText(hand, true))
+                    spot = Spot(hand)
+                else
+                    text = ("Complete %s"):format(title)
+                    spot = nil
+                end
+            elseif spot then
+                -- Two quests in a row can share a title (The Ravaged
+                -- Caravan): say this one is the next part.
+                local again = index > 1 and chain[index - 1].title == before.title
+                text = ("%s %s: pick it up from %s in %s%s"):format(again and "Then do the next part of" or "Do",
+                    before.title, before.name or "?", before.zone or "?", At(spot))
+            end
             local need = NEED_NOTES[before.group]
             if need then note = (note and note .. " " or "") .. need end
             if text then
@@ -865,11 +944,18 @@ function UpgradeQuest:Steps(quest)
             StartFromItem(questID, source.title, source.name, onQuest, true)
         end
         local note = NEED_NOTES[source.group]
-        Add(("Complete %s (level %d)"):format(source.title or "the quest", source.questLevel or 0),
-            questID and QuestReady(questID), nil, note)
-        -- Classic's data names who starts a quest, not always who takes it
-        -- back, so the hand-in names nobody.
-        Add(("Hand it in and choose %s"):format(link), have or turnedIn, nil)
+        -- Where to work on it and who takes it back (Data/QuestEnds.lua),
+        -- so the arrow leaves the giver once the quest is in the log.
+        local ender = questID and UpgradeQuest.Ender(questID) or {}
+        local complete = ("Complete %s (level %d)"):format(source.title or "the quest", source.questLevel or 0)
+        if ender.goal then complete = ("%s: %s"):format(complete, GoalText(ender.goal)) end
+        Add(complete, questID and QuestReady(questID), Spot(ender.goal), note)
+        if ender.hand then
+            Add(("Hand it in %s and choose %s"):format(HandText(ender.hand, ender.hand.zone ~= source.zone), link),
+                have or turnedIn, Spot(ender.hand))
+        else
+            Add(("Hand it in and choose %s"):format(link), have or turnedIn, nil)
+        end
     elseif source.kind == "dungeon" then
         local door = source.zone and { zone = source.zone, name = source.dungeon } or nil
         if door and door.zone ~= source.dungeon then Travel(door) end

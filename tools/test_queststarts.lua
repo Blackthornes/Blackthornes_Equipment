@@ -44,6 +44,7 @@ S.DUNGEONS = { ["209"] = { "Zul'Farrak", 44, 54, "Tanaris", "" } }
 S.BOSSES = {}
 S.FOREVER = {}
 S.ITEMS = { [1002] = { 8, 12, 0, 0, 0, q = { 770 } } }
+S.ENDS = { [770] = { "npc", "Skorn Whitecloud", "Mulgore", 46.8, 60.2 } }
 S.STARTS = {
     [770] = { 4854, "Demon Scarred Cloak", 3,
         { "mob", "Ghost Howl", "Mulgore", 37.3, 14.2, 12, 12, 100, "rare" },
@@ -67,7 +68,7 @@ suite.check("the steps say where the item drops", Texts() == "Travel to Mulgore"
     .. " | Get Demon Scarred Cloak from Ghost Howl (level 12, rare) in Mulgore (37.3, 14.2)"
     .. " | Right-click Demon Scarred Cloak in your bags to start The Demon Scarred Cloak"
     .. " | Complete The Demon Scarred Cloak (level 12)"
-    .. " | Hand it in and choose item:1002 | Put on item:1002", Texts())
+    .. " | Hand it in to Skorn Whitecloud in Mulgore (46.8, 60.2) and choose item:1002 | Put on item:1002", Texts())
 suite.check("the note says it is a rare and who else drops it",
     steps[2].note:find("A rare", 1, true) ~= nil and steps[2].note:find("Also from Prairie Wolf and 1 more", 1, true) ~= nil,
     steps[2].note)
@@ -98,6 +99,7 @@ suite.check("and travels to its door", Texts():find("^Travel to Tanaris") ~= nil
 
 -- Nothing known: says so, and makes up no place.
 S.STARTS[770] = nil
+S.ENDS[770] = nil
 suite.check("an unknown item says it is not known",
     Texts():find("Find Demon Scarred Cloak, the item that starts The Demon Scarred Cloak", 1, true) ~= nil, Texts())
 suite.check("with no place", Quest:NextPlace() == nil)

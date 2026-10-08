@@ -41,9 +41,10 @@ RARE = {"2", "4"}  # pfQuest unit rank: 2 rare elite, 4 rare
 ELITE = {"1", "2", "3"}
 
 
-def spot(entry):
-    """The zone a mob or object is mostly in, and the real spawn there
-    nearest the middle of its spawns: a spot it does stand at."""
+def spot(entry, prefer=None):
+    """The zone a mob or object is mostly in (the `prefer` zone ID when it
+    has any spawn there), and the real spawn there nearest the middle of
+    its spawns: a spot it does stand at."""
     coords = entry and entry["coords"]
     if not coords:
         return None
@@ -52,6 +53,8 @@ def spot(entry):
     if not spots:
         return None
     zone = collections.Counter(s[3] for s in spots).most_common(1)[0][0]
+    if prefer and any(s[3] == prefer for s in spots):
+        zone = prefer
     here = [s for s in spots if s[3] == zone]
     mx = sum(float(s[1]) for s in here) / len(here)
     my = sum(float(s[2]) for s in here) / len(here)
@@ -69,6 +72,28 @@ def levels(text):
     return min(parts), max(parts)
 
 
+def load_forever(lua, farmer):
+    """What Farmer saw dropping on Forever, by item name: rows of (mob, zone,
+    x, y, lowest level, highest level, chance). Empty without a Farmer
+    checkout."""
+    forever = collections.defaultdict(list)
+    if not os.path.exists(os.path.join(farmer, "Data", "Data_Harvested.lua")):
+        return forever
+    harvested = load_harvest(lua, farmer)
+    for i in harvested:
+        item = harvested[i]
+        rows = item["sources"]
+        for j in (rows or {}):
+            row = rows[j]
+            coords = row["coords"]
+            if not (row["name"] and row["zone"] and coords):
+                continue
+            forever[item["name"]].append((
+                row["name"], row["zone"], round(float(coords[1]), 1), round(float(coords[2]), 1),
+                int(row["minLevel"] or 0), int(row["maxLevel"] or 0), row["chance"]))
+    return forever
+
+
 def main(argv):
     args = [a for a in argv if not a.startswith("--")]
     if not args:
@@ -79,20 +104,7 @@ def main(argv):
     lua = lua51.LuaRuntime(unpack_returned_tuples=True)
     sources = load_sources(lua)
 
-    forever = collections.defaultdict(list)   # item name -> rows
-    if os.path.exists(os.path.join(farmer, "Data", "Data_Harvested.lua")):
-        harvested = load_harvest(lua, farmer)
-        for i in harvested:
-            item = harvested[i]
-            rows = item["sources"]
-            for j in (rows or {}):
-                row = rows[j]
-                coords = row["coords"]
-                if not (row["name"] and row["zone"] and coords):
-                    continue
-                forever[item["name"]].append((
-                    row["name"], row["zone"], round(float(coords[1]), 1), round(float(coords[2]), 1),
-                    int(row["minLevel"] or 0), int(row["maxLevel"] or 0), row["chance"]))
+    forever = load_forever(lua, farmer)
 
     pf_quests = pfq["quests"]["data"]
     pf_items = pfq["items"]["data"]
