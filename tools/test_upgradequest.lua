@@ -141,7 +141,8 @@ end)())
 suite.check("and nothing left to chase", Quest:Current() == nil and Quest.state == "none", Quest.state)
 suite.check("the panel says so", Panel.empty:IsShown()
     and Panel.empty:GetText():find("No quest reward that is an upgrade", 1, true) ~= nil, Panel.empty:GetText())
-suite.check("with Other ways still there", Panel.otherButton:IsShown() and not Panel.skipButton:IsShown())
+suite.check("with Pick one still there", Panel.otherButton:IsShown() and not Panel.skipButton:IsShown()
+    and Panel.otherButton.label:GetText() == "Pick one", Panel.otherButton.label:GetText())
 
 --------------------------------------------------------------------------------
 -- Skipping, and the vendor's steps
@@ -153,6 +154,7 @@ ns.Finder:MarkStale()
 -- A tab that found nothing looks again when the gear changes.
 Quest:OnEvent("PLAYER_EQUIPMENT_CHANGED")
 suite.check("a new quest once there is an upgrade again", Quest:Current() and Quest:Current().itemID == 1002)
+suite.check("its Change button names what it does", Panel.otherButton.label:GetText() == "Change", Panel.otherButton.label:GetText())
 ns.HandleSlash("quest skip")
 suite.check("skip leaves the tab with the next best: no other quest reward here", Quest:Current() == nil)
 suite.check("and remembers it", ns.charDB.upgradeQuestSkipped[1002] == true)

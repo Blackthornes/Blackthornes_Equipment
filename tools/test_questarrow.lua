@@ -272,8 +272,8 @@ tip = table.concat(GameTooltip._lines, "\n")
 suite.check("and says what it does", tip:find("pointing the way", 1, true) ~= nil, tip)
 Panel.arrowButton:GetScript("OnLeave")(Panel.arrowButton)
 
--- The footer still fits: Show on map and Arrow on the left, Other ways and
--- Skip on the right.
+-- The footer still fits: Show on map and Arrow on the left, Change and
+-- Ignore on the right.
 local left = 10 + Panel.mapButton:GetWidth() + 6 + Panel.arrowButton:GetWidth()
 local right = 340 - 10 - Panel.skipButton:GetWidth() - 6 - Panel.otherButton:GetWidth()
 suite.check("the buttons along the bottom do not touch", left + 6 <= right, left .. " " .. right)
