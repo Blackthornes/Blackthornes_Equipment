@@ -492,13 +492,24 @@ function SettingsUI:BuildHunting()
     Explain(controls.questArrowCheck, "Check the quest arrow",
         "Lists in chat what the arrow can read where you stand: your spot, your facing, the map. Same as /beq arrow check.")
 
-    -- The same switch as the tick box in Where to get upgrades.
-    local soloRow = CreateRow(frame, arrowRow, "Solo quests",
-        "Leaves out quests that need a group, a dungeon, a raid or a battleground.")
-    controls.soloQuests = Widgets.CreateCheckbox(soloRow, "Only these", function(checked)
+    -- Two switches that are also tick boxes on the quest panel: Solo only
+    -- (the same as in Where to get upgrades) and Zone swap, the panel's
+    -- "Change on a new zone" (the owner asked 2026-10-08). One row for both:
+    -- the column has no room for another.
+    local soloRow = CreateRow(frame, arrowRow, "Quest filters",
+        "Solo only leaves out group, dungeon, raid and battleground quests. Zone swap lets This zone only change quests in a new zone.")
+    controls.soloQuests = Widgets.CreateCheckbox(soloRow, "Solo only", function(checked)
         if ns.Finder then ns.Finder:SetSoloOnly(checked) end
     end, false)
     controls.soloQuests:SetPoint("TOPLEFT", CONTROL_X, -2)
+    Explain(controls.soloQuests, "Solo quests only",
+        "Leaves out quests that need a group, a dungeon, a raid or a battleground. The same switch as in Where to get upgrades and on the quest panel.")
+    controls.questZoneSwap = Widgets.CreateCheckbox(soloRow, "Zone swap", function(checked)
+        if ns.UpgradeQuest then ns.UpgradeQuest:SetZoneSwap(checked) end
+    end, true)
+    controls.questZoneSwap:SetPoint("TOPLEFT", CONTROL_X + 92, -2)
+    Explain(controls.questZoneSwap, "Change on a new zone",
+        "With This zone only ticked on the quest panel, entering a new zone swaps your quests for ones there. Untick it to keep them as you travel. The same switch as Change on a new zone on the panel.")
 
     local anchor = soloRow
     for _, entry in ipairs(HUNTING) do
@@ -537,6 +548,7 @@ function SettingsUI:Refresh()
     controls.questArrow:SetChecked(ns.db.questArrow == true)
     self:RefreshQuestSize()
     controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
+    controls.questZoneSwap:SetChecked(ns.db.upgradeQuestZoneSwap ~= false)
     -- Dimmed while there is nothing for them to do; still clickable, so a
     -- click says why.
     local quest = ns.UpgradeQuest

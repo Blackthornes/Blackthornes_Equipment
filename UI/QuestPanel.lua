@@ -44,7 +44,7 @@ local TABS_HEIGHT = TAB_HEIGHT + 8
 -- The filters: two rows of tick boxes and the level stepper.
 local FILTER_ROW = 22
 local FILTER_GAP = 6
-local FILTERS_HEIGHT = FILTER_ROW * 2 + FILTER_GAP + 8
+local FILTERS_HEIGHT = FILTER_ROW * 3 + FILTER_GAP * 2 + 8
 local PAD = 10
 local ICON = 36
 local MARK = 14
@@ -329,7 +329,8 @@ function QuestPanel.QuestLevelsText(value)
 end
 
 --- Under the tabs: "This zone only" and "Solo quests only" on one row;
---- "Quest level" and the Settings button on the next.
+--- "Change on a new zone" on the next; "Quest level" and the Settings
+--- button under it.
 -- Made while the panel is built, so the panel's frame is handed in.
 function QuestPanel:BuildFilters(frame)
     local top = HEADER + TABS_HEIGHT
@@ -345,7 +346,7 @@ function QuestPanel:BuildFilters(frame)
     zone:SetPoint("TOPLEFT", PAD, -2)
     ExplainBelow(zone, "This zone only",
         "Only upgrades from the zone you are in: a vendor, a quest giver or a dungeon's entrance here. "
-            .. "Each tab picks again as you travel. Untick it to look anywhere. "
+            .. "Each tab picks again as you travel, unless Change on a new zone is unticked. Untick it to look anywhere. "
             .. "An upgrade you chose in Where to get upgrades stays either way.")
     self.zoneBox = zone
 
@@ -359,7 +360,18 @@ function QuestPanel:BuildFilters(frame)
             .. "The same switch as in Where to get upgrades.")
     self.soloBox = solo
 
-    local rowY = -(FILTER_ROW + FILTER_GAP)
+    -- Whether a new zone changes the quests while This zone only is ticked
+    -- (the owner asked 2026-10-08). Dimmed while This zone only is not.
+    local swap = Widgets.CreateCheckbox(strip, "Change on a new zone", function(checked)
+        if ns.UpgradeQuest then ns.UpgradeQuest:SetZoneSwap(checked) end
+    end, not ns.UpgradeQuest or ns.UpgradeQuest:ZoneSwap())
+    swap:SetPoint("TOPLEFT", PAD, -(FILTER_ROW + FILTER_GAP) - 2)
+    ExplainBelow(swap, "Change on a new zone",
+        "With This zone only ticked, entering a new zone drops the quests from elsewhere and each tab picks one here. "
+            .. "Untick it to keep your quests as you travel. Only does something while This zone only is ticked.")
+    self.swapBox = swap
+
+    local rowY = -(FILTER_ROW + FILTER_GAP) * 2
     local levelLabel = Theme.CreateLabel(strip, "small", "muted")
     levelLabel:SetPoint("TOPLEFT", PAD, rowY - 4)
     levelLabel:SetText("Quest level")
@@ -401,6 +413,10 @@ function QuestPanel:FillFilters()
     if not self.filters then return end
     self.filters:SetShown(not self.folded)
     if self.zoneBox then self.zoneBox:SetChecked(ns.UpgradeQuest:ZoneOnly()) end
+    if self.swapBox then
+        self.swapBox:SetChecked(ns.UpgradeQuest:ZoneSwap())
+        self.swapBox:SetAlpha(ns.UpgradeQuest:ZoneOnly() and 1 or 0.45)
+    end
     if self.soloBox and ns.Finder then self.soloBox:SetChecked(ns.Finder:SoloOnly()) end
     if self.levelStepper then self.levelStepper:SetValue(QuestPanel.QuestLevelsValue(), true) end
 end

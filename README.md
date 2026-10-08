@@ -105,7 +105,10 @@ right-click it for the normal size, or type `/beq quest size` with `small`,
 Under the tabs, tick **This zone only** to have each tab pick only from the
 zone you are in (a vendor, a quest giver or a dungeon's entrance there); the
 tabs pick again as you travel, and an upgrade you clicked in Where to get
-upgrades stays wherever you go. Untick it to look anywhere again. Beside it
+upgrades stays wherever you go. Untick **Change on a new zone** (or
+Settings > Upgrade hunts > Quest filters > Zone swap) to keep your quests as
+you travel instead; a tab with nothing to chase still picks from the zone
+you are in. Untick This zone only to look anywhere again. Beside it
 are the same **Solo quests only** and **Quest level** as in Where to get
 upgrades (changing either here changes it there), and a **Settings** button.
 

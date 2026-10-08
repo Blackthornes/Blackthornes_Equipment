@@ -134,7 +134,10 @@ flight, which waits for `PLAYER_CONTROL_GAINED` at the landing, and not
 inside a dungeon or raid: `UpgradeQuest.Passing`). A quest followed
 from the finder (`quest.followed`) stays; quests picked while ticked
 (`quest.here`) are let go when it is unticked. A Settings button sits
-beside them.
+beside them. "Change on a new zone" (`upgradeQuestZoneSwap`, account wide,
+on unless unticked; `UpgradeQuest:ZoneSwap`, the owner asked 2026-10-08) is
+a third tick box there and "Zone swap" in Settings: unticked, a zone change
+lets nothing go, though an empty tab still picks from the zone it is in.
 
 Forever's own boss drops: `tools/forever_drops.py` reads Farmer's
 `Data/Data_Harvested.lua` (no player names in it) and writes
