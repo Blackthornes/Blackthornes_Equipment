@@ -55,6 +55,7 @@ UI\MapPins.lua
 UI\SlotUpgrades.lua
 UI\MoreMarks.lua
 UI\QuestPanel.lua
+UI\IgnoredWindow.lua
 UI\QuestArrow.lua
 
 Probe\Probe.lua

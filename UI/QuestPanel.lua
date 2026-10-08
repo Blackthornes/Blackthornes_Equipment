@@ -14,8 +14,9 @@
 --
 -- Show on map pins the next place to go; Arrow shows the quest arrow
 -- (UI/QuestArrow.lua), which points the way there, and a click on a step
--- with a place aims the arrow at it. Skip leaves this upgrade for the
--- next best; Other ways opens Where to get upgrades. When a level up opens
+-- with a place aims the arrow at it. Ignore leaves this upgrade for good
+-- for the next best (Settings lists what was ignored, to bring back);
+-- Other ways opens Where to get upgrades. When a level up opens
 -- an upgrade clearly more worth the trip, a gold box at the top offers it:
 -- Switch follows it instead, Keep current leaves the quest as it is. Shift-click the item
 -- to link it in chat. The panel is there while the "Upgrade quest" setting
@@ -630,10 +631,11 @@ function QuestPanel:Build()
     Explain(other, "Other ways", "Open Where to get upgrades for every upgrade on offer.")
     self.otherButton = other
 
-    local skip = Widgets.CreateButton(body, "Skip", function()
-        if ns.UpgradeQuest then ns.UpgradeQuest:Skip() end
-    end, { width = 56, height = 22 })
-    Explain(skip, "Skip this upgrade", "Leave it and get a quest for the next best one. /beq quest reset brings skipped ones back.")
+    -- Ignore was Skip, and keeps its saved list and its name in the code.
+    local skip = Widgets.CreateButton(body, "Ignore", function()
+        if ns.UpgradeQuest then ns.HandleSlash("quest ignore") end
+    end, { width = 60, height = 22 })
+    Explain(skip, "Ignore this upgrade", "Never offer it again on this character, and get a quest for the next best one. Settings > Upgrade hunts > Ignored brings it back.")
     self.skipButton = skip
 
     self.frame = frame

@@ -79,8 +79,10 @@ there, find the vendor, pick up the quest, enter the dungeon, gather the
 materials, put it on), lights the one to do now and ticks each off as the
 game shows it done. A quest reward at the end of a quest chain starts
 from the first quest you have not done, and a long chain counts as more
-work when the upgrade is picked. **Show on map** pins the next place to go, **Skip**
-moves on to the next best upgrade, and once you wear it a banner says the
+work when the upgrade is picked. **Show on map** pins the next place to go, **Ignore**
+drops that upgrade for good on this character and moves on to the next
+best (Settings > Upgrade hunts > **Ignored** lists what you ignored, with
+**Restore** on each and **Restore all**), and once you wear it a banner says the
 quest is complete and the next one is picked. The panel wears the gold
 house frame and has a tab for each kind of source: **Vendor**, **Quest**,
 **Dungeons and Raids** and **Crafted**. Each tab keeps its own upgrade, so
@@ -94,8 +96,8 @@ quest you are on stays, but if the new level opens an upgrade clearly more
 worth the trip, a gold **New upgrade unlocked** box offers it: **Switch**
 follows it instead (or `/beq quest switch`), **Keep current** stays put. It
 is off unless you turn it on, and the quest is kept per character. Every
-`/beq quest` command is a button in Settings > Upgrade hunts too: Skip,
-Switch, Open (the panel), Bring back (skipped upgrades), the panel's size
+`/beq quest` command is a button in Settings > Upgrade hunts too: Ignore,
+Switch, Open (the panel), Ignored (the list to restore from), the panel's size
 and the tab shown. To make the panel bigger or smaller, text and all, drag
 the gold grip below its bottom-right corner, anywhere from 50% to 150%;
 right-click it for the normal size, or type `/beq quest size` with `small`,
@@ -173,7 +175,7 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq bags       list every piece of gear in your bags with its verdict
 /beq find       where to get upgrades: vendors, quests, dungeons and crafting
 /beq tracked    the upgrades you are tracking (/beq tracked clear stops them all)
-/beq quest      a quest for your next upgrade (/beq quest off, skip, switch, reset, size, or a tab: vendor, quest, dungeon, crafted)
+/beq quest      a quest for your next upgrade (/beq quest off, ignore, ignored, restore, switch, size, or a tab: vendor, quest, dungeon, crafted)
 /beq arrow      an arrow to the upgrade quest's next place (on, off, next, check, reset)
 /beq weights    change how much each stat counts (also in the settings window)
 /beq probe      check what this client supports; it only reads

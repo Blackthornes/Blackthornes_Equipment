@@ -154,6 +154,7 @@ local POSITION_KEYS = {
     { "trackerPoint", "trackerRelativePoint", "trackerX", "trackerY" },
     { "questPoint", "questRelativePoint", "questX", "questY" },
     { "questArrowX", "questArrowY" },
+    { "ignoredPoint", "ignoredRelativePoint", "ignoredX", "ignoredY" },
 }
 
 --- Put every Equipment window back where it started: the gear window, this
@@ -164,7 +165,7 @@ function SettingsUI:ResetPositions()
     for _, keys in ipairs(POSITION_KEYS) do
         for _, key in ipairs(keys) do ns.db[key] = nil end
     end
-    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI }) do
+    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI, ns.IgnoredUI }) do
         if module and module.frame and module.RestorePosition then module:RestorePosition() end
     end
 end
@@ -402,13 +403,13 @@ function SettingsUI:BuildHunting()
     -- The /beq quest commands as buttons, each doing just what its command
     -- does, chat line included.
     local thisRow = CreateRow(frame, questRow, "This upgrade",
-        "Skip moves on to the next best. Switch takes the upgrade a level up opened, when one is on offer.")
-    controls.questSkip = Widgets.CreateButton(thisRow, "Skip", function()
-        ns.HandleSlash("quest skip")
+        "Ignore never offers it again and moves on to the next best. Switch takes the upgrade a level up opened.")
+    controls.questSkip = Widgets.CreateButton(thisRow, "Ignore", function()
+        ns.HandleSlash("quest ignore")
     end, { width = 64, height = 20 })
     controls.questSkip:SetPoint("TOPLEFT", CONTROL_X, 0)
-    Explain(controls.questSkip, "Skip this upgrade",
-        "Leave the upgrade you are following and get a quest for the next best one. Same as /beq quest skip.")
+    Explain(controls.questSkip, "Ignore this upgrade",
+        "Never offer the upgrade you are following again on this character, and get a quest for the next best one. Ignored brings it back. Same as /beq quest ignore.")
     controls.questSwitch = Widgets.CreateButton(thisRow, "Switch", function()
         ns.HandleSlash("quest switch")
     end, { width = 72, height = 20, primary = true })
@@ -417,19 +418,22 @@ function SettingsUI:BuildHunting()
         "Follow the upgrade your new level opened instead. Lit when one is on offer. Same as /beq quest switch.")
 
     local panelRow = CreateRow(frame, thisRow, "Quest panel",
-        "Open shows the panel (and turns the quest on). Bring back lets skipped upgrades come up again.")
+        "Open shows the panel (and turns the quest on). Ignored lists the upgrades you ignored, to restore them.")
+    self.questPanelRow = panelRow
     controls.questOpen = Widgets.CreateButton(panelRow, "Open", function()
         ns.HandleSlash("quest")
     end, { width = 64, height = 20 })
     controls.questOpen:SetPoint("TOPLEFT", CONTROL_X, 0)
     Explain(controls.questOpen, "Open the quest panel",
         "Shows the upgrade quest panel, unfolded, and turns the quest on if it is off. Same as /beq quest.")
-    controls.questReset = Widgets.CreateButton(panelRow, "Bring back", function()
-        ns.HandleSlash("quest reset")
+    -- The list of ignored upgrades, each with Restore, and Restore all
+    -- (UI/IgnoredWindow.lua).
+    controls.questReset = Widgets.CreateButton(panelRow, "Ignored", function()
+        ns.HandleSlash("quest ignored")
     end, { width = 84, height = 20 })
     controls.questReset:SetPoint("LEFT", controls.questOpen, "RIGHT", 12, 0)
-    Explain(controls.questReset, "Bring back skipped upgrades",
-        "Upgrades you skipped can be picked again. Same as /beq quest reset.")
+    Explain(controls.questReset, "Ignored upgrades",
+        "Lists the upgrades you ignored on this character, to restore one or all of them. Same as /beq quest ignored.")
 
     -- The upgrade quest panel's size, as its gold corner grip and /beq quest
     -- size set it (the owner asked 2026-10-07). The size in use is lit green
@@ -539,6 +543,11 @@ function SettingsUI:Refresh()
     local on = quest and quest:IsEnabled()
     controls.questSkip:SetAlpha(on and quest:Current() and 1 or 0.45)
     controls.questSwitch:SetAlpha(on and quest:Offer() and 1 or 0.45)
+    if quest and self.questPanelRow then
+        local count = 0
+        for _ in pairs(quest:Skipped()) do count = count + 1 end
+        controls.questReset:SetText(count > 0 and ("Ignored (%d)"):format(count) or "Ignored")
+    end
     if quest then
         for index, tab in ipairs(quest.TABS) do
             if tab.key == quest:Tab() then controls.questTab:SetValue(index, true) end

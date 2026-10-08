@@ -223,6 +223,11 @@ request) follows that upgrade: `UpgradeQuest:Follow` puts it on its source's
 tab, shows that tab and turns the quest on; `UpgradeQuest.CanFollow` says why
 not for gear that waits on a reputation, a level or another player's craft.
 Right-click still tracks and Alt-click still pins. Every `/beq quest` command has a Settings button or control.
+Ignore (the owner asked 2026-10-08) is the old Skip renamed: the same
+`.upgradeQuestSkipped` list, never offered again until restored.
+`UI/IgnoredWindow.lua` (Settings > Upgrade hunts > Ignored, `/beq quest
+ignored`) lists it with Restore on each (`UpgradeQuest:Restore`) and Restore
+all (`RestoreAll`, `/beq quest restore`); `skip` and `reset` still work.
 
 The quest arrow (the owner asked 2026-10-08 for Farmer's goal arrow here):
 `Logic/QuestArrow.lua` and `UI/QuestArrow.lua` are Farmer's
