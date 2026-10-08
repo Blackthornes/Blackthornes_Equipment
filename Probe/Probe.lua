@@ -49,6 +49,10 @@ local APIS = {
     "C_QuestLog.ReadyForTurnIn", "C_Item.GetItemCount", "GetItemCount",
     -- Learning where vendors and trainers stand (Logic/NPCSpots.lua).
     "C_Map.GetPlayerMapPosition",
+    -- The quest arrow (Logic/QuestArrow.lua): world coordinates, a map's
+    -- size in yards, and which way the character faces.
+    "C_Map.GetWorldPosFromMapPos", "C_Map.GetMapWorldSize", "CreateVector2D", "GetPlayerFacing",
+    "IsInInstance",
 }
 
 local function Has(path)

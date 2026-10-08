@@ -398,6 +398,10 @@ local DEFAULTS = {
     -- (0.5 to 1.5): its gold corner grip, Settings or /beq quest size. Its
     -- saved spot keeps the size it was taken at in questScaleAt.
     questScale = 1,
+    -- The quest arrow: a dial that points at the upgrade quest's next
+    -- place (Logic/QuestArrow.lua). Off unless turned on; where it was
+    -- dragged to is questArrowX and questArrowY.
+    questArrow = false,
 
     -- Upgrade hunts: the banner when an upgrade or a tracked one lands in
     -- the bags, the tracker panel and where it sits, pins on the world map,

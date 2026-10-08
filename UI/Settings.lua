@@ -31,7 +31,7 @@ local CONTROL_X = 150
 -- Two columns: the gear and the windows on the left, upgrade hunts on the
 -- right.
 local WIDTH = COLUMN_WIDTH * 2 + PADDING * 3
-local HEIGHT = 698
+local HEIGHT = 754
 
 local ROW_HEIGHT = 50
 local ROW_GAP = -6
@@ -153,6 +153,7 @@ local POSITION_KEYS = {
     { "finderPoint", "finderRelativePoint", "finderX", "finderY", "finderMoved" },
     { "trackerPoint", "trackerRelativePoint", "trackerX", "trackerY" },
     { "questPoint", "questRelativePoint", "questX", "questY" },
+    { "questArrowX", "questArrowY" },
 }
 
 --- Put every Equipment window back where it started: the gear window, this
@@ -163,7 +164,7 @@ function SettingsUI:ResetPositions()
     for _, keys in ipairs(POSITION_KEYS) do
         for _, key in ipairs(keys) do ns.db[key] = nil end
     end
-    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel }) do
+    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI }) do
         if module and module.frame and module.RestorePosition then module:RestorePosition() end
     end
 end
@@ -472,8 +473,23 @@ function SettingsUI:BuildHunting()
     controls.questTab:SetWidth(170)
     controls.questTab:SetPoint("TOPLEFT", CONTROL_X, 0)
 
+    -- The quest arrow, as the Arrow button on the quest panel and /beq
+    -- arrow switch it, and /beq arrow check as a button.
+    local arrowRow = CreateRow(frame, tabRow, "Quest arrow",
+        "A dial that points the way to the quest's next place. Click a step on the panel to aim it there.")
+    controls.questArrow = Widgets.CreateCheckbox(arrowRow, "Show it", function(checked)
+        if ns.QuestArrow then ns.QuestArrow:SetOn(checked) end
+    end, false)
+    controls.questArrow:SetPoint("TOPLEFT", CONTROL_X, -2)
+    controls.questArrowCheck = Widgets.CreateButton(arrowRow, "Check", function()
+        ns.HandleSlash("arrow check")
+    end, { width = 64, height = 20 })
+    controls.questArrowCheck:SetPoint("TOPLEFT", CONTROL_X + 96, 0)
+    Explain(controls.questArrowCheck, "Check the quest arrow",
+        "Lists in chat what the arrow can read where you stand: your spot, your facing, the map. Same as /beq arrow check.")
+
     -- The same switch as the tick box in Where to get upgrades.
-    local soloRow = CreateRow(frame, tabRow, "Solo quests",
+    local soloRow = CreateRow(frame, arrowRow, "Solo quests",
         "Leaves out quests that need a group, a dungeon, a raid or a battleground.")
     controls.soloQuests = Widgets.CreateCheckbox(soloRow, "Only these", function(checked)
         if ns.Finder then ns.Finder:SetSoloOnly(checked) end
@@ -514,6 +530,7 @@ function SettingsUI:Refresh()
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
     end
     controls.upgradeQuest:SetChecked(ns.db.upgradeQuest == true)
+    controls.questArrow:SetChecked(ns.db.questArrow == true)
     self:RefreshQuestSize()
     controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
     -- Dimmed while there is nothing for them to do; still clickable, so a
@@ -561,6 +578,10 @@ function SettingsUI:OnUpgradeQuestChanged()
 end
 
 --- "Solo quests only" was ticked or unticked in Where to get upgrades.
+function SettingsUI:OnQuestArrowChanged()
+    self:Refresh()
+end
+
 function SettingsUI:OnQuestFilterChanged()
     self:Refresh()
 end

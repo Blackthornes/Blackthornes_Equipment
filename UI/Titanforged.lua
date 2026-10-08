@@ -258,6 +258,9 @@ local function CloseGem(trim, onClick)
     return close
 end
 
+-- The quest arrow wears the same gem beside its plate (UI/QuestArrow.lua).
+Titanforged.CloseGem = CloseGem
+
 --------------------------------------------------------------------------------
 -- Dressing a frame
 --------------------------------------------------------------------------------

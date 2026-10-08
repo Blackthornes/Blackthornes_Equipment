@@ -12,7 +12,9 @@
 -- with how much better it is, a progress bar, and the steps to get it, the
 -- one to do now lit gold and the ones done ticked green.
 --
--- Show on map pins the next place to go; Skip leaves this upgrade for the
+-- Show on map pins the next place to go; Arrow shows the quest arrow
+-- (UI/QuestArrow.lua), which points the way there, and a click on a step
+-- with a place aims the arrow at it. Skip leaves this upgrade for the
 -- next best; Other ways opens Where to get upgrades. When a level up opens
 -- an upgrade clearly more worth the trip, a gold box at the top offers it:
 -- Switch follows it instead, Keep current leaves the quest as it is. Shift-click the item
@@ -151,6 +153,29 @@ function QuestPanel:BuildStep(index)
     note:SetWordWrap(true)
     row.note = note
     row.textWidth = WIDTH - PAD * 2 - MARK - 16
+
+    -- A step with a place: a click points the quest arrow there.
+    row:SetScript("OnEnter", function(self)
+        if not self.place then return end
+        Theme.SetHalo(self, 0.45, "accentHi")
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine("Point the quest arrow here", Theme.Unpack("accent"))
+        GameTooltip:AddLine(("Click to have the arrow show the way to %s."):format(
+            self.place.name or self.place.zone or "this place"), 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function(self)
+        Theme.SetHalo(self, self.now and 0.28 or 0, "accent")
+        GameTooltip:Hide()
+    end)
+    row:SetScript("OnMouseUp", function(self, button)
+        if button ~= "LeftButton" or not self.place then return end
+        if ns.QuestArrow and ns.QuestArrow:Aim(self.index) then
+            if type(_G.PlaySound) == "function" then
+                pcall(_G.PlaySound, _G.SOUNDKIT and _G.SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or 856)
+            end
+        end
+    end)
 
     row:Hide()
     return row
@@ -592,6 +617,13 @@ function QuestPanel:Build()
     Explain(map, "Show on map", "Put the game's map pin on the next place to go, with its arrow pointing the way.")
     self.mapButton = map
 
+    -- The quest arrow: lit green while it is up.
+    local arrow = Widgets.CreateButton(body, "Arrow", function()
+        if ns.QuestArrow then ns.HandleSlash(ns.QuestArrow.IsOn() and "arrow off" or "arrow on") end
+    end, { width = 60, height = 22 })
+    Explain(arrow, "Quest arrow", "A dial that turns as you turn, pointing the way to the next place. Click a step with a place to aim it there. Click again to hide it.")
+    self.arrowButton = arrow
+
     local other = Widgets.CreateButton(body, "Other ways", function()
         if ns.FinderUI then ns.FinderUI:Show() end
     end, { width = 80, height = 22 })
@@ -663,6 +695,11 @@ function QuestPanel:FillStep(row, index, step, current)
     row.background:SetColorTexture(Theme.Unpack("rowActive", now and 0.55 or 0))
     Theme.SetHalo(row, now and 0.28 or 0, "accent")
     row.now = now
+    -- Done steps keep their place for the map, but the arrow is for what
+    -- is left.
+    row.index = index
+    row.place = not step.done and type(step.place) == "table" and step.place.zone and step.place or nil
+    row:EnableMouse(row.place ~= nil)
 
     row:SetHeight(height)
     row:Show()
@@ -723,6 +760,7 @@ function QuestPanel:FillBody(quest, steps, current, done)
         self.track:Hide()
         self.fill:Hide()
         self.mapButton:Hide()
+        self.arrowButton:Hide()
         self.skipButton:Hide()
         local state = ns.UpgradeQuest.state
         local text
@@ -780,6 +818,7 @@ function QuestPanel:FillBody(quest, steps, current, done)
     y = y + 8
     local place = ns.UpgradeQuest:NextPlace()
     self.mapButton:ClearAllPoints()
+    self.arrowButton:ClearAllPoints()
     self.otherButton:ClearAllPoints()
     self.skipButton:ClearAllPoints()
     self.skipButton:SetPoint("TOPRIGHT", -PAD, -y)
@@ -789,8 +828,12 @@ function QuestPanel:FillBody(quest, steps, current, done)
     if place then
         self.mapButton:SetPoint("TOPLEFT", PAD, -y)
         self.mapButton:Show()
+        self.arrowButton:SetPoint("LEFT", self.mapButton, "RIGHT", 6, 0)
+        self.arrowButton:SetLabelColor(ns.QuestArrow and ns.QuestArrow.IsOn() and "good" or "gilt")
+        self.arrowButton:Show()
     else
         self.mapButton:Hide()
+        self.arrowButton:Hide()
     end
 
     local height = y + FOOTER - 4
@@ -881,6 +924,10 @@ function QuestPanel:Unfold()
 end
 
 function QuestPanel:OnUpgradeQuestChanged()
+    self:Refresh()
+end
+
+function QuestPanel:OnQuestArrowChanged()
     self:Refresh()
 end
 
