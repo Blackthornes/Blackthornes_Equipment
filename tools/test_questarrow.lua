@@ -363,4 +363,27 @@ suite.check("Window positions puts it back", ns.db.questArrowX == nil and ns.db.
 ArrowUI:Close()
 suite.check("the red gem turns it off", not Arrow.IsOn())
 
+--------------------------------------------------------------------------------
+-- One Blackthornes arrow at a time (the same lines are in all three addons)
+--------------------------------------------------------------------------------
+
+do
+    _G.BlackthornesArrows = nil
+    local ui = ArrowUI
+    suite.check("alone, it always shows", ui.Wins(true))
+    local shared = _G.BlackthornesArrows
+    shared.wants.Pets = true
+    shared.claims.Pets = 1e9
+    suite.check("another addon's arrow aimed later wins", not ui.Wins(true))
+    shared.claims.Pets = -1
+    ui:Claim()
+    suite.check("aiming this one again wins it back", ui.Wins(true))
+    shared.claims.Pets = 1e9
+    shared.wants.Pets = nil
+    suite.check("the other put away, this one shows", ui.Wins(true))
+    ui.Wins(false)
+    suite.check("off, it stops wanting", next(shared.wants) == nil)
+    _G.BlackthornesArrows = nil
+end
+
 suite.done()

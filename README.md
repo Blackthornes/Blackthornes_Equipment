@@ -116,7 +116,9 @@ zone and says so; on the other continent it only names the zone. Click a
 step with a place on the panel to point the arrow there, click the dial for
 the next tab's quest, right-click it for the next place, and drag it
 anywhere. It hides inside dungeons, and its red gem turns it off. It is
-Farmer's goal arrow, brought over. `/beq arrow check` lists what it can
+Farmer's goal arrow, brought over; Pets has it too, and only one of the
+three is on screen at a time: the one turned on or aimed last shows, and
+the others wait until it is put away. `/beq arrow check` lists what it can
 read where you stand.
 
 Where gear comes from is `Data/Sources.lua`, generated from Classic 1.12
