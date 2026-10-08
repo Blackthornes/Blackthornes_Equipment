@@ -4,6 +4,30 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.14.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- The upgrade quest's steps now say where to go once a quest is in your
+  log: they point at its objective (a mob, an object, or where an
+  objective item drops), then at whoever takes it back once it is ready.
+  The reward quest's Complete and Hand in steps get a place too, and the
+  map pin and quest arrow follow. A quest the data knows nothing about
+  gets no place rather than its giver's.
+- A quest that starts from an item now says where to get that item: the
+  zone, the mob, vendor or object that has it (with level, a note for
+  rares, and the drop chance), and then to right-click it in your bags.
+  The map pin and quest arrow point at the spot. A starter item from a
+  dungeon boss sends you to the dungeon's door.
+- New **Change on a new zone** tick box under This zone only on the
+  upgrade quest panel (also **Zone swap** in Settings > Upgrade hunts).
+  Untick it to keep your quests as you travel; a tab with nothing to chase
+  still picks from the zone you are in. It is on by default.
+- The quest panel's "Other ways" button is now **Change** (or **Pick one**
+  on an empty tab), with a tooltip saying it opens Where to get upgrades
+  to pick a different upgrade.
+
 ## 0.13.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game
