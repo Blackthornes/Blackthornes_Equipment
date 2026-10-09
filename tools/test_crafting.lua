@@ -142,6 +142,15 @@ suite.check("in words, with the auction price beside it",
 suite.check("the tooltip says so too", Crafting:TooltipLine(3003) == "Bob can make this")
 suite.check("and for your own", Crafting:TooltipLine(3001) == "You can make this")
 
+-- The skill Forever asks for, as Tradeskills read it from the recipe item.
+_G.BlackthornesTS.RecipeBook = { GetSkill = function(_, id) if id == 9003 then return 60 end end }
+Crafting:Forget()
+suite.check("Forever's skill beats Classic's", Source(3003).skill == 60, Source(3003).skill)
+suite.check("Classic's stands where Tradeskills has none", Source(3001).skill == C.ITEMS[3001][2])
+_G.BlackthornesTS.RecipeBook.GetSkill = function() error("boom") end
+suite.check("and a raise falls back to Classic's", Source(3003).skill == C.ITEMS[3003][2])
+_G.BlackthornesTS.RecipeBook = nil
+
 -- Tradeskills raising never breaks anything.
 _G.BlackthornesTS.Recipes.GetAccountWide = function() error("boom") end
 Crafting:Forget()

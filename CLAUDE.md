@@ -84,7 +84,12 @@ ts.Recipes:GetShortCharacterName(key)  -- "Bob", for "Bob can make this"
 ts.Config:GetCharacterKey()            -- the character playing
 ts.db.characters[key].faction          -- alts of the other faction are left out
 ts.Prices:GetValue(itemID)             -- material and auction prices, copper
+ts.RecipeBook:GetSkill(recipeID)       -- the skill a recipe needs on Forever, or nil
 ```
+
+`GetSkill` (2026-10-09): Forever moved some recipes to other skill levels,
+and Tradeskills reads the right one from the recipe item's tooltip.
+`Crafting:Skill` uses it over `Data/Crafts.lua`'s Classic skill.
 
 Without Tradeskills, crafted gear is still listed, known recipes are read
 from the spellbook, and materials are priced at vendor only. If one of these
