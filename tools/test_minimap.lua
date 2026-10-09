@@ -39,15 +39,16 @@ SettingsUI:Hide()
 button:GetScript("OnEnter")(button)
 local lines = GameTooltip._lines
 suite.check("the tooltip names the addon", lines[1] == "Blackthornes Equipment", lines[1])
+suite.check("then its version", lines[2] == ns.VersionLabel(), lines[2])
 suite.check("and says which spec gear is judged as",
-    lines[2] == "Judging gear as Beast Mastery", lines[2])
-suite.check("and what a click does", lines[3] == "Click to open", lines[3])
-suite.check("and a right-click", lines[4] == "Right-click for settings", lines[4])
+    lines[3] == "Judging gear as Beast Mastery", lines[3])
+suite.check("and what a click does", lines[4] == "Click to open", lines[4])
+suite.check("and a right-click", lines[5] == "Right-click for settings", lines[5])
 
 _G.UnitClass = function() return "Death Knight", "DEATHKNIGHT" end
 button:GetScript("OnEnter")(button)
 suite.check("a class without weights says so",
-    GameTooltip._lines[2] == "No stat weights for DEATHKNIGHT yet", GameTooltip._lines[2])
+    GameTooltip._lines[3] == "No stat weights for DEATHKNIGHT yet", GameTooltip._lines[3])
 _G.UnitClass = function() return "Hunter", "HUNTER" end
 
 -- Dragging round the ring. The stub cursor sits due east of the minimap's
