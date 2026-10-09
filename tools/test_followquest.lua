@@ -61,6 +61,9 @@ UI:Show()
 local vendorRow, questRow = RowFor(1001), RowFor(1002)
 suite.check("both upgrades are listed", vendorRow ~= nil and questRow ~= nil)
 suite.check("hovering says a click follows it", TooltipText(vendorRow):find("Click to follow it on the quest panel", 1, true) ~= nil)
+suite.check("and what that does, the green Quest tag included",
+    TooltipText(vendorRow):find("It becomes your upgrade quest", 1, true) ~= nil
+    and TooltipText(vendorRow):find("green Quest tag", 1, true) ~= nil)
 suite.check("the window's hint says so too", UI.hint:GetText():find("Click to follow as a quest", 1, true) ~= nil)
 suite.check("the hint fits on one line",
     ns.Theme.TextWidth("tiny", UI.hint:GetText()) <= UI.hint:GetWidth(), ns.Theme.TextWidth("tiny", UI.hint:GetText()))
@@ -80,6 +83,7 @@ vendorRow = RowFor(1001)
 suite.check("the row is marked Quest", vendorRow.source:GetText():find("Quest", 1, true) ~= nil,
     vendorRow.source:GetText())
 suite.check("and hovering says it is the quest", TooltipText(vendorRow):find("Your upgrade quest", 1, true) ~= nil)
+suite.check("and how to drop it", TooltipText(vendorRow):find("To drop it, click Ignore on the quest panel", 1, true) ~= nil)
 
 -- The quest reward goes on the Quest tab, and the vendor's is kept.
 Click(RowFor(1002))
