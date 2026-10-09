@@ -87,6 +87,9 @@ local RESCAN_ON = {
 
 local Items = ns.Items
 
+-- How often, in seconds, to look whether a flight across a zone has landed.
+local LANDING_CHECK = 3
+
 -- How long to wait for the server to answer about gear before picking
 -- from what is known. Most answers arrive within a few seconds.
 local WAIT_FOR_ITEMS = 12
@@ -319,7 +322,7 @@ function UpgradeQuest.Ease(source, zone)
         local count = #chain + (unknown and 1 or 0)
         ease = ease / (1 + PER_CHAIN_QUEST * count)
     end
-    if zone and source.zone == zone then ease = ease * HERE end
+    if zone and UpgradeQuest.SourceZone(source) == zone then ease = ease * HERE end
     return ease
 end
 
@@ -350,8 +353,29 @@ end
 --- zone and from inside. Gear made from what you know has no place, so it
 --- is in every zone, and so is anything when the zone is not known.
 function UpgradeQuest.InZone(source, here)
-    if not here or type(source) ~= "table" or not source.zone then return true end
-    return source.zone == here or source.dungeon == here
+    if not here or type(source) ~= "table" then return true end
+    local zone = UpgradeQuest.SourceZone(source)
+    if not zone then
+        -- A quest is always somewhere: one whose start is not known is not
+        -- in this zone.
+        return source.kind ~= "quest"
+    end
+    return zone == here or source.dungeon == here
+end
+
+--- The zone a source is got in. A quest that starts from an item has no
+--- giver, so it is where the item is got (Data/QuestStarts.lua). Before,
+--- such a quest counted as in every zone, so "This zone only" could send
+--- a player to another zone for it. Nil when not known.
+function UpgradeQuest.SourceZone(source)
+    if type(source) ~= "table" then return nil end
+    if source.zone then return source.zone end
+    if source.kind == "quest" and source.questID then
+        local starter = UpgradeQuest.Starter(source.questID)
+        local first = starter and starter.places[1]
+        if first then return first.kind == "boss" and first.door or first.zone end
+    end
+    return nil
 end
 
 --- The easiest of a pick's sources (only those for one tab, when `tab` is
@@ -1441,9 +1465,20 @@ function UpgradeQuest:OnEvent(event, level)
     -- end of a flight that crossed a zone.
     if event == "PLAYER_CONTROL_GAINED" then
         if not self.landing then return end
-        self.landing = nil
         event = "ZONE_CHANGED_NEW_AREA"
     end
+    -- A flight that crossed a zone is over once the character is off it,
+    -- whichever event says so first: if the client never sends
+    -- PLAYER_CONTROL_GAINED at the landing, the quests from the zone flown
+    -- out of would otherwise stay until the next zone change.
+    if self.landing and not self.OnTaxi() then
+        self.landing = nil
+        self:StopWatchingLanding()
+        event = "ZONE_CHANGED_NEW_AREA"
+    end
+    -- A loading screen, a login or a /reload: the character may be in
+    -- another zone from the one the quests were picked in.
+    if event == "PLAYER_ENTERING_WORLD" then event = "ZONE_CHANGED_NEW_AREA" end
     -- The client loads items for chat links, vendors and other addons all
     -- the time; only answers this addon asked for are worth looking again.
     if event == "GET_ITEM_INFO_RECEIVED" and not self:WantsItem(level) then return end
@@ -1464,6 +1499,7 @@ function UpgradeQuest:OnEvent(event, level)
     if event == "ZONE_CHANGED_NEW_AREA" and self:ZoneOnly() and self:ZoneSwap() then
         if self.OnTaxi() then
             self.landing = true
+            self:WatchLanding()
             return
         end
         self:LetGoOutOfZone()
@@ -1474,11 +1510,32 @@ function UpgradeQuest:OnEvent(event, level)
     self:UpdateSoon()
 end
 
+--- Look every few seconds whether a flight that crossed a zone has
+--- landed, in case no event says so. Stops once it has.
+function UpgradeQuest:WatchLanding()
+    local timer = _G.C_Timer
+    if self.watcher or not (timer and type(timer.NewTicker) == "function") then return end
+    local ok, ticker = pcall(timer.NewTicker, LANDING_CHECK, function()
+        if not self.landing then
+            self:StopWatchingLanding()
+        elseif not self.OnTaxi() then
+            self:OnEvent("ZONE_CHANGED_NEW_AREA")
+        end
+    end)
+    if ok then self.watcher = ticker end
+end
+
+function UpgradeQuest:StopWatchingLanding()
+    local ticker = self.watcher
+    self.watcher = nil
+    if ticker and type(ticker.Cancel) == "function" then pcall(ticker.Cancel, ticker) end
+end
+
 function UpgradeQuest:OnEnable()
     for _, event in ipairs({ "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
         "ZONE_CHANGED_NEW_AREA", "QUEST_ACCEPTED", "QUEST_LOG_UPDATE", "QUEST_TURNED_IN",
         "GET_ITEM_INFO_RECEIVED", "SKILL_LINES_CHANGED", "NEW_RECIPE_LEARNED", "TRAIT_CONFIG_UPDATED",
-        "PLAYER_CONTROL_GAINED" }) do
+        "PLAYER_CONTROL_GAINED", "PLAYER_ENTERING_WORLD" }) do
         ns.RegisterEvent(self, event, self.OnEvent)
     end
     if self:IsEnabled() then self:UpdateSoon(3) end
