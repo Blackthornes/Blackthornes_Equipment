@@ -809,13 +809,9 @@ function Finder:Latest()
     if self.background then return self.latest end
     local fresh = self.latest and not self.stale and (self.Now() - (self.latestAt or 0)) < 60
     if not fresh and (not self.latest or (self.Now() - (self.latestAt or 0)) >= 2) then
-        if self.latest then
-            -- Kept on show while a new one is made a slice per frame.
-            self:ScanInBackground()
-        else
-            self.stale = false
-            self:Scan()
-        end
+        -- Made a slice per frame, the last one kept on show meanwhile. The
+        -- very first is too: done in one go, a hover froze the game.
+        self:ScanInBackground()
     end
     return self.latest
 end

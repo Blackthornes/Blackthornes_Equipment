@@ -124,6 +124,7 @@ local SCHOOLS = {
 Items.SCHOOLS = SCHOOLS
 
 local schoolCache = {}
+local NO_SCHOOLS = {}
 
 --- The school a line names and by how much, or nil for any other line.
 function Items.SchoolLine(text)
@@ -169,6 +170,9 @@ function Items:SchoolDamage(link)
         local stat, amount = Items.SchoolLine(LineText(line))
         if stat then found[stat] = (found[stat] or 0) + amount end
     end
+    -- Most gear has none, and the finder reads thousands of links, so they
+    -- all share one empty table rather than keeping one each. Read only.
+    if next(found) == nil then found = NO_SCHOOLS end
     -- A tooltip for an item the client has not loaded yet is one line
     -- ("Retrieving item information"); that is not "none", so not kept.
     if lines > 1 then schoolCache[link] = found end
