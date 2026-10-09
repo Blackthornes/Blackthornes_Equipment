@@ -150,9 +150,17 @@ function UI:Build()
     footer:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, 14)
     self.footer = footer
 
+    -- The installed version, small and faint at the end of the hint's line
+    -- beside Find upgrades, so a player can see at a glance which one they
+    -- run.
+    local version = Theme.CreateLabel(frame, "tiny", "dim", "RIGHT")
+    version:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, -1)
+    version:SetText(ns.VersionLabel())
+    self.versionLabel = version
+
     local hint = Theme.CreateLabel(frame, "tiny", "dim")
     hint:SetPoint("BOTTOMLEFT", PADDING, 11)
-    hint:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, -1)
+    hint:SetPoint("BOTTOMRIGHT", version, "BOTTOMLEFT", -12, 0)
     hint:SetText("Hover an item for its tooltip. Equipping is up to you.")
     self.hint = hint
 
