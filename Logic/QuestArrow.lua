@@ -519,6 +519,14 @@ function QuestArrow:State(clock)
         self.targets = self:Targets(quest, here)
         self.listedAt = clock
         self.stamp = stamp
+        -- With no place to point at, the dial names the step to do instead.
+        -- Read here, with the places, rather than 33 times a second.
+        self.stepText = nil
+        if #self.targets == 0 then
+            local ok, steps, current = pcall(ns.UpgradeQuest.Steps, ns.UpgradeQuest, quest)
+            local step = ok and type(steps) == "table" and steps[current]
+            self.stepText = step and step.text or nil
+        end
 
         self.index = 1
         if self.choice then
@@ -542,9 +550,7 @@ function QuestArrow:State(clock)
     state.count = #targets
     if #targets == 0 then
         state.mode = "nowhere"
-        local ok, steps, current = pcall(ns.UpgradeQuest.Steps, ns.UpgradeQuest, quest)
-        local step = ok and type(steps) == "table" and steps[current]
-        state.step = step and step.text or nil
+        state.step = self.stepText
         return state
     end
 
