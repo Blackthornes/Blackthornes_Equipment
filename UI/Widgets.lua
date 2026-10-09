@@ -1,7 +1,7 @@
 -- Blackthornes Equipment -- UI/Widgets.lua
--- The controls the settings page needs: a button, a checkbox and a stepper,
--- with the small tweens that make them feel alive. Farmer's Widgets.lua,
--- trimmed to those, so the pages feel the same under the mouse.
+-- The controls the settings page needs: a button, a checkbox, a stepper and a
+-- search box, with the small tweens that make them feel alive. Farmer's
+-- Widgets.lua, trimmed to those, so the pages feel the same under the mouse.
 
 local _, ns = ...
 
@@ -546,4 +546,187 @@ function Widgets.CreateStepper(parent, opts)
 
     stepper:SetValue(opts.value or low, true)
     return stepper
+end
+
+--------------------------------------------------------------------------------
+-- Search box
+--
+-- Farmer's (by way of Pets), for Settings' Find a setting.
+--------------------------------------------------------------------------------
+
+--- Whether the mouse is on `frame` and the frame is on screen. Read in a
+--- pcall, as every client value is; a client that cannot say answers no.
+local function UnderMouse(frame)
+    local ok, over = pcall(function() return frame:IsVisible() and frame:IsMouseOver() end)
+    return ok and over and true or false
+end
+
+--- An edit box with placeholder text.
+--
+-- onChange fires on every keystroke so results follow typing; onAccept fires on
+-- Enter. Escape clears focus rather than the text, because losing what you
+-- typed on a mis-key is worse than an extra keystroke.
+--
+-- opts.plain leaves out the magnifier and the clear button, for a small box
+-- that is not a search: the room they keep is most of a narrow box.
+function Widgets.CreateSearchBox(parent, placeholder, onChange, onAccept, opts)
+    opts = opts or {}
+    local inset = opts.plain and 6 or 26
+
+    local holder = Theme.CreatePanel(parent, "row", "border")
+    holder:SetHeight(24)
+
+    -- Sunk into the window, and glowing gold while it has the keyboard
+    -- (Titanforged, as Tradeskills' search box).
+    if Theme.Recess then Theme.Recess(holder) end
+    if Theme.Halo then Theme.Halo(holder, 6, 0) end
+
+    -- The game's own magnifier, so the box reads as search at a glance.
+    local icon = holder:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(14, 14)
+    icon:SetPoint("LEFT", 7, 0)
+    icon:SetTexture([[Interface\Common\UI-Searchbox-Icon]])
+    icon:SetVertexColor(Theme.Unpack("muted"))
+    icon:SetShown(not opts.plain)
+    holder.icon = icon
+
+    local box = CreateFrame("EditBox", nil, holder)
+    box:SetPoint("TOPLEFT", inset, 0)
+    box:SetPoint("BOTTOMRIGHT", -inset, 0)
+    box:SetAutoFocus(false)
+    box:SetFont(Theme.FONT, Theme.sizes.normal, "")
+    box:SetTextColor(Theme.Unpack("text"))
+    box:SetMaxLetters(80)
+
+    local hint = Theme.CreateLabel(holder, "normal", "dim")
+    hint:SetPoint("LEFT", inset, 0)
+    hint:SetText(placeholder or "")
+
+    -- Clears what you typed in one click, and only shows when there is
+    -- something to clear.
+    local clear = CreateFrame("Button", nil, holder)
+    clear:SetSize(20, 20)
+    clear:SetPoint("RIGHT", -3, 0)
+    local cross = Theme.CreateLabel(clear, "normal", "muted", "CENTER")
+    cross:SetPoint("CENTER", 0, 0)
+    cross:SetText("x")
+    clear:Hide()
+    holder.clear = clear
+
+    local function UpdateHint()
+        local empty = box:GetText() == ""
+        hint:SetShown(empty)
+        clear:SetShown(not empty and not opts.plain)
+    end
+
+    --- The edge and the magnifier, from how far the mouse and the keyboard
+    --- have each eased in: the edge lifts under the mouse and turns gold
+    --- while the box has the keyboard, and the keyboard's gold wins.
+    local function Paint()
+        local hover = Motion:Value(holder, "hover")
+        local focus = Motion:Value(holder, "focus")
+
+        local r1, g1, b1 = Motion.Mix("border", "borderLit", hover)
+        local r2, g2, b2 = Theme.Unpack("accent")
+        local r, g, b = r1 + (r2 - r1) * focus, g1 + (g2 - g1) * focus, b1 + (b2 - b1) * focus
+        for _, edge in ipairs(holder.borderTextures or {}) do
+            edge:SetColorTexture(r, g, b, 1 - 0.2 * focus)
+        end
+        if rawget(holder, "haloTextures") then Theme.SetHalo(holder, 0.3 * focus) end
+
+        icon:SetVertexColor(Motion.Mix("muted", "accent", math.max(focus, hover * 0.4)))
+    end
+
+    --- The mouse came onto part of the box or left it. Lit while it is
+    --- anywhere on the box: going from the margin onto the text, or onto
+    --- the x, is a leave and an enter of their own.
+    local function Hover()
+        local over = UnderMouse(holder)
+        Motion:Blend(holder, "hover", over and 1 or 0, over and 0.12 or 0.18, Paint)
+    end
+
+    holder:EnableMouse(true)
+    holder:SetScript("OnEnter", Hover)
+    holder:SetScript("OnLeave", Hover)
+    box:SetScript("OnEnter", Hover)
+    box:SetScript("OnLeave", Hover)
+    -- The margin answers the mouse now, so a click there (on the
+    -- magnifier, say) gives the box the keyboard rather than nothing.
+    holder:SetScript("OnMouseDown", function() box:SetFocus() end)
+
+    -- The x lifts to the text colour under the mouse, eased like the rest.
+    local function LightCross(p)
+        cross:SetTextColor(Motion.Mix("muted", "text", p))
+    end
+    clear:SetScript("OnEnter", function(self)
+        Motion:Blend(self, "hover", 1, 0.12, LightCross)
+        Hover()
+    end)
+    clear:SetScript("OnLeave", function(self)
+        Motion:Blend(self, "hover", 0, 0.18, LightCross)
+        Hover()
+    end)
+
+    -- Hidden under the mouse (its window closing, or the x going with the
+    -- text it cleared), no leave may come: let go, or it shows again lit.
+    local function LetGo(frame, apply)
+        Motion:Stop(frame, "hover")
+        Motion:SetValue(frame, "hover", 0)
+        apply(0)
+    end
+    holder:SetScript("OnHide", function() LetGo(holder, Paint) end)
+    clear:SetScript("OnHide", function() LetGo(clear, LightCross) end)
+
+    box:SetScript("OnEditFocusGained", function()
+        Motion:Blend(holder, "focus", 1, 0.15, Paint)
+    end)
+
+    box:SetScript("OnEditFocusLost", function()
+        Motion:Blend(holder, "focus", 0, 0.2, Paint)
+    end)
+
+    box:SetScript("OnTextChanged", function(self, userInput)
+        UpdateHint()
+        if userInput and onChange then
+            onChange(self:GetText())
+        end
+    end)
+
+    box:SetScript("OnEnterPressed", function(self)
+        self:ClearFocus()
+        if onAccept then onAccept(self:GetText()) end
+    end)
+
+    box:SetScript("OnEscapePressed", function(self)
+        self:ClearFocus()
+    end)
+
+    clear:SetScript("OnClick", function()
+        box:SetText("")
+        UpdateHint()
+        if onChange then onChange("") end
+        box:SetFocus()
+    end)
+
+    holder.editBox = box
+
+    function holder:SetText(value)
+        box:SetText(value or "")
+        UpdateHint()
+    end
+
+    function holder:GetText()
+        return box:GetText()
+    end
+
+    function holder:SetFocus()
+        box:SetFocus()
+    end
+
+    function holder:ClearFocus()
+        box:ClearFocus()
+    end
+
+    UpdateHint()
+    return holder
 end

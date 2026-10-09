@@ -441,6 +441,12 @@ local DEFAULTS = {
     -- client that cannot say which quests are done.
     upgradeQuest = false,
 
+    -- The settings window (UI/SettingsPages.lua): its words under every row
+    -- rather than in tooltips, and Tradeskills' Text size. The page it was
+    -- left on is settingsPage, which has no default.
+    settingsDescriptions = false,
+    textSize = "normal",
+
     -- The player's own stat weights, by class and spec, are kept under
     -- `customWeights` (Logic/Weights.lua). Not given a default here: the
     -- table is made the first time a weight is changed, and once made it is

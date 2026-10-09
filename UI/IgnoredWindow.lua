@@ -1,7 +1,7 @@
 -- Blackthornes Equipment -- UI/IgnoredWindow.lua
 -- The upgrades this character ignored on the upgrade quest panel, each with
 -- a Restore button, and Restore all at the foot (the owner asked
--- 2026-10-08). Opened from Settings > Upgrade hunts > Ignored, or with
+-- 2026-10-08). Opened from Settings > Upgrade quest > Ignored, or with
 -- /beq quest ignored.
 --
 -- What is listed is UpgradeQuest:IgnoredList(), read fresh on every

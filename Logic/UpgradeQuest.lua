@@ -1587,7 +1587,7 @@ ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, igno
     if word == "ignore" or word == "skip" then
         local quest = UpgradeQuest:Current()
         if UpgradeQuest:Skip() then
-            ns.Print(("ignored %s: it will not be offered again. Settings > Upgrade hunts > Ignored brings it back."):format(
+            ns.Print(("ignored %s: it will not be offered again. Settings > Upgrade quest > Ignored brings it back."):format(
                 quest and quest.link or "that upgrade"))
         else
             ns.Print("there is no upgrade quest to ignore.")

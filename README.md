@@ -38,7 +38,7 @@ is listed first.
 **Quest level**, on the row under the source buttons, sets how far above
 your level a quest may be and still be offered: up to 4 levels by default,
 from "Up to my level" to "Any". Beside it, tick **Solo quests only** (also
-in Settings under Upgrade hunts) to leave out quests that need a group, a dungeon, a raid or a
+in Settings under Upgrade quest) to leave out quests that need a group, a dungeon, a raid or a
 battleground, and quests that come after one, say while you get ready for a
 dungeon run. The upgrade quest follows both. Which quests need others comes
 from Classic's quest data: its own group, dungeon, raid and PvP marks, plus
@@ -75,7 +75,7 @@ upgrades on offer, and Alt-clicking it opens a panel of them with Track and
 Map buttons. The green arrow also marks upgrades on a vendor's page and in
 the loot window. Each of these has a switch under Settings > Upgrade hunts.
 
-**Upgrade quest.** Turn it on under Settings > Upgrade hunts (or type
+**Upgrade quest.** Turn it on under Settings > Upgrade quest (or type
 `/beq quest`) and Equipment hands you a quest for your best next upgrade:
 the one most worth the trip, weighing how much better it is against how
 easy it is to get. A panel like the quest tracker lists the steps (travel
@@ -85,7 +85,7 @@ game shows it done. A quest reward at the end of a quest chain starts
 from the first quest you have not done, and a long chain counts as more
 work when the upgrade is picked. **Show on map** pins the next place to go, **Ignore**
 drops that upgrade for good on this character and moves on to the next
-best (Settings > Upgrade hunts > **Ignored** lists what you ignored, with
+best (Settings > Upgrade quest > **Ignored** lists what you ignored, with
 **Restore** on each and **Restore all**), and once you wear it a banner says the
 quest is complete and the next one is picked. The panel wears the gold
 house frame and has a tab for each kind of source: **Vendor**, **Quest**,
@@ -100,7 +100,7 @@ quest you are on stays, but if the new level opens an upgrade clearly more
 worth the trip, a gold **New upgrade unlocked** box offers it: **Switch**
 follows it instead (or `/beq quest switch`), **Keep current** stays put. It
 is off unless you turn it on, and the quest is kept per character. Every
-`/beq quest` command is a button in Settings > Upgrade hunts too: Ignore,
+`/beq quest` command is a button in Settings > Upgrade quest too: Ignore,
 Switch, Open (the panel), Ignored (the list to restore from), the panel's size
 and the tab shown. To make the panel bigger or smaller, text and all, drag
 the gold grip below its bottom-right corner, anywhere from 50% to 150%;
@@ -110,14 +110,14 @@ Under the tabs, tick **This zone only** to have each tab pick only from the
 zone you are in (a vendor, a quest giver or a dungeon's entrance there); the
 tabs pick again as you travel, and an upgrade you clicked in Where to get
 upgrades stays wherever you go. Untick **Change on a new zone** (or
-Settings > Upgrade hunts > Quest filters > Zone swap) to keep your quests as
+Settings > Upgrade quest > Quest filters > Zone swap) to keep your quests as
 you travel instead; a tab with nothing to chase still picks from the zone
 you are in. Untick This zone only to look anywhere again. Beside it
 are the same **Solo quests only** and **Quest level** as in Where to get
 upgrades (changing either here changes it there), and a **Settings** button.
 
 **Quest arrow.** The panel's **Arrow** button (or `/beq arrow`, or
-Settings > Upgrade hunts > Quest arrow) brings up a gold dial that turns as
+Settings > Upgrade quest > Quest arrow) brings up a gold dial that turns as
 you turn and points the way to the next place in the steps: the vendor, the
 quest giver, the trainer, with the distance in yards and a green check once
 you are there. A step with a zone and no spot points at the middle of the
@@ -194,7 +194,12 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq minimap    show or hide the minimap button
 ```
 
-The settings window is also under the game's Options > AddOns.
+The settings window is also under the game's Options > AddOns. Its pages
+(Gear, Upgrade hunts, Upgrade quest, General) are picked along the top.
+Hover a setting to see what it does, or tick **Show descriptions** to see
+it under every row; **Find a setting** searches every page. **Text size**
+on the General page makes all of the addon's text a point or two bigger
+after a `/reload`. Every command above has a button there too.
 
 Every classic class has stat weights: warrior, paladin, hunter, rogue,
 priest, shaman, mage, warlock and druid, three specs each. On WoW: Forever a
