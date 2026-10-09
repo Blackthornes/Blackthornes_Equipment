@@ -641,9 +641,6 @@ function SettingsUI:Refresh()
     self.specRow:SetDescription(self:SpecHint())
 
     controls.textSize:Sync()
-    -- The spec and panel size rows say something new each time, so the
-    -- window is fitted again to their words.
-    self.pages:Fit()
     self.pages:Refresh()
 end
 
