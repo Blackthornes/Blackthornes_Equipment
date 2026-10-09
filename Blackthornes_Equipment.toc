@@ -37,6 +37,7 @@ Logic\Tracking.lua
 Logic\Waypoints.lua
 Logic\UpgradeQuest.lua
 Logic\QuestArrow.lua
+Logic\TomTom.lua
 
 UI\Theme.lua
 UI\Widgets.lua

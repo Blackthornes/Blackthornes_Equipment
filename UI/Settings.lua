@@ -31,7 +31,7 @@ local CONTROL_X = 150
 -- Two columns: the gear and the windows on the left, upgrade hunts on the
 -- right.
 local WIDTH = COLUMN_WIDTH * 2 + PADDING * 3
-local HEIGHT = 754
+local HEIGHT = 810
 
 local ROW_HEIGHT = 50
 local ROW_GAP = -6
@@ -492,11 +492,19 @@ function SettingsUI:BuildHunting()
     Explain(controls.questArrowCheck, "Check the quest arrow",
         "Lists in chat what the arrow can read where you stand: your spot, your facing, the map. Same as /beq arrow check.")
 
+    -- TomTom's arrow instead of the dial, when TomTom is installed.
+    local tomtomRow = CreateRow(frame, arrowRow, "Use TomTom",
+        "With TomTom installed, its arrow points the way instead of this one. Same as /beq arrow tomtom.")
+    controls.useTomTom = Widgets.CreateCheckbox(tomtomRow, "When installed", function(checked)
+        if ns.TomTom then ns.TomTom:SetOn(checked) end
+    end, true)
+    controls.useTomTom:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- Two switches that are also tick boxes on the quest panel: Solo only
     -- (the same as in Where to get upgrades) and Zone swap, the panel's
     -- "Change on a new zone" (the owner asked 2026-10-08). One row for both:
     -- the column has no room for another.
-    local soloRow = CreateRow(frame, arrowRow, "Quest filters",
+    local soloRow = CreateRow(frame, tomtomRow, "Quest filters",
         "Solo only leaves out group, dungeon, raid and battleground quests. Zone swap lets This zone only change quests in a new zone.")
     controls.soloQuests = Widgets.CreateCheckbox(soloRow, "Solo only", function(checked)
         if ns.Finder then ns.Finder:SetSoloOnly(checked) end
@@ -546,6 +554,7 @@ function SettingsUI:Refresh()
     end
     controls.upgradeQuest:SetChecked(ns.db.upgradeQuest == true)
     controls.questArrow:SetChecked(ns.db.questArrow == true)
+    controls.useTomTom:SetChecked(ns.db.useTomTom ~= false)
     self:RefreshQuestSize()
     controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
     controls.questZoneSwap:SetChecked(ns.db.upgradeQuestZoneSwap ~= false)

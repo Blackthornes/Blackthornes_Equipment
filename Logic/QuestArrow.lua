@@ -629,6 +629,7 @@ function QuestArrow:Check()
         continent and (" (map %d)"):format(continent) or ""))
 
     ns.PrintRaw(("  in an instance: %s"):format(QuestArrow.Inside() and "yes, so the arrow hides" or "no"))
+    if ns.TomTom then ns.PrintRaw(ns.TomTom.CheckLine()) end
 
     local state = self:State(Number(Read(_G.GetTime)) or 0)
     if state.quest then
@@ -657,7 +658,7 @@ local function Status()
     end
 end
 
-ns.RegisterCommand("arrow", "an arrow to the upgrade quest's next place (on, off, next, check, reset)", function(rest)
+ns.RegisterCommand("arrow", "an arrow to the upgrade quest's next place (on, off, next, check, tomtom, reset)", function(rest)
     local word = (rest or ""):lower():match("^%s*(%a*)") or ""
     if word == "" then
         QuestArrow:SetOn(not QuestArrow.IsOn())
@@ -674,10 +675,12 @@ ns.RegisterCommand("arrow", "an arrow to the upgrade quest's next place (on, off
         end
     elseif word == "check" then
         QuestArrow:Check()
+    elseif word == "tomtom" then
+        ns.TomTom:Command((rest or ""):lower():match("^%s*%a+%s+(%a+)"))
     elseif word == "reset" then
         if ns.QuestArrowUI and ns.QuestArrowUI.ResetPosition then ns.QuestArrowUI:ResetPosition() end
         ns.Print("quest arrow put back where it started.")
     else
-        ns.Print("/beq arrow on, off, next, check or reset.")
+        ns.Print("/beq arrow on, off, next, check, tomtom or reset.")
     end
 end)

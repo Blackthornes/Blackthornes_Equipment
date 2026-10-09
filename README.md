@@ -128,7 +128,10 @@ anywhere. It hides inside dungeons, and its red gem turns it off. It is
 Farmer's goal arrow, brought over; Pets has it too, and only one of the
 three is on screen at a time: the one turned on or aimed last shows, and
 the others wait until it is put away. `/beq arrow check` lists what it can
-read where you stand.
+read where you stand. With TomTom installed, the quest arrow hands its place to TomTom as a
+waypoint and its own dial stays hidden, so only TomTom's arrow is on screen;
+places TomTom cannot point at show on the dial as before. Untick **Use
+TomTom** in Settings, or type `/beq arrow tomtom off`, to keep the dial.
 
 Where gear comes from is `Data/Sources.lua`, generated from Classic 1.12
 data by `tools/make_sources.py` (see below), and what can be crafted is
@@ -183,7 +186,7 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq find       where to get upgrades: vendors, quests, dungeons and crafting
 /beq tracked    the upgrades you are tracking (/beq tracked clear stops them all)
 /beq quest      a quest for your next upgrade (/beq quest off, ignore, ignored, restore, switch, size, or a tab: vendor, quest, dungeon, crafted)
-/beq arrow      an arrow to the upgrade quest's next place (on, off, next, check, reset)
+/beq arrow      an arrow to the upgrade quest's next place (on, off, next, check, tomtom, reset)
 /beq weights    change how much each stat counts (also in the settings window)
 /beq probe      check what this client supports; it only reads
 /beq perf       what took longest this session, if the game hitches (/beq perf clear starts over; also Settings > Speed check)

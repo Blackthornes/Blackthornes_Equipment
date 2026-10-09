@@ -311,12 +311,21 @@ function ArrowUI:Draw(force)
     -- No quest: nothing to follow, so out of the way until there is one.
     if state.mode == "off" or state.mode == "inside" or state.mode == "none" then
         ArrowUI.Wins(false)
+        ns.TomTom:Clear()
         frame:Hide()
         return
     end
 
     -- Another Blackthornes arrow was aimed more lately: wait, hidden.
     if not ArrowUI.Wins(true) then
+        ns.TomTom:Clear()
+        frame:Hide()
+        return
+    end
+
+    -- TomTom installed and used: its arrow shows the way, so the dial hides
+    -- and only one arrow is on screen. The driver below keeps it current.
+    if ns.TomTom:Take(state) then
         frame:Hide()
         return
     end
@@ -405,6 +414,7 @@ function ArrowUI:Refresh()
     if not ns.db then return end
     if not ns.QuestArrow.IsOn() then
         ArrowUI.Wins(false)
+        ns.TomTom:Clear()
         if self.frame then self.frame:Hide() end
         return
     end

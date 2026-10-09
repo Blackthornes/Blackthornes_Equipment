@@ -1,0 +1,131 @@
+-- Blackthornes Equipment -- Logic/TomTom.lua
+-- The quest arrow's place, handed to TomTom (the owner asked 2026-10-09 for
+-- Farmer's TomTom hand-off in every addon with an arrow).
+--
+-- When TomTom is installed and "Use TomTom" is ticked (on unless unticked),
+-- the place the quest arrow would point at goes to TomTom as a waypoint, and
+-- the dial stays hidden, so only TomTom's arrow is on screen. The waypoint
+-- follows the dial: a new place swaps it, and the arrow turned off, nothing
+-- to follow, a dungeon, or another Blackthornes arrow aimed later take it
+-- away. Places the dial cannot point at (far away, the zone you are in)
+-- have no waypoint; the dial shows them as before.
+--
+-- Without TomTom, nothing changes. TomTom is only read through its global,
+-- inside a pcall, so a missing or different version breaks nothing: a
+-- waypoint TomTom will not take falls back to the dial. Waypoints are never
+-- saved in TomTom's list; they are added again after a reload. Farmer's
+-- Logic/TomTom.lua does the same for the goal arrow.
+
+local _, ns = ...
+
+local TomTomLink = ns.NewModule("TomTom")
+
+local FROM = "Blackthornes Equipment"
+
+--- TomTom's global, when it is loaded and has the calls used here.
+function TomTomLink.Addon()
+    local tomtom = rawget(_G, "TomTom")
+    if type(tomtom) ~= "table" then return nil end
+    local ok, usable = pcall(function()
+        return type(tomtom.AddWaypoint) == "function" and type(tomtom.RemoveWaypoint) == "function"
+    end)
+    return ok and usable and tomtom or nil
+end
+
+function TomTomLink.Installed()
+    return TomTomLink.Addon() ~= nil
+end
+
+--- The switch: on unless the player unticked it.
+function TomTomLink.IsOn()
+    return ns.db ~= nil and ns.db.useTomTom ~= false
+end
+
+function TomTomLink:SetOn(on)
+    ns.db.useTomTom = on and true or false
+    if not on then self:Clear() end
+    if ns.QuestArrow then ns.QuestArrow:Changed() end
+    if ns.SettingsUI and ns.SettingsUI.Refresh then pcall(ns.SettingsUI.Refresh, ns.SettingsUI) end
+end
+
+--- True when TomTom shows the arrow's place for this state.
+function TomTomLink.Fits(state)
+    if not (TomTomLink.IsOn() and TomTomLink.Installed()) then return false end
+    if type(state) ~= "table" or not (state.mode == "point" or state.mode == "arrived") then
+        return false
+    end
+    local target = state.target
+    return type(target) == "table" and type(target.map) == "number"
+        and type(target.mx) == "number" and type(target.my) == "number"
+end
+
+--- What the waypoint is called: "Demon Scarred Cloak: Corina Steele, Elwynn Forest".
+function TomTomLink.Title(state)
+    local place = ns.QuestArrow.Place(state.target)
+    local name = state.name
+    if type(name) == "string" and name ~= "" then return name .. ": " .. place end
+    return place
+end
+
+--- Give TomTom the place for `state`. True when TomTom shows it, so the
+--- dial can stay hidden; false (and no waypoint of ours left) otherwise.
+function TomTomLink:Take(state)
+    if not TomTomLink.Fits(state) then
+        self:Clear()
+        return false
+    end
+
+    local target = state.target
+    local title = TomTomLink.Title(state)
+    local key = ("%s|%s|%.4f|%.4f"):format(title, tostring(target.map), target.mx, target.my)
+    if self.uid and self.key == key then return true end
+    -- TomTom turned this one down already: the dial shows it.
+    if self.refused == key then return false end
+
+    self:Clear()
+    local tomtom = TomTomLink.Addon()
+    local ok, uid = pcall(tomtom.AddWaypoint, tomtom, target.map, target.mx, target.my, {
+        title = title, desc = title, from = FROM,
+        persistent = false, minimap = true, world = true, crazy = true, silent = true,
+    })
+    if not ok or uid == nil then
+        ns.Debug("TomTom would not take the waypoint:", tostring(uid))
+        self.refused = key
+        return false
+    end
+
+    self.uid, self.key, self.refused = uid, key, nil
+    return true
+end
+
+--- Take our waypoint off TomTom, if there is one.
+function TomTomLink:Clear()
+    local uid = self.uid
+    self.uid, self.key = nil, nil
+    if uid == nil then return end
+    local tomtom = TomTomLink.Addon()
+    if tomtom then pcall(tomtom.RemoveWaypoint, tomtom, uid) end
+end
+
+--- One line for /beq arrow check.
+function TomTomLink.CheckLine()
+    if not TomTomLink.Installed() then
+        return "  TomTom: not installed, so the dial shows the way"
+    end
+    if not TomTomLink.IsOn() then
+        return "  TomTom: installed, not used (/beq arrow tomtom on)"
+    end
+    return "  TomTom: yes, its arrow shows the way and the dial hides"
+end
+
+--- /beq arrow tomtom [on|off].
+function TomTomLink:Command(word)
+    if word == "on" or word == "off" then self:SetOn(word == "on") else self:SetOn(not TomTomLink.IsOn()) end
+    if not TomTomLink.IsOn() then
+        ns.Print("TomTom not used: the quest arrow shows its own dial.")
+    elseif TomTomLink.Installed() then
+        ns.Print("TomTom used: its arrow shows the quest arrow's place.")
+    else
+        ns.Print("TomTom will be used once it is installed.")
+    end
+end
