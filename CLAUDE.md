@@ -310,6 +310,16 @@ the latest claim is drawn; the others wait hidden. The lines are the same
 in each dial's file (`ArrowUI:Claim`, `ArrowUI.Wins`); a change to them
 belongs in all three.
 
+## The controller bag button
+
+Forever's client draws a controller bag button (`GamepadBackpackButton`,
+on its `GamepadBagBar`, from Blizzard's own bag bar file) over the combined
+backpack's sort button. The owner asked (2026-10-09) to hide it:
+`BagIcons:ApplyGamepadBag` hides it, and again whenever it shows, while
+"Bag sort button" in Settings (`hideGamepadBag`, account wide, on unless
+unticked) is ticked; unticking shows it again. Nothing else of the frame is
+changed, and a protected button waits for combat to end.
+
 ## Players' own stat weights
 
 Kept in `BlackthornesEquipmentDB.customWeights[CLASS][spec][stat]`, account

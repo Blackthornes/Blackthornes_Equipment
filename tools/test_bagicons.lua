@@ -111,4 +111,36 @@ classicUpgrade.GetID = function() error("secret value") end
 local ok = pcall(ns.BagIcons.Refresh, ns.BagIcons)
 suite.check("a button that raises does not break the rest", ok)
 
+-- Forever's controller bag button, which covers the combined backpack's
+-- sort button, is hidden unless the setting is unticked.
+ns = Load()
+local pad = env.Stub({ _shown = true })
+_G.GamepadBackpackButton = pad
+ns.BagIcons:OnEnable()
+suite.check("the controller bag button is hidden", not pad:IsShown())
+pad:Show()
+pad._scripts.OnShow(pad)
+suite.check("and stays hidden when the game shows it again", not pad:IsShown())
+
+ns.db.hideGamepadBag = false
+ns.BagIcons:ApplyGamepadBag()
+suite.check("unticking shows it again", pad:IsShown())
+pad._scripts.OnShow(pad)
+suite.check("and leaves it alone after", pad:IsShown())
+ns.db.hideGamepadBag = true
+
+-- A protected button waits for combat to end.
+pad.IsProtected = function() return true end
+_G.InCombatLockdown = function() return true end
+ns.BagIcons:ApplyGamepadBag()
+suite.check("never hidden in combat when protected", pad:IsShown())
+_G.InCombatLockdown = function() return false end
+ns.eventFrame:GetScript("OnEvent")(ns.eventFrame, "PLAYER_REGEN_ENABLED")
+suite.check("hidden once combat ends", not pad:IsShown())
+_G.InCombatLockdown = nil
+_G.GamepadBackpackButton = nil
+
+-- A client without it is fine.
+suite.check("no button, no error", pcall(ns.BagIcons.ApplyGamepadBag, ns.BagIcons))
+
 suite.done()

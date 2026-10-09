@@ -241,6 +241,7 @@ function BagIcons:InstallHooks()
         if type(hookScript) == "function" then
             pcall(hookScript, frame, "OnShow", function(shown)
                 pcall(BagIcons.RefreshFrame, BagIcons, shown)
+                pcall(BagIcons.ApplyGamepadBag, BagIcons)
             end)
         end
     end
@@ -262,6 +263,74 @@ function BagIcons:Describe()
     return frames, hooks
 end
 
+--------------------------------------------------------------------------------
+-- Forever's controller bag button
+--------------------------------------------------------------------------------
+
+-- Forever's client puts a controller bag button (GamepadBackpackButton, on
+-- its GamepadBagBar) right over the combined backpack's sort button. While
+-- hideGamepadBag is on it is hidden; nothing else about it is touched, and
+-- unticking the setting shows it again if it was showing. A protected button
+-- is never hidden in combat: that waits for combat to end.
+local GAMEPAD_BUTTON = "GamepadBackpackButton"
+
+function BagIcons:HidesGamepadBag()
+    return not (ns.db and ns.db.hideGamepadBag == false)
+end
+
+local function InCombat()
+    local fn = _G.InCombatLockdown
+    if type(fn) ~= "function" then return false end
+    local ok, value = pcall(fn)
+    return ok and value == true
+end
+
+--- Hide the button now, or once combat ends. True when it was hidden.
+function BagIcons:HideGamepadButton(button)
+    if not Ask(button, "IsShown") then return false end
+    if Ask(button, "IsProtected") and InCombat() then
+        if not self.gamepadWaiting then
+            self.gamepadWaiting = ns.RegisterEvent(self, "PLAYER_REGEN_ENABLED", function()
+                ns.UnregisterEvent(BagIcons, "PLAYER_REGEN_ENABLED")
+                BagIcons.gamepadWaiting = false
+                BagIcons:ApplyGamepadBag()
+            end)
+        end
+        return false
+    end
+    local hide = Field(button, "Hide")
+    if type(hide) ~= "function" or not pcall(hide, button) then return false end
+    self.gamepadHidden = true
+    return true
+end
+
+--- Hide or show the controller bag button as the setting says.
+function BagIcons:ApplyGamepadBag()
+    local button = _G[GAMEPAD_BUTTON]
+    if type(button) ~= "table" then return false end
+
+    if not self.gamepadHooked then
+        local hookScript = Field(button, "HookScript")
+        if type(hookScript) == "function" and pcall(hookScript, button, "OnShow", function(shown)
+            if BagIcons:HidesGamepadBag() then pcall(BagIcons.HideGamepadButton, BagIcons, shown) end
+        end) then
+            self.gamepadHooked = true
+        end
+    end
+
+    if self:HidesGamepadBag() then
+        return self:HideGamepadButton(button)
+    end
+    if self.gamepadHidden then
+        self.gamepadHidden = false
+        if not (Ask(button, "IsProtected") and InCombat()) then
+            local show = Field(button, "Show")
+            if type(show) == "function" then pcall(show, button) end
+        end
+    end
+    return false
+end
+
 -- Anything that can change what is an upgrade: the bags, what is worn, the
 -- level, the talents, weapon skills (Dual Wield) and an item's details
 -- arriving from the server.
@@ -272,6 +341,10 @@ local EVENTS = {
 
 function BagIcons:OnEnable()
     self.hooked = self:InstallHooks()
+    pcall(self.ApplyGamepadBag, self)
+    ns.RegisterEvent(self, "PLAYER_ENTERING_WORLD", function()
+        pcall(BagIcons.ApplyGamepadBag, BagIcons)
+    end)
     for _, event in ipairs(EVENTS) do
         ns.RegisterEvent(self, event, self.RefreshSoon)
     end

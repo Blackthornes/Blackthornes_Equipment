@@ -314,7 +314,16 @@ function SettingsUI:BuildColumn()
     end, true)
     controls.arrows:SetPoint("TOPLEFT", CONTROL_X, -2)
 
-    local chatRow = CreateRow(frame, arrowRow, "Upgrade in chat",
+    local gamepadRow = CreateRow(frame, arrowRow, "Bag sort button",
+        "Hide the controller bag button that covers the sort button on the combined backpack.")
+
+    controls.hideGamepadBag = Widgets.CreateCheckbox(gamepadRow, "Hide it", function(checked)
+        ns.db.hideGamepadBag = checked
+        if ns.BagIcons then pcall(ns.BagIcons.ApplyGamepadBag, ns.BagIcons) end
+    end, true)
+    controls.hideGamepadBag:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    local chatRow = CreateRow(frame, gamepadRow, "Upgrade in chat",
         "One line in chat when an upgrade you can wear now lands in your bags.")
 
     controls.upgradeChat = Widgets.CreateCheckbox(chatRow, "Say so", function(checked)
@@ -548,6 +557,7 @@ function SettingsUI:Refresh()
     controls.debug:SetChecked(ns.db.debug == true)
     controls.tooltip:SetChecked(ns.db.tooltipLine ~= false)
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
+    controls.hideGamepadBag:SetChecked(ns.db.hideGamepadBag ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
     for _, entry in ipairs(HUNTING) do
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
