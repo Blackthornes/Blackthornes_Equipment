@@ -10,5 +10,10 @@
 local _, ns = ...
 
 ns.ForeverNPCs = {
+    [2999] = { "Taur Stonehoof", "Thunder Bluff", 39.6, 55.5 },
+    [3076] = { "Moorat Longstride", "Mulgore", 45.2, 61.4 },
+    [3078] = { "Kennah Hawkseye", "Mulgore", 45, 61.9 },
     [3079] = { "", "Mulgore", 45.3, 62.1 },
+    [3080] = { "Harant Ironbrace", "Mulgore", 45.4, 62.1 },
+    [3081] = { "Wunna Darkmane", "Mulgore", 45.5, 61.8 },
 }
