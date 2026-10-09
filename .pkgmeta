@@ -18,6 +18,8 @@ ignore:
   # Notes for Claude about working on the addon, shared with the other
   # addons' projects. Not for players.
   - CLAUDE.md
+  # The #general Discord posts; tools/post_general.py checks and posts them.
+  - NEWS.md
   # The README is for working on the addon: it names the owner's own folders.
   # Players read the CurseForge description instead.
   - README.md
