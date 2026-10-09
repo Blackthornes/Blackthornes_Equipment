@@ -93,10 +93,21 @@ local function Colored(key, text)
         math.floor(b * 255 + 0.5), text)
 end
 
---- A source as one line: the coloured kind, then where.
-function FinderUI.SourceLine(source)
+--- The zone the character is in, named in green wherever `text` names it
+--- as a whole word (a player asked, 2026-10-09: easier to spot what is
+--- nearby).
+function FinderUI.MarkZone(text, zone)
+    if not (zone and text) or zone == "" then return text end
+    local pattern = "%f[%w]" .. zone:gsub("[%%%^%$%(%)%.%[%]%*%+%-%?]", "%%%0") .. "%f[%W]"
+    return (text:gsub(pattern, function(found) return Colored("good", found) end))
+end
+
+--- A source as one line: the coloured kind, then where, the zone the
+--- character is in shown in green.
+function FinderUI.SourceLine(source, zone)
+    zone = zone or (ns.UpgradeQuest and ns.UpgradeQuest.Zone())
     local line = Colored(KIND_COLORS[source.kind] or "text", Finder.Label(source))
-        .. "  " .. Finder:Describe(source)
+        .. "  " .. FinderUI.MarkZone(Finder:Describe(source), zone)
     -- Seen on Forever, the way Farmer marks what it has confirmed.
     if source.forever then line = line .. "  " .. Colored("good", "[Forever]") end
     return line
@@ -867,9 +878,10 @@ function FinderUI:OnEnable()
     for _, event in ipairs(EVENTS) do
         ns.RegisterEvent(self, event, self.RefreshSoon)
     end
-    -- A new zone has its own list while "This zone only" is ticked.
+    -- A new zone has its own list while "This zone only" is ticked, and
+    -- always its own green zone names and nearest-first order.
     ns.RegisterEvent(self, "ZONE_CHANGED_NEW_AREA", function()
-        if FinderUI:ZoneOnly() then FinderUI:RefreshSoon() end
+        FinderUI:RefreshSoon()
     end)
     -- Only the "need ... more" on vendor rows changes: redraw, no rescan.
     ns.RegisterEvent(self, "PLAYER_MONEY", function()
