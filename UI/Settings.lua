@@ -1,10 +1,10 @@
 -- Blackthornes Equipment -- UI/Settings.lua
 -- The settings window: every switch the addon has, in one place.
 --
--- Built the way Farmer's settings page and Tradeskills' Settings tab are, so
--- the three read as one set: a row is [label .. control] on one line with
--- what it does underneath, and rows are a fixed height so nothing slides
--- under the control beside it.
+-- Built the way Tradeskills' Settings tab is (UI/SettingsPages.lua), as in
+-- Pets and Farmer: pages picked along the top, two columns of rows a page,
+-- a row being [label .. control] on one line, and what it does in the row's
+-- tooltip or, with Show descriptions ticked, underneath it.
 --
 -- Open it with /beq settings, a click on the minimap button, or from the
 -- game's own Options > AddOns list. Nothing here deletes anything.
@@ -24,68 +24,29 @@ local HEADER = 36
 local RIM = 6
 
 local COLUMN_WIDTH = 330
+local COLUMN_GAP = 18
 -- Where the controls start: room for a label like "Minimap button" in the
 -- game's font, which runs wider than it looks.
 local CONTROL_X = 150
 
--- Two columns: the gear and the windows on the left, upgrade hunts on the
--- right.
-local WIDTH = COLUMN_WIDTH * 2 + PADDING * 3
-local HEIGHT = 810
-
-local ROW_HEIGHT = 50
-local ROW_GAP = -6
-local SECTION_GAP = -16
-
 local TITLE = "Blackthornes Equipment"
+
+-- The pages along the top (UI/SettingsPages.lua), as Tradeskills' Settings
+-- tab has them. Every setting kept its saved name; only its place moved.
+local PAGES = {
+    { key = "gear", text = "GEAR",
+      tip = "How gear is judged, and the arrows, tooltip lines and chat lines that say so" },
+    { key = "hunts", text = "UPGRADE HUNTS",
+      tip = "Where to get upgrades, tracking them, map pins and the banner" },
+    { key = "quest", text = "UPGRADE QUEST",
+      tip = "The upgrade quest, its panel and the arrow that points the way" },
+    { key = "general", text = "GENERAL",
+      tip = "The minimap button, window positions, text size and help" },
+}
 
 --------------------------------------------------------------------------------
 -- Layout helpers
 --------------------------------------------------------------------------------
-
---- Section heading with a rule underneath. Returns a frame to anchor rows to.
-local function CreateSection(parent, text, opts)
-    local section = CreateFrame("Frame", nil, parent)
-    section:SetSize(COLUMN_WIDTH, 18)
-
-    if opts.anchor then
-        section:SetPoint("TOPLEFT", opts.anchor, "BOTTOMLEFT", 0, SECTION_GAP)
-    else
-        section:SetPoint("TOPLEFT", opts.x, opts.y)
-    end
-
-    local heading = Theme.CreateLabel(section, "tiny", "accent")
-    heading:SetPoint("TOPLEFT", 0, 0)
-    heading:SetText(text)
-
-    local divider = Theme.CreateDivider(section, "border")
-    divider:SetPoint("TOPLEFT", 0, -14)
-    divider:SetWidth(COLUMN_WIDTH)
-
-    return section
-end
-
---- One setting: label and control on a line, what it does underneath.
-local function CreateRow(parent, anchor, labelText, description)
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, ROW_GAP)
-    row:SetSize(COLUMN_WIDTH, ROW_HEIGHT)
-
-    local label = Theme.CreateLabel(row, "small", "text")
-    label:SetPoint("TOPLEFT", 0, -4)
-    label:SetWidth(CONTROL_X - 8)
-    label:SetText(labelText)
-
-    local hint = Theme.CreateLabel(row, "tiny", "dim")
-    hint:SetPoint("TOPLEFT", 0, -25)
-    hint:SetWidth(COLUMN_WIDTH)
-    hint:SetWordWrap(true)
-    hint:SetText(description or "")
-
-    row.label = label
-    row.hint = hint
-    return row
-end
 
 --- A button's tooltip: what it does, in clear white on the dark tooltip.
 local function Explain(button, title, text)
@@ -96,6 +57,17 @@ local function Explain(button, title, text)
         GameTooltip:Show()
     end)
     button:HookScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
+--- A row whose button runs a /beq command, so every command has a button
+--- here (a house rule).
+local function CommandRow(pages, page, column, label, description, buttonText, command, opts)
+    local row = pages:Row(page, column, label, description)
+    local button = Widgets.CreateButton(row, buttonText, function()
+        ns.HandleSlash(command)
+    end, { width = 100, height = 20, primary = opts and opts.primary })
+    button:SetPoint("TOPLEFT", CONTROL_X, 0)
+    return row, button
 end
 
 --------------------------------------------------------------------------------
@@ -169,7 +141,6 @@ function SettingsUI:ResetPositions()
         if module and module.frame and module.RestorePosition then module:RestorePosition() end
     end
 end
-
 --------------------------------------------------------------------------------
 -- Construction
 --------------------------------------------------------------------------------
@@ -178,7 +149,7 @@ function SettingsUI:Build()
     if self.frame then return self.frame end
 
     local frame = CreateFrame("Frame", "BlackthornesEquipmentSettings", UIParent)
-    frame:SetSize(WIDTH, HEIGHT)
+    frame:SetSize(COLUMN_WIDTH * 2 + COLUMN_GAP + PADDING * 2, 600)
     frame:SetFrameStrata("DIALOG")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
@@ -218,8 +189,22 @@ function SettingsUI:Build()
     self.controls = {}
 
     self:BuildHeader()
-    self:BuildColumn()
-    self:BuildHunting()
+
+    self.pages = ns.SettingsPages.New(frame, {
+        pages = PAGES,
+        top = HEADER + 4,
+        bottom = 40,
+        padding = PADDING,
+        columnWidth = COLUMN_WIDTH,
+        columnGap = COLUMN_GAP,
+        controlX = CONTROL_X,
+        db = function() return ns.db end,
+    })
+    self:BuildGear()
+    self:BuildHunts()
+    self:BuildQuest()
+    self:BuildGeneral()
+    self.pages:Fit()
 
     local footer = Theme.CreateLabel(frame, "tiny", "dim")
     footer:SetPoint("BOTTOMLEFT", PADDING, 14)
@@ -259,13 +244,25 @@ function SettingsUI:BuildHeader()
     Theme.SetGradientAlpha(rule, "HORIZONTAL", "accent", 0.6, 0.05)
 end
 
-function SettingsUI:BuildColumn()
-    local frame = self.frame
+--- A tick box on `row` that saves `key` and calls `after` when it changes.
+local function Tick(row, text, key, initial, after)
+    local box = Widgets.CreateCheckbox(row, text, function(checked)
+        ns.db[key] = checked
+        if after then after(checked) end
+    end, initial)
+    box:SetPoint("TOPLEFT", CONTROL_X, -2)
+    return box
+end
+
+--- Gear: how it is judged on the left; the gear window, the bags and the
+--- tooltip on the right.
+function SettingsUI:BuildGear()
     local controls = self.controls
+    local pages = self.pages
 
-    local gear = CreateSection(frame, "GEAR", { x = PADDING, y = -(HEADER + 16) })
+    pages:Section("gear", 1, "JUDGING GEAR")
 
-    local specRow = CreateRow(frame, gear, "Judge gear as", "")
+    local specRow = pages:Row("gear", 1, "Judge gear as", function() return SettingsUI:SpecHint() end)
     controls.spec = Widgets.CreateStepper(specRow, {
         min = 1, max = #SettingsUI:SpecChoices(), step = 1, value = 1,
         format = function(index)
@@ -283,27 +280,21 @@ function SettingsUI:BuildColumn()
     controls.spec:SetPoint("TOPLEFT", CONTROL_X, 0)
     self.specRow = specRow
 
-    local weightsRow = CreateRow(frame, specRow, "Stat weights",
-        "How much each stat counts when gear is judged. Change them for any class and spec.")
+    local weightsRow = pages:Row("gear", 1, "Stat weights",
+        "How much each stat counts when gear is judged. Change them for any class and spec. Same as /beq weights.")
     controls.weights = Widgets.CreateButton(weightsRow, "Change weights", function()
         if ns.WeightsUI then ns.WeightsUI:Show() end
     end, { width = 120, height = 20 })
     controls.weights:SetPoint("TOPLEFT", CONTROL_X, 0)
     self.weightsRow = weightsRow
 
-    local tooltipRow = CreateRow(frame, weightsRow, "Tooltip line",
+    local tooltipRow = pages:Row("gear", 1, "Tooltip line",
         "Whether gear beats what you wear, and where to learn a weapon skill.")
+    controls.tooltip = Tick(tooltipRow, "Show it", "tooltipLine", true)
 
-    controls.tooltip = Widgets.CreateCheckbox(tooltipRow, "Show it", function(checked)
-        ns.db.tooltipLine = checked
-    end, true)
-    controls.tooltip:SetPoint("TOPLEFT", CONTROL_X, -2)
-
-    local arrowRow = CreateRow(frame, tooltipRow, "Upgrade arrows",
+    local arrowRow = pages:Row("gear", 1, "Upgrade arrows",
         "A green arrow on upgrades you can wear now: in your bags, on the best quest reward and on loot up for a roll.")
-
-    controls.arrows = Widgets.CreateCheckbox(arrowRow, "Show them", function(checked)
-        ns.db.bagArrows = checked
+    controls.arrows = Tick(arrowRow, "Show them", "bagArrows", true, function()
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
         if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
         if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
@@ -311,98 +302,98 @@ function SettingsUI:BuildColumn()
             pcall(ns.MoreMarks.RefreshMerchant, ns.MoreMarks)
             pcall(ns.MoreMarks.RefreshLoot, ns.MoreMarks)
         end
-    end, true)
-    controls.arrows:SetPoint("TOPLEFT", CONTROL_X, -2)
+    end)
 
-    local gamepadRow = CreateRow(frame, arrowRow, "Bag sort button",
-        "Hide the controller bag button that covers the sort button on the combined backpack.")
-
-    controls.hideGamepadBag = Widgets.CreateCheckbox(gamepadRow, "Hide it", function(checked)
-        ns.db.hideGamepadBag = checked
-        if ns.BagIcons then pcall(ns.BagIcons.ApplyGamepadBag, ns.BagIcons) end
-    end, true)
-    controls.hideGamepadBag:SetPoint("TOPLEFT", CONTROL_X, -2)
-
-    local chatRow = CreateRow(frame, gamepadRow, "Upgrade in chat",
+    local chatRow = pages:Row("gear", 1, "Upgrade in chat",
         "One line in chat when an upgrade you can wear now lands in your bags.")
-
-    controls.upgradeChat = Widgets.CreateCheckbox(chatRow, "Say so", function(checked)
-        ns.db.upgradeChat = checked
-    end, true)
-    controls.upgradeChat:SetPoint("TOPLEFT", CONTROL_X, -2)
+    controls.upgradeChat = Tick(chatRow, "Say so", "upgradeChat", true)
     self.chatRow = chatRow
 
-    local windows = CreateSection(frame, "WINDOWS", { anchor = chatRow })
+    pages:Section("gear", 2, "GEAR WINDOW")
 
-    local minimapRow = CreateRow(frame, windows, "Minimap button",
-        "Click it for the gear window, right-click for this page. Drag it to move it.")
+    local windowRow = pages:Row("gear", 2, "Gear window",
+        "What you wear and how each piece scores. Same as /beq window, or /beq on its own.")
+    controls.openWindow = Widgets.CreateButton(windowRow, "Open it", function()
+        ns.HandleSlash("window")
+    end, { width = 100, height = 20, primary = true })
+    controls.openWindow:SetPoint("TOPLEFT", CONTROL_X, 0)
 
-    controls.minimap = Widgets.CreateCheckbox(minimapRow, "Show it", function(checked)
-        ns.db.minimapHidden = not checked
-        if ns.MinimapButton then ns.MinimapButton:ApplyVisibility() end
-    end, true)
-    controls.minimap:SetPoint("TOPLEFT", CONTROL_X, -2)
+    local _, bagsButton = CommandRow(pages, "gear", 2, "Gear in your bags",
+        "Judges every piece of gear in your bags against what you wear, in chat. Same as /beq bags.",
+        "Judge it", "bags")
+    controls.bags = bagsButton
 
-    local positionRow = CreateRow(frame, minimapRow, "Window positions",
-        "Moves every Equipment window back to the middle of the screen, if one ends up off screen.")
+    pages:Section("gear", 2, "BAGS AND TOOLTIPS")
 
-    local reset = Widgets.CreateButton(positionRow, "Put them back", function()
-        SettingsUI:ResetPositions()
-    end, { width = 100, height = 20 })
-    reset:SetPoint("TOPLEFT", CONTROL_X, 0)
+    local gamepadRow = pages:Row("gear", 2, "Bag sort button",
+        "Hide the controller bag button that covers the sort button on the combined backpack.")
+    controls.hideGamepadBag = Tick(gamepadRow, "Hide it", "hideGamepadBag", true, function()
+        if ns.BagIcons then pcall(ns.BagIcons.ApplyGamepadBag, ns.BagIcons) end
+    end)
 
-    local advanced = CreateSection(frame, "ADVANCED", { anchor = positionRow })
-
-    local debugRow = CreateRow(frame, advanced, "Debug output",
-        "Extra messages in chat, to help track down a problem.")
-
-    controls.debug = Widgets.CreateCheckbox(debugRow, "Enabled", function(checked)
-        ns.db.debug = checked
-    end, false)
-    controls.debug:SetPoint("TOPLEFT", CONTROL_X, -2)
-
-    -- /beq perf and /beq perf clear as buttons.
-    local speedRow = CreateRow(frame, debugRow, "Speed check",
-        "If the game hitches, Show lists in chat what Equipment spent longest on. Clear starts the count again.")
-    controls.perfShow = Widgets.CreateButton(speedRow, "Show", function()
-        ns.HandleSlash("perf")
-    end, { width = 64, height = 20 })
-    controls.perfShow:SetPoint("TOPLEFT", CONTROL_X, 0)
-    Explain(controls.perfShow, "Show what took longest",
-        "Lists in chat the slowest things Equipment did since you logged in or last cleared. Same as /beq perf.")
-    controls.perfClear = Widgets.CreateButton(speedRow, "Clear", function()
-        ns.HandleSlash("perf clear")
-    end, { width = 64, height = 20 })
-    controls.perfClear:SetPoint("LEFT", controls.perfShow, "RIGHT", 12, 0)
-    Explain(controls.perfClear, "Start the count again",
-        "Forgets the times so far, so the next Show covers only what happens from now. Same as /beq perf clear.")
+    local suffixRow = pages:Row("gear", 2, "Random roll names",
+        "Names a green's random roll on its tooltip (of the Monkey), which Forever leaves off.")
+    controls.suffixLine = Tick(suffixRow, "Show them", "suffixLine", true)
 end
 
--- The right-hand column's switches: saved key, label, what it does, the
--- checkbox's words, and what to redraw when it changes.
+-- The upgrade hunt switches: saved key, page column, label, what it does,
+-- the tick box's words, and the module to tell when it changes.
 local HUNTING = {
-    { "upgradeToast", "Upgrade banner",
+    { "slotUpgrades", 1, "Character sheet",
+        "Hover a gear slot for the upgrades on offer for it; Alt-click it to track one.", "Show them" },
+    { "upgradeToast", 1, "Upgrade banner",
         "A glowing banner when an upgrade lands in your bags, or a tracked one is got.", "Show it" },
-    { "showTracker", "Upgrade tracker",
+    { "showTracker", 2, "Upgrade tracker",
         "The panel of upgrades you are tracking. Right-click a row in Where to get upgrades to track it.",
         "Show it", "TrackerPanel" },
-    { "mapPins", "Map pins",
+    { "mapPins", 2, "Map pins",
         "Pins on the world map where each tracked upgrade comes from.", "Show them", "MapPins" },
-    { "slotUpgrades", "Character sheet",
-        "Hover a gear slot for the upgrades on offer for it; Alt-click it to track one.", "Show them" },
-    { "suffixLine", "Random roll names",
-        "Names a green's random roll on its tooltip (of the Monkey), which Forever leaves off.", "Show them" },
 }
 
-function SettingsUI:BuildHunting()
-    local frame = self.frame
+--- Upgrade hunts: finding upgrades on the left, tracking them on the right.
+function SettingsUI:BuildHunts()
     local controls = self.controls
+    local pages = self.pages
 
-    local section = CreateSection(frame, "UPGRADE HUNTS",
-        { x = PADDING * 2 + COLUMN_WIDTH, y = -(HEADER + 16) })
+    pages:Section("hunts", 1, "FINDING UPGRADES")
 
-    -- Off unless the player turns it on, unlike the switches below.
-    local questRow = CreateRow(frame, section, "Upgrade quest",
+    local _, findButton = CommandRow(pages, "hunts", 1, "Where to get upgrades",
+        "Upgrades from vendors, quests, dungeons and crafting, best first. Same as /beq find.",
+        "Open it", "find", { primary = true })
+    controls.find = findButton
+
+    local function HuntRow(entry)
+        local key, column, redraw = entry[1], entry[2], entry[6]
+        local row = pages:Row("hunts", column, entry[3], entry[4])
+        controls[key] = Tick(row, entry[5], key, true, function()
+            local module = redraw and ns[redraw]
+            if module and module.OnTrackingChanged then pcall(module.OnTrackingChanged, module) end
+        end)
+    end
+
+    HuntRow(HUNTING[1])
+    HuntRow(HUNTING[2])
+
+    pages:Section("hunts", 2, "TRACKING")
+
+    HuntRow(HUNTING[3])
+    local _, trackedButton = CommandRow(pages, "hunts", 2, "Tracked upgrades",
+        "Lists in chat the upgrades you are tracking and where each comes from. Same as /beq tracked.",
+        "List them", "tracked")
+    controls.tracked = trackedButton
+    HuntRow(HUNTING[4])
+end
+
+--- The upgrade quest on the left, the arrow that leads there on the right.
+function SettingsUI:BuildQuest()
+    local controls = self.controls
+    local pages = self.pages
+
+    pages:Section("quest", 1, "UPGRADE QUEST")
+
+    -- Off unless the player turns it on, unlike the switches on the other
+    -- pages.
+    local questRow = pages:Row("quest", 1, "Upgrade quest",
         "A quest for your best next upgrade, with the steps to go and get it.")
     controls.upgradeQuest = Widgets.CreateCheckbox(questRow, "Turn it on", function(checked)
         if ns.UpgradeQuest then ns.UpgradeQuest:SetEnabled(checked) end
@@ -411,7 +402,7 @@ function SettingsUI:BuildHunting()
 
     -- The /beq quest commands as buttons, each doing just what its command
     -- does, chat line included.
-    local thisRow = CreateRow(frame, questRow, "This upgrade",
+    local thisRow = pages:Row("quest", 1, "This upgrade",
         "Ignore never offers it again and moves on to the next best. Switch takes the upgrade a level up opened.")
     controls.questSkip = Widgets.CreateButton(thisRow, "Ignore", function()
         ns.HandleSlash("quest ignore")
@@ -426,7 +417,7 @@ function SettingsUI:BuildHunting()
     Explain(controls.questSwitch, "Switch to the new upgrade",
         "Follow the upgrade your new level opened instead. Lit when one is on offer. Same as /beq quest switch.")
 
-    local panelRow = CreateRow(frame, thisRow, "Quest panel",
+    local panelRow = pages:Row("quest", 1, "Quest panel",
         "Open shows the panel (and turns the quest on). Ignored lists the upgrades you ignored, to restore them.")
     self.questPanelRow = panelRow
     controls.questOpen = Widgets.CreateButton(panelRow, "Open", function()
@@ -446,8 +437,8 @@ function SettingsUI:BuildHunting()
 
     -- The upgrade quest panel's size, as its gold corner grip and /beq quest
     -- size set it (the owner asked 2026-10-07). The size in use is lit green
-    -- and named in the line under it, a dragged one by its percent.
-    local questSizeRow = CreateRow(frame, panelRow, "Panel size", "")
+    -- and named in the row's description, a dragged one by its percent.
+    local questSizeRow = pages:Row("quest", 1, "Panel size", "")
     self.questSizeRow = questSizeRow
     controls.questSizes = {}
     local previous
@@ -470,7 +461,7 @@ function SettingsUI:BuildHunting()
 
     -- Which tab the panel shows, as clicking a tab or /beq quest vendor
     -- (quest, dungeon, crafted) does.
-    local tabRow = CreateRow(frame, questSizeRow, "Quest tab",
+    local tabRow = pages:Row("quest", 1, "Quest tab",
         "Each kind of source keeps its own upgrade. Pick the one the panel shows.")
     controls.questTab = Widgets.CreateStepper(tabRow, {
         min = 1, max = 4, step = 1, value = 1,
@@ -486,34 +477,10 @@ function SettingsUI:BuildHunting()
     controls.questTab:SetWidth(170)
     controls.questTab:SetPoint("TOPLEFT", CONTROL_X, 0)
 
-    -- The quest arrow, as the Arrow button on the quest panel and /beq
-    -- arrow switch it, and /beq arrow check as a button.
-    local arrowRow = CreateRow(frame, tabRow, "Quest arrow",
-        "A dial that points the way to the quest's next place. Click a step on the panel to aim it there.")
-    controls.questArrow = Widgets.CreateCheckbox(arrowRow, "Show it", function(checked)
-        if ns.QuestArrow then ns.QuestArrow:SetOn(checked) end
-    end, false)
-    controls.questArrow:SetPoint("TOPLEFT", CONTROL_X, -2)
-    controls.questArrowCheck = Widgets.CreateButton(arrowRow, "Check", function()
-        ns.HandleSlash("arrow check")
-    end, { width = 64, height = 20 })
-    controls.questArrowCheck:SetPoint("TOPLEFT", CONTROL_X + 96, 0)
-    Explain(controls.questArrowCheck, "Check the quest arrow",
-        "Lists in chat what the arrow can read where you stand: your spot, your facing, the map. Same as /beq arrow check.")
-
-    -- TomTom's arrow instead of the dial, when TomTom is installed.
-    local tomtomRow = CreateRow(frame, arrowRow, "Use TomTom",
-        "With TomTom installed, its arrow points the way instead of this one. Same as /beq arrow tomtom.")
-    controls.useTomTom = Widgets.CreateCheckbox(tomtomRow, "When installed", function(checked)
-        if ns.TomTom then ns.TomTom:SetOn(checked) end
-    end, true)
-    controls.useTomTom:SetPoint("TOPLEFT", CONTROL_X, -2)
-
     -- Two switches that are also tick boxes on the quest panel: Solo only
     -- (the same as in Where to get upgrades) and Zone swap, the panel's
-    -- "Change on a new zone" (the owner asked 2026-10-08). One row for both:
-    -- the column has no room for another.
-    local soloRow = CreateRow(frame, tomtomRow, "Quest filters",
+    -- "Change on a new zone" (the owner asked 2026-10-08), side by side.
+    local soloRow = pages:Row("quest", 1, "Quest filters",
         "Solo only leaves out group, dungeon, raid and battleground quests. Zone swap lets This zone only change quests in a new zone.")
     controls.soloQuests = Widgets.CreateCheckbox(soloRow, "Solo only", function(checked)
         if ns.Finder then ns.Finder:SetSoloOnly(checked) end
@@ -528,18 +495,96 @@ function SettingsUI:BuildHunting()
     Explain(controls.questZoneSwap, "Change on a new zone",
         "With This zone only ticked on the quest panel, entering a new zone swaps your quests for ones there. Untick it to keep them as you travel. The same switch as Change on a new zone on the panel.")
 
-    local anchor = soloRow
-    for _, entry in ipairs(HUNTING) do
-        local key, redraw = entry[1], entry[5]
-        local row = CreateRow(frame, anchor, entry[2], entry[3])
-        controls[key] = Widgets.CreateCheckbox(row, entry[4], function(checked)
-            ns.db[key] = checked
-            local module = redraw and ns[redraw]
-            if module and module.OnTrackingChanged then pcall(module.OnTrackingChanged, module) end
-        end, true)
-        controls[key]:SetPoint("TOPLEFT", CONTROL_X, -2)
-        anchor = row
-    end
+    -- The quest arrow, as the Arrow button on the quest panel and /beq
+    -- arrow switch it, and /beq arrow check and next as buttons.
+    pages:Section("quest", 2, "QUEST ARROW")
+
+    local arrowRow = pages:Row("quest", 2, "Quest arrow",
+        "A dial that points the way to the quest's next place. Click a step on the panel to aim it there. Also /beq arrow.")
+    controls.questArrow = Widgets.CreateCheckbox(arrowRow, "Show it", function(checked)
+        if ns.QuestArrow then ns.QuestArrow:SetOn(checked) end
+    end, false)
+    controls.questArrow:SetPoint("TOPLEFT", CONTROL_X, -2)
+    controls.questArrowCheck = Widgets.CreateButton(arrowRow, "Check", function()
+        ns.HandleSlash("arrow check")
+    end, { width = 64, height = 20 })
+    controls.questArrowCheck:SetPoint("TOPLEFT", CONTROL_X + 96, 0)
+    Explain(controls.questArrowCheck, "Check the quest arrow",
+        "Lists in chat what the arrow can read where you stand: your spot, your facing, the map. Same as /beq arrow check.")
+
+    local _, nextButton = CommandRow(pages, "quest", 2, "Next place",
+        "Points the arrow at the next place in the quest's steps. Same as /beq arrow next.",
+        "Next", "arrow next")
+    controls.questArrowNext = nextButton
+
+    -- TomTom's arrow instead of the dial, when TomTom is installed.
+    local tomtomRow = pages:Row("quest", 2, "Use TomTom",
+        "With TomTom installed, its arrow points the way instead of this one. Same as /beq arrow tomtom.")
+    controls.useTomTom = Widgets.CreateCheckbox(tomtomRow, "When installed", function(checked)
+        if ns.TomTom then ns.TomTom:SetOn(checked) end
+    end, true)
+    controls.useTomTom:SetPoint("TOPLEFT", CONTROL_X, -2)
+end
+
+--- General: windows and text on the left, help and problems on the right.
+function SettingsUI:BuildGeneral()
+    local controls = self.controls
+    local pages = self.pages
+
+    pages:Section("general", 1, "WINDOWS")
+
+    local minimapRow = pages:Row("general", 1, "Minimap button",
+        "Click it for the gear window, right-click for this page. Drag it to move it. Also /beq minimap.")
+    controls.minimap = Widgets.CreateCheckbox(minimapRow, "Show it", function(checked)
+        ns.db.minimapHidden = not checked
+        if ns.MinimapButton then ns.MinimapButton:ApplyVisibility() end
+    end, true)
+    controls.minimap:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    local positionRow = pages:Row("general", 1, "Window positions",
+        "Moves every Equipment window, and the quest arrow, back where it started, if one ends up off screen.")
+    local reset = Widgets.CreateButton(positionRow, "Put them back", function()
+        SettingsUI:ResetPositions()
+    end, { width = 100, height = 20 })
+    reset:SetPoint("TOPLEFT", CONTROL_X, 0)
+
+    -- Bigger letters in the same windows, as Tradeskills has. Every size
+    -- is read as text is drawn, so it waits for /reload.
+    local textRow = pages:Row("general", 1, "Text size",
+        "Large and Larger add a point or two to all of this addon's text. Takes effect after /reload.")
+    controls.textSize = ns.SettingsPages.TextSizeControl(textRow, CONTROL_X, function() return ns.db end)
+
+    pages:Section("general", 2, "ADVANCED")
+
+    local debugRow = pages:Row("general", 2, "Debug output",
+        "Extra messages in chat, to help track down a problem.")
+    controls.debug = Tick(debugRow, "Enabled", "debug", false)
+
+    -- /beq perf and /beq perf clear as buttons.
+    local speedRow = pages:Row("general", 2, "Speed check",
+        "If the game hitches, Show lists in chat what Equipment spent longest on. Clear starts the count again.")
+    controls.perfShow = Widgets.CreateButton(speedRow, "Show", function()
+        ns.HandleSlash("perf")
+    end, { width = 64, height = 20 })
+    controls.perfShow:SetPoint("TOPLEFT", CONTROL_X, 0)
+    Explain(controls.perfShow, "Show what took longest",
+        "Lists in chat the slowest things Equipment did since you logged in or last cleared. Same as /beq perf.")
+    controls.perfClear = Widgets.CreateButton(speedRow, "Clear", function()
+        ns.HandleSlash("perf clear")
+    end, { width = 64, height = 20 })
+    controls.perfClear:SetPoint("LEFT", controls.perfShow, "RIGHT", 12, 0)
+    Explain(controls.perfClear, "Start the count again",
+        "Forgets the times so far, so the next Show covers only what happens from now. Same as /beq perf clear.")
+
+    local _, probeButton = CommandRow(pages, "general", 2, "Client check",
+        "Lists in chat which calls this client has, to help track down a problem. It only reads. Same as /beq probe.",
+        "Check", "probe")
+    controls.probe = probeButton
+
+    local _, helpButton = CommandRow(pages, "general", 2, "Commands",
+        "Lists every /beq command in chat. Same as /beq help.",
+        "List them", "help")
+    controls.help = helpButton
 end
 
 --------------------------------------------------------------------------------
@@ -559,6 +604,7 @@ function SettingsUI:Refresh()
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
     controls.hideGamepadBag:SetChecked(ns.db.hideGamepadBag ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
+    controls.suffixLine:SetChecked(ns.db.suffixLine ~= false)
     for _, entry in ipairs(HUNTING) do
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
     end
@@ -592,7 +638,10 @@ function SettingsUI:Refresh()
         if key == picked then index = i end
     end
     controls.spec:SetValue(index, true)
-    self.specRow.hint:SetText(self:SpecHint())
+    self.specRow:SetDescription(self:SpecHint())
+
+    controls.textSize:Sync()
+    self.pages:Refresh()
 end
 
 --- The quest panel's size buttons and the line under them.
@@ -603,7 +652,7 @@ function SettingsUI:RefreshQuestSize()
     for _, button in ipairs(self.controls.questSizes) do
         button:SetLabelColor(math.abs(button.scale - scale) < 0.005 and "good" or "gilt")
     end
-    self.questSizeRow.hint:SetText(("Now %s. Or drag the gold corner below the panel; right-click it for Normal."):format(
+    self.questSizeRow:SetDescription(("Now %s. Or drag the gold corner below the panel; right-click it for Normal."):format(
         panel.ScaleText(scale)))
 end
 

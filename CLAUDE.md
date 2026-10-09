@@ -271,7 +271,7 @@ objective, else its hand-in, and the hand-in once it is ready, never at
 its giver; with nothing known it has no place.
 Ignore (the owner asked 2026-10-08) is the old Skip renamed: the same
 `.upgradeQuestSkipped` list, never offered again until restored.
-`UI/IgnoredWindow.lua` (Settings > Upgrade hunts > Ignored, `/beq quest
+`UI/IgnoredWindow.lua` (Settings > Upgrade quest > Ignored, `/beq quest
 ignored`) lists it with Restore on each (`UpgradeQuest:Restore`) and Restore
 all (`RestoreAll`, `/beq quest restore`); `skip` and `reset` still work.
 
@@ -335,6 +335,23 @@ kind of weapon, by class and spec, multiplying that weapon's whole score in
 rename it), only for kinds changed, so `customWeights` never holds a table.
 The weights window lists the kinds the class can hold (`SPECS.<CLASS>.weapons`)
 under its stats; its reset clears both.
+
+## The settings pages (from Tradeskills)
+
+The owner asked (2026-10-09) for Tradeskills' Settings upgrade in Pets,
+Equipment and Farmer. `UI/SettingsPages.lua` is the same file in all three
+(a fix to it belongs in all three): category pages along the top
+(`settingsPage`, the one left on: Gear, Upgrade hunts, Upgrade quest,
+General), two columns a page, what a setting does as the row's tooltip
+("Show descriptions", `settingsDescriptions`, off by default, puts it back
+under the rows), "Find a setting" (`Widgets.CreateSearchBox`, Pets' copy of
+Farmer's), and Text size (`textSize` normal/large/larger adds 0/1/2 to
+`Theme.sizes`, now a lookup over `Theme.BASE_SIZES`; read once, so it waits
+for /reload). The window fits its fullest page, so no page scrolls. Add a
+setting with `pages:Row(page, column, label, description)` and
+`pages:Section(page, column, "HEADING")` in `UI/Settings.lua`; a row whose
+words change (the spec row, the panel size row) calls
+`row:SetDescription(text)`. Every `/beq` command has a button there.
 
 ## The house frame (Titanforged)
 

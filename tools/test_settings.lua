@@ -107,6 +107,103 @@ suite.check("the upgrade in chat box starts ticked", controls.upgradeChat:GetChe
 controls.upgradeChat:GetScript("OnClick")(controls.upgradeChat)
 suite.check("unticking it switches the chat line off", ns.db.upgradeChat == false, ns.db.upgradeChat)
 
+-- The pages along the top, as Tradeskills' Settings tab has them.
+local pages = SettingsUI.pages
+suite.check("it opens on the first page", pages.shown == "gear", pages.shown)
+suite.check("with the gear rows showing", pages.pages.gear.content:IsShown()
+    and not pages.pages.general.content:IsShown())
+local generalPart
+for _, part in ipairs(pages.switch) do
+    if part.key == "general" then generalPart = part end
+end
+generalPart.button:GetScript("OnClick")(generalPart.button)
+suite.check("a click on the switch shows that page", pages.pages.general.content:IsShown()
+    and not pages.pages.gear.content:IsShown())
+suite.check("and the page is remembered", ns.db.settingsPage == "general")
+suite.check("the page picked is gold", generalPart.label._color[1] == ns.Theme.colors.accent[1])
+SettingsUI:Hide()
+SettingsUI:Show()
+suite.check("it opens again on the page left", pages.shown == "general")
+
+-- Every page has rows, and the window is at least two columns wide.
+for _, page in pairs(pages.pages) do
+    suite.check(page.key .. " has rows", #page.rows > 0)
+end
+suite.check("the window is two columns wide or more",
+    SettingsUI.frame:GetWidth() >= 330 * 2 + 18 + 18 * 2, SettingsUI.frame:GetWidth())
+
+-- What a setting does is a tooltip until Show descriptions is ticked.
+local tooltipRow
+for _, row in ipairs(pages.pages.gear.rows) do
+    if row.labelText == "Tooltip line" then tooltipRow = row end
+end
+suite.check("descriptions start hidden", ns.db.settingsDescriptions == false
+    and not tooltipRow.hint:IsShown())
+GameTooltip._lines = {}
+tooltipRow:GetScript("OnEnter")(tooltipRow)
+suite.check("a row lights under the mouse", tooltipRow.hover:IsShown())
+suite.check("and says what it does in a tooltip", GameTooltip._lines[1] and
+    GameTooltip._lines[1]:find("beats what you wear") ~= nil)
+local before = SettingsUI.frame:GetHeight()
+pages.describe:GetScript("OnClick")(pages.describe)
+suite.check("Show descriptions is saved", ns.db.settingsDescriptions == true)
+suite.check("and puts the words under the rows", tooltipRow.hint:IsShown())
+suite.check("and the window grows to fit them", SettingsUI.frame:GetHeight() > before)
+pages.describe:GetScript("OnClick")(pages.describe)
+suite.check("unticked, the window goes back", SettingsUI.frame:GetHeight() == before)
+
+-- The spec row's words change with the spec, in its tooltip too.
+controls.spec:SetValue(3)
+suite.check("the spec row's description follows the pick",
+    SettingsUI.specRow.description:find("because you picked it", 1, true) ~= nil)
+controls.spec:SetValue(1)
+
+-- Find a setting.
+pages.find:SetText("tomtom")
+pages:Search("tomtom")
+suite.check("the search shows the page that has it", pages.shown == "quest", pages.shown)
+local lit = 0
+for _, entry in ipairs(pages.searchables) do
+    if entry.glow:IsShown() then lit = lit + 1 end
+end
+suite.check("and lights only what matches", lit == 1, lit)
+pages:Search("")
+lit = 0
+for _, entry in ipairs(pages.searchables) do
+    if entry.glow:IsShown() then lit = lit + 1 end
+end
+suite.check("an empty search lights nothing", lit == 0)
+
+-- Text size, saved as a word, waits for a reload.
+controls.textSize.plus:GetScript("OnClick")(controls.textSize.plus)
+suite.check("Text size saves Large", ns.db.textSize == "large")
+suite.check("and offers Reload", controls.textSize.reload:IsShown())
+controls.textSize.minus:GetScript("OnClick")(controls.textSize.minus)
+suite.check("back to Normal needs no reload", ns.db.textSize == "normal"
+    and not controls.textSize.reload:IsShown())
+suite.check("sizes read through the step", ns.Theme.sizes.small == ns.Theme.BASE_SIZES.small)
+
+-- Every /beq command has a button here.
+local ran = {}
+local realSlash = ns.HandleSlash
+ns.HandleSlash = function(text) ran[#ran + 1] = text end
+for _, key in ipairs({ "openWindow", "bags", "find", "tracked", "questArrowNext", "probe", "help" }) do
+    controls[key]:GetScript("OnClick")(controls[key])
+end
+ns.HandleSlash = realSlash
+suite.check("the command buttons run their commands",
+    table.concat(ran, ",") == "window,bags,find,tracked,arrow next,probe,help", table.concat(ran, ","))
+
+-- And every command registered has a control (house rule).
+local covered = {
+    window = true, bags = true, find = true, tracked = true, quest = true, arrow = true,
+    probe = true, help = true, perf = true, spec = true, weights = true, minimap = true,
+    settings = true,
+}
+for _, name in ipairs(ns.commandOrder) do
+    suite.check("/beq " .. name .. " has a button in Settings", covered[name] == true)
+end
+
 -- Position.
 ns.db.settingsX = 400
 SettingsUI:ResetPositions()

@@ -400,10 +400,12 @@ function QuestPanel:BuildFilters(frame)
 
     local settingsText = "Settings"
     local settings = Widgets.CreateButton(strip, settingsText, function()
+        -- Opened on the Upgrade quest page (UI/SettingsPages.lua).
+        if ns.db then ns.db.settingsPage = "quest" end
         if ns.SettingsUI then ns.SettingsUI:Show() end
     end, { width = Theme.TextWidth("small", settingsText) + 24, height = 20 })
     settings:SetPoint("TOPRIGHT", -PAD, rowY - 1)
-    Explain(settings, "Settings", "Open Equipment's settings, with the upgrade quest's under Upgrade hunts.")
+    Explain(settings, "Settings", "Open Equipment's settings, on its Upgrade quest page.")
     self.settingsButton = settings
 end
 
@@ -654,7 +656,7 @@ function QuestPanel:Build()
     local skip = Widgets.CreateButton(body, "Ignore", function()
         if ns.UpgradeQuest then ns.HandleSlash("quest ignore") end
     end, { width = 60, height = 22 })
-    Explain(skip, "Ignore this upgrade", "Never offer it again on this character, and get a quest for the next best one. Settings > Upgrade hunts > Ignored brings it back.")
+    Explain(skip, "Ignore this upgrade", "Never offer it again on this character, and get a quest for the next best one. Settings > Upgrade quest > Ignored brings it back.")
     self.skipButton = skip
 
     self.frame = frame

@@ -1,5 +1,5 @@
 -- Ignoring an upgrade on the quest panel keeps it out of the upgrade quest
--- for good, and Settings > Upgrade hunts > Ignored lists what was ignored,
+-- for good, and Settings > Upgrade quest > Ignored lists what was ignored,
 -- to restore one or all (asked 2026-10-08). The list is the one Skip kept,
 -- so upgrades skipped before stay ignored.
 
