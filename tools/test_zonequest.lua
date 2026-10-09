@@ -241,6 +241,60 @@ Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
 suite.check("ticked, a new zone changes them again", On("quest") == 1004 and On("vendor") == 1002,
     tostring(On("vendor")) .. "," .. tostring(On("quest")))
 
+-- A player in Durotar was sent to Mulgore (2026-10-09). A flight's landing
+-- must let go of the zone flown out of even when the client never says
+-- control came back: the next event, or a few seconds' check, does it.
+local ticks = {}
+local newTicker = _G.C_Timer.NewTicker
+_G.C_Timer.NewTicker = function(_, fn)
+    local ticker = { Cancel = function(self) self.cancelled = true end, fn = fn }
+    ticks[#ticks + 1] = ticker
+    return ticker
+end
+flying = true
+_G.UnitOnTaxi = function() return flying end
+zone = "Elwynn Forest"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+suite.check("a flight keeps the quests", On("vendor") == 1002, On("vendor"))
+suite.check("and watches for the landing", #ticks == 1 and not ticks[1].cancelled, #ticks)
+flying = false
+Quest:OnEvent("BAG_UPDATE_DELAYED")
+suite.check("landed with no control event, the next event picks here", On("vendor") == 1001 and On("quest") == 1003,
+    tostring(On("vendor")) .. "," .. tostring(On("quest")))
+ticks[1].fn()
+suite.check("and the watch stops", ticks[1].cancelled == true)
+
+flying = true
+zone = "Westfall"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+flying = false
+ticks[#ticks].fn()
+suite.check("with no event at all, the check picks here", On("vendor") == 1002 and On("quest") == 1004,
+    tostring(On("vendor")) .. "," .. tostring(On("quest")))
+suite.check("and stops", ticks[#ticks].cancelled == true)
+_G.C_Timer.NewTicker = newTicker
+_G.UnitOnTaxi = nil
+
+-- A loading screen, a login or a /reload in another zone.
+zone = "Elwynn Forest"
+Quest:OnEvent("PLAYER_ENTERING_WORLD")
+suite.check("entering the world elsewhere picks here", On("vendor") == 1001 and On("quest") == 1003,
+    tostring(On("vendor")) .. "," .. tostring(On("quest")))
+zone = "Westfall"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+
+-- A quest that starts from an item has no giver: it is where the item is
+-- got, not in every zone.
+S.STARTS = { [12] = { 4854, "Demon Scarred Cloak", 1,
+    { "mob", "Ghost Howl", "Mulgore", 37.3, 14.2, 12, 12, 100, "rare" } } }
+local cloak = { kind = "quest", questID = 12 }
+suite.check("an item's quest is where the item drops", Quest.SourceZone(cloak) == "Mulgore")
+suite.check("not in Durotar", not Quest.InZone(cloak, "Durotar"))
+suite.check("in Mulgore", Quest.InZone(cloak, "Mulgore"))
+suite.check("an item's quest with no known start is in no zone", not Quest.InZone({ kind = "quest", questID = 13 }, "Durotar"))
+suite.check("gear made from what you know is in every zone", Quest.InZone({ kind = "craft" }, "Durotar"))
+S.STARTS = {}
+
 Quest:SetZoneOnly(false)
 
 --------------------------------------------------------------------------------

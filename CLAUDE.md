@@ -138,6 +138,12 @@ beside them. "Change on a new zone" (`upgradeQuestZoneSwap`, account wide,
 on unless unticked; `UpgradeQuest:ZoneSwap`, the owner asked 2026-10-08) is
 a third tick box there and "Zone swap" in Settings: unticked, a zone change
 lets nothing go, though an empty tab still picks from the zone it is in.
+A player found it stale (2026-10-09), so: a quest that starts from an item
+is in the zone where the item is got (`UpgradeQuest.SourceZone`, from
+`Sources.STARTS`), and one whose start is not known is in none; a flight's
+landing is also caught by the next event or a ticker (`WatchLanding`) in
+case `PLAYER_CONTROL_GAINED` never comes; and `PLAYER_ENTERING_WORLD`
+(login, reload, loading screen) counts as a new zone.
 The finder has its own "This zone only" (a player asked, 2026-10-09;
 `finderZoneOnly`, account wide, off by default; `FinderUI:ZoneOnly`), kept
 apart from the panel's so ticking it never lets a quest go:
