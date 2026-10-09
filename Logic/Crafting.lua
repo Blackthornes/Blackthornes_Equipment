@@ -168,6 +168,20 @@ function Crafting:Knows(spellID)
     return nil
 end
 
+--- The skill a recipe needs. Forever moved some from Classic's (Raptor
+--- Hide Belt is Leatherworking 140 there, 165 in Crafts.lua); Tradeskills,
+--- when loaded, reads the right one from the recipe item's tooltip.
+function Crafting:Skill(spellID, classic)
+    local ts = Tradeskills()
+    local book = ts and ts.RecipeBook
+    if book and book.GetSkill then
+        local ok, skill = pcall(book.GetSkill, book, spellID)
+        skill = ok and Number(skill) or nil
+        if skill and skill > 0 then return skill end
+    end
+    return classic
+end
+
 --- An item's auction price in copper, from Tradeskills, or nil.
 function Crafting:AuctionPrice(itemID)
     local ts = Tradeskills()
@@ -312,7 +326,8 @@ function Crafting:SourceFor(itemID, player, band)
     local professions = self:Professions()
     if craft.w and (professions[craft.w[1]] or 0) < craft.w[2] then return nil end
 
-    local line, skill, spellID = craft[1], craft[2], craft[3]
+    local line, spellID = craft[1], craft[3]
+    local skill = self:Skill(spellID, craft[2])
     local have = professions[line]
     local profession = ns.Crafts.PROFESSIONS[line]
     local source = {
