@@ -2,7 +2,8 @@
 -- The "Where to get upgrades" window: for each slot, the best gear a vendor
 -- sells, a quest gives, a dungeon drops or a crafter makes that beats what
 -- is worn, and where to go for it. The stepper beside the filters looks a
--- few levels ahead. Click a row to follow it as the upgrade quest
+-- few levels ahead; "This zone only" keeps the list to the zone the
+-- character is in. Click a row to follow it as the upgrade quest
 -- (Logic/UpgradeQuest.lua), right-click to track it (Logic/Tracking.lua),
 -- Alt-click to pin its spot on the map (Logic/Waypoints.lua).
 --
@@ -465,6 +466,44 @@ function FinderUI:BuildFilters()
     end)
     solo:HookScript("OnLeave", function() GameTooltip:Hide() end)
     self.solo = solo
+
+    -- Only gear from the zone the character is in, as the upgrade quest
+    -- panel's box of the same name does (each keeps its own setting).
+    local zone = Widgets.CreateCheckbox(self.frame, "This zone only", function(checked)
+        FinderUI:SetZoneOnly(checked)
+    end, self:ZoneOnly())
+    zone:SetPoint("LEFT", solo, "RIGHT", 24, 0)
+    zone:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:AddLine("This zone only", Theme.Unpack("accent"))
+        GameTooltip:AddLine("Lists only upgrades from the zone you are in: a vendor, a quest giver or a "
+            .. "dungeon's entrance here, and gear you can make anywhere. The list changes as you travel. "
+            .. "Untick it to look anywhere.", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    zone:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    self.zone = zone
+end
+
+--- Is "This zone only" ticked? Saved account wide as `finderZoneOnly`,
+--- off unless ticked.
+function FinderUI:ZoneOnly()
+    return ns.db ~= nil and ns.db.finderZoneOnly == true
+end
+
+function FinderUI:SetZoneOnly(on)
+    if not ns.db then return end
+    ns.db.finderZoneOnly = on and true or false
+    if self.zone then self.zone:SetChecked(ns.db.finderZoneOnly) end
+    self.offset = 0
+    self:Refresh()
+end
+
+--- The zone the list keeps to, or nil for anywhere.
+function FinderUI:Here(found)
+    if not self:ZoneOnly() then return nil end
+    local quest = ns.UpgradeQuest
+    return quest and quest.Zone() or (found and found.player and found.player.zone) or nil
 end
 
 --- "Solo quests only" changed, here or in Settings.
@@ -528,22 +567,31 @@ function FinderUI:SetFilter(kind)
 end
 
 --- The picks as one list in character-sheet order, keeping only sources of
---- the kind showing (and picks that have one).
+--- the kind showing (and picks that have one). With "This zone only", only
+--- sources in the zone the character is in, looked for among every pick
+--- (the best here are seldom the best anywhere), the usual few per slot.
 function FinderUI:Lines(found)
     local lines, only = {}, self:Filter()
+    local here = self:Here(found)
+    local inZone = ns.UpgradeQuest and ns.UpgradeQuest.InZone
+    local all = here and inZone and type(found.all) == "table" and found.all or nil
+    local most = Finder.PER_SLOT or 3
     local seen = {}
     for _, entry in ipairs(ns.UI.SLOTS) do
         local slot = entry[1]
-        local picks = found.slots[slot]
+        local picks = (all or found.slots)[slot]
         if picks and not seen[slot] then
             seen[slot] = true
-            local first = true
+            local first, kept = true, 0
             for _, pick in ipairs(picks) do
                 local sources = {}
                 for _, source in ipairs(pick.sources) do
-                    if not only or source.kind == only then sources[#sources + 1] = source end
+                    if (not only or source.kind == only) and (not all or inZone(source, here)) then
+                        sources[#sources + 1] = source
+                    end
                 end
-                if #sources > 0 then
+                if #sources > 0 and kept < most then
+                    kept = kept + 1
                     lines[#lines + 1] = {
                         slotName = entry[2], first = first, pick = pick, sources = sources,
                     }
@@ -685,6 +733,9 @@ function FinderUI:Refresh()
     if shown == 0 then
         if found.waiting > 0 then
             self.empty:SetText("Asking the server about the gear on offer...")
+        elseif self:Here(found) then
+            self.empty:SetText(("Nothing in %s beats what you wear. Untick This zone only to look anywhere.")
+                :format(self:Here(found)))
         else
             self.empty:SetText(NO_UPGRADES[self:Filter() or false])
         end
@@ -695,6 +746,8 @@ function FinderUI:Refresh()
 
     local text
     local when = found.reach > found.player.level and ("by level %d"):format(found.reach) or "now"
+    local here = self:Here(found)
+    if here then when = ("in %s %s"):format(here, when) end
     if shown == 1 then
         text = ("1 upgrade you can go and get %s."):format(when)
     else
@@ -807,6 +860,10 @@ function FinderUI:OnEnable()
     for _, event in ipairs(EVENTS) do
         ns.RegisterEvent(self, event, self.RefreshSoon)
     end
+    -- A new zone has its own list while "This zone only" is ticked.
+    ns.RegisterEvent(self, "ZONE_CHANGED_NEW_AREA", function()
+        if FinderUI:ZoneOnly() then FinderUI:RefreshSoon() end
+    end)
     -- Only the "need ... more" on vendor rows changes: redraw, no rescan.
     ns.RegisterEvent(self, "PLAYER_MONEY", function()
         if FinderUI.frame and FinderUI.frame:IsShown() then FinderUI:Draw() end

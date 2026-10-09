@@ -33,6 +33,7 @@ local ASK_PER_SCAN = 40
 
 -- How many upgrades to keep per slot.
 local PER_SLOT = 3
+Finder.PER_SLOT = PER_SLOT
 
 -- Classic's class and race bits, as quests and items carry them.
 local CLASS_BITS = {
