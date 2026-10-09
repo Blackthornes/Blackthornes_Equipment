@@ -472,10 +472,37 @@ local STAT_ORDER = {
 -- thousand times.
 local MAX_WEIGHT = 100
 
+-- Kinds of weapon, by the client's item subclass, in the order the weights
+-- window lists them. A player can make one kind count for more or less than
+-- another (a rogue preferring daggers to swords): the weapon's whole score
+-- is multiplied by its kind's number, 1 unless the player changed it.
+local WEAPON_TYPES = {
+    { key = 15, name = "Daggers" },
+    { key = 13, name = "Fist weapons" },
+    { key = 0, name = "One-handed axes" },
+    { key = 4, name = "One-handed maces" },
+    { key = 7, name = "One-handed swords" },
+    { key = 1, name = "Two-handed axes" },
+    { key = 5, name = "Two-handed maces" },
+    { key = 8, name = "Two-handed swords" },
+    { key = 6, name = "Polearms" },
+    { key = 10, name = "Staves" },
+    { key = 2, name = "Bows" },
+    { key = 18, name = "Crossbows" },
+    { key = 3, name = "Guns" },
+    { key = 16, name = "Thrown" },
+    { key = 19, name = "Wands" },
+}
+
+-- The most a kind of weapon can be multiplied by. 0 leaves it out.
+local MAX_TYPE = 3
+
 Weights.SPECS = SPECS
 Weights.STAT_KEYS = STAT_KEYS
 Weights.STAT_ORDER = STAT_ORDER
 Weights.MAX_WEIGHT = MAX_WEIGHT
+Weights.WEAPON_TYPES = WEAPON_TYPES
+Weights.MAX_TYPE = MAX_TYPE
 
 --------------------------------------------------------------------------------
 -- Reading the player
@@ -626,6 +653,10 @@ end
 -- Forgotten whenever a weight changes.
 local merged = {}
 
+-- Each merged table's weapon kind numbers, kept beside it rather than in it,
+-- so everything that reads a weights table still finds only stats there.
+local typesOf = setmetatable({}, { __mode = "k" })
+
 --- The built-in weights for a class and spec, or nil. Never changed.
 function Weights:Defaults(class, spec)
     local specs = class and SPECS[class]
@@ -680,6 +711,13 @@ function Weights:Get(class, spec)
             weights[stat] = value
         end
     end
+
+    local types = {}
+    for _, entry in ipairs(WEAPON_TYPES) do
+        local factor = self:TypeFactor(class, spec, entry.key)
+        if factor ~= 1 then types[entry.key] = factor end
+    end
+    typesOf[weights] = types
 
     -- Not kept before the saved weights have loaded, or the player's would
     -- be missed until the next change.
@@ -743,16 +781,135 @@ function Weights:SetWeight(class, spec, stat, value)
     return value
 end
 
---- Put every stat for a class and spec back to the built-in weights.
+--- Put every stat and kind of weapon for a class and spec back to the
+--- built-in weights.
 function Weights:Reset(class, spec)
-    local custom = self:Custom(class, spec)
-    if custom then
+    for _, custom in ipairs({ self:Custom(class, spec) or {}, self:TypeCustom(class, spec) or {} }) do
         for stat, value in pairs(custom) do
             -- Junk that is not a weight was never ours to read; leave it be.
             if Usable(value) then custom[stat] = nil end
         end
     end
     self:Changed()
+end
+
+--------------------------------------------------------------------------------
+-- Kinds of weapon
+--
+-- Kept account wide in BlackthornesEquipmentDB.weaponTypeWeights, by class,
+-- spec and the client's weapon subclass: weaponTypeWeights.ROGUE.combat[15]
+-- = 1.2 counts a dagger's score 20% higher. Apart from customWeights, so a
+-- version of the addon from before this never meets a table among its
+-- weights. Only kinds a player changed are kept; 1 is no change.
+--------------------------------------------------------------------------------
+
+--- The saved weapon kind numbers for a class and spec, or nil. `create`
+--- makes the tables when they are missing.
+function Weights:TypeCustom(class, spec, create)
+    local db = ns.db
+    if type(db) ~= "table" or not class or not spec then return nil end
+
+    if type(db.weaponTypeWeights) ~= "table" then
+        if not create then return nil end
+        db.weaponTypeWeights = {}
+    end
+    local byClass = db.weaponTypeWeights[class]
+    if type(byClass) ~= "table" then
+        if not create then return nil end
+        byClass = {}
+        db.weaponTypeWeights[class] = byClass
+    end
+    local bySpec = byClass[spec]
+    if type(bySpec) ~= "table" then
+        if not create then return nil end
+        bySpec = {}
+        byClass[spec] = bySpec
+    end
+    return bySpec
+end
+
+local function UsableType(value)
+    return type(value) == "number" and value == value and value >= 0 and value <= MAX_TYPE
+end
+
+--- The kinds of weapon a class can ever hold, in the window's order.
+function Weights:WeaponTypesFor(class)
+    local list = {}
+    local weapons = class and SPECS[class] and SPECS[class].weapons
+    if not weapons then return list end
+    for _, entry in ipairs(WEAPON_TYPES) do
+        if weapons[entry.key] then list[#list + 1] = entry end
+    end
+    return list
+end
+
+--- What a kind of weapon's score is multiplied by for a class and spec: the
+--- player's number, or 1.
+function Weights:TypeFactor(class, spec, subclassID)
+    local custom = self:TypeCustom(class, spec)
+    local value = custom and custom[subclassID]
+    if UsableType(value) then return value end
+    return 1
+end
+
+--- True when the player has changed this kind of weapon (or, with none
+--- given, any kind) for a class and spec.
+function Weights:IsTypeCustom(class, spec, subclassID)
+    local custom = self:TypeCustom(class, spec)
+    if not custom then return false end
+    if subclassID ~= nil then return UsableType(custom[subclassID]) and custom[subclassID] ~= 1 end
+    for _, value in pairs(custom) do
+        if UsableType(value) and value ~= 1 then return true end
+    end
+    return false
+end
+
+--- Round a typed or stepped number for a kind of weapon: 0 to MAX_TYPE, to
+--- two decimals.
+function Weights:CleanType(value)
+    value = tonumber(value)
+    if not value or value ~= value then return nil end
+    value = math.max(0, math.min(MAX_TYPE, value))
+    return math.floor(value * 100 + 0.5) / 100
+end
+
+--- Set what a kind of weapon counts for, for a class and spec. 1 forgets the
+--- change.
+-- @return the number kept, or nil and why
+function Weights:SetTypeFactor(class, spec, subclassID, value)
+    if not self:Defaults(class, spec) then return nil, "no such spec" end
+
+    local known = false
+    for _, entry in ipairs(self:WeaponTypesFor(class)) do
+        if entry.key == subclassID then known = true break end
+    end
+    if not known then return nil, "no such weapon" end
+
+    value = self:CleanType(value)
+    if not value then return nil, "not a number" end
+
+    if math.abs(value - 1) < 0.005 then
+        local custom = self:TypeCustom(class, spec)
+        if custom then custom[subclassID] = nil end
+        value = 1
+    else
+        self:TypeCustom(class, spec, true)[subclassID] = value
+    end
+
+    self:Changed()
+    return value
+end
+
+-- The client's item class for weapons; see CanUse below.
+local WEAPON_CLASS = 2
+
+--- What an item's score is multiplied by under these weights (a table from
+--- Get or ForPlayer), from the item's class and subclass: 1 for anything
+--- that is not a weapon or whose kind the player left alone.
+function Weights:FactorFor(weights, classID, subclassID)
+    if classID ~= WEAPON_CLASS or subclassID == nil then return 1 end
+    local types = weights and typesOf[weights]
+    return types and types[subclassID] or 1
 end
 
 --- Something changed what an item is worth: forget the merged tables and

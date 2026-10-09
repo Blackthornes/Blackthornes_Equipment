@@ -66,7 +66,10 @@ function Compare:ScoreOf(link, weights)
     local info = Items:Info(link)
     local stats = Weights:Normalize(raw)
     Weights:AddSchools(stats, Items:SchoolDamage(link))
-    return Weights:Score(stats, weights, info and RANGED[info.equipLoc] or false)
+    local score = Weights:Score(stats, weights, info and RANGED[info.equipLoc] or false)
+    -- A kind of weapon the player counts for more or less (Weights:FactorFor).
+    if info then score = score * Weights:FactorFor(weights, info.classID, info.subclassID) end
+    return score
 end
 
 --- What is worn where this item would go, and the score to beat.

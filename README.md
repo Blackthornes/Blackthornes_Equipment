@@ -231,6 +231,12 @@ spec back. Your weights are kept account wide by class and spec in
 `BlackthornesEquipmentDB.customWeights`, only for the stats you changed, so a
 later version's tuning still reaches the rest. Updates never clear them.
 
+Under the stats, **Weapon types** lists each kind of weapon the class can
+hold, all at 1. Set daggers to 1.2 and a dagger's whole score counts a fifth
+higher, so a rogue who prefers daggers is steered to them over a slightly
+better sword; 0.8 counts a kind lower and 0 leaves it out. These are kept in
+`BlackthornesEquipmentDB.weaponTypeWeights`, and the same reset puts them back.
+
 `/equipment` works too.
 
 ## Layout
