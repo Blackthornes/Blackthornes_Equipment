@@ -173,6 +173,25 @@ suite.check("and none on another zone's map", not ns.MapPins.pins[1]:IsShown())
 -- The character sheet
 --------------------------------------------------------------------------------
 
+-- The very first hover never scans in one go: it starts the scan a slice
+-- per frame (here few enough items to finish in the first slice), and while
+-- it runs the tooltip says to hover again.
+do
+    local realScan, whole = Finder.Scan, 0
+    Finder.Scan = function(...) whole = whole + 1 return realScan(...) end
+    Finder.latest = nil
+    ns.SlotUpgrades:PicksFor(5)
+    suite.check("a first hover scans a slice at a time", whole == 0 and Finder.latest ~= nil, whole)
+    Finder.Scan = realScan
+    Finder.latest, Finder.background = nil, { waiting = {} }
+    local tip = env.Stub({ _lines = {}, AddLine = function(self, t) self._lines[#self._lines + 1] = t end,
+        NumLines = function(self) return #self._lines end })
+    ns.SlotUpgrades:AddLines(tip, 5, {})
+    suite.check("while it runs the tooltip says it is looking",
+        table.concat(tip._lines, "\n"):find("Looking for upgrades", 1, true) ~= nil)
+    Finder.background = nil
+end
+
 Finder:MarkStale()
 local picks = ns.SlotUpgrades:PicksFor(5)
 suite.check("the chest slot's picks, best first", #picks == 2 and picks[1].itemID == 1002, #picks)
