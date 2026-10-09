@@ -302,6 +302,14 @@ wide, only for stats the player changed (`Weights:Get` lays them over
 never rename that key, never reshape it without keeping the old values, and
 never delete a value the code cannot read (it is skipped instead).
 
+Weapon types (a player asked, the owner agreed 2026-10-09): one number per
+kind of weapon, by class and spec, multiplying that weapon's whole score in
+`Compare:ScoreOf` (`Weights:FactorFor`), 1 for no change. Kept apart in
+`BlackthornesEquipmentDB.weaponTypeWeights[CLASS][spec][subclassID]` (never
+rename it), only for kinds changed, so `customWeights` never holds a table.
+The weights window lists the kinds the class can hold (`SPECS.<CLASS>.weapons`)
+under its stats; its reset clears both.
+
 ## The house frame (Titanforged)
 
 The owner picked this look for all four addons on 2026-10-04 from two mockups

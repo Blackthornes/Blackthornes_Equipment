@@ -7,9 +7,14 @@
 -- can be typed as well as stepped, because the built-in weights run from 0.005
 -- (a point of armor) to 16 (1% crit) and no one step size suits both.
 --
--- What is shown is what Weights:Get returns, and every change goes through
--- Weights:SetWeight or Weights:Reset, so the window never keeps a copy of its
--- own. Open it from the settings window or with /beq weights.
+-- Under the stats, one row per kind of weapon the class can hold: what that
+-- kind's whole score is multiplied by, 1 for no change, so a rogue can count
+-- daggers above swords.
+--
+-- What is shown is what Weights:Get and Weights:TypeFactor return, and every
+-- change goes through Weights:SetWeight, Weights:SetTypeFactor or
+-- Weights:Reset, so the window never keeps a copy of its own. Open it from
+-- the settings window or with /beq weights.
 
 local _, ns = ...
 
@@ -35,6 +40,8 @@ local BUTTON = 22           -- the - and + buttons
 local BOX = 58              -- the value between them
 local CONTROL = BUTTON * 2 + BOX + 8
 local MARK = 8              -- room for the gold bar on a changed row
+local TYPE_HEADING = 30     -- the "Weapon types" line above their rows
+local TYPE_STEP = 0.1       -- one press of - or + on a kind of weapon
 
 -- The nine classic classes, in the order the character screen lists them.
 local CLASSES = {
@@ -72,6 +79,34 @@ function WeightsUI.Nudge(value, direction)
     local step = WeightsUI.StepFor(direction < 0 and value - 0.0001 or value)
     local wanted = math.floor((value + direction * step) / step + 0.5) * step
     return Weights:Clean(wanted)
+end
+
+--- A kind of weapon's number one press away from `value`.
+function WeightsUI.NudgeType(value, direction)
+    local wanted = math.floor((value + direction * TYPE_STEP) / TYPE_STEP + 0.5) * TYPE_STEP
+    return Weights:CleanType(wanted)
+end
+
+--- What a row shows now, and its built-in value.
+function WeightsUI:RowValue(row)
+    if row.entry.weapon then
+        return Weights:TypeFactor(self.class, self.spec, row.entry.key), 1
+    end
+    return Weights:Value(self.class, self.spec, row.entry.key)
+end
+
+--- True when the player has changed what a row shows.
+function WeightsUI:RowCustom(row)
+    if row.entry.weapon then return Weights:IsTypeCustom(self.class, self.spec, row.entry.key) end
+    return Weights:IsCustom(self.class, self.spec, row.entry.key)
+end
+
+--- Keep a new value for a row. The value kept, or nil.
+function WeightsUI:RowSet(row, value)
+    if row.entry.weapon then
+        return Weights:SetTypeFactor(self.class, self.spec, row.entry.key, value)
+    end
+    return Weights:SetWeight(self.class, self.spec, row.entry.key, value)
 end
 
 --------------------------------------------------------------------------------
@@ -120,18 +155,31 @@ function WeightsUI:StatusText()
     if not (specs and specs[self.spec]) then return "" end
 
     local name = specs[self.spec].name
-    local changed = 0
+    local changed, weapons = 0, 0
     for _, entry in ipairs(Weights.STAT_ORDER) do
         if Weights:IsCustom(self.class, self.spec, entry.key) then changed = changed + 1 end
     end
+    for _, entry in ipairs(Weights:WeaponTypesFor(self.class)) do
+        if Weights:IsTypeCustom(self.class, self.spec, entry.key) then weapons = weapons + 1 end
+    end
+
+    local parts = {}
+    if changed == 1 then
+        parts[#parts + 1] = "1 stat changed"
+    elseif changed > 1 then
+        parts[#parts + 1] = ("%d stats changed"):format(changed)
+    end
+    if weapons == 1 then
+        parts[#parts + 1] = "1 weapon type changed"
+    elseif weapons > 1 then
+        parts[#parts + 1] = ("%d weapon types changed"):format(weapons)
+    end
 
     local text
-    if changed == 0 then
+    if #parts == 0 then
         text = ("%s uses the built-in weights."):format(name)
-    elseif changed == 1 then
-        text = ("%s uses your weights: 1 stat changed."):format(name)
     else
-        text = ("%s uses your weights: %d stats changed."):format(name, changed)
+        text = ("%s uses your weights: %s."):format(name, table.concat(parts, ", "))
     end
 
     local playing, _, playerClass = Weights:CurrentSpec()
@@ -150,6 +198,9 @@ local function LabelWidth()
     local widest = 0
     for _, entry in ipairs(Weights.STAT_ORDER) do
         widest = math.max(widest, Theme.TextWidth("small", LabelText(entry)))
+    end
+    for _, entry in ipairs(Weights.WEAPON_TYPES) do
+        widest = math.max(widest, Theme.TextWidth("small", entry.name))
     end
     return widest
 end
@@ -205,6 +256,7 @@ function WeightsUI:Build()
     for index, entry in ipairs(Weights.STAT_ORDER) do
         self.rows[index] = self:BuildRow(entry)
     end
+    self:BuildTypes()
     self:BuildFooter()
 
     frame:Hide()
@@ -314,6 +366,20 @@ function WeightsUI:BuildPickers()
     local divider = Theme.CreateDivider(frame, "border")
     divider:SetPoint("TOPLEFT", PADDING, -(HEADER + PICKERS - 6))
     divider:SetPoint("TOPRIGHT", -PADDING, -(HEADER + PICKERS - 6))
+end
+
+--- The "Weapon types" heading and a row for every kind of weapon; Refresh
+--- shows the ones the class being edited can hold.
+function WeightsUI:BuildTypes()
+    local heading = Theme.CreateLabel(self.frame, "small", "accent")
+    heading:SetText("Weapon types")
+    self.typeHeading = heading
+
+
+    self.typeRows = {}
+    for index, entry in ipairs(Weights.WEAPON_TYPES) do
+        self.typeRows[index] = self:BuildRow({ key = entry.key, name = entry.name, weapon = true })
+    end
 end
 
 --- One stat: a gold bar when changed, its name, and [- value +].
@@ -427,6 +493,7 @@ function WeightsUI:BuildFooter()
     hint:SetHeight(30)
     hint:SetJustifyV("BOTTOM")
     hint:SetText("A weight is what one point of a stat is worth. 0 ignores the stat. "
+        .. "A weapon type multiplies that kind of weapon's whole score: 1 is no change. "
         .. "Changes count at once, for every character of that class.")
     self.hint = hint
 
@@ -456,10 +523,15 @@ function WeightsUI:Flash(row)
 end
 
 function WeightsUI:Step(row, direction)
-    local value = Weights:Value(self.class, self.spec, row.entry.key)
-    local wanted = WeightsUI.Nudge(value, direction)
+    local value = self:RowValue(row)
+    local wanted
+    if row.entry.weapon then
+        wanted = WeightsUI.NudgeType(value, direction)
+    else
+        wanted = WeightsUI.Nudge(value, direction)
+    end
     if wanted and wanted ~= value then
-        Weights:SetWeight(self.class, self.spec, row.entry.key, wanted)
+        self:RowSet(row, wanted)
         self:Refresh()
         self:Flash(row)
     end
@@ -471,8 +543,8 @@ function WeightsUI:Commit(row, text)
     row.editing = false
     text = (text or ""):gsub(",", "."):gsub("^%s+", ""):gsub("%s+$", "")
 
-    local before = Weights:Value(self.class, self.spec, row.entry.key)
-    local kept = tonumber(text) and Weights:SetWeight(self.class, self.spec, row.entry.key, text)
+    local before = self:RowValue(row)
+    local kept = tonumber(text) and self:RowSet(row, text)
     self:Refresh()
     if kept and kept ~= before then self:Flash(row) end
 end
@@ -480,8 +552,10 @@ end
 function WeightsUI:ResetSpec()
     Weights:Reset(self.class, self.spec)
     self:Refresh()
-    for _, row in ipairs(self.rows) do
-        if row:IsShown() then self:Flash(row) end
+    for _, list in ipairs({ self.rows, self.typeRows }) do
+        for _, row in ipairs(list) do
+            if row:IsShown() then self:Flash(row) end
+        end
     end
 end
 
@@ -491,10 +565,10 @@ function WeightsUI:ShowRowTooltip(row)
     end)
     if not GameTooltip then return end
 
-    local value, default = Weights:Value(self.class, self.spec, row.entry.key)
+    local value, default = self:RowValue(row)
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
     GameTooltip:AddLine(row.entry.name, Theme.Unpack("accent"))
-    if Weights:IsCustom(self.class, self.spec, row.entry.key) then
+    if self:RowCustom(row) then
         GameTooltip:AddLine(("Yours: %s"):format(WeightsUI.Format(value)), Theme.Unpack("text"))
         GameTooltip:AddLine(("Built in: %s"):format(WeightsUI.Format(default)), Theme.Unpack("muted"))
     else
@@ -502,6 +576,11 @@ function WeightsUI:ShowRowTooltip(row)
     end
     if row.entry.per then
         GameTooltip:AddLine("Counted per 1%, the way items print it.", Theme.Unpack("muted"))
+    end
+    if row.entry.weapon then
+        GameTooltip:AddLine("Multiplies these weapons' whole score. 1.2 counts them a fifth",
+            Theme.Unpack("muted"))
+        GameTooltip:AddLine("higher, 0.8 a fifth lower, and 0 leaves them out.", Theme.Unpack("muted"))
     end
     GameTooltip:AddLine("Type a number or use - and +.", Theme.Unpack("dim"))
     GameTooltip:Show()
@@ -551,7 +630,8 @@ function WeightsUI:Refresh()
     end
 
     self.status:SetText(self:StatusText())
-    self.reset:SetShown(Weights:IsCustom(self.class, self.spec))
+    self.reset:SetShown(Weights:IsCustom(self.class, self.spec)
+        or Weights:IsTypeCustom(self.class, self.spec))
 
     local shown = {}
     for _, entry in ipairs(self:StatsFor(self.class, self.spec, self.allStats:GetChecked())) do
@@ -570,24 +650,47 @@ function WeightsUI:Refresh()
     -- The two columns sit in the middle when the window is wider than they
     -- need, for its header line.
     local left = math.max(PADDING, math.floor((self.width - self.columnWidth * 2 - COLUMN_GAP) / 2))
-    for index, row in ipairs(visible) do
-        local column = index > perColumn and 1 or 0
-        local line = column == 1 and index - perColumn - 1 or index - 1
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", self.frame, "TOPLEFT",
-            left + column * (self.columnWidth + COLUMN_GAP), -(top + line * ROW_HEIGHT))
+    local function Place(list, from)
+        local half = math.ceil(#list / 2)
+        for index, row in ipairs(list) do
+            local column = index > half and 1 or 0
+            local line = column == 1 and index - half - 1 or index - 1
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", self.frame, "TOPLEFT",
+                left + column * (self.columnWidth + COLUMN_GAP), -(from + line * ROW_HEIGHT))
 
-        local value = Weights:Value(self.class, self.spec, row.entry.key)
-        local custom = Weights:IsCustom(self.class, self.spec, row.entry.key)
-        if not row.editing then row.box:SetText(WeightsUI.Format(value)) end
-        row.box:SetTextColor(Theme.Unpack(custom and "accent" or (value > 0 and "text" or "dim")))
-        row.label:SetTextColor(Theme.Unpack(custom and "accent" or "text"))
-        row.mark:SetShown(custom)
-        row.minus:SetDimmed(value <= 0)
-        row.plus:SetDimmed(value >= Weights.MAX_WEIGHT)
+            local value = self:RowValue(row)
+            local custom = self:RowCustom(row)
+            local most = row.entry.weapon and Weights.MAX_TYPE or Weights.MAX_WEIGHT
+            if not row.editing then row.box:SetText(WeightsUI.Format(value)) end
+            row.box:SetTextColor(Theme.Unpack(custom and "accent" or (value > 0 and "text" or "dim")))
+            row.label:SetTextColor(Theme.Unpack(custom and "accent" or "text"))
+            row.mark:SetShown(custom)
+            row.minus:SetDimmed(value <= 0)
+            row.plus:SetDimmed(value >= most)
+        end
+        return from + half * ROW_HEIGHT
     end
 
-    self.frame:SetHeight(top + perColumn * ROW_HEIGHT + 8 + FOOTER)
+    local bottom = Place(visible, top)
+
+    -- The kinds of weapon this class can hold, under their own heading.
+    local holds = {}
+    for _, entry in ipairs(Weights:WeaponTypesFor(self.class)) do holds[entry.key] = true end
+    local types = {}
+    for _, row in ipairs(self.typeRows) do
+        local on = holds[row.entry.key] or false
+        row:SetShown(on)
+        if on then types[#types + 1] = row end
+    end
+    self.typeHeading:SetShown(#types > 0)
+    if #types > 0 then
+        self.typeHeading:ClearAllPoints()
+        self.typeHeading:SetPoint("TOPLEFT", self.frame, "TOPLEFT", left + MARK, -(bottom + 12))
+        bottom = Place(types, bottom + TYPE_HEADING)
+    end
+
+    self.frame:SetHeight(bottom + 8 + FOOTER)
 end
 
 --------------------------------------------------------------------------------
