@@ -229,6 +229,30 @@ suite.check("and not offered yet", Offered(waiting, 5) == "1001")
 cached[1003] = nil
 suite.check("once it arrives it is offered", Offered(Finder:Scan(), 5) == "1003,1001")
 
+-- An item that never arrives is given up on, so the client's item queue is
+-- not kept busy scan after scan.
+asked = {}
+Finder.tries = nil
+cached[1003] = false
+for _ = 1, 6 do Finder:Scan() end
+local times = 0
+for _, id in ipairs(asked) do if id == 1003 then times = times + 1 end end
+suite.check("an item that never arrives is asked three times at most", times == 3, times)
+
+-- Nothing is asked while the quest giver's window is open: its reward
+-- choices wait on the same queue.
+asked = {}
+cached[1005] = false
+QuestFrame = { IsShown = function() return true end }
+Finder:Scan()
+suite.check("nothing is asked while the quest window is open", #asked == 0, #asked)
+QuestFrame = nil
+Finder:Scan()
+local seen = false
+for _, id in ipairs(asked) do if id == 1005 then seen = true end end
+suite.check("and it is asked once the window closes", seen)
+cached[1003], cached[1005] = nil, nil
+
 --------------------------------------------------------------------------------
 -- The window
 --------------------------------------------------------------------------------
