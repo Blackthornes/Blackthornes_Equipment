@@ -44,6 +44,10 @@ dungeon run. The upgrade quest follows both. Which quests need others comes
 from Classic's quest data: its own group, dungeon, raid and PvP marks, plus
 quests whose kills, objects or items are inside an instance and quests to
 kill an elite, which count as group quests. Forever may have changed some.
+Tick **This zone only** on the same row to list just the upgrades from the
+zone you are in (a vendor, a quest giver or a dungeon's entrance there, and
+gear you can make anywhere); the list changes as you travel. It is the
+window's own switch, apart from the upgrade quest panel's.
 
 Crafted gear is listed too, under **Crafted**: what you can make now, what
 an alt on your side can make (when Blackthornes Tradeskills is loaded and

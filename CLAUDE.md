@@ -144,6 +144,11 @@ is in the zone where the item is got (`UpgradeQuest.SourceZone`, from
 landing is also caught by the next event or a ticker (`WatchLanding`) in
 case `PLAYER_CONTROL_GAINED` never comes; and `PLAYER_ENTERING_WORLD`
 (login, reload, loading screen) counts as a new zone.
+The finder has its own "This zone only" (a player asked, 2026-10-09;
+`finderZoneOnly`, account wide, off by default; `FinderUI:ZoneOnly`), kept
+apart from the panel's so ticking it never lets a quest go:
+`FinderUI:Lines` then reads `found.all` through `UpgradeQuest.InZone`, keeps
+`Finder.PER_SLOT` per slot, and `ZONE_CHANGED_NEW_AREA` refreshes the window.
 
 Forever's own boss drops: `tools/forever_drops.py` reads Farmer's
 `Data/Data_Harvested.lua` (no player names in it) and writes
