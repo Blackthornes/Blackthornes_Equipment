@@ -8,3 +8,19 @@ added at the end. Each change thanks, by their Discord name, the players
 whose feedback or reports led to it; this is the only report that names
 players. A version with no section here posts nothing in #general.
 This file does not ship in the addon.
+
+## 0.15.0
+
+Hey everyone! Equipment just got an update.
+
+You can tell Equipment which weapon types you like best. If you love daggers, bump them up and they'll count for more. Thanks Ezmode for asking!
+
+Where to get upgrades has a "This zone only" box now, so you only see gear from where you are. Thanks Lottus27!
+
+The upgrade quest stays in your zone when you ask it to, instead of sending you somewhere else. Thanks Lottus27 for catching that!
+
+If you use TomTom, the quest arrow hands its spot to TomTom so you only see one arrow. Thanks Ezmode!
+
+Quest reward choices shouldn't show up blank anymore when you turn in a quest. Thanks Ezmode for reporting it!
+
+Restart the game fully after you update. Good luck with the upgrades!

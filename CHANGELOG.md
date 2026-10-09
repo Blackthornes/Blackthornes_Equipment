@@ -4,6 +4,31 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.15.0
+
+For WoW: Forever (interface 16001). A file was added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **Weapon types** in the stat weights window: one row per kind of weapon your
+  class can hold, all at 1. Set daggers to 1.2 and a dagger's score counts a
+  fifth higher; 0 leaves that kind out. **Use the built-in weights** puts them
+  back.
+- **Where to get upgrades: This zone only.** A tick box in the finder's filter
+  row shows only upgrades from the zone you're in (plus gear you can make
+  anywhere). It's separate from the upgrade quest panel's box.
+- **TomTom:** with TomTom installed, the quest arrow's place goes to TomTom as
+  a waypoint and the dial stays hidden. Turn it off with the **Use TomTom**
+  tick box in Settings.
+- **Crafted upgrades use the skill Forever asks for** when Tradeskills is
+  loaded, read from the recipe's own tooltip.
+- Fixed: the quest reward choices could show up blank at a quest giver. Item
+  requests now wait while the quest giver's window is open, and an item is
+  asked about three times at most.
+- Fixed: with "This zone only" ticked, the upgrade quest could still send you
+  to another zone. A quest that starts from an item now counts as being where
+  the item is got, a flight's landing is always noticed, and a login or
+  loading screen counts as a new zone.
+
 ## 0.14.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game
