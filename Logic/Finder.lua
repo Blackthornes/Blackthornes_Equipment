@@ -716,12 +716,18 @@ function Finder:Build(only, ahead, pause)
     end
 
     local count, all = 0, {}
+    local spot = Finder.Spot(player.zone)
     for slot, list in pairs(slots) do
         -- What can be had now comes before gear that waits on a reputation,
         -- and both before gear someone else would have to make.
+        -- Upgrades that show the same "+12%" come nearest first (a player
+        -- asked, 2026-10-09).
+        for _, pick in ipairs(list) do pick.near = Finder.Nearness(pick.sources, player.zone, spot) end
         table.sort(list, function(a, b)
             if (a.needs == nil) ~= (b.needs == nil) then return a.needs == nil end
             if a.remote ~= b.remote then return not a.remote end
+            local pa, pb = Finder.Shown(a.result), Finder.Shown(b.result)
+            if pa and pb and pa == pb and a.near ~= b.near then return a.near < b.near end
             if a.gain ~= b.gain then return a.gain > b.gain end
             return a.itemID < b.itemID
         end)
@@ -741,6 +747,48 @@ function Finder:Build(only, ahead, pause)
         self.latest, self.latestAt, self.latestKey = found, self.Now(), judgedKey
     end
     return found
+end
+
+--- The whole percent an upgrade shows ("+12%"), or nil for one that shows
+--- no percent (an empty slot).
+function Finder.Shown(result)
+    local percent = type(result) == "table" and tonumber(result.percent)
+    return percent and math.floor(percent + 0.5) or nil
+end
+
+--- Where the character stands on the map of `zone`: { x, y } from 0 to 1,
+--- or nil when the client does not say, or the map it gives is not that
+--- zone's (a city or a cave inside it). Never guessed.
+function Finder.Spot(zone)
+    if not zone or not (ns.QuestArrow and ns.Waypoints) then return nil end
+    local ok, spot = pcall(function()
+        local here = ns.QuestArrow:Here()
+        if here and here.x and here.y and here.map == ns.Waypoints:MapFor(zone) then
+            return { x = here.x, y = here.y }
+        end
+    end)
+    return ok and spot or nil
+end
+
+--- How near the nearest of some sources is, smaller nearer: the squared
+--- map distance (0 to 2) for one in `zone` with a spot when `spot` is
+--- known, 2.5 for one in the zone without, 3 for one elsewhere.
+function Finder.Nearness(sources, zone, spot)
+    local best = 3
+    if not zone then return best end
+    local zoneOf = ns.UpgradeQuest and ns.UpgradeQuest.SourceZone
+    for _, source in ipairs(sources or {}) do
+        local where = zoneOf and zoneOf(source) or source.zone
+        if where == zone or source.dungeon == zone then
+            local near = 2.5
+            local x, y = tonumber(source.x), tonumber(source.y)
+            if spot and x and y and where == zone then
+                near = (x / 100 - spot.x) ^ 2 + (y / 100 - spot.y) ^ 2
+            end
+            if near < best then best = near end
+        end
+    end
+    return best
 end
 
 --- Seconds, for how old a kept scan is.
