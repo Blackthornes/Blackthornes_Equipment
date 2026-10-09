@@ -129,6 +129,56 @@ function Tooltip:MoreLines(link)
     return lines
 end
 
+-- While the pointer rests on a bag slot the game draws its tooltip again
+-- several times a second, and each draw used to judge the item from scratch.
+-- The last item's lines are kept for a moment instead, and dropped at once
+-- when gear, level, talents or weights change.
+local LINES_KEPT = 1
+local lastLines = nil
+
+local function Now()
+    local clock = rawget(_G, "GetTime")
+    if type(clock) ~= "function" then return nil end
+    local ok, now = pcall(clock)
+    if ok and type(now) == "number" then return now end
+    return nil
+end
+
+function Tooltip.ForgetLines()
+    lastLines = nil
+end
+
+--- The lines for one item, worked out afresh.
+function Tooltip:WorkOutLines(link, carried)
+    local lines = {}
+    -- An item shown from a bag slot is a carried copy, so a second copy of a
+    -- worn ring is judged against the other ring, as its bag arrow is.
+    local judge = carried and Compare.JudgeCarried or Compare.Judge
+    local text, color = Compare:Describe(judge(Compare, link))
+    if text then lines[#lines + 1] = { text, color } end
+    local okTrainer, trainer, trainerColor = pcall(WeaponSkills.Describe, WeaponSkills, link)
+    if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true } end
+    local okMore, more = pcall(Tooltip.MoreLines, Tooltip, link)
+    if okMore then
+        for _, line in ipairs(more) do lines[#lines + 1] = line end
+    end
+    return lines
+end
+
+--- The lines for one item, kept for LINES_KEPT seconds.
+function Tooltip:LinesFor(link, carried)
+    local now = Now()
+    local generation = ns.Weights and ns.Weights.generation or 0
+    local kept = lastLines
+    if now and kept and kept.link == link and kept.carried == carried and kept.generation == generation
+        and now >= kept.at and now - kept.at < LINES_KEPT then
+        return kept.lines
+    end
+    local lines = self:WorkOutLines(link, carried)
+    lastLines = now and { link = link, carried = carried, generation = generation, at = now, lines = lines } or nil
+    return lines
+end
+
 --- Put the line on a tooltip.
 -- @return "added", "quiet" (nothing to say), "duplicate" or "noitem"
 function Tooltip:Decorate(tooltip, data)
@@ -145,18 +195,7 @@ function Tooltip:Decorate(tooltip, data)
         if not now or now >= mark.lines then return "duplicate" end
     end
 
-    local lines = {}
-    -- An item shown from a bag slot is a carried copy, so a second copy of a
-    -- worn ring is judged against the other ring, as its bag arrow is.
-    local judge = self:FromBag(tooltip) and Compare.JudgeCarried or Compare.Judge
-    local text, color = Compare:Describe(judge(Compare, link))
-    if text then lines[#lines + 1] = { text, color } end
-    local okTrainer, trainer, trainerColor = pcall(WeaponSkills.Describe, WeaponSkills, link)
-    if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true } end
-    local okMore, more = pcall(Tooltip.MoreLines, Tooltip, link)
-    if okMore then
-        for _, line in ipairs(more) do lines[#lines + 1] = line end
-    end
+    local lines = self:LinesFor(link, self:FromBag(tooltip))
     if #lines == 0 then return "quiet" end
 
     local addLine = Field(tooltip, "AddLine")
@@ -225,6 +264,10 @@ function Tooltip:InstallScriptHooks()
 end
 
 function Tooltip:OnEnable()
+    for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "TRAIT_CONFIG_UPDATED",
+        "SKILL_LINES_CHANGED", "GET_ITEM_INFO_RECEIVED" }) do
+        ns.RegisterEvent(self, event, Tooltip.ForgetLines)
+    end
     self.fired = {}
     self.installed = {
         TooltipDataProcessor = self:InstallDataProcessor(),

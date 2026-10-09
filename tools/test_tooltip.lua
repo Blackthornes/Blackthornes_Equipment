@@ -55,6 +55,42 @@ _G.ItemRefTooltip._lines = {}
 postCall(_G.ItemRefTooltip, { id = 2, hyperlink = "item:2" })
 suite.check("a chat link's tooltip gets it", #_G.ItemRefTooltip._lines == 1)
 
+-- Hovering a bag slot: the game draws the tooltip again several times a
+-- second, and the item is judged once a second at most, not on every draw.
+ns = LoadWithProcessor()
+tip = _G.GameTooltip
+local clock = 100
+_G.GetTime = function() return clock end
+local realJudge, judges = ns.Compare.Judge, 0
+ns.Compare.Judge = function(...) judges = judges + 1 return realJudge(...) end
+local function Redraw()
+    tip._scripts.OnTooltipCleared(tip)
+    tip._lines = {}
+    postCall(tip, { id = 2, hyperlink = "item:2" })
+end
+for _ = 1, 5 do Redraw() clock = clock + 0.15 end
+suite.check("five redraws while hovering judge the item once", judges == 1, judges)
+suite.check("and each still carries the line", #tip._lines == 1, #tip._lines)
+clock = clock + 1
+Redraw()
+suite.check("a second later it is judged again", judges == 2, judges)
+
+ns.eventFrame:GetScript("OnEvent")(ns.eventFrame, "PLAYER_LEVEL_UP", 20)
+Redraw()
+suite.check("a level up judges it afresh at once", judges == 3, judges)
+tip._lines = {}
+tip._scripts.OnTooltipCleared(tip)
+postCall(tip, { id = 1, hyperlink = "item:1" })
+suite.check("another item is judged for itself", judges == 4, judges)
+ns.Weights:Changed()
+judges = 0
+postCall(tip, { id = 1, hyperlink = "item:1" })
+tip._scripts.OnTooltipCleared(tip)
+postCall(tip, { id = 1, hyperlink = "item:1" })
+suite.check("and new stat weights judge it afresh", judges == 1, judges)
+ns.Compare.Judge = realJudge
+_G.GetTime = nil
+
 -- The older script hook does the same job where the processor is missing.
 ns = env.Load()
 _G.UnitClass = function() return "HUNTER", "HUNTER" end

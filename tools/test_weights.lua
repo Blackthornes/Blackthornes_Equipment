@@ -133,6 +133,24 @@ ns = LoadTraits({ [5020] = 3 })
 ns.HandleSlash("spec sv")
 spec, why = ns.Weights:CurrentSpec()
 suite.check("a pick still beats the talents", spec == "survival" and why == "picked", why)
+-- The trait tree is walked once and kept a few seconds, so judging a bag of
+-- gear (or a tooltip redrawn while hovering) does not walk it per item.
+ns = LoadTraits({ [1020] = 1, [5020] = 3 })
+ns.Weights:OnEnable()
+local walks, clock = 0, 50
+local realNodes = _G.C_Traits.GetTreeNodes
+_G.C_Traits.GetTreeNodes = function(...) walks = walks + 1 return realNodes(...) end
+_G.GetTime = function() return clock end
+for _ = 1, 20 do ns.Weights:CurrentSpec() end
+suite.check("twenty asks walk the talents once", walks == 1, walks)
+ns.eventFrame:GetScript("OnEvent")(ns.eventFrame, "TRAIT_CONFIG_UPDATED")
+ns.Weights:CurrentSpec()
+suite.check("a talent change reads them again", walks == 2, walks)
+clock = clock + 6
+ns.Weights:CurrentSpec()
+suite.check("and so does the time running out", walks == 3, walks)
+_G.GetTime = nil
+
 _G.C_ClassTalents, _G.C_Traits = nil, nil
 
 -- Scoring.

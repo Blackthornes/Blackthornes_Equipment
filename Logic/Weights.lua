@@ -600,6 +600,46 @@ function Weights:TraitPoints(class)
     return points
 end
 
+-- The talent read walks every node of the trait tree through the client,
+-- and every item judged asks for the spec: a tooltip on each redraw while
+-- hovering, the bag arrows once per item. So one read is kept until the
+-- talents or the level change, and never for longer than POINTS_KEPT
+-- seconds in case the client says nothing.
+local POINTS_KEPT = 5
+local pointsRead = nil
+
+local function Now()
+    local clock = rawget(_G, "GetTime")
+    if type(clock) ~= "function" then return nil end
+    local ok, now = pcall(clock)
+    if ok and type(now) == "number" then return now end
+    return nil
+end
+
+--- TreePoints, kept a few seconds.
+function Weights:SpentPoints(class)
+    local now = Now()
+    local kept = pointsRead
+    if now and kept and kept.class == class and now >= kept.at and now - kept.at < POINTS_KEPT then
+        return kept.points
+    end
+    local points = self:TreePoints(class)
+    pointsRead = now and { class = class, at = now, points = points } or nil
+    return points
+end
+
+--- Read the talents afresh on the next ask.
+function Weights:ForgetPoints()
+    pointsRead = nil
+end
+
+function Weights:OnEnable()
+    for _, event in ipairs({ "TRAIT_CONFIG_UPDATED", "PLAYER_TALENT_UPDATE", "CHARACTER_POINTS_CHANGED",
+        "PLAYER_LEVEL_UP", "PLAYER_ENTERING_WORLD" }) do
+        ns.RegisterEvent(self, event, self.ForgetPoints)
+    end
+end
+
 --- The spec this character is judged as, and why: "picked", "talents" or
 --- "default". Nil when there are no weights for the class yet.
 function Weights:CurrentSpec()
@@ -612,7 +652,7 @@ function Weights:CurrentSpec()
         return picked, "picked", class
     end
 
-    local points = self:TreePoints(class)
+    local points = self:SpentPoints(class)
     if points then
         local best, bestPoints, tied = nil, 0, false
         for tab, spent in ipairs(points) do
