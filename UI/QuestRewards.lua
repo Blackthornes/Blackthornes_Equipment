@@ -262,11 +262,13 @@ function QuestRewards:OnEnable()
         -- The quest log draws its rewards through the same function, but
         -- the choice calls describe the quest giver's window, so arrows are
         -- only marked while that window is open.
+        -- Nothing here may raise: an error in a hook could stop the rest of the
+        -- game's own code that called QuestInfo_Display.
         self.hooked = pcall(hook, "QuestInfo_Display", function()
             if Ask(_G.QuestFrame, "IsShown") then
                 QuestRewards:Refresh()
             else
-                QuestRewards:HideArrows()
+                pcall(QuestRewards.HideArrows, QuestRewards)
             end
         end)
     end

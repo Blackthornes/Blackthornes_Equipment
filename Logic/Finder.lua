@@ -31,6 +31,12 @@ local LEVELS_BELOW = 12
 -- next scan, which the answers trigger.
 local ASK_PER_SCAN = 40
 
+-- How many times one item is asked about before giving up on it for the
+-- session. An item Forever's server does not have never arrives, and asking
+-- again every scan kept the client's item queue busy, so the game's own
+-- windows (the quest reward choices) waited behind it.
+local ASK_TRIES = 3
+
 -- How many upgrades to keep per slot.
 local PER_SLOT = 3
 Finder.PER_SLOT = PER_SLOT
@@ -477,13 +483,33 @@ end
 --- Ask the server about an item; GET_ITEM_INFO_RECEIVED answers.
 --- What was asked is remembered, so an answer about some other item (a chat
 --- link, another addon's window) does not set off a scan.
+--- Nothing is asked while a quest giver's window is open: the reward
+--- choices there wait on the same queue, and the scan can ask again once it
+--- closes. An item asked ASK_TRIES times without arriving is not asked again.
+--- @return true when the server was asked
 function Finder:Request(itemID)
     self.asked = self.asked or {}
+    self.tries = self.tries or {}
+    if (self.tries[itemID] or 0) >= ASK_TRIES then return false end
+    if self.QuestWindowOpen() then return false end
     self.asked[itemID] = true
+    self.tries[itemID] = (self.tries[itemID] or 0) + 1
     local C = _G.C_Item
-    if Read(C and C.RequestLoadItemDataByID, itemID) == nil then
+    local request = C and C.RequestLoadItemDataByID
+    if type(request) == "function" then
+        Read(request, itemID)
+    else
         Read(C and C.GetItemInfo or _G.GetItemInfo, itemID)
     end
+    return true
+end
+
+--- Is the game's quest giver window (offer, progress or hand-in) open?
+function Finder.QuestWindowOpen()
+    local frame = _G.QuestFrame
+    if type(frame) ~= "table" then return false end
+    local ok, shown = pcall(function() return frame:IsShown() and true or false end)
+    return ok and shown or false
 end
 
 --- Can this class wear the item at all? Read from the client's own item
@@ -663,9 +689,8 @@ function Finder:Build(only, ahead, pause)
         if wearable ~= false then
             if wearable == nil or not self:IsCached(itemID) then
                 waiting = waiting + 1
-                if asked < ASK_PER_SCAN then
+                if asked < ASK_PER_SCAN and self:Request(itemID) then
                     asked = asked + 1
-                    self:Request(itemID)
                 end
             elseif not worn[itemID] then
                 local best, ok, result = self:JudgeOnce(judged, itemID)
