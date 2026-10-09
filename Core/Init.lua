@@ -405,6 +405,9 @@ local DEFAULTS = {
     -- place (Logic/QuestArrow.lua). Off unless turned on; where it was
     -- dragged to is questArrowX and questArrowY.
     questArrow = false,
+    -- With TomTom installed, its arrow shows the quest arrow's place
+    -- (Logic/TomTom.lua).
+    useTomTom = true,
 
     -- Upgrade hunts: the banner when an upgrade or a tracked one lands in
     -- the bags, the tracker panel and where it sits, pins on the world map,

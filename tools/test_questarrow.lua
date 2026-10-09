@@ -318,6 +318,96 @@ suite.check("pointing at the quest giver", state.target and state.target.name ==
 yards = Expect(37, 0.45, 0.50, 37, 0.421, 0.659)
 suite.check("in the zone you are in, by name alone", state.place == "Marshal Dughan" and near(state.yards, yards, 0.5),
     state.place)
+
+--------------------------------------------------------------------------------
+-- TomTom: its arrow instead of the dial, when it is installed
+--------------------------------------------------------------------------------
+
+do
+    local TomTom = ns.TomTom
+    local dial = ArrowUI.frame
+    ArrowUI:Draw(true)
+    suite.check("without TomTom the dial shows", dial:IsShown() and TomTom.uid == nil)
+    suite.check("the TomTom switch is on unless unticked", TomTom.IsOn())
+
+    -- A TomTom keeping its waypoints, as the real one's calls take them.
+    local points = {}
+    _G.TomTom = {
+        AddWaypoint = function(self, map, x, y, opts)
+            local uid = { map, x, y, title = opts and opts.title }
+            points[uid] = opts
+            return uid
+        end,
+        RemoveWaypoint = function(self, uid) points[uid] = nil end,
+    }
+    local function Count()
+        local count = 0
+        for _ in pairs(points) do count = count + 1 end
+        return count
+    end
+
+    local shownState = ArrowUI.state
+    ArrowUI:Draw(true)
+    local uid = TomTom.uid
+    suite.check("with TomTom the dial hides", not dial:IsShown(), ArrowUI.state.mode)
+    suite.check("and TomTom gets one waypoint", Count() == 1, Count())
+    suite.check("at the dial's place", uid and uid[1] == ArrowUI.state.target.map
+        and uid[2] == ArrowUI.state.target.mx and uid[3] == ArrowUI.state.target.my)
+    suite.check("named for what it follows", uid and uid.title:find("Marshal Dughan", 1, true) ~= nil,
+        uid and uid.title)
+    suite.check("on TomTom's arrow, not saved in its list",
+        uid and points[uid].crazy == true and points[uid].persistent == false)
+    suite.check("this arrow still holds the screen over the others", _G.BlackthornesArrows.wants["Equipment"])
+
+    ArrowUI:Draw(true)
+    suite.check("drawn again, the same waypoint stays", TomTom.uid == uid and Count() == 1)
+
+    -- Another Blackthornes arrow aimed later: TomTom's goes too.
+    local shared = _G.BlackthornesArrows
+    shared.wants.Other, shared.claims.Other = true, 1e12
+    ArrowUI:Draw(true)
+    suite.check("another addon's arrow aimed later takes it away", Count() == 0)
+    shared.wants.Other, shared.claims.Other = nil, nil
+    ArrowUI:Draw(true)
+    suite.check("and it comes back once that one is put away", Count() == 1)
+
+    ns.HandleSlash("arrow tomtom off")
+    ArrowUI:Draw(true)
+    suite.check("arrow tomtom off: the dial again", ns.db.useTomTom == false and dial:IsShown() and Count() == 0)
+    ns.HandleSlash("arrow tomtom on")
+    ArrowUI:Draw(true)
+    suite.check("and on: TomTom again", not dial:IsShown() and Count() == 1)
+
+    ns.SettingsUI:Show()
+    local box = ns.SettingsUI.controls.useTomTom
+    suite.check("Settings has the TomTom switch, ticked", box and box:GetChecked() == true)
+    box:GetScript("OnClick")(box)
+    suite.check("which unticks it", ns.db.useTomTom == false and Count() == 0)
+    box:GetScript("OnClick")(box)
+    suite.check("and ticks it again", ns.db.useTomTom == true)
+    ns.SettingsUI:Hide()
+    ArrowUI:Draw(true)
+
+    ns.HandleSlash("arrow off")
+    suite.check("the arrow off takes the waypoint away", Count() == 0)
+    ns.HandleSlash("arrow on")
+
+    -- A TomTom that raises, or lacks the calls: the dial, and no error.
+    _G.TomTom.AddWaypoint = function() error("different version") end
+    TomTom:Clear()
+    TomTom.refused = nil
+    local okDraw = pcall(ArrowUI.Draw, ArrowUI, true)
+    suite.check("a TomTom that raises falls back to the dial", okDraw and dial:IsShown())
+    _G.TomTom = { AddWaypoint = "no" }
+    TomTom.refused = nil
+    ArrowUI:Draw(true)
+    suite.check("so does one without the calls", dial:IsShown() and not TomTom.Installed())
+    local okCheck, errCheck = pcall(ns.HandleSlash, "arrow check")
+    suite.check("arrow check says what TomTom does", okCheck and env.ChatText():find("TomTom", 1, true) ~= nil, errCheck)
+    _G.TomTom = nil
+    TomTom.refused = nil
+    ArrowUI.state = shownState
+end
 ArrowUI:OnClick("LeftButton")
 suite.check("and round again", Quest:Tab() == "vendor", Quest:Tab())
 
