@@ -10,6 +10,18 @@ name, after their group; changes nobody asked for go in a group of their
 own with no thanks. This is the only report that names players. A version with no section here posts nothing in #general.
 This file does not ship in the addon.
 
+## 0.16.0
+
+Hey everyone! A new Equipment update just went up.
+
+When two upgrades are just as good, the closer one comes first now, and the zone you're in shows up in green. Clicking an upgrade tells you it becomes your quest. And you can see which version you have at the bottom of the gear window. Thanks Ezmode for all of these!
+
+Hovering over gear doesn't lag anymore. Thanks Lottus27 for spotting it!
+
+The sort button on your combined bags is back. Forever's new controller button was sitting on top of it. Settings got a makeover too, with pages, a search box and bigger text if you want it. And everything runs lighter.
+
+Restart the game fully after you update. Have fun!
+
 ## 0.15.0
 
 Hey everyone! Equipment just got an update.

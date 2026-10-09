@@ -4,6 +4,30 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.16.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **Where to get upgrades:** upgrades showing the same percent sort nearest
+  first (your zone first, then the closer one when the game says where you
+  stand; it never guesses), and the zone you're in shows in green on every
+  row, tooltip and the character sheet's list.
+- **Clicking an upgrade says what it does:** the tooltip says it becomes your
+  upgrade quest, and once followed, how to drop it.
+- **The version number** shows at the bottom of the gear window and in the
+  minimap button's tooltip.
+- **Bag sort button:** Forever's controller bag button no longer covers the
+  combined bags' sort button. Settings > Gear > "Bag sort button: Hide it",
+  on by default.
+- **New Settings window** like Tradeskills': pages along the top, a tooltip on
+  every row (or **Show descriptions**), **Find a setting**, **Text size**, and
+  buttons for the commands that had none.
+- **Smoother hovering:** a hovered item is judged about once a second instead
+  of on every tooltip redraw, and the first hover on a gear slot no longer
+  scans everything at once ("Looking for upgrades, hover again in a moment").
+- **Less CPU** judging gear and building the upgrade finder.
+
 ## 0.15.0
 
 For WoW: Forever (interface 16001). A file was added, so restart the game
