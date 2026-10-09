@@ -157,6 +157,8 @@ function MinimapButton:Build()
         ns.Motion:Blend(self, "hover", 1, 0.12, function(v) IconSize(18 + 2 * v) end)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine("Blackthornes Equipment")
+        -- Which version is installed, so a player can say when reporting.
+        GameTooltip:AddLine(ns.VersionLabel(), 0.5, 0.5, 0.5)
 
         local specLine = MinimapButton:SpecLine()
         if specLine then GameTooltip:AddLine(specLine, 0.78, 0.64, 0.30) end
