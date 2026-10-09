@@ -447,7 +447,10 @@ function Finder:Candidates(player, only, pause)
     end
     for _, itemID in ipairs(ids) do
         if pause then pause() end
-        do
+        -- Gear the class can never wear (plate for a mage) is dropped by the
+        -- scan anyway; asked first, from the client's instant item info, its
+        -- vendors, quests, drops and crafts are never worked out.
+        if Finder.Wearable(player.class, itemID) ~= false then
             local sources = self:SourcesFor(itemID, player)
             if only then
                 local kept = {}
@@ -522,6 +525,7 @@ local function Wearable(class, itemID)
     local usable = Weights:CanUse(class, info.classID, info.subclassID, info.equipLoc)
     return usable and true or false
 end
+Finder.Wearable = Wearable
 
 --- The item's own link, quality colour and all, where the client has it.
 local function LinkFor(itemID)

@@ -58,17 +58,40 @@ Compare.SLOTS = SLOTS
 -- The backpack and the four bags beside it.
 local FIRST_BAG, LAST_BAG = 0, 4
 
+-- Scores already worked out, by weights table and then by link. Every
+-- verdict scores what is worn in that slot again, so the same few links are
+-- scored over and over. A change of weights makes new weights tables
+-- (Weights:Changed), so old scores are never read again, and the weak keys
+-- let them go.
+local scores = setmetatable({}, { __mode = "k" })
+
 --- One item's score for these weights, or nil if its stats cannot be read.
 function Compare:ScoreOf(link, weights)
+    local kept = type(weights) == "table" and type(link) == "string" and scores[weights]
+    if kept and kept[link] then return kept[link] end
+
     local raw = Items:Stats(link)
     if not raw then return nil end
 
     local info = Items:Info(link)
     local stats = Weights:Normalize(raw)
-    Weights:AddSchools(stats, Items:SchoolDamage(link))
+    local schools = Items:SchoolDamage(link)
+    Weights:AddSchools(stats, schools)
     local score = Weights:Score(stats, weights, info and RANGED[info.equipLoc] or false)
     -- A kind of weapon the player counts for more or less (Weights:FactorFor).
     if info then score = score * Weights:FactorFor(weights, info.classID, info.subclassID) end
+
+    -- Kept only once everything it read had loaded: the stats, what kind of
+    -- item it is, and the tooltip's school damage (nil until it can be read).
+    if type(weights) == "table" and type(link) == "string" and info and schools
+        and Items:SchoolDamageKnown(link) then
+        kept = scores[weights]
+        if not kept then
+            kept = {}
+            scores[weights] = kept
+        end
+        kept[link] = score
+    end
     return score
 end
 

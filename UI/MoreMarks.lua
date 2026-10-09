@@ -83,10 +83,22 @@ end
 -- Hooks
 --------------------------------------------------------------------------------
 
+-- Opening a merchant fires two events and two redraws at once; each asked
+-- for its own refresh. One waiting refresh per kind now serves them all.
+local waiting = {}
+
 function MoreMarks:Soon(what)
     local after = _G.C_Timer and _G.C_Timer.After
-    local run = function() pcall(what, MoreMarks) end
-    if type(after) == "function" then after(0.05, run) else run() end
+    if type(after) ~= "function" then
+        pcall(what, MoreMarks)
+        return
+    end
+    if waiting[what] then return end
+    waiting[what] = true
+    after(0.05, function()
+        waiting[what] = nil
+        pcall(what, MoreMarks)
+    end)
 end
 
 function MoreMarks:OnEnable()

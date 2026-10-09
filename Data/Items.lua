@@ -10,28 +10,54 @@ local _, ns = ...
 
 local Items = ns.NewModule("Items")
 
+-- Each path split into its parts once, not on every call.
+local partsOf = {}
+
+local function Resolve(path)
+    local parts = partsOf[path]
+    if not parts then
+        parts = {}
+        for part in path:gmatch("[^.]+") do parts[#parts + 1] = part end
+        partsOf[path] = parts
+    end
+    local fn = _G
+    for i = 1, #parts do
+        fn = type(fn) == "table" and fn[parts[i]] or nil
+    end
+    return fn
+end
+
 --- Call the first of `paths` the client has, inside a pcall, and hand back
 --- everything it returned (nothing if none answered).
+-- Everything is read through here (each bag slot, each worn item, each item
+-- judged), so it makes no table or function per call: the returns are held
+-- in locals, enough for the longest the client gives (GetItemInfo's 18).
 local function Call(paths, ...)
-    for _, path in ipairs(paths) do
-        local fn = _G
-        for part in path:gmatch("[^.]+") do
-            fn = type(fn) == "table" and fn[part] or nil
-        end
+    for i = 1, #paths do
+        local fn = Resolve(paths[i])
         if type(fn) == "function" then
-            -- The count is kept, because a return list with a nil in the
-            -- middle has no reliable length once it is in a table.
-            local result = { n = 0 }
-            local function Keep(ok, ...)
-                result.n = select("#", ...)
-                for i = 1, result.n do result[i] = (select(i, ...)) end
-                return ok
-            end
-            if Keep(pcall(fn, ...)) then
-                return unpack(result, 1, result.n)
+            local ok, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15,
+                r16, r17, r18, r19, r20 = pcall(fn, ...)
+            if ok then
+                return r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15,
+                    r16, r17, r18, r19, r20
             end
         end
     end
+end
+
+-- The paths read most, made once.
+local INSTANT = { "C_Item.GetItemInfoInstant", "GetItemInfoInstant" }
+local ITEM_INFO = { "C_Item.GetItemInfo", "GetItemInfo" }
+local ITEM_STATS = { "C_Item.GetItemStats", "GetItemStats" }
+local WORN_LINK = { "GetInventoryItemLink" }
+local BAG_LINK = { "C_Container.GetContainerItemLink", "GetContainerItemLink" }
+local BAG_SLOTS = { "C_Container.GetContainerNumSlots", "GetContainerNumSlots" }
+local SLOT_INFO = { "C_Container.GetContainerItemInfo" }
+local OLD_SLOT_INFO = { "GetContainerItemInfo" }
+
+local function CopyLink(link)
+    if link:find("item:", 1, true) then return link .. "" end
 end
 
 --- A link or item string as a plain Lua string, or nil. Links the game will
@@ -39,9 +65,7 @@ end
 --- made inside a pcall.
 function Items.PlainLink(link)
     if type(link) ~= "string" then return nil end
-    local ok, copy = pcall(function()
-        if link:find("item:", 1, true) then return link .. "" end
-    end)
+    local ok, copy = pcall(CopyLink, link)
     if ok then return copy end
     return nil
 end
@@ -55,10 +79,10 @@ function Items:Info(link)
     if not link then return nil end
 
     local _, _, _, equipLoc, _, classID, subclassID =
-        Call({ "C_Item.GetItemInfoInstant", "GetItemInfoInstant" }, link)
+        Call(INSTANT, link)
 
     local name, _, _, _, minLevel, _, _, _, fullLoc, _, _, fullClass, fullSub =
-        Call({ "C_Item.GetItemInfo", "GetItemInfo" }, link)
+        Call(ITEM_INFO, link)
 
     equipLoc = equipLoc or fullLoc
     classID = classID or fullClass
@@ -79,7 +103,7 @@ function Items:Stats(link)
     link = self.PlainLink(link)
     if not link then return nil end
 
-    local stats = Call({ "C_Item.GetItemStats", "GetItemStats" }, link)
+    local stats = Call(ITEM_STATS, link)
     if type(stats) == "table" then return stats end
     return nil
 end
@@ -151,20 +175,26 @@ function Items:SchoolDamage(link)
     return found
 end
 
+--- True once SchoolDamage has read `link`'s whole tooltip and kept it.
+function Items:SchoolDamageKnown(link)
+    link = self.PlainLink(link)
+    return link ~= nil and schoolCache[link] ~= nil
+end
+
 --- The link of what is worn in an inventory slot, or nil when it is empty.
 function Items:Equipped(slot)
-    return self.PlainLink(Call({ "GetInventoryItemLink" }, "player", slot))
+    return self.PlainLink(Call(WORN_LINK, "player", slot))
 end
 
 --- The link of the item in a bag slot, or nil.
 function Items:InBag(bag, slot)
     if type(bag) ~= "number" or type(slot) ~= "number" then return nil end
-    return self.PlainLink(Call({ "C_Container.GetContainerItemLink", "GetContainerItemLink" }, bag, slot))
+    return self.PlainLink(Call(BAG_LINK, bag, slot))
 end
 
 --- How many slots a bag has (0 when there is no bag there).
 function Items:BagSize(bag)
-    local size = Call({ "C_Container.GetContainerNumSlots", "GetContainerNumSlots" }, bag)
+    local size = Call(BAG_SLOTS, bag)
     return tonumber(size) or 0
 end
 
@@ -184,15 +214,15 @@ end
 
 --- Is a link arrows or bullets?
 function Items.IsAmmo(link)
-    local _, _, _, equipLoc, _, classID = Call({ "C_Item.GetItemInfoInstant", "GetItemInfoInstant" }, link)
+    local _, _, _, equipLoc, _, classID = Call(INSTANT, link)
     return equipLoc == "INVTYPE_AMMO" or tonumber(classID) == 6
 end
 
 --- How many are in a bag slot (1 when the client cannot say).
 function Items:SlotCount(bag, slot)
-    local info = Call({ "C_Container.GetContainerItemInfo" }, bag, slot)
+    local info = Call(SLOT_INFO, bag, slot)
     if type(info) == "table" then return tonumber(info.stackCount) or 1 end
-    local _, count = Call({ "GetContainerItemInfo" }, bag, slot)
+    local _, count = Call(OLD_SLOT_INFO, bag, slot)
     return tonumber(count) or 1
 end
 

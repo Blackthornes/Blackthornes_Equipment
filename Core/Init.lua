@@ -318,8 +318,16 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
             local ok, err = pcall(entry.fn, entry.owner, event, ...)
             if started then
                 local finished = Perf.Clock()
-                local owner = type(entry.owner) == "table" and rawget(entry.owner, "moduleName") or "?"
-                if finished then Perf:Add(("%s on %s"):format(owner, event), finished - started) end
+                if finished then
+                    -- The label made once per handler, not on every event.
+                    local label = entry.label
+                    if not label then
+                        local owner = type(entry.owner) == "table" and rawget(entry.owner, "moduleName") or "?"
+                        label = ("%s on %s"):format(owner, event)
+                        entry.label = label
+                    end
+                    Perf:Add(label, finished - started)
+                end
             end
             if not ok then
                 geterrorhandler()(err)

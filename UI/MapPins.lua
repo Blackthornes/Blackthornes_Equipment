@@ -146,12 +146,15 @@ end
 
 function MapPins:Draw()
     local view = self:IsEnabled() and self:View() or nil
-    local hunts = view and self:HuntsOn(view.name) or {}
 
     local key = view and ("%d:%s:%s:%s:%d"):format(view.mapID, view.scale, view.width, view.height,
         self.version or 0) or "none"
     if key == self.key then return end
     self.key = key
+
+    -- Only worked out for a redraw: the upgrade quest's next place reads the
+    -- quest log and bags, and this runs five times a second with the map open.
+    local hunts = view and self:HuntsOn(view.name) or {}
 
     self.pins = self.pins or {}
     for _, pin in ipairs(self.pins) do pin:Hide() end
