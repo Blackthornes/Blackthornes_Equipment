@@ -145,13 +145,20 @@ local function ShowTooltip(row)
     local quest = ns.UpgradeQuest
     if quest then
         local _, why = quest.CanFollow(pick)
+        -- What a click does, said plainly: players took the green Quest
+        -- tag it leaves for a mistake (2026-10-09).
+        local r, g, b = Theme.Unpack("text")
         if quest:IsFollowing(pick.itemID) then
             GameTooltip:AddLine("Your upgrade quest: click to show it on the quest panel", Theme.Unpack("good"))
+            GameTooltip:AddLine("The green Quest tag marks it. To drop it, click Ignore on the quest panel, "
+                .. "or click another upgrade here to follow that one instead.", r, g, b, true)
         elseif why then
-            local r, g, b = Theme.Unpack("warn")
-            GameTooltip:AddLine("Not a quest yet: " .. why, r, g, b, true)
+            local wr, wg, wb = Theme.Unpack("warn")
+            GameTooltip:AddLine("Not a quest yet: " .. why, wr, wg, wb, true)
         else
             GameTooltip:AddLine("Click to follow it on the quest panel", Theme.Unpack("good"))
+            GameTooltip:AddLine("It becomes your upgrade quest, with steps to get it, and gets a green Quest tag "
+                .. "here. The quest it replaces on that tab can come back later.", r, g, b, true)
         end
     end
     local tracked = ns.Tracking and ns.Tracking:IsTracked(pick.itemID)
