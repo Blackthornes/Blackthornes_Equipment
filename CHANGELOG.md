@@ -27,6 +27,8 @@ fully after updating (`/reload` is not enough).
   of on every tooltip redraw, and the first hover on a gear slot no longer
   scans everything at once ("Looking for upgrades, hover again in a moment").
 - **Less CPU** judging gear and building the upgrade finder.
+- **More Forever vendor and trainer spots** in Mulgore and Thunder Bluff,
+  learned in game.
 
 ## 0.15.0
 
