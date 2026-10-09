@@ -380,6 +380,9 @@ local DEFAULTS = {
     -- switched off.
     tooltipLine = true,
     bagArrows = true,
+    -- Hide Forever's controller bag button, which covers the combined
+    -- backpack's sort button (BagIcons:ApplyGamepadBag). On unless unticked.
+    hideGamepadBag = true,
 
     -- A line in chat when an upgrade you can wear now lands in the bags.
     upgradeChat = true,
