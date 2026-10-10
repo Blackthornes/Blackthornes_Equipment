@@ -131,7 +131,9 @@ function MinimapButton:Build()
         self:SetScript("OnUpdate", function()
             local mx, my = Minimap:GetCenter()
             local cx, cy = GetCursorPosition()
-            local scale = UIParent:GetEffectiveScale()
+            -- The minimap's own scale: its centre is in its units, and a
+            -- resized minimap is not at UIParent's.
+            local scale = Minimap:GetEffectiveScale()
 
             local newAngle = math.atan2((cy / scale) - my, (cx / scale) - mx)
             UpdatePosition(newAngle)
