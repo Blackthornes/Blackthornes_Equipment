@@ -12,6 +12,10 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.20.1
+
+- Your mining pick, skinning knife and other profession tools don't get the sell coin anymore.
+
 ## 0.20.0
 
 - Gear in your bags that's worth selling now gets a gold coin. You can turn it off in Settings.
