@@ -4,6 +4,31 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.18.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **Quest log tab:** the Upgrade quest panel has a fifth tab listing every
+  quest by zone with its objectives, your zone in green. Track, use quest
+  items, show on the map, point the arrow, share or abandon from it. Quests
+  that lead to an upgrade say so. A new option (off by default) hides the
+  game's own quest tracker while it's ticked.
+- **"Train" on weapons you can't use yet:** an upgrade whose weapon skill
+  you haven't learned says "Train" in red wherever its gain shows: Where to
+  get upgrades, the character sheet's list and the Upgrade quest panel.
+- **Window style:** Settings > General has a new Window style switch.
+  Titanforged stays the default. Blizzard gives the windows the game's own
+  look, with no glows. A change takes effect after a reload.
+- **Calmer list rows:** rows in the gear window, Where to get upgrades and
+  the Upgrade quest steps look like dark glass, with the gold glow only under
+  the mouse.
+- **Fixes:** the quest arrow's dial comes back when TomTom drops its
+  waypoint; a zone not found from one continent can still be found from
+  another; the minimap button follows the cursor on a resized minimap; and
+  fixes to the Blizzard window style (squeezed scroll knob, stepper words,
+  buttons that opened pressed).
+
 ## 0.17.0
 
 For WoW: Forever (interface 16001). A file was added, so restart the game
