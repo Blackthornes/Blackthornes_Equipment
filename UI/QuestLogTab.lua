@@ -532,6 +532,9 @@ function QuestLogUI:Fill()
     local y, band, rowIndex, headIndex = 0, 0, 0, 0
     local anyFolded, anyOpen = false, false
     self.shown = {}
+    -- The zones listed, so Fold all acts on what the button's word is
+    -- worked out from (Tracked only leaves some out).
+    self.listedZones = {}
     for _, zone in ipairs(data.zones) do
         local quests = {}
         for _, quest in ipairs(zone.quests) do
@@ -541,6 +544,7 @@ function QuestLogUI:Fill()
             headIndex = headIndex + 1
             local head = self.heads[headIndex] or self:BuildHead(headIndex)
             local isFolded = folded[zone.title] == true
+            self.listedZones[#self.listedZones + 1] = zone.title
             if isFolded then anyFolded = true else anyOpen = true end
             head:ClearAllPoints()
             head:SetPoint("TOPLEFT", 0, -y)
@@ -662,11 +666,16 @@ function QuestLogUI:FoldAll()
     local data = self.data
     if not data then return end
     local folded = Folded()
-    local anyOpen = false
-    for _, zone in ipairs(data.zones) do
-        if not folded[zone.title] then anyOpen = true end
+    local titles = self.listedZones
+    if not titles then
+        titles = {}
+        for _, zone in ipairs(data.zones) do titles[#titles + 1] = zone.title end
     end
-    for _, zone in ipairs(data.zones) do folded[zone.title] = anyOpen or nil end
+    local anyOpen = false
+    for _, title in ipairs(titles) do
+        if not folded[title] then anyOpen = true end
+    end
+    for _, title in ipairs(titles) do folded[title] = anyOpen or nil end
     self:Changed()
 end
 
@@ -863,10 +872,11 @@ local function NewItemButton(index)
         cooldown:SetAllPoints(button.icon)
         button.cooldown = cooldown
     end
-    button:HookScript("OnEnter", function(self)
-        if not self.link then return end
-        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        pcall(GameTooltip.SetHyperlink, GameTooltip, self.link)
+    button:HookScript("OnEnter", function(hovered)
+        -- A button faded in combat (PlaceItems) has no row under it.
+        if not hovered.link or hovered:GetAlpha() == 0 then return end
+        GameTooltip:SetOwner(hovered, "ANCHOR_LEFT")
+        pcall(GameTooltip.SetHyperlink, GameTooltip, hovered.link)
         GameTooltip:AddLine("Click to use it.", Theme.Unpack("accent"))
         GameTooltip:Show()
     end)
@@ -893,6 +903,9 @@ end
 function QuestLogUI:SpotOf(row)
     local panel = ns.QuestPanel
     if not (panel.frame and panel.frame:IsShown() and self.view and self.view:IsShown()) then return nil end
+    -- While the panel is dragged its rows move under the buttons: put them
+    -- away until it is dropped.
+    if self.dragging then return nil end
     if not (row:IsShown() and row.quest and row.quest.item) then return nil end
     -- Only rows wholly inside the scrolled view.
     local top = (row.y or 0) + 5

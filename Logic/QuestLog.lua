@@ -339,9 +339,11 @@ end
 --- Share the quest with the group, as the quest log's Share button does.
 function QuestLog:Share(quest)
     if type(_G.QuestLogPushQuest) ~= "function" then return false end
+    -- Unpicked, the game would share whichever quest its log has picked.
     local restore = Pick(quest)
+    if not restore then return false end
     local ok = pcall(_G.QuestLogPushQuest)
-    if restore then restore() end
+    restore()
     return ok
 end
 
@@ -349,9 +351,10 @@ end
 --- nothing is dropped until the player says yes there.
 function QuestLog:Abandon(quest)
     local log = Log()
+    -- Unpicked, the game would abandon whichever quest its log has picked.
     local restore = Pick(quest)
     local set = (log and log.SetAbandonQuest) or _G.SetAbandonQuest
-    local ok = type(set) == "function" and pcall(set)
+    local ok = restore ~= nil and type(set) == "function" and pcall(set)
     if restore then restore() end
     if not ok or type(_G.StaticPopup_Show) ~= "function" then
         ns.Print(("open your quest log to abandon %s."):format(quest.title or "that quest"))

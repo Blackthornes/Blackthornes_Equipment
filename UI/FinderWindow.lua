@@ -386,7 +386,9 @@ function FinderUI:Build()
     thumb:SetWidth(SCROLL_WIDTH)
     thumb:SetColorTexture(Theme.Unpack("accent", 0.8))
     -- The game's scroll knob in the Blizzard window style (UI/BlizzardLook.lua).
-    if ns.BlizzardLook then ns.BlizzardLook.Thumb(thumb) end
+    -- The knob art needs more than the 4 px bar: it takes the 6 px gap
+    -- beside the rows too, or it is squeezed to a smear.
+    if ns.BlizzardLook and ns.BlizzardLook.Thumb(thumb) then thumb:SetWidth(SCROLL_WIDTH + 6) end
     self.thumb = thumb
 
     local empty = Theme.CreateLabel(well, "normal", "muted", "CENTER")
