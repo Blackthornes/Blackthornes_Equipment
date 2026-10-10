@@ -4,6 +4,26 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.20.0
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- **Sell coins in the bags:** gear that will never be an upgrade and that a
+  vendor pays for gets a gold coin in your bags, like the quest reward
+  screen. That covers white gear, and soulbound green or better gear when
+  you can't disenchant. Greys, gear that isn't bound yet, shirts, tabards
+  and fishing poles get no coin. A "Sell coins" tick box on the Gear page
+  of Settings turns them off.
+- **Fixes:** dropping the quest arrow dial after a drag never counts as a
+  click or eats the next one. With This zone only ticked and Change on a
+  new zone unticked, an empty tab looks again in the next zone. The Quest
+  log tab catches up after a fight that started before a reload. Item
+  answers from the server redraw once per burst, and zooming the world
+  map only moves the pins. "Open Equipment settings" in the game's options
+  leaves the game's panel alone. The Blizzard window style's portrait ring
+  matches the game's.
+
 ## 0.19.0
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is

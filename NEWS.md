@@ -12,6 +12,12 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.20.0
+
+- Gear in your bags that's worth selling now gets a gold coin. You can turn it off in Settings.
+- Dragging the quest arrow won't count as a click anymore.
+- An empty upgrade tab now looks again when you reach a new zone.
+
 ## 0.19.0
 
 - Quest rewards you get without picking are now checked for upgrades too.
