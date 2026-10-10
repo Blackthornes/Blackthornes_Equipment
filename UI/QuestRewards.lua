@@ -339,12 +339,27 @@ end
 
 --- Mark once the game has laid the window out: the quest events can reach
 --- this addon before the quest frame has drawn its buttons.
-function QuestRewards:RefreshSoon()
+---
+--- An item's details arriving fires an event per item, dozens in a burst
+--- while the finder is asking for them, so one pass is booked for all of
+--- them; `announce` says the hand-in line waiting on them is said after it.
+function QuestRewards:RefreshSoon(announce)
+    if announce then self.announceAfter = true end
+    if self.pending then return end
     local after = Field(_G.C_Timer, "After")
     if type(after) == "function" then
-        after(0, function() QuestRewards:Refresh() end)
+        self.pending = true
+        after(0, function()
+            QuestRewards.pending = false
+            local announceNow = QuestRewards.announceAfter
+            QuestRewards.announceAfter = nil
+            QuestRewards:Refresh()
+            if announceNow and QuestRewards.announcePending then pcall(QuestRewards.Announce, QuestRewards) end
+        end)
     else
+        self.announceAfter = nil
         self:Refresh()
+        if announce and self.announcePending then pcall(self.Announce, self) end
     end
 end
 
@@ -360,8 +375,7 @@ function QuestRewards:GET_ITEM_INFO_RECEIVED()
         self.announcePending = false
         return
     end
-    self:Refresh()
-    if self.announcePending then pcall(self.Announce, self) end
+    self:RefreshSoon(true)
 end
 
 --- The window moved on to another quest (or closed): a line still waiting

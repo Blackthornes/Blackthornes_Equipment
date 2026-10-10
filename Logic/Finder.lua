@@ -102,10 +102,10 @@ function Finder:Player()
     if not level or (faction ~= "Alliance" and faction ~= "Horde") then return nil end
 
     local class = Weights:PlayerClass()
-    local zone = Read(_G.GetRealZoneText)
+    local zone = Plain(Read(_G.GetRealZoneText))
     return {
         level = level,
-        zone = type(zone) == "string" and zone ~= "" and zone or nil,
+        zone = zone,
         faction = faction == "Alliance" and "A" or "H",
         class = class,
         classBit = CLASS_BITS[class] or 0,

@@ -921,7 +921,7 @@ function QuestPanel:FillBody(quest, steps, current, done)
                 .. " Only this zone is searched: untick This zone only to look anywhere, or try another tab."
         else
             text = (ns.UpgradeQuest.NONE[ns.UpgradeQuest:Tab()] or "No upgrade to chase right now.")
-                .. " A new one comes up as you level. Try another tab, or click Pick one to choose from every upgrade on offer, gear that waits on a reputation included."
+                .. " A new one comes up as you level. Try another tab, or click Pick one to choose from every upgrade on offer, gear tied to a reputation you have reached included."
         end
         self.empty:SetText(text)
         self.empty:Show()

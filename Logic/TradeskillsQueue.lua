@@ -146,11 +146,12 @@ function TSQueue:Queue(source)
             return true
         end
         -- Tradeskills has not read the recipe yet: its materials still help.
-        local bought = BuyMaterials(queue, itemID)
+        local bought, buyWhy = BuyMaterials(queue, itemID)
         if bought then
             ns.Print(("Put the materials for %s on Tradeskills' shopping list (%s)."):format(name, why or "it couldn't queue the craft"))
             return true
         end
+        why = buyWhy or why
     elseif plan == "materials" then
         done, why = BuyMaterials(queue, itemID)
         if done then

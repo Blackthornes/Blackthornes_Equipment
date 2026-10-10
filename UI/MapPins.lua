@@ -152,9 +152,16 @@ function MapPins:Draw()
     if key == self.key then return end
     self.key = key
 
-    -- Only worked out for a redraw: the upgrade quest's next place reads the
-    -- quest log and bags, and this runs five times a second with the map open.
-    local hunts = view and self:HuntsOn(view.name) or {}
+    -- The hunts are only gathered again for a new map or a change to them:
+    -- the upgrade quest's next place reads the quest log and bags, and a
+    -- zoom changes the scale five times a second while the map is open, so
+    -- a zoom only re-places the pins it has.
+    local huntsKey = view and ("%d:%s:%d"):format(view.mapID, tostring(view.name), self.version or 0) or "none"
+    if huntsKey ~= self.huntsKey or not self.hunts then
+        self.huntsKey = huntsKey
+        self.hunts = view and self:HuntsOn(view.name) or {}
+    end
+    local hunts = self.hunts
 
     self.pins = self.pins or {}
     for _, pin in ipairs(self.pins) do pin:Hide() end

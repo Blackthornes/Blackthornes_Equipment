@@ -1476,22 +1476,24 @@ end
 function UpgradeQuest:OnEvent(event, level)
     -- Control comes back after every stun and fear; it only matters at the
     -- end of a flight that crossed a zone.
+    local newZone = event == "ZONE_CHANGED_NEW_AREA"
     if event == "PLAYER_CONTROL_GAINED" then
         if not self.landing then return end
-        event = "ZONE_CHANGED_NEW_AREA"
+        newZone = true
     end
     -- A flight that crossed a zone is over once the character is off it,
     -- whichever event says so first: if the client never sends
     -- PLAYER_CONTROL_GAINED at the landing, the quests from the zone flown
-    -- out of would otherwise stay until the next zone change.
+    -- out of would otherwise stay until the next zone change. The event
+    -- that said so is still handled as itself below.
     if self.landing and not self.OnTaxi() then
         self.landing = nil
         self:StopWatchingLanding()
-        event = "ZONE_CHANGED_NEW_AREA"
+        newZone = true
     end
     -- A loading screen, a login or a /reload: the character may be in
     -- another zone from the one the quests were picked in.
-    if event == "PLAYER_ENTERING_WORLD" then event = "ZONE_CHANGED_NEW_AREA" end
+    if event == "PLAYER_ENTERING_WORLD" then newZone = true end
     -- The client loads items for chat links, vendors and other addons all
     -- the time; only answers this addon asked for are worth looking again.
     if event == "GET_ITEM_INFO_RECEIVED" and not self:WantsItem(level) then return end
@@ -1508,15 +1510,20 @@ function UpgradeQuest:OnEvent(event, level)
     -- A new zone has its own upgrades while "This zone only" is ticked.
     -- On a flight, every zone flown over would pick (and announce) its own,
     -- so that waits for the landing.
-    -- Unless "Change on a new zone" is unticked: then the quests stay.
-    if event == "ZONE_CHANGED_NEW_AREA" and self:ZoneOnly() and self:ZoneSwap() then
+    -- Unless "Change on a new zone" is unticked: then the quests stay, but
+    -- a tab that found nothing in the last zone still looks in this one.
+    if newZone and self:ZoneOnly() then
         if self.OnTaxi() then
-            self.landing = true
-            self:WatchLanding()
+            if self:ZoneSwap() then
+                self.landing = true
+                self:WatchLanding()
+            end
             return
         end
-        self:LetGoOutOfZone()
-        self:Mirror()
+        if self:ZoneSwap() then
+            self:LetGoOutOfZone()
+            self:Mirror()
+        end
         self.rescan = true
     end
     if event == "BAG_UPDATE_DELAYED" then self.bagsChanged = true end

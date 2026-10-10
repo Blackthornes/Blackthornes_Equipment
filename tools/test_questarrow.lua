@@ -371,10 +371,13 @@ do
     ArrowUI:Draw(true)
     suite.check("and it is not put back on TomTom for the same place", dial:IsShown() and Count() == 0)
     _G.TomTom.IsValidWaypoint = nil
-    TomTom.refused = nil
+    -- Turning the arrow off and on offers the place to TomTom again.
+    ns.HandleSlash("arrow off")
+    ns.HandleSlash("arrow on")
     ArrowUI:Draw(true)
     uid = TomTom.uid
-    suite.check("a fresh waypoint once that is forgotten", not dial:IsShown() and Count() == 1)
+    suite.check("a fresh waypoint once the arrow is turned off and on", not dial:IsShown() and Count() == 1,
+        tostring(dial:IsShown()) .. " " .. Count())
 
     -- Another Blackthornes arrow aimed later: TomTom's goes too.
     local shared = _G.BlackthornesArrows
@@ -488,6 +491,33 @@ do
     ui.Wins(false)
     suite.check("off, it stops wanting", next(shared.wants) == nil)
     _G.BlackthornesArrows = nil
+end
+
+--------------------------------------------------------------------------------
+-- Dropping the dial after a drag is not a click, whichever order the
+-- client runs OnDragStop and OnMouseUp in
+--------------------------------------------------------------------------------
+
+do
+    local dial = ArrowUI.frame
+    local clicks = 0
+    local realClick = ArrowUI.OnClick
+    ArrowUI.OnClick = function() clicks = clicks + 1 end
+    local start, stop, up = dial:GetScript("OnDragStart"), dial:GetScript("OnDragStop"), dial:GetScript("OnMouseUp")
+
+    up(dial, "LeftButton")
+    suite.check("a plain click on the dial is a click", clicks == 1, clicks)
+
+    start(dial); stop(dial); up(dial, "LeftButton")
+    suite.check("a drag dropped before the mouse-up is not", clicks == 1, clicks)
+    up(dial, "LeftButton")
+    suite.check("and the next click still counts", clicks == 2, clicks)
+
+    start(dial); up(dial, "LeftButton"); stop(dial)
+    suite.check("a drag whose mouse-up comes first is not either", clicks == 2, clicks)
+    up(dial, "LeftButton")
+    suite.check("and the click after that counts too", clicks == 3, clicks)
+    ArrowUI.OnClick = realClick
 end
 
 suite.done()

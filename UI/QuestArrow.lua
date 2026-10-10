@@ -148,19 +148,23 @@ function ArrowUI:Build()
     note:SetPoint("TOP", place, "BOTTOM", 0, -2)
     self.note = note
 
+    -- The button coming up after a drag is not a click, whichever order the
+    -- client runs OnDragStop and OnMouseUp in: `dragging` covers the drag
+    -- itself, and `dragged` the mouse-up when it comes after the drop. The
+    -- same lines are in Farmer's and Pets' dials.
     frame:SetScript("OnDragStart", function(self)
-        self.dragging = true
+        ArrowUI.dragging = true
         self:StartMoving()
     end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         ArrowUI:SavePosition()
-        -- The button coming up after a drag is not a click.
-        self.dragged = true
+        if ArrowUI.dragging then ArrowUI.dragged = true end
+        ArrowUI.dragging = nil
     end)
-    frame:SetScript("OnMouseUp", function(self, button)
-        if self.dragged then
-            self.dragged, self.dragging = nil, nil
+    frame:SetScript("OnMouseUp", function(_, button)
+        if ArrowUI.dragged or ArrowUI.dragging then
+            ArrowUI.dragged, ArrowUI.dragging = nil, nil
             return
         end
         ArrowUI:OnClick(button)

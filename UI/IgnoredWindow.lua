@@ -249,10 +249,26 @@ function IgnoredUI:GET_ITEM_INFO_RECEIVED()
     if not (self.frame and self.frame:IsShown() and self.list) then return end
     for _, entry in ipairs(self.list) do
         if not entry.link then
-            self:Refresh()
+            self:RefreshSoon()
             return
         end
     end
+end
+
+--- Fill again once a burst of answers settles (the finder asks for up to
+--- 40 items at a time, and each answer is an event).
+function IgnoredUI:RefreshSoon()
+    if self.pending then return end
+    local after = _G.C_Timer and _G.C_Timer.After
+    if type(after) ~= "function" then
+        self:Refresh()
+        return
+    end
+    self.pending = true
+    after(0.2, function()
+        IgnoredUI.pending = false
+        if IgnoredUI.frame and IgnoredUI.frame:IsShown() then IgnoredUI:Refresh() end
+    end)
 end
 
 --------------------------------------------------------------------------------

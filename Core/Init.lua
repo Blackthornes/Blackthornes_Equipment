@@ -219,15 +219,20 @@ function ns.UnregisterEvent(owner, event)
     local list = handlers[event]
     if not list then return false end
 
-    for i = #list, 1, -1 do
-        if list[i].owner == owner then
-            table.remove(list, i)
-        end
+    -- A new list rather than the old one shortened: a handler that takes
+    -- itself off while the event is being dispatched (BagIcons' and
+    -- QuestLogUI's combat-end catch-ups) must not shift the next handler
+    -- into the slot the dispatcher has just passed.
+    local kept = {}
+    for i = 1, #list do
+        if list[i].owner ~= owner then kept[#kept + 1] = list[i] end
     end
 
-    if #list == 0 then
+    if #kept == 0 then
         handlers[event] = nil
         pcall(eventFrame.UnregisterEvent, eventFrame, event)
+    else
+        handlers[event] = kept
     end
     return true
 end

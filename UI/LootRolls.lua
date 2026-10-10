@@ -199,10 +199,17 @@ end
 
 --- Mark once the game has filled the window in: the roll event can reach
 --- this addon before the window has been given its roll.
+--- Several rolls start at once, and an item's details arriving fires an
+--- event per item, so one pass is booked for all of them.
 function LootRolls:RefreshSoon()
+    if self.pending then return end
     local after = Field(_G.C_Timer, "After")
     if type(after) == "function" then
-        after(0, function() pcall(LootRolls.Refresh, LootRolls) end)
+        self.pending = true
+        after(0, function()
+            LootRolls.pending = false
+            pcall(LootRolls.Refresh, LootRolls)
+        end)
     else
         pcall(self.Refresh, self)
     end
