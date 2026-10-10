@@ -57,6 +57,7 @@ local APIS = {
     "C_Map.GetWorldPosFromMapPos", "C_Map.GetMapWorldSize", "CreateVector2D", "GetPlayerFacing",
     "IsInInstance",
 }
+-- The Quest log tab (Logic/QuestLog.lua) adds its own list below.
 
 local function Has(path)
     local value = _G
@@ -254,6 +255,7 @@ function Probe:Run()
     end
 
     self:Traits()
+    self:QuestLog()
 
     local Weights = ns.Weights
     Line("class", Weights:PlayerClass() or "unknown")
@@ -348,6 +350,30 @@ function Probe:Run()
             end
         end
     end
+end
+
+--- The Quest log tab (Logic/QuestLog.lua, UI/QuestLogTab.lua): which quest
+--- log calls and tracker frames this client has, and what reading the log
+--- found. Only reads.
+function Probe:QuestLog()
+    local log = ns.QuestLog
+    if not log then return end
+    local present, missing = {}, {}
+    for _, name in ipairs(log.CALLS) do
+        local value = _G
+        for part in name:gmatch("[^.]+") do
+            value = type(value) == "table" and rawget(value, part) or nil
+        end
+        if type(value) == "function" or type(value) == "table" then
+            present[#present + 1] = name
+        else
+            missing[#missing + 1] = name
+        end
+    end
+    Line("quest log has", #present > 0 and table.concat(present, ", ") or "none of them")
+    Line("quest log missing", #missing > 0 and table.concat(missing, ", ") or "nothing")
+    local ok, text = pcall(log.Describe, log)
+    Line("quest log", ok and text or "raised")
 end
 
 --- The upgrade hunt and crafting features: the professions read, whether a link

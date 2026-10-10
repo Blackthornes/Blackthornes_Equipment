@@ -337,6 +337,35 @@ the latest claim is drawn; the others wait hidden. The lines are the same
 in each dial's file (`ArrowUI:Claim`, `ArrowUI.Wins`); a change to them
 belongs in all three.
 
+## The Quest log tab
+
+The owner asked (2026-10-10) for the game's quest tracker inside the
+upgrade quest panel, picked the mockup
+(`previews/equipment-quest-log-tab-mockup.png` in the project files) and
+the wider panel: `QuestPanel.WIDTH` is 384 (was 340) so a fifth tab fits. `Logic/QuestLog.lua` reads the log
+(retail `C_QuestLog` calls first, classic ones after, all in a pcall) and
+does the actions: track, share, abandon (only through the game's own
+`ABANDON_QUEST` box), open in the log, show on map, aim the arrow
+(`QuestArrow:AimAtQuest`, a quest log quest the arrow follows until a step
+is aimed at, the dial is clicked for the next tab, or the quest leaves the
+log). `UI/QuestLogTab.lua` draws it. The tab is not one of
+`UpgradeQuest.TABS`: it shows while the character's `questLogTab` is set,
+and `UpgradeQuest:SelectTab` clears it. Folded zones are per character in
+`questLogFolded`; "Tracked only" (`questLogTrackedOnly`) and "Hide the
+game's quest tracker" (`hideQuestTracker`, hidden only while the panel is
+up) are account wide and off by default. Never rename them.
+
+The game's tracker is never moved or re-parented: hiding it is a plain
+Hide while the setting is on (again on its OnShow), never in combat while
+it is protected. Quest item buttons are secure buttons parented to
+UIParent and placed over their row by screen position (Pets' Feed button
+does the same), so the panel stays free to move and close in combat; in
+combat a button whose row moved fades (alpha 0) until
+`PLAYER_REGEN_ENABLED` puts it back. Quest events only mark the log stale;
+it is read once, 0.2 s later, and only while the tab shows, and rows are
+filled again only when their key (title, objectives, tracked, item) changed.
+Not yet seen in game; `/beq probe` lists the quest log calls.
+
 ## The controller bag button
 
 Forever's client draws a controller bag button (`GamepadBackpackButton`,

@@ -116,6 +116,25 @@ you are in. Untick This zone only to look anywhere again. Beside it
 are the same **Solo quests only** and **Quest level** as in Where to get
 upgrades (changing either here changes it there), and a **Settings** button.
 
+**Quest log.** The panel's fifth tab, **Quest log** (or `/beq quest log`),
+shows every quest in your log the way the game's quest tracker does, grouped
+by zone with the zone you are in in green: each quest's level and title in
+the game's colours, its objectives (ticked green when done), and "Ready to
+hand in" with who to hand it to once it is. Tick a quest's box to track it,
+tick **Tracked only** to list only those, and click a zone's heading (or
+**Fold all**) to fold it. A quest with an item to use gets a button for it;
+in a fight the button can't move, so if you scroll or drag the panel then,
+it fades and comes back in place when the fight ends. Right-click a quest
+for **Show on map**, **Point the arrow here**, **Track** or **Untrack**,
+**Open in quest log**, **Share with party** (in a group) and **Abandon
+quest** (through the game's own "are you sure" box). Click a quest to pick
+it for the buttons under the list, and shift-click it to link it in chat.
+A quest on the way to one of your upgrade quests says so. Tick **Hide the
+game's quest tracker** (on the tab, or Settings > Upgrade quest > Game's
+tracker) to hide the game's own tracker while the panel is up; untick it and
+the game's tracker comes back. It is off unless you tick it, and it never
+hides it in the middle of a fight.
+
 **Quest arrow.** The panel's **Arrow** button (or `/beq arrow`, or
 Settings > Upgrade quest > Quest arrow) brings up a gold dial that turns as
 you turn and points the way to the next place in the steps: the vendor, the
@@ -185,7 +204,7 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq bags       list every piece of gear in your bags with its verdict
 /beq find       where to get upgrades: vendors, quests, dungeons and crafting
 /beq tracked    the upgrades you are tracking (/beq tracked clear stops them all)
-/beq quest      a quest for your next upgrade (/beq quest off, ignore, ignored, restore, switch, size, or a tab: vendor, quest, dungeon, crafted)
+/beq quest      a quest for your next upgrade (/beq quest off, ignore, ignored, restore, switch, size, or a tab: vendor, quest, dungeon, crafted, log)
 /beq arrow      an arrow to the upgrade quest's next place (on, off, next, check, tomtom, reset)
 /beq weights    change how much each stat counts (also in the settings window)
 /beq probe      check what this client supports; it only reads

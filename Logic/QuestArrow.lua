@@ -78,6 +78,7 @@ end
 
 function QuestArrow:SetOn(on)
     ns.db.questArrow = on and true or false
+    if not on then self.free = nil end
     -- Turned on, it goes over any other Blackthornes arrow (UI/QuestArrow.lua).
     if on and ns.QuestArrowUI and ns.QuestArrowUI.Claim then ns.QuestArrowUI:Claim() end
     self:Changed(true)
@@ -103,9 +104,11 @@ end
 -- What it follows
 --------------------------------------------------------------------------------
 
---- The quest the arrow follows: the one on the tab the panel shows, while
---- the upgrade quest is on.
+--- The quest the arrow follows: a quest from the quest log it was pointed
+--- at (AimAtQuest), else the one on the tab the panel shows, while the
+--- upgrade quest is on.
 function QuestArrow:Quest()
+    if self.free then return self.free end
     local quest = ns.UpgradeQuest
     if not (quest and quest:IsEnabled()) then return nil end
     return quest:Current()
@@ -114,6 +117,7 @@ end
 --- A quest's item name, plain: "Thick Leather Tunic".
 function QuestArrow.ItemName(quest)
     if type(quest) ~= "table" then return nil end
+    if quest.free then return quest.title end
     local name = type(quest.link) == "string" and quest.link:match("|h%[(.-)%]|h")
         or type(quest.link) == "string" and quest.link:match("^%[(.-)%]$")
     if not name and quest.itemID then
@@ -128,6 +132,7 @@ end
 --- kept for the next.
 local function Stamp(quest)
     if not quest then return nil end
+    if quest.free then return ("log|%s|%s"):format(tostring(quest.questID), tostring(quest.title)) end
     return ("%s|%s"):format(tostring(quest.itemID), tostring(ns.UpgradeQuest and ns.UpgradeQuest:Tab()))
 end
 
@@ -141,6 +146,12 @@ end
 --- spot in the same zone further on.
 function QuestArrow:Places(quest)
     quest = quest or self:Quest()
+    -- A quest from the quest log: its one place.
+    if type(quest) == "table" and quest.free then
+        local place = quest.place
+        return { { zone = place.zone, x = tonumber(place.x), y = tonumber(place.y), name = place.name,
+            text = quest.title, forQuest = quest.title } }
+    end
     local upgrade = ns.UpgradeQuest
     if not (quest and upgrade) then return {} end
     local ok, steps, current = pcall(upgrade.Steps, upgrade, quest)
@@ -177,6 +188,7 @@ end
 --- step in the quest panel). Turns the arrow on. False when that step has
 --- no place.
 function QuestArrow:Aim(index)
+    self.free = nil
     local quest = self:Quest()
     if not quest then return false end
     local ok, steps = pcall(ns.UpgradeQuest.Steps, ns.UpgradeQuest, quest)
@@ -199,11 +211,52 @@ function QuestArrow:Aim(index)
     return true
 end
 
+--- Point at a quest in the quest log (the Quest log tab's "Point the arrow
+--- here"): its place, not a step of the upgrade quest. Kept until a step is
+--- aimed at, the arrow is clicked for the next tab or turned off, or the
+--- quest leaves the log. Turns the arrow on.
+function QuestArrow:AimAtQuest(questID, title, place)
+    if not (type(place) == "table" and type(place.zone) == "string") then return false end
+    self.free = { free = true, questID = questID, title = title or "Quest",
+        place = { zone = place.zone, x = tonumber(place.x), y = tonumber(place.y), name = place.name } }
+    self.pinned, self.choice = nil, nil
+    if not QuestArrow.IsOn() then
+        ns.db.questArrow = true
+        ns.Print("quest arrow on. Its red gem, /beq arrow off or Settings hides it.")
+        for _, name in ipairs({ "QuestPanel", "SettingsUI" }) do
+            local module = ns[name]
+            if module and module.OnQuestArrowChanged then pcall(module.OnQuestArrowChanged, module) end
+        end
+    end
+    if ns.QuestArrowUI and ns.QuestArrowUI.Claim then ns.QuestArrowUI:Claim() end
+    self:Changed(false)
+    return true
+end
+
+--- The quest log quest the arrow points at, if any: { questID, title }.
+function QuestArrow:FreeQuest()
+    return self.free
+end
+
+--- A quest left the log (handed in or abandoned): stop pointing at it.
+function QuestArrow:ForgetQuest(questID)
+    if self.free and self.free.questID == questID then
+        self.free = nil
+        self:Changed(true)
+    end
+end
+
 --- The next tab along that has a quest; it shows on the panel too. Nil when
 --- no other tab has one.
 function QuestArrow:NextTab()
     local upgrade = ns.UpgradeQuest
     if not upgrade then return nil end
+    -- Pointing at a quest from the log: back to the upgrade quests.
+    if self.free then
+        self.free = nil
+        self:Changed(true)
+        if upgrade:Current() then return { key = upgrade:Tab() } end
+    end
     local tabs = upgrade.TABS
     local at = 1
     for index, tab in ipairs(tabs) do
@@ -444,7 +497,7 @@ function QuestArrow:Targets(quest, here)
     for _, place in ipairs(places) do
         local target = {
             zone = place.zone, name = place.name, step = place.step, text = place.text,
-            x = place.x, y = place.y,
+            x = place.x, y = place.y, forQuest = place.forQuest,
         }
         local mapID = ns.Waypoints and ns.Waypoints:MapFor(place.zone)
         target.map = mapID
@@ -489,6 +542,7 @@ function QuestArrow.Note(target)
     if target.far then return "Far from here: head for " .. (target.zone or "it"), "muted" end
     if target.here then return "No exact spot known in this zone", "accent" end
     if target.area then return "The middle of the zone: no exact spot known", "accent" end
+    if target.forQuest then return target.forQuest, "good" end
     return ("Step %d"):format(target.step or 1), "good"
 end
 
@@ -522,7 +576,7 @@ function QuestArrow:State(clock)
         -- With no place to point at, the dial names the step to do instead.
         -- Read here, with the places, rather than 33 times a second.
         self.stepText = nil
-        if #self.targets == 0 then
+        if #self.targets == 0 and not quest.free then
             local ok, steps, current = pcall(ns.UpgradeQuest.Steps, ns.UpgradeQuest, quest)
             local step = ok and type(steps) == "table" and steps[current]
             self.stepText = step and step.text or nil

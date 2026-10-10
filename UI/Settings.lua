@@ -524,6 +524,31 @@ function SettingsUI:BuildQuest()
         if ns.TomTom then ns.TomTom:SetOn(checked) end
     end, true)
     controls.useTomTom:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    -- The panel's Quest log tab (UI/QuestLogTab.lua) and its two tick boxes.
+    pages:Section("quest", 2, "QUEST LOG")
+
+    local logRow = pages:Row("quest", 2, "Quest log",
+        "Your quests on a tab of the quest panel, as the game's tracker shows them. Same as /beq quest log.")
+    controls.questLogOpen = Widgets.CreateButton(logRow, "Show it", function()
+        ns.HandleSlash("quest log")
+    end, { width = 64, height = 20 })
+    controls.questLogOpen:SetPoint("TOPLEFT", CONTROL_X, 0)
+    Explain(controls.questLogOpen, "Show the quest log",
+        "Opens the quest panel on its Quest log tab, and turns the upgrade quest on if it is off. Same as /beq quest log.")
+    controls.questLogTracked = Widgets.CreateCheckbox(logRow, "Tracked only", function(checked)
+        if ns.QuestLogUI then ns.QuestLogUI:SetTrackedOnly(checked) end
+    end, false)
+    controls.questLogTracked:SetPoint("TOPLEFT", CONTROL_X + 76, -2)
+    Explain(controls.questLogTracked, "Tracked only",
+        "The Quest log tab lists only the quests you track. The same tick box as on the tab.")
+
+    local trackerRow = pages:Row("quest", 2, "Game's tracker",
+        "Hides the game's own quest tracker while the quest panel is up, so your quests show in one place.")
+    controls.hideQuestTracker = Widgets.CreateCheckbox(trackerRow, "Hide it", function(checked)
+        if ns.QuestLogUI then ns.QuestLogUI:SetHidesTracker(checked) end
+    end, false)
+    controls.hideQuestTracker:SetPoint("TOPLEFT", CONTROL_X, -2)
 end
 
 --- General: windows and text on the left, help and problems on the right.
@@ -611,6 +636,8 @@ function SettingsUI:Refresh()
     controls.upgradeQuest:SetChecked(ns.db.upgradeQuest == true)
     controls.questArrow:SetChecked(ns.db.questArrow == true)
     controls.useTomTom:SetChecked(ns.db.useTomTom ~= false)
+    controls.questLogTracked:SetChecked(ns.db.questLogTrackedOnly == true)
+    controls.hideQuestTracker:SetChecked(ns.db.hideQuestTracker == true)
     self:RefreshQuestSize()
     controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
     controls.questZoneSwap:SetChecked(ns.db.upgradeQuestZoneSwap ~= false)

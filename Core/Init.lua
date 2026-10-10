@@ -441,6 +441,13 @@ local DEFAULTS = {
     -- client that cannot say which quests are done.
     upgradeQuest = false,
 
+    -- The upgrade quest panel's Quest log tab (UI/QuestLogTab.lua): list
+    -- only tracked quests, and hide the game's own quest tracker while the
+    -- panel is up. Both off unless ticked. Per character, the tab being
+    -- shown is `questLogTab` and the zones folded on it `questLogFolded`.
+    questLogTrackedOnly = false,
+    hideQuestTracker = false,
+
     -- The settings window (UI/SettingsPages.lua): its words under every row
     -- rather than in tooltips, and Tradeskills' Text size. The page it was
     -- left on is settingsPage, which has no default.

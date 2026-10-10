@@ -3,7 +3,9 @@
 -- gold rim, its name on a plate and a red gem that closes it (turning the
 -- upgrade quest off; Settings or /beq quest brings it back). Under the
 -- header, a tab for each kind of source (Vendor, Quest, Dungeons and Raids,
--- Crafted), each with its own upgrade; click one to show it. Under the tabs,
+-- Crafted), each with its own upgrade; click one to show it, and a fifth,
+-- Quest log, with the character's quests as the game's tracker shows them
+-- (UI/QuestLogTab.lua). Under the tabs,
 -- what the quest may pick from: "This zone only" (only upgrades from the
 -- zone the character is in), "Solo quests only" and the "Quest level" limit
 -- (the same two as in Where to get upgrades, so both follow one setting),
@@ -33,7 +35,9 @@ local Theme = ns.Theme
 local Widgets = ns.Widgets
 local Motion = ns.Motion
 
-local WIDTH = 340
+-- 384 rather than 340 since the Quest log tab (the owner asked 2026-10-10,
+-- picking the wider panel so all five tabs fit).
+local WIDTH = 384
 -- The plate sits across the top edge and the close gem on the top right
 -- corner; the header's row starts below them.
 local HEADER_ROW = 24
@@ -113,6 +117,30 @@ function QuestPanel.Lines(size, text, width)
 end
 
 local LINE_HEIGHT = { tiny = 12, small = 13, normal = 14 }
+
+-- For the Quest log tab (UI/QuestLogTab.lua), which lays itself out the
+-- same way.
+QuestPanel.WIDTH = WIDTH
+QuestPanel.PAD = PAD
+QuestPanel.LINE_HEIGHT = LINE_HEIGHT
+
+-- The fifth tab: the quest log, not a kind of source, so it is not one of
+-- UpgradeQuest.TABS. Shown while the character's `questLogTab` is set.
+QuestPanel.LOG_TAB = { key = "log", name = "Quest log", color = "warn", log = true }
+
+--- Is the panel showing the Quest log tab?
+function QuestPanel:ShowsLog()
+    return ns.charDB ~= nil and ns.charDB.questLogTab == true
+end
+
+--- Show the Quest log tab, or go back to the source tabs.
+function QuestPanel:ShowLog(on)
+    if not ns.charDB then return end
+    ns.charDB.questLogTab = on and true or nil
+    if ns.QuestLogUI then ns.QuestLogUI:CloseMenu() end
+    self:Refresh()
+    if ns.SettingsUI and ns.SettingsUI.Refresh then ns.SettingsUI:Refresh() end
+end
 
 --------------------------------------------------------------------------------
 -- Construction
@@ -250,8 +278,10 @@ function QuestPanel:BuildTab(frame, tab)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:AddLine(tab.name, Theme.Unpack(tab.color))
         local logic = ns.UpgradeQuest
-        local quest = logic and logic:QuestOn(tab.key)
-        if quest then
+        local quest = not tab.log and logic and logic:QuestOn(tab.key)
+        if tab.log then
+            GameTooltip:AddLine("Every quest in your log, as the game's quest tracker shows them.", 1, 1, 1, true)
+        elseif quest then
             GameTooltip:AddLine(quest.link, 1, 1, 1, true)
         else
             GameTooltip:AddLine(logic and logic.NONE[tab.key] or "", 1, 1, 1, true)
@@ -264,7 +294,11 @@ function QuestPanel:BuildTab(frame, tab)
         GameTooltip:Hide()
     end)
     button:SetScript("OnClick", function()
-        if ns.UpgradeQuest then ns.UpgradeQuest:SelectTab(tab.key) end
+        if tab.log then
+            QuestPanel:ShowLog(true)
+        elseif ns.UpgradeQuest then
+            ns.UpgradeQuest:SelectTab(tab.key)
+        end
     end)
 
     button.Light(0)
@@ -279,7 +313,7 @@ function QuestPanel:LayoutTabs(frame)
     local function Widths()
         local widths, total = {}, 0
         for index, button in ipairs(self.tabs) do
-            widths[index] = Theme.TextWidth(size, button.label:GetText()) + 16
+            widths[index] = Theme.TextWidth(size, button.label:GetText()) + 14
             total = total + widths[index]
         end
         return widths, total
@@ -305,9 +339,15 @@ end
 function QuestPanel:FillTabs()
     local logic = ns.UpgradeQuest
     local shownTab = logic:Tab()
+    local log = self:ShowsLog()
     for _, button in ipairs(self.tabs) do
-        button.shown = button.key == shownTab
-        button.empty = logic:QuestOn(button.key) == nil
+        if button.key == QuestPanel.LOG_TAB.key then
+            button.shown = log
+            button.empty = false
+        else
+            button.shown = not log and button.key == shownTab
+            button.empty = logic:QuestOn(button.key) == nil
+        end
         button.Light(Motion:Value(button, "hover") or 0)
         button:SetShown(not self.folded)
     end
@@ -470,10 +510,22 @@ function QuestPanel:Build()
     end
     Theme.Halo(frame, 10, 0.14)
 
-    frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    frame:SetScript("OnDragStart", function(self)
+        self:StartMoving()
+        if ns.QuestLogUI then ns.QuestLogUI:PlaceItems() end
+    end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         QuestPanel:SavePosition()
+        if ns.QuestLogUI then ns.QuestLogUI:PlaceItemsSoon() end
+    end)
+    -- The Quest log tab hides the game's tracker while the panel is up, and
+    -- its item buttons go with the panel.
+    frame:HookScript("OnShow", function()
+        if ns.QuestLogUI then ns.QuestLogUI:OnPanelShown(true) end
+    end)
+    frame:HookScript("OnHide", function()
+        if ns.QuestLogUI then ns.QuestLogUI:OnPanelShown(false) end
     end)
 
     -- The header's row: the quest mark and how far along on the left, fold
@@ -506,8 +558,12 @@ function QuestPanel:Build()
     -- A tab for each kind of source.
     self.tabs = {}
     for index, tab in ipairs(ns.UpgradeQuest.TABS) do self.tabs[index] = self:BuildTab(frame, tab) end
+    self.tabs[#self.tabs + 1] = self:BuildTab(frame, QuestPanel.LOG_TAB)
     self:LayoutTabs(frame)
     self:BuildFilters(frame)
+    -- The Quest log tab's own list, filters and buttons, in place of the
+    -- source tabs' (UI/QuestLogTab.lua).
+    if ns.QuestLogUI then ns.QuestLogUI:Build(frame, HEADER + TABS_HEIGHT) end
 
     -- Everything under the filters, hidden when folded.
     local body = CreateFrame("Frame", nil, frame)
@@ -776,14 +832,40 @@ function QuestPanel:Refresh()
     self:Build()
 
     local logic = ns.UpgradeQuest
-    local quest = logic:Current()
     self.foldButton:SetText(self.folded and "+" or "-")
+    self:FillTabs()
+
+    -- The Quest log tab: its own list in place of the quest's.
+    if self:ShowsLog() and ns.QuestLogUI and ns.QuestLogUI.view then
+        self.title:SetText(QuestPanel.LOG_TAB.name)
+        self.body:Hide()
+        self.filters:Hide()
+        local height = HEADER
+        if self.folded then
+            ns.QuestLogUI:Hide()
+        else
+            height = height + TABS_HEIGHT + ns.QuestLogUI:Fill()
+        end
+        self.progress:SetText(ns.QuestLogUI:Progress())
+        self.frame:SetHeight(height)
+        if not self.frame:IsShown() then
+            self.frame:Show()
+            Motion:Open(self.frame)
+        end
+        if logic.stepDone then
+            logic.stepDone = nil
+            self:Cheer()
+        end
+        return
+    end
+    if ns.QuestLogUI then ns.QuestLogUI:Hide() end
+
+    local quest = logic:Current()
     self.body:SetShown(not self.folded)
     local shownTab = logic:Tab()
     for _, tab in ipairs(logic.TABS) do
         if tab.key == shownTab then self.title:SetText(tab.name) end
     end
-    self:FillTabs()
     self:FillFilters()
 
     local steps, current = {}, 0
@@ -1135,6 +1217,7 @@ function QuestPanel:ApplyScale(scale)
         frame:ClearAllPoints()
         frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left * old / scale, top * old / scale)
         self:SavePosition()
+        if ns.QuestLogUI then ns.QuestLogUI:PlaceItemsSoon() end
     else
         self:RestorePosition()
     end
@@ -1219,6 +1302,7 @@ function QuestPanel:BuildSizeGrip()
         self:SetScript("OnUpdate", nil)
         if ns.db then ns.db.questScale = QuestPanel.ClampScale(QuestPanel.ScaleOf(frame)) end
         QuestPanel:SavePosition()
+        if ns.QuestLogUI then ns.QuestLogUI:PlaceItemsSoon() end
         if ns.SettingsUI and ns.SettingsUI.Refresh then ns.SettingsUI:Refresh() end
     end
 

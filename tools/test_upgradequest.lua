@@ -486,8 +486,9 @@ suite.check("each tab keeps its own", Quest:QuestOn("vendor").itemID == 1001 and
 suite.check("the copy older versions read follows the tab shown", ns.charDB.upgradeQuest == Quest:Current())
 
 Panel:Refresh()
-suite.check("four tabs on the panel", #Panel.tabs == 4 and Panel.tabs[1].label:GetText() == "Vendor"
-    and Panel.tabs[3].label:GetText() == "Dungeons and Raids" and Panel.tabs[4].label:GetText() == "Crafted")
+suite.check("four source tabs and the Quest log tab on the panel", #Panel.tabs == 5
+    and Panel.tabs[1].label:GetText() == "Vendor" and Panel.tabs[3].label:GetText() == "Dungeons and Raids"
+    and Panel.tabs[4].label:GetText() == "Crafted" and Panel.tabs[5].label:GetText() == "Quest log")
 suite.check("the tabs hang from the panel, not the screen's corner", (function()
     for _, tab in ipairs(Panel.tabs) do
         if rawget(tab, "_parent") ~= Panel.frame then return false end
@@ -502,7 +503,7 @@ suite.check("the header names the tab", Panel.title:GetText() == "Quest", Panel.
 suite.check("tabs fit across the panel", (function()
     local total = 0
     for _, tab in ipairs(Panel.tabs) do total = total + tab:GetWidth() end
-    return total + 3 * 4 <= 340 - 20 + 0.01
+    return total + (#Panel.tabs - 1) * 4 <= Panel.WIDTH - 20 + 0.01
 end)())
 suite.check("hovering a tab says what is on it", pcall(Panel.tabs[1]:GetScript("OnEnter"), Panel.tabs[1]))
 

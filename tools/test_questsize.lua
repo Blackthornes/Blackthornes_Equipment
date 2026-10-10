@@ -58,6 +58,7 @@ suite.check("dragged to", Panel.ScaleText(0.87) == "87%")
 ns.db.questScale = 0.8
 local frame = Panel:Build()
 
+local WIDTH = Panel.WIDTH
 frame._scale = 1
 frame.SetScale = function(self, s) self._scale = s end
 frame.GetScale = function(self) return self._scale end
@@ -69,7 +70,7 @@ frame.GetLeft = function(self)
     local p = self._point
     if not p then return nil end
     if p[3] == "BOTTOMLEFT" then return p[4] end
-    if p[3] == "RIGHT" then return SCREEN_W / self._scale + p[4] - 340 end
+    if p[3] == "RIGHT" then return SCREEN_W / self._scale + p[4] - WIDTH end
 end
 frame.GetTop = function(self)
     local p = self._point
@@ -120,19 +121,19 @@ local grip = Panel.sizeGrip
 frame._scale = 1
 frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 50, 700)
 -- Pressed 10 right of and 15 below the corner, where the grip hangs.
-cursorX, cursorY = 50 + 340 + 10, 700 - 400 - 15
+cursorX, cursorY = 50 + WIDTH + 10, 700 - 400 - 15
 grip._scripts.OnMouseDown(grip, "LeftButton")
 suite.check("sizing", grip.sizing == true)
 -- Moved to where the corner would be at 80%.
-cursorX, cursorY = 50 + 340 * 0.8 + 10, 700 - 400 * 0.8 - 15
+cursorX, cursorY = 50 + WIDTH * 0.8 + 10, 700 - 400 * 0.8 - 15
 grip._scripts.OnUpdate(grip)
 suite.check("drawn at 80% while dragging", near(frame._scale, 0.8), frame._scale)
 suite.check("top left stays put (left)", near(frame:GetLeft() * frame._scale, 50))
 suite.check("top left stays put (top)", near(frame:GetTop() * frame._scale, 700))
-cursorX, cursorY = 50 + 340 * 0.3, 700 - 400 * 0.3
+cursorX, cursorY = 50 + WIDTH * 0.3, 700 - 400 * 0.3
 grip._scripts.OnUpdate(grip)
 suite.check("never under 50%", frame._scale == 0.5)
-cursorX, cursorY = 50 + 340 * 0.8 + 10, 700 - 400 * 0.8 - 15
+cursorX, cursorY = 50 + WIDTH * 0.8 + 10, 700 - 400 * 0.8 - 15
 grip._scripts.OnUpdate(grip)
 grip._scripts.OnMouseUp(grip, "LeftButton")
 suite.check("saved on release", near(ns.db.questScale, 0.8), ns.db.questScale)
