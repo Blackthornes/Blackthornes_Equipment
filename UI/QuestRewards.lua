@@ -1,12 +1,13 @@
 -- Blackthornes Equipment -- UI/QuestRewards.lua
 -- When a quest lets you choose a reward, put the green arrow on the choice
 -- that is the biggest upgrade for your spec, and say which in chat when you
--- hand the quest in.
+-- hand the quest in. A reward the quest gives outright ("You will also
+-- receive") gets the arrow and a chat line too when it is an upgrade.
 --
--- Each choice is judged exactly as bag items are (Compare:Judge), so the
+-- Each reward is judged exactly as bag items are (Compare:Judge), so the
 -- arrow here, the arrow in the bags and the tooltip line agree. Only an
--- upgrade that can be worn now is marked; when none of the choices is one,
--- nothing is marked and chat says so.
+-- upgrade that can be worn now is marked; when no choice is one, the choice
+-- a vendor pays the most for gets a gold coin instead, and chat says so.
 --
 -- The reward buttons are the game's own quest window buttons. As in the
 -- bags, the arrow is a texture this addon adds over one; nothing of
@@ -64,6 +65,46 @@ function QuestRewards:IsCached(link)
     return cached == true
 end
 
+--- How many rewards the open quest gives outright, besides the choices.
+function QuestRewards:FixedCount()
+    return tonumber((Items.Call({ "GetNumQuestRewards" }))) or 0
+end
+
+--- The link of fixed reward `index`, or nil.
+function QuestRewards:FixedLink(index)
+    return Items.PlainLink(Items.Call({ "GetQuestItemLink" }, "reward", index))
+end
+
+--- Judge one reward as a carried item.
+-- @return the verdict or nil, and whether it is gear still worth waiting
+-- for: no link yet, or gear whose stats have not arrived. A cached item
+-- that still cannot be judged is not.
+function QuestRewards:Judge(link)
+    local ok, result = pcall(Compare.JudgeCarried, Compare, link)
+    if not ok then return nil, false end
+    if result ~= nil then return result, false end
+    if not link then return nil, true end
+    local okInfo, info = pcall(Items.Info, Items, link)
+    local gear = okInfo and (info == nil or Compare.SLOTS[info.equipLoc])
+    return nil, (gear and not Items:Stats(link) and not self:IsCached(link)) and true or false
+end
+
+--- The rewards given outright that are upgrades that can be worn now.
+-- @return a list of { index, link, result }, and how many fixed rewards
+-- could not be judged yet
+function QuestRewards:Given()
+    local given, unknown = {}, 0
+    for index = 1, self:FixedCount() do
+        local link = self:FixedLink(index)
+        local result, waiting = self:Judge(link)
+        if waiting then unknown = unknown + 1 end
+        if Compare.WearableUpgrade(result) then
+            given[#given + 1] = { index = index, link = link, result = result }
+        end
+    end
+    return given, unknown
+end
+
 --- The choice that is the biggest upgrade that can be worn now.
 -- @return index, link, result; or nil when none of them is one
 -- The fourth return is how many choices are gear whose details the client
@@ -73,21 +114,9 @@ function QuestRewards:Best()
     local unknown = 0
     for index = 1, self:Count() do
         local link = self:Link(index)
-        local ok, result = pcall(Compare.JudgeCarried, Compare, link)
-        if ok and result == nil then
-            -- No link yet, or gear whose stats have not arrived: worth
-            -- waiting for. A cached item that still cannot be judged is not.
-            if not link then
-                unknown = unknown + 1
-            else
-                local okInfo, info = pcall(Items.Info, Items, link)
-                local gear = okInfo and (info == nil or Compare.SLOTS[info.equipLoc])
-                if gear and not Items:Stats(link) and not self:IsCached(link) then
-                    unknown = unknown + 1
-                end
-            end
-        end
-        if ok and Compare.WearableUpgrade(result) then
+        local result, waiting = self:Judge(link)
+        if waiting then unknown = unknown + 1 end
+        if Compare.WearableUpgrade(result) then
             -- Gain in score, not percent: +5 on a slot worth 50 beats +50% on
             -- a slot worth 2. An empty slot counts its whole score.
             local gain = (result.score or 0) - (result.against or 0)
@@ -99,9 +128,52 @@ function QuestRewards:Best()
     return bestIndex, bestLink, bestResult, unknown
 end
 
+--- How many of choice `index` the quest hands over (a stack of potions).
+function QuestRewards:Quantity(index)
+    local _, _, count = Items.Call({ "GetQuestItemInfo" }, "choice", index)
+    local ok, number = pcall(function() return tonumber(count) end)
+    return ok and number and number > 0 and number or 1
+end
+
+--- The choice a vendor pays the most for, for when none is an upgrade.
+-- @return index, link, copper; or nil when no choice sells for anything
+-- (or there is only one: nothing to choose)
+function QuestRewards:MostValuable()
+    if self:Count() < 2 then return nil end
+    local bestIndex, bestLink, bestCopper
+    for index = 1, self:Count() do
+        local link = self:Link(index)
+        local price = link and Items:SellPrice(link)
+        local copper = price and price * self:Quantity(index) or 0
+        if copper > 0 and (not bestCopper or copper > bestCopper) then
+            bestIndex, bestLink, bestCopper = index, link, copper
+        end
+    end
+    return bestIndex, bestLink, bestCopper
+end
+
 --------------------------------------------------------------------------------
 -- The buttons
 --------------------------------------------------------------------------------
+
+-- The gold coin on the choice worth the most at a vendor: a texture this
+-- addon adds over the button, as the arrow is, kept here by button.
+local COIN_TEXTURE = "Interface\\MoneyFrame\\UI-GoldIcon"
+local coins = setmetatable({}, { __mode = "k" })
+
+function QuestRewards:Coin(button)
+    if coins[button] then return coins[button] end
+    local create = Field(button, "CreateTexture")
+    if type(create) ~= "function" then return nil end
+    local ok, texture = pcall(create, button, nil, "OVERLAY", nil, 7)
+    if not ok or not texture then return nil end
+    texture:SetSize(14, 14)
+    texture:SetPoint("TOPLEFT", button, "TOPLEFT", 2, -2)
+    texture:SetTexture(COIN_TEXTURE)
+    texture:Hide()
+    coins[button] = texture
+    return texture
+end
 
 --- Every reward button in the quest window, choices and fixed rewards alike.
 function QuestRewards:Buttons()
@@ -131,20 +203,36 @@ function QuestRewards:ButtonFor(index)
     return nil
 end
 
---- Put the arrow on the best choice and take it off the rest.
--- @return the index marked, or nil
+--- Put the arrow on the best choice and on each fixed reward that is an
+--- upgrade, and take it off the rest.
+-- @return the choice index marked, or nil
 function QuestRewards:Mark()
-    local best = self:IsEnabled() and self:Best() or nil
+    local enabled = self:IsEnabled()
+    local best = enabled and self:Best() or nil
+    local fixed = {}
+    if enabled then
+        for _, upgrade in ipairs((self:Given())) do fixed[upgrade.index] = true end
+    end
+    -- No choice helps: the coin goes on the one worth the most to sell.
+    local richest = enabled and best == nil and self:MostValuable() or nil
     local marked = nil
 
     for _, button in ipairs(self:Buttons()) do
-        local isBest = best ~= nil and Field(button, "type") == "choice"
-            and Ask(button, "GetID") == best
-        if isBest then
+        local kind, id = Field(button, "type"), Ask(button, "GetID")
+        local isBest = best ~= nil and kind == "choice" and id == best
+        local isFixed = kind == "reward" and id ~= nil and fixed[id] == true
+        local coin = coins[button]
+        if richest ~= nil and kind == "choice" and id == richest then
+            coin = self:Coin(button)
+            if coin then coin:Show() end
+        elseif coin then
+            coin:Hide()
+        end
+        if isBest or isFixed then
             local arrow = ns.BagIcons:Arrow(button)
             if arrow then
                 arrow:Show()
-                marked = best
+                if isBest then marked = best end
             end
         else
             local arrow = ns.BagIcons:ExistingArrow(button)
@@ -155,9 +243,10 @@ function QuestRewards:Mark()
     return marked
 end
 
---- Take the arrow off every reward button.
+--- Take the arrow and the coin off every reward button.
 function QuestRewards:HideArrows()
     for _, button in ipairs(self:Buttons()) do
+        if coins[button] then coins[button]:Hide() end
         local arrow = ns.BagIcons:ExistingArrow(button)
         if arrow then arrow:Hide() end
     end
@@ -167,7 +256,15 @@ end
 -- Saying so in chat
 --------------------------------------------------------------------------------
 
---- One line when a quest is handed in with rewards to choose from.
+--- How much better a verdict is, in words.
+local function How(result)
+    return result.empty and "fills an empty slot"
+        or result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5))
+        or "better stats"
+end
+
+--- One line when a quest is handed in with rewards to choose from, and one
+--- for each reward it gives outright that is an upgrade.
 -- A reward the client has not described yet cannot be judged, so the line
 -- waits for its details (GET_ITEM_INFO_RECEIVED) rather than saying none of
 -- them helps.
@@ -177,9 +274,19 @@ local GIVE_UP = 3
 
 function QuestRewards:Announce(final)
     self.announcePending = false
-    if not self:IsEnabled() or self:Count() < 2 then return end
+    if not self:IsEnabled() then return end
+    local choices = self:Count()
+    local given, unknownGiven = self:Given()
+    if choices == 0 and #given == 0 and unknownGiven == 0 then return end
 
     local index, link, result, unknown = self:Best()
+    if choices < 2 then
+        -- A lone choice comes with the quest, the same as a fixed reward.
+        if index then given[#given + 1] = { link = link, result = result } end
+        index, unknown = nil, unknown + unknownGiven
+    else
+        unknown = unknown + unknownGiven
+    end
     if unknown > 0 and not final then
         self.announcePending = true
         if not self.waitToken then
@@ -199,15 +306,26 @@ function QuestRewards:Announce(final)
         return
     end
     self.waitToken = nil
+    for _, upgrade in ipairs(given) do
+        ns.Print(("this quest gives you %s, an upgrade for %s |c%s%s|r"):format(
+            upgrade.link, upgrade.result.specName, ns.COLORS.upgrade, How(upgrade.result)))
+    end
+    if choices < 2 then return end
     if unknown > 0 and not index then return end
     if index then
-        local how = result.empty and "fills an empty slot"
-            or result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5))
-            or "better stats"
         ns.Print(("best reward for %s: %s |c%s%s|r"):format(
-            result.specName, link, ns.COLORS.upgrade, how))
+            result.specName, link, ns.COLORS.upgrade, How(result)))
     else
-        ns.Print(("|c%snone of these rewards beats what you wear|r"):format(ns.COLORS.muted))
+        local none = #given > 0 and "none of the rewards to choose from beats what you wear"
+            or "none of these rewards beats what you wear"
+        local _, richLink, copper = self:MostValuable()
+        local money = copper and ns.Finder and ns.Finder.Money(copper)
+        if richLink and money then
+            ns.Print(("|c%s%s;|r take %s, it sells for the most (%s)"):format(
+                ns.COLORS.muted, none, richLink, money))
+        else
+            ns.Print(("|c%s%s|r"):format(ns.COLORS.muted, none))
+        end
     end
 end
 

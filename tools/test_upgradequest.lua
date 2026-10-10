@@ -106,6 +106,13 @@ suite.check("the quest's steps", StepTexts() == "Travel to Elwynn Forest"
     .. " | Hand it in and choose item:1002"
     .. " | Put on item:1002", StepTexts())
 suite.check("already in the zone, so travel is done", steps[1].done and current == 2, current)
+
+-- A reward the quest gives outright is not chosen; the data says so even
+-- for a quest kept from before it did.
+S.ITEMS[1002].g = { 10 }
+suite.check("a given reward is got, not chosen", StepTexts():find("Hand it in to get item:1002", 1, true), StepTexts())
+S.ITEMS[1002].g = nil
+suite.check("without it, a reward is one of a choice", ns.Finder.Given(1002, 10) == false)
 suite.check("the panel counts the steps", Panel.progress:GetText() == "Step 2 of 5", Panel.progress:GetText())
 suite.check("the step to do now is lit", Panel.steps[2].now and not Panel.steps[1].now)
 suite.check("steps to come are numbered", Panel.steps[3].number:GetText() == "3.")

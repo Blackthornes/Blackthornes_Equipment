@@ -982,11 +982,16 @@ function UpgradeQuest:Steps(quest)
         local complete = ("Complete %s (level %d)"):format(source.title or "the quest", source.questLevel or 0)
         if ender.goal then complete = ("%s: %s"):format(complete, GoalText(ender.goal)) end
         Add(complete, questID and QuestReady(questID), Spot(ender.goal), note)
+        -- A reward given outright comes with the quest; only one of a
+        -- choice is picked. Read from the data, so a quest kept from before
+        -- this was known reads right too.
+        local given = source.given or (ns.Finder and ns.Finder.Given(itemID, questID))
+        local take = given and ("to get %s"):format(link) or ("and choose %s"):format(link)
         if ender.hand then
-            Add(("Hand it in %s and choose %s"):format(HandText(ender.hand, ender.hand.zone ~= source.zone), link),
+            Add(("Hand it in %s %s"):format(HandText(ender.hand, ender.hand.zone ~= source.zone), take),
                 have or turnedIn, Spot(ender.hand))
         else
-            Add(("Hand it in and choose %s"):format(link), have or turnedIn, nil)
+            Add(("Hand it in %s"):format(take), have or turnedIn, nil)
         end
     elseif source.kind == "dungeon" then
         local door = source.zone and { zone = source.zone, name = source.dungeon } or nil

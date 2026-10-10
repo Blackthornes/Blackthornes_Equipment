@@ -285,7 +285,7 @@ def main():
         npcs[uid] = (name, where[0], where[1], where[2], faction_of(units[uid]))
         return npcs[uid]
 
-    sources = collections.defaultdict(lambda: {"v": [], "q": [], "d": []})
+    sources = collections.defaultdict(lambda: {"v": [], "q": [], "d": [], "g": []})
 
     # Vendors.
     pf_items = pfq["items"]["data"]
@@ -311,6 +311,8 @@ def main():
         rewards = [r[f"RewChoiceItemId{i}"] for i in range(1, 7)] + \
                   [r[f"RewItemId{i}"] for i in range(1, 5)]
         rewards = [i for i in rewards if i in items]
+        # Rewards given outright with the quest, not picked from a choice.
+        given = {r[f"RewItemId{i}"] for i in range(1, 5)} - {0}
         # A quest with no gear is still kept, in case it opens the way to
         # one with gear: the finder walks the chain back through it.
         title = (quest_text[qid] and quest_text[qid]["T"]) or r["Title"]
@@ -356,6 +358,8 @@ def main():
                        after, r, prev if prev and prev > 0 else 0)
         for itemID in rewards:
             sources[itemID]["q"].append(qid)
+            if itemID in given:
+                sources[itemID]["g"].append(qid)
 
     # Dungeon drops.
     where_map = {}
@@ -591,7 +595,8 @@ def main():
     w("")
     w("-- Items: required level, item level, classes (0 for all), races (0 for")
     w("-- all), and the vendor price in copper; then v = { npc, stock (0 for")
-    w("-- unlimited), ... }, q = { quest, ... }, d = { npc, drop chance %, ... },")
+    w("-- unlimited), ... }, q = { quest, ... }, g = { the quests in q that give it")
+    w("-- outright rather than as one of a choice, ... }, d = { npc, drop chance %, ... },")
     w("-- and r = { faction, standing } for gear that needs a reputation (standing")
     w("-- 4 is Friendly, 5 Honored, 6 Revered, 7 Exalted).")
     w("Sources.ITEMS = {")
@@ -607,6 +612,8 @@ def main():
             parts.append("v = { " + ", ".join(f"{u}, {n}" for u, n in sorted(s["v"])) + " }")
         if s["q"]:
             parts.append("q = { " + ", ".join(str(q) for q in sorted(set(s["q"]))) + " }")
+        if s["g"]:
+            parts.append("g = { " + ", ".join(str(q) for q in sorted(set(s["g"]))) + " }")
         if s["d"]:
             parts.append("d = { " + ", ".join(f"{u}, {num(c)}" for u, c in sorted(s["d"])) + " }")
         if meta["rep"]:

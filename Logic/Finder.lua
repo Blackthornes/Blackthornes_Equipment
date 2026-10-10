@@ -153,6 +153,16 @@ local function QuestPlace(questID)
     }
 end
 
+--- Does a quest hand over the item outright (its "You will also receive"),
+--- rather than as one of the rewards to choose from?
+function Finder.Given(itemID, questID)
+    local item = itemID and ns.Sources.ITEMS[itemID]
+    for _, given in ipairs(item and item.g or {}) do
+        if given == questID then return true end
+    end
+    return false
+end
+
 --- The quests still to do before a quest opens, first one first: a list of
 --- { questID, title, questLevel, name, zone, x, y, group }. A quest earlier
 --- in the chain that the data does not have is named in the second return,
@@ -363,6 +373,8 @@ function Finder:SourcesFor(itemID, player)
                 x = quest[8] ~= 0 and quest[8] or nil, y = quest[9] ~= 0 and quest[9] or nil,
                 after = quest[10] ~= "" and quest[10] or nil, group = Finder.Need(quest[11]),
                 chainGroup = chainGroup,
+                -- Handed over with the quest, not picked from its choices.
+                given = Finder.Given(itemID, questID) or nil,
             }
             if self:QuestAllowed(source, player.level) then found[#found + 1] = source end
         end
