@@ -42,11 +42,17 @@ local function Region(parent)
     region.IsVisible = function(self) return self.shown end
     region.SetAlpha = function(self, a) self.alpha = a end
     region.GetAlpha = function(self) return self.alpha end
-    region.SetWidth = function(self, w) self.width = w end
+    region.SetWidth = function(self, w)
+        self.width = w
+        if self.scripts.OnSizeChanged then self.scripts.OnSizeChanged(self, w, self.height) end
+    end
     region.SetHeight = function(self, h) self.height = h end
     region.GetWidth = function(self) return self.width end
     region.GetHeight = function(self) return self.height end
-    region.SetSize = function(self, w, h) self.width, self.height = w, h end
+    region.SetSize = function(self, w, h)
+        self.width, self.height = w, h
+        if self.scripts.OnSizeChanged then self.scripts.OnSizeChanged(self, w, h) end
+    end
     region.SetColorTexture = function(self, r, g, b, a) self.color = { r, g, b, a or 1 } end
     region.SetGradient = function(self, orientation, from, to)
         self.gradient = { orientation, from, to }
@@ -237,6 +243,15 @@ button.scripts.OnMouseDown(button)
 check("down while held", button.blizzardFace.pieces[2].texture, ART.buttonDown)
 button.scripts.OnMouseUp(button)
 check("up again", button.blizzardFace.pieces[2].texture, ART.button)
+button.scripts.OnMouseDown(button)
+button:Hide()
+button:Show()
+check("hidden mid-press, it opens up", button.blizzardFace.pieces[2].texture, ART.button)
+check("and lets go", rawget(button, "held"), nil)
+local narrow = Widgets.CreateButton(Region(), "+", nil, { width = 22 })
+check("a narrow button's caps don't cross", narrow.blizzardFace.pieces[1].width, 11)
+narrow:SetWidth(120)
+check("they grow back when it widens", narrow.blizzardFace.pieces[1].width, 12)
 button.scripts.OnEnter(button)
 ns.Motion:FinishAll()
 check("the house face stays out of sight under the mouse", button.background.alpha, 0)
@@ -275,6 +290,9 @@ Fresh({ windowStyle = "blizzard" })
 local plain = ns.Widgets.CreateButton(Region(), "Max", nil, {})
 check("the button keeps the house look", plain.blizzardFace, nil)
 check("its face showing", plain.background.alpha, 1)
+local main = ns.Widgets.CreateButton(Region(), "Scan", nil, { primary = true })
+local ink = ns.Theme.colors.ink
+check("the main action's label stays readable on its face", main.label.textColor[1] == ink[1] and main.label.textColor[3] == ink[3], true)
 local lines = ns.BlizzardLook.ProbeLines()
 check("the probe names what is missing", lines[2]:find("button", 1, true) ~= nil, true)
 missing[ART.button] = nil
@@ -286,6 +304,16 @@ ns.db.windowStyle = "titanforged"
 check("waits for /reload", ns.BlizzardLook.Style(), "blizzard")
 check("the setting says what comes next", ns.BlizzardLook.Wanted(), "titanforged")
 check("the probe says so", ns.BlizzardLook.ProbeLines()[1]:find("after /reload", 1, true) ~= nil, true)
+local function CloseButtons()
+    local count = 0
+    for _, template in ipairs(templates) do
+        if template == "UIPanelCloseButton" then count = count + 1 end
+    end
+    return count
+end
+local before = CloseButtons()
+ns.BlizzardLook.ProbeLines()
+check("running the probe again adds no frames", CloseButtons(), before)
 
 ns.Motion:FinishAll()
 for key, value in pairs(saved) do _G[key] = value end
