@@ -9,12 +9,6 @@ local suite = env.NewSuite("rowglass")
 local ns = env.Load()
 local Theme, Motion = ns.Theme, ns.Motion
 
-local function Is(texture, key)
-    local r, g, b = Theme.Unpack(key)
-    local c = texture._color or {}
-    return c[1] == r and c[2] == g and c[3] == b
-end
-
 ns.FinderUI:Build()
 local first = ns.FinderUI:BuildRow(1)
 local second = ns.FinderUI:BuildRow(2)
@@ -31,6 +25,12 @@ suite.check("but not on the row beside it", not second.hoverWash:IsShown())
 first:GetScript("OnLeave")(first)
 Motion:FinishAll()
 suite.check("when the mouse leaves it goes dark", not first.hoverWash:IsShown())
+
+-- The upgrade quest panel's steps wear the same bands and fine lines.
+ns.QuestPanel:Build()
+local step1, step2 = ns.QuestPanel.steps[1], ns.QuestPanel.steps[2]
+suite.check("each step has a glass band", rawget(step1, "band") ~= nil and rawget(step2, "band") ~= nil)
+suite.check("with a fine line under it", rawget(step1, "line") ~= nil)
 
 -- LightGradient itself: strength into the gradient, hidden at nothing.
 local texture = { _shown = true }

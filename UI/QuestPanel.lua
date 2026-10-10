@@ -132,6 +132,17 @@ end
 function QuestPanel:BuildStep(index)
     local row = CreateFrame("Frame", nil, self.body)
     row:SetWidth(WIDTH - PAD * 2)
+    -- Dark glass, as the gear window's and finder's rows (asked
+    -- 2026-10-10): every other step a shade apart, with a fine line under
+    -- each, so the steps read as separate rows.
+    row.band = row:CreateTexture(nil, "BACKGROUND", nil, -1)
+    row.band:SetAllPoints(row)
+    row.band:SetColorTexture(Theme.Unpack(index % 2 == 0 and "glassAlt" or "glass"))
+    row.line = row:CreateTexture(nil, "BACKGROUND", nil, 1)
+    row.line:SetPoint("BOTTOMLEFT")
+    row.line:SetPoint("BOTTOMRIGHT")
+    row.line:SetHeight(1)
+    row.line:SetColorTexture(Theme.Unpack("border", 0.6))
     row.background = Theme.Fill(row, "rowActive", 0)
     -- The step to do now glows gold round its edge.
     Theme.Halo(row, 4, 0)
