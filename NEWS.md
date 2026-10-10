@@ -12,6 +12,15 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.18.0
+
+- The upgrade quest window has a new Quest log tab with all your quests in one place.
+- Weapons you haven't trained yet now say "Train" in red, so you know before you chase them.
+- You can pick a new window look that matches the game's own windows. The gold look is still the default.
+- Lists are calmer now, and the arrow comes back if TomTom drops your waypoint.
+
+Thanks Ezmode for the Train idea!
+
 ## 0.17.0
 
 Hey everyone! A small Equipment update just went up.
