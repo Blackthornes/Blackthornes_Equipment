@@ -83,16 +83,21 @@ Also unchecked: the quest window. `UI/QuestRewards.lua` hooks
 `QuestInfoRewardsFrameQuestInfoItem<n>`; `/beq probe` lists whether
 `QuestInfo_Display` exists.
 
-Also unchecked (2026-10-10): the quest log calls behind the panel's Quest
-log tab (`Logic/QuestLog.lua`). It reads the log the retail way
-(`C_QuestLog.GetNumQuestLogEntries`, `GetInfo`, `GetQuestObjectives`,
-`GetQuestWatchType`, `AddQuestWatch` by quest ID) where the client has it,
-else the classic way (`GetQuestLogTitle`, `GetQuestLogLeaderBoard`,
-`AddQuestWatch` by log index), with `GetQuestLogSpecialItemInfo` for quest
-item buttons. Pets' probe found `ObjectiveTrackerFrame` on Forever, which
-points at the retail calls. `/beq probe` prints a `quest log has` and
-`quest log missing` line and what it read (`read the C_QuestLog way: ...`);
-record them here. Also unchecked: the hunter's armour and weapon rules in `Weights.lua` (mail
+Checked (2026-10-10, level 20 warlock in Undercity): the quest log calls
+behind the panel's Quest log tab (`Logic/QuestLog.lua`). Forever has the
+retail ones: `C_QuestLog.GetNumQuestLogEntries`, `GetInfo`,
+`GetQuestObjectives`, `GetQuestWatchType`, `AddQuestWatch`,
+`RemoveQuestWatch`, `GetQuestTagInfo`, `SetSelectedQuest`,
+`IsPushableQuest` and `SetAbandonQuest`, with `GetNumQuestLeaderBoards`,
+`GetQuestLogLeaderBoard`, `GetQuestLogSpecialItemInfo`,
+`QuestLogPushQuest`, `StaticPopup_Show`, `QuestMapFrame_OpenToQuestDetails`,
+`ToggleQuestLog`, `GetQuestDifficultyColor` and `ObjectiveTrackerFrame`.
+The classic globals are gone (`GetNumQuestLogEntries`, `GetQuestLogTitle`,
+`IsQuestWatched`, `AddQuestWatch`, `RemoveQuestWatch`,
+`SelectQuestLogEntry`, `SetAbandonQuest`, `QuestLog_OpenToQuest`,
+`QuestWatchFrame`), so the tab reads the C_QuestLog way: "27 lines, 21
+quests in 6 headings, 21 tracked, 0 with an item button" (likely none of those
+quests has one). Also unchecked: the hunter's armour and weapon rules in `Weights.lua` (mail
 from 40, no shields, maces or wands) are classic's.
 
 ## 2026-09-29, seventh probe: a level 20 warlock
