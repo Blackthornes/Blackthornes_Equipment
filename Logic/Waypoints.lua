@@ -71,10 +71,14 @@ end
 function Waypoints:MapFor(zone)
     if type(zone) ~= "string" or zone == "" then return nil end
     self.found = self.found or {}
-    if self.found[zone] ~= nil then return self.found[zone] or nil end
+    if self.found[zone] then return self.found[zone] end
 
     local map = Map()
     local top = TopMap()
+    -- A miss is kept for the map it was looked for from: from another
+    -- continent (or out of an instance) the zone may well be found.
+    local missKey = top and (top .. "|" .. zone)
+    if missKey and self.found[missKey] == false then return nil end
     local mapID
     if map and top then
         local name = Info(top)
@@ -94,7 +98,9 @@ function Waypoints:MapFor(zone)
 
     -- Only a search that ran is kept: on a loading screen or a taxi the
     -- client has no map yet, and that must not hide the zone until /reload.
-    if map and top then self.found[zone] = mapID or false end
+    if map and top then
+        if mapID then self.found[zone] = mapID else self.found[missKey] = false end
+    end
     return mapID
 end
 

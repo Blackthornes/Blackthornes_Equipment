@@ -362,6 +362,20 @@ do
     ArrowUI:Draw(true)
     suite.check("drawn again, the same waypoint stays", TomTom.uid == uid and Count() == 1)
 
+    -- TomTom clears a waypoint on arrival (or the player removes it): the
+    -- dial comes back rather than leaving nothing pointing the way.
+    _G.TomTom.IsValidWaypoint = function(self, id) return points[id] ~= nil end
+    points[uid] = nil
+    ArrowUI:Draw(true)
+    suite.check("a waypoint TomTom dropped brings the dial back", dial:IsShown() and Count() == 0)
+    ArrowUI:Draw(true)
+    suite.check("and it is not put back on TomTom for the same place", dial:IsShown() and Count() == 0)
+    _G.TomTom.IsValidWaypoint = nil
+    TomTom.refused = nil
+    ArrowUI:Draw(true)
+    uid = TomTom.uid
+    suite.check("a fresh waypoint once that is forgotten", not dial:IsShown() and Count() == 1)
+
     -- Another Blackthornes arrow aimed later: TomTom's goes too.
     local shared = _G.BlackthornesArrows
     shared.wants.Other, shared.claims.Other = true, 1e12
