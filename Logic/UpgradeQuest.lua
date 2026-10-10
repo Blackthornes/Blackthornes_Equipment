@@ -217,7 +217,14 @@ end
 --- Show another tab; it gets its quest at once if it has none yet.
 function UpgradeQuest:SelectTab(tab)
     if not (IS_TAB[tab] and ns.charDB) then return false end
-    if tab == self:Tab() and ns.charDB.upgradeQuestTab then return true end
+    -- A source's tab is shown in place of the Quest log tab
+    -- (UI/QuestLogTab.lua).
+    local fromLog = ns.charDB.questLogTab == true
+    ns.charDB.questLogTab = nil
+    if tab == self:Tab() and ns.charDB.upgradeQuestTab then
+        if fromLog then self:Changed() end
+        return true
+    end
     ns.charDB.upgradeQuestTab = tab
     self.rescan = true
     self.offer = nil
@@ -1553,7 +1560,7 @@ local TAB_WORDS = {
     craft = "craft", crafted = "craft", crafting = "craft",
 }
 
-ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, ignore, ignored, restore, switch, size, or a tab: vendor, quest, dungeon, crafted)", function(rest)
+ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, ignore, ignored, restore, switch, size, or a tab: vendor, quest, dungeon, crafted, log)", function(rest)
     local word = (rest or ""):lower():match("^%s*(%a*)") or ""
     -- How big the panel is drawn: small, normal, large or a percent, as its
     -- gold corner grip and the Settings row do (UI/QuestPanel.lua).
@@ -1568,6 +1575,17 @@ ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, igno
         end
         panel:Build()
         ns.Print(("quest panel size: %s."):format(panel.ScaleText(panel:SetPanelScale(scale))))
+        return
+    end
+    -- The Quest log tab: the character's quests, as the game's tracker
+    -- shows them (UI/QuestLogTab.lua).
+    if word == "log" then
+        if not UpgradeQuest:IsEnabled() then UpgradeQuest:SetEnabled(true) end
+        if ns.QuestPanel then
+            ns.QuestPanel.folded = false
+            ns.QuestPanel:ShowLog(true)
+        end
+        ns.Print("upgrade quest: showing the Quest log tab.")
         return
     end
     local tab = TAB_WORDS[word]

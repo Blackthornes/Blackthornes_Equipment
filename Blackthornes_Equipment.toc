@@ -38,6 +38,7 @@ Logic\Tracking.lua
 Logic\Waypoints.lua
 Logic\UpgradeQuest.lua
 Logic\QuestArrow.lua
+Logic\QuestLog.lua
 Logic\TomTom.lua
 
 UI\Theme.lua
@@ -61,6 +62,7 @@ UI\MapPins.lua
 UI\SlotUpgrades.lua
 UI\MoreMarks.lua
 UI\QuestPanel.lua
+UI\QuestLogTab.lua
 UI\IgnoredWindow.lua
 UI\QuestArrow.lua
 
