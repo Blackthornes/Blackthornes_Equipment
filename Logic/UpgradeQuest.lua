@@ -926,7 +926,7 @@ function UpgradeQuest:Steps(quest)
                 break
             end
             local spot = before.x and { zone = before.zone, x = before.x, y = before.y, name = before.name } or nil
-            local text
+            local text, turnIn
             local note = lead
             lead = nil
             if OnQuest(before.questID) then
@@ -939,6 +939,7 @@ function UpgradeQuest:Steps(quest)
                 if hand and QuestReady(before.questID) then
                     text = ("Hand in %s %s"):format(before.title, HandText(hand, true))
                     spot = Spot(hand)
+                    turnIn = true
                 elseif goal then
                     text = ("Complete %s: %s"):format(title, GoalText(goal))
                     spot = Spot(goal)
@@ -963,6 +964,8 @@ function UpgradeQuest:Steps(quest)
             if need then note = (note and note .. " " or "") .. need end
             if text then
                 Add(text, false, spot, note)
+                -- Ready to hand in: the panel shows the game's ? for it.
+                steps[#steps].turnIn = turnIn
             else
                 StartFromItem(before.questID, before.title, before.name, false, false, note)
             end
@@ -993,6 +996,7 @@ function UpgradeQuest:Steps(quest)
         else
             Add(("Hand it in %s"):format(take), have or turnedIn, nil)
         end
+        steps[#steps].turnIn = not (have or turnedIn) and questID ~= nil and QuestReady(questID) or nil
     elseif source.kind == "dungeon" then
         local door = source.zone and { zone = source.zone, name = source.dungeon } or nil
         if door and door.zone ~= source.dungeon then Travel(door) end
