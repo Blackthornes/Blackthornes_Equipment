@@ -52,6 +52,8 @@ local STEP_GAP = 6
 local MOST_STEPS = 10
 local FOOTER = 34
 local BAR = 4
+-- Queue it, beside a crafted upgrade's name.
+local QUEUE_WIDTH = 64
 local OFFER_ICON = 24
 local OFFER_PAD = 8
 local OFFER_TEXT = WIDTH - PAD * 2 - OFFER_PAD * 2 - OFFER_ICON - 8
@@ -593,6 +595,29 @@ function QuestPanel:Build()
     end)
     self.item = item
 
+    -- Queue it, at the top right of a crafted upgrade while Tradeskills is
+    -- loaded (Logic/TradeskillsQueue.lua).
+    local queueIt = Widgets.CreateButton(item, "Queue it", function()
+        local quest = ns.UpgradeQuest and ns.UpgradeQuest:Current()
+        if quest and quest.source and ns.TradeskillsQueue then
+            ns.TradeskillsQueue:Queue(quest.source)
+            QuestPanel:Refresh()
+        end
+    end, { width = QUEUE_WIDTH, height = 20 })
+    queueIt:SetPoint("TOPRIGHT", 0, 0)
+    queueIt:HookScript("OnEnter", function(self)
+        local quest = ns.UpgradeQuest and ns.UpgradeQuest:Current()
+        if not (quest and ns.TradeskillsQueue) then return end
+        local title, text = ns.TradeskillsQueue:Explain(quest.source)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(title, Theme.Unpack("accent"))
+        if text then GameTooltip:AddLine(text, 1, 1, 1, true) end
+        GameTooltip:Show()
+    end)
+    queueIt:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    queueIt:Hide()
+    self.queueButton = queueIt
+
     local icon = Theme.CreateItemIcon(item, ICON)
     icon:SetPoint("LEFT", 0, 0)
     -- A green glow behind the upgrade's icon.
@@ -816,8 +841,20 @@ function QuestPanel:FillBody(quest, steps, current, done)
     self.item:SetPoint("TOPLEFT", PAD, -top)
     self.item:Show()
     Theme.SetItemIcon(self.icon, quest.link)
+    -- Queue it on crafted gear, the name and gain kept clear of it.
+    local textWidth = WIDTH - PAD * 2 - ICON - 12
+    local source = quest.source
+    if source and source.kind == "craft" and ns.TradeskillsQueue and ns.TradeskillsQueue:Available() then
+        self.queueButton:SetText(ns.TradeskillsQueue:Label(quest.itemID or source.itemID))
+        self.queueButton:Show()
+        textWidth = textWidth - QUEUE_WIDTH - 6
+    else
+        self.queueButton:Hide()
+    end
+    self.name:SetWidth(textWidth)
+    self.gain:SetWidth(textWidth)
     self.name:SetText(quest.link or "?")
-    local nameLines = math.min(2, QuestPanel.Lines("normal", quest.link or "?", WIDTH - PAD * 2 - ICON - 12))
+    local nameLines = math.min(2, QuestPanel.Lines("normal", quest.link or "?", textWidth))
     self.gain:SetText(QuestPanel.GainText(quest))
     local itemHeight = math.max(ICON, 4 + nameLines * LINE_HEIGHT.normal + 3 + LINE_HEIGHT.tiny)
     self.item:SetHeight(itemHeight)

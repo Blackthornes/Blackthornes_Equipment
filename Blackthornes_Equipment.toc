@@ -31,6 +31,7 @@ Logic\Compare.lua
 Logic\WeaponSkills.lua
 Logic\NPCSpots.lua
 Logic\Crafting.lua
+Logic\TradeskillsQueue.lua
 Logic\Rolls.lua
 Logic\Finder.lua
 Logic\Tracking.lua

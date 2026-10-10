@@ -93,7 +93,27 @@ and Tradeskills reads the right one from the recipe item's tooltip.
 
 Without Tradeskills, crafted gear is still listed, known recipes are read
 from the spellbook, and materials are priced at vendor only. If one of these
-changes in Tradeskills, change `Logic/Crafting.lua` too. Nothing else here
+changes in Tradeskills, change `Logic/Crafting.lua` too.
+
+Queue it (a player asked on Discord, the owner agreeing 2026-10-10): crafted
+rows in Where to get upgrades and a crafted upgrade on the Upgrade quest
+panel get a **Queue it** button while Tradeskills is loaded with these
+calls. `Logic/TradeskillsQueue.lua` calls, inside a pcall:
+
+```lua
+ts.Queue:Ensure(recipeID, quantity)         -- at least that many queued; true, or nil and why
+ts.Queue:EnsureBuy(itemID, count, forItem)  -- that many on the list to buy for forItem; true, or nil and why
+ts.Queue:ForUpgrade(itemID)                 -- "craft", "buy" or nil; the button then reads Queued
+ts.Queue:ShowQueue()                        -- a click on Queued opens the Queue tab
+```
+
+Gear the character or an alt can make (`known`, `alt`) is queued as a
+craft; gear still to learn (`learn`, `skill`) has its `Data/Crafts.lua`
+materials put on the list; gear nobody makes (`other`) goes on the list
+itself. A craft Tradeskills has not read yet falls back to its materials.
+The source is read again on each click (`TradeskillsQueue.Fresh`), since
+the upgrade quest keeps one from when it was picked. If these change in
+Tradeskills, change `Logic/TradeskillsQueue.lua` too. Nothing else here
 calls the other addons, apart from the shared arrow table (see the quest
 arrow below).
 
