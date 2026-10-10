@@ -504,19 +504,29 @@ do
     local realClick = ArrowUI.OnClick
     ArrowUI.OnClick = function() clicks = clicks + 1 end
     local start, stop, up = dial:GetScript("OnDragStart"), dial:GetScript("OnDragStop"), dial:GetScript("OnMouseUp")
+    local realTime, now = _G.GetTime, 100
+    _G.GetTime = function() return now end
 
     up(dial, "LeftButton")
     suite.check("a plain click on the dial is a click", clicks == 1, clicks)
 
     start(dial); stop(dial); up(dial, "LeftButton")
     suite.check("a drag dropped before the mouse-up is not", clicks == 1, clicks)
+    now = now + 1
     up(dial, "LeftButton")
     suite.check("and the next click still counts", clicks == 2, clicks)
 
     start(dial); up(dial, "LeftButton"); stop(dial)
     suite.check("a drag whose mouse-up comes first is not either", clicks == 2, clicks)
+    now = now + 1
     up(dial, "LeftButton")
     suite.check("and the click after that counts too", clicks == 3, clicks)
+
+    start(dial); stop(dial)
+    now = now + 1
+    up(dial, "LeftButton")
+    suite.check("a drag with no mouse-up of its own swallows no later click", clicks == 4, clicks)
+    _G.GetTime = realTime
     ArrowUI.OnClick = realClick
 end
 
