@@ -116,11 +116,23 @@ suite.check("the reward quest's objective is where to go",
     step.text == "Complete Supervisor Fizsprocket (level 12): collect Fizsprocket's Clipboard from Supervisor Fizsprocket in Mulgore (64.9, 43.3)",
     step.text)
 suite.check("with its spot", step.place and step.place.name == "Supervisor Fizsprocket" and step.place.x == 64.9)
+-- The objective's step clicked on the panel: the arrow is pinned there.
+local objective = select(2, Now())
+Arrow:Aim(objective)
+local target = Arrow:Targets(Quest:Current())[1]
+suite.check("a clicked step goes first", target and target.name == "Supervisor Fizsprocket", target and target.name)
 ready[765] = true
 step = Now()
 suite.check("ready, hand it in to Morin", step.text == "Hand it in to Morin Cloudstalker (51.9, 59.6) and choose item:1002",
     step.text)
 suite.check("and the arrow goes there", (Quest:NextPlace() or {}).name == "Morin Cloudstalker")
+-- The objective met: the clicked step moved on, so the arrow follows the
+-- steps again without another click (asked 2026-10-10).
+target = Arrow:Targets(Quest:Current())[1]
+suite.check("the dial lets go of the objective it was pinned to", target and target.name == "Morin Cloudstalker",
+    target and target.name)
+suite.check("and forgets the pin", Arrow.pinned == nil)
+Arrow:SetOn(false)
 
 -- A chain quest ready to hand in says so.
 inLog[765], ready[765], done[751] = nil, nil, nil

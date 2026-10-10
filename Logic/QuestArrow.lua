@@ -141,14 +141,28 @@ function QuestArrow.Key(place)
     return ("%s|%s|%s"):format(place.zone or "?", tostring(place.x), tostring(place.y))
 end
 
+--- Where a quest from the quest log is worked on now: its objective, or
+--- whoever takes it back once it is ready, read again each time so the
+--- arrow moves on when the last objective is done. The place it was aimed
+--- with when the data knows nothing better.
+function QuestArrow.FreePlace(quest)
+    local log, upgrade = ns.QuestLog, ns.UpgradeQuest
+    if quest.questID and log and log.Place and upgrade and upgrade.QuestReady then
+        local ok, ready = pcall(function() return upgrade.QuestReady(quest.questID) == true end)
+        local found, place = pcall(log.Place, { questID = quest.questID, complete = ok and ready or nil })
+        if found and type(place) == "table" and type(place.zone) == "string" then return place end
+    end
+    return quest.place
+end
+
 --- The places the quest's steps name, from the step to do now on, each
 --- once: { zone, x, y, name, step, text }. A zone-only place gives way to a
---- spot in the same zone further on.
+--- spot in the same zone further on. Also the steps they came from.
 function QuestArrow:Places(quest)
     quest = quest or self:Quest()
     -- A quest from the quest log: its one place.
     if type(quest) == "table" and quest.free then
-        local place = quest.place
+        local place = QuestArrow.FreePlace(quest)
         return { { zone = place.zone, x = tonumber(place.x), y = tonumber(place.y), name = place.name,
             text = quest.title, forQuest = quest.title } }
     end
@@ -181,7 +195,18 @@ function QuestArrow:Places(quest)
     for _, place in ipairs(list) do
         if place.x and place.y or not spotIn[place.zone] then kept[#kept + 1] = place end
     end
-    return kept
+    return kept, steps
+end
+
+--- Does a place picked on the panel still stand? Only while its step reads
+--- as it did when it was clicked: once that step is done, or turns into
+--- the next thing to do (the objective met, now hand it in), the arrow goes
+--- back to following the steps by itself.
+function QuestArrow.PinHolds(pinned, steps)
+    if type(steps) ~= "table" then return true end
+    local step = steps[pinned.place.step]
+    if not step then return false end
+    return step.text == pinned.text and (step.done and true or false) == (pinned.done and true or false)
 end
 
 --- Point at the place on step `index` of the quest shown (a click on that
@@ -204,7 +229,7 @@ function QuestArrow:Aim(index)
     self.pinned = { stamp = Stamp(quest), key = QuestArrow.Key({ zone = place.zone,
         x = tonumber(place.x), y = tonumber(place.y) }), place = {
         zone = place.zone, x = tonumber(place.x), y = tonumber(place.y), name = place.name,
-        step = index, text = step.text } }
+        step = index, text = step.text }, text = step.text, done = step.done }
     self.choice = nil
     if ns.QuestArrowUI and ns.QuestArrowUI.Claim then ns.QuestArrowUI:Claim() end
     self:Changed(false)
@@ -481,9 +506,12 @@ function QuestArrow:Targets(quest, here)
         pinned, self.pinned = nil, nil
     end
 
-    local places = self:Places(quest)
+    local places, steps = self:Places(quest)
+    if pinned and not QuestArrow.PinHolds(pinned, steps) then
+        pinned, self.pinned = nil, nil
+    end
     -- A place picked on the panel goes first, even one before the step to
-    -- do now.
+    -- do now, until that step moves on.
     if pinned then
         for index, place in ipairs(places) do
             if QuestArrow.Key(place) == pinned.key then
