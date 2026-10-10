@@ -490,4 +490,31 @@ do
     _G.BlackthornesArrows = nil
 end
 
+--------------------------------------------------------------------------------
+-- Dropping the dial after a drag is not a click, whichever order the
+-- client runs OnDragStop and OnMouseUp in
+--------------------------------------------------------------------------------
+
+do
+    local dial = ArrowUI.frame
+    local clicks = 0
+    local realClick = ArrowUI.OnClick
+    ArrowUI.OnClick = function() clicks = clicks + 1 end
+    local start, stop, up = dial:GetScript("OnDragStart"), dial:GetScript("OnDragStop"), dial:GetScript("OnMouseUp")
+
+    up(dial, "LeftButton")
+    suite.check("a plain click on the dial is a click", clicks == 1, clicks)
+
+    start(dial); stop(dial); up(dial, "LeftButton")
+    suite.check("a drag dropped before the mouse-up is not", clicks == 1, clicks)
+    up(dial, "LeftButton")
+    suite.check("and the next click still counts", clicks == 2, clicks)
+
+    start(dial); up(dial, "LeftButton"); stop(dial)
+    suite.check("a drag whose mouse-up comes first is not either", clicks == 2, clicks)
+    up(dial, "LeftButton")
+    suite.check("and the click after that counts too", clicks == 3, clicks)
+    ArrowUI.OnClick = realClick
+end
+
 suite.done()
