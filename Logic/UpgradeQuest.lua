@@ -689,6 +689,7 @@ local function QuestReady(questID)
     if Read(log and log.ReadyForTurnIn, questID) == true then return true end
     return Read(log and log.IsComplete, questID) == true
 end
+UpgradeQuest.QuestReady = QuestReady
 
 
 --------------------------------------------------------------------------------

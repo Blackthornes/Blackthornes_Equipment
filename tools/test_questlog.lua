@@ -284,6 +284,26 @@ Tab:Act("arrow", night)
 ns.QuestArrow:Aim(1)
 suite.check("aiming at an upgrade quest step lets it go too", ns.QuestArrow:FreeQuest() == nil)
 
+-- The last objective done: the arrow moves on to whoever takes it back by
+-- itself, without the quest being clicked again (a player found it stuck
+-- on the objective until clicked, 2026-10-10).
+do
+    local ready = false
+    local readyFn, completeFn = _G.C_QuestLog.ReadyForTurnIn, _G.C_QuestLog.IsComplete
+    _G.C_QuestLog.ReadyForTurnIn = function(id) return id == 101 and ready end
+    _G.C_QuestLog.IsComplete = function(id) return id == 101 and ready end
+    ns.QuestLog:Aim({ questID = 101, title = "Seasoned Wolf Kabobs" })
+    local first = ns.QuestArrow:Places()[1]
+    suite.check("a quest still to do points at its objective", first and first.name == "Lean Wolf",
+        first and first.name)
+    ready = true
+    first = ns.QuestArrow:Places()[1]
+    suite.check("done, it points at the hand-in on its own", first and first.name == "Chef Grual",
+        first and first.name)
+    _G.C_QuestLog.ReadyForTurnIn, _G.C_QuestLog.IsComplete = readyFn, completeFn
+    ns.QuestArrow:ForgetQuest(101)
+end
+
 --------------------------------------------------------------------------------
 -- Quest item buttons
 --------------------------------------------------------------------------------
