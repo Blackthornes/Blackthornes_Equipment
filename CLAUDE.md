@@ -355,9 +355,11 @@ and `UpgradeQuest:SelectTab` clears it. Folded zones are per character in
 game's quest tracker" (`hideQuestTracker`, hidden only while the panel is
 up) are account wide and off by default. Never rename them.
 
-The game's tracker is never moved or re-parented: hiding it is a plain
-Hide while the setting is on (again on its OnShow), never in combat while
-it is protected. Quest item buttons are secure buttons parented to
+The game's tracker is never moved, re-parented, hidden or shown: while
+the setting is on it is made see-through and its lines stop taking the
+mouse (`ns.Veil:Cover`, `UI/Veil.lua`), caught again 0.2 s after a burst
+of quest events, and put back as it was when the panel closes; a
+protected line waits for combat to end. Quest item buttons are secure buttons parented to
 UIParent and placed over their row by screen position (Pets' Feed button
 does the same), so the panel stays free to move and close in combat; in
 combat a button whose row moved fades (alpha 0) until
@@ -375,10 +377,19 @@ the classic globals, so the tab reads the retail way (see
 Forever's client draws a controller bag button (`GamepadBackpackButton`,
 on its `GamepadBagBar`, from Blizzard's own bag bar file) over the combined
 backpack's sort button. The owner asked (2026-10-09) to hide it:
-`BagIcons:ApplyGamepadBag` hides it, and again whenever it shows, while
-"Bag sort button" in Settings (`hideGamepadBag`, account wide, on unless
-unticked) is ticked; unticking shows it again. Nothing else of the frame is
-changed, and a protected button waits for combat to end.
+`BagIcons:ApplyGamepadBag` makes it see-through and lets clicks through
+to the sort button (`ns.Veil:Cover`) while "Bag sort button" in Settings
+(`hideGamepadBag`, account wide, on unless unticked) is ticked; unticking
+puts it back as it was. A protected button waits for combat to end.
+
+Why never Hide or Show (0.18.0, 2026-10-10): calling them on a game frame
+runs the game's OnHide/OnShow code as this addon. The tracker and the bag
+bar are Edit Mode frames, so the taint stayed in Edit Mode's layout and its
+next update read auras as Equipment: "GetAuraDataByIndex(): Auras cannot
+be accessed when secret while tainted by 'Blackthornes_Equipment'". Calling
+the game's update functions (`ObjectiveTracker_Update`) does the same. To
+put a game frame out of sight, use `ns.Veil`: SetAlpha and the mouse calls
+run no game code. The same holds in every addon.
 
 ## Players' own stat weights
 
