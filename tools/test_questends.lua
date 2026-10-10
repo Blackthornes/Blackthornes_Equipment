@@ -64,6 +64,27 @@ local function Now()
     return steps[current], current
 end
 
+-- The panel's marks: the header's and the step to do now (asked
+-- 2026-10-10: a quest done shows the game's ? like over a quest giver).
+local Panel = ns.QuestPanel
+local marks, spied = {}, {}
+local function Marks()
+    Panel:Refresh()
+    local mark
+    for _, row in ipairs(Panel.steps or {}) do
+        if rawget(row, "now") == true then mark = marks[row] end
+    end
+    return Panel.badgeTexture, mark
+end
+local function SpyMarks()
+    for _, row in ipairs(Panel.steps or {}) do
+        if not spied[row] then
+            spied[row] = true
+            row.mark.SetTexture = function(_, texture) marks[row] = texture end
+        end
+    end
+end
+
 ns.HandleSlash("quest quest")
 local quest = Quest:Current()
 suite.check("the quest reward is picked", quest and quest.itemID == 1002)
@@ -107,6 +128,7 @@ step = Now()
 suite.check("in the log, it goes back to Morin",
     step.text == "Complete The Ravaged Caravan (level 8) and hand it in to Morin Cloudstalker in Mulgore (51.9, 59.6)",
     step.text)
+suite.check("not ready, no ?", not step.turnIn)
 
 -- The reward quest: the objective, then who takes it back.
 inLog[751], done[751] = nil, true
@@ -125,6 +147,12 @@ ready[765] = true
 step = Now()
 suite.check("ready, hand it in to Morin", step.text == "Hand it in to Morin Cloudstalker (51.9, 59.6) and choose item:1002",
     step.text)
+suite.check("the hand-in is marked ready", step.turnIn == true)
+Panel:Refresh()
+SpyMarks()
+local badge, mark = Marks()
+suite.check("the header shows the ?", badge == Panel.TURN_IN_ICON, badge)
+suite.check("so does the step", mark == Panel.TURN_IN_ICON, mark)
 suite.check("and the arrow goes there", (Quest:NextPlace() or {}).name == "Morin Cloudstalker")
 -- The objective met: the clicked step moved on, so the arrow follows the
 -- steps again without another click (asked 2026-10-10).
@@ -140,6 +168,11 @@ inLog[751], ready[751] = true, true
 step = Now()
 suite.check("a chain quest ready to hand in",
     step.text == "Hand in The Ravaged Caravan to Morin Cloudstalker in Mulgore (51.9, 59.6)", step.text)
+suite.check("is marked ready", step.turnIn == true)
+SpyMarks()
+badge, mark = Marks()
+suite.check("the header shows the ? for it", badge == Panel.TURN_IN_ICON, badge)
+suite.check("and the step", mark == Panel.TURN_IN_ICON, mark)
 
 -- Nothing known about where it ends: no place made up.
 S.ENDS[751] = nil
@@ -147,5 +180,9 @@ ready[751] = nil
 step = Now()
 suite.check("nothing known, just complete it", step.text == "Complete The Ravaged Caravan (level 8)", step.text)
 suite.check("with no place, not the giver's", step.place == nil)
+SpyMarks()
+badge, mark = Marks()
+suite.check("back to the ! while there is work to do", badge == Panel.QUEST_ICON, badge)
+suite.check("on the step too", mark ~= Panel.TURN_IN_ICON, mark)
 
 suite.done()

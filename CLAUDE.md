@@ -296,6 +296,10 @@ item drops, Forever's drops first), real spawns in the quest's own zone
 first. `UpgradeQuest.Ender` reads it: a quest in the log points at its
 objective, else its hand-in, and the hand-in once it is ready, never at
 its giver; with nothing known it has no place.
+A hand-in step whose quest is ready (`QuestReady`) carries `turnIn`, and
+the panel then shows the game's yellow ? (`ActiveQuestIcon`) on that step
+and in its header instead of the ! (the owner asked 2026-10-10), read on
+the same debounced quest log refresh as the steps.
 Ignore (the owner asked 2026-10-08) is the old Skip renamed: the same
 `.upgradeQuestSkipped` list, never offered again until restored.
 `UI/IgnoredWindow.lua` (Settings > Upgrade quest > Ignored, `/beq quest

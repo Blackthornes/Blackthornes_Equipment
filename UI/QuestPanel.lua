@@ -79,6 +79,9 @@ local GRIP_SIZE = 20
 local QUEST_ICON = [[Interface\GossipFrame\AvailableQuestIcon]]
 local DONE_ICON = [[Interface\RaidFrame\ReadyCheck-Ready]]
 local NOW_ICON = [[Interface\GossipFrame\AvailableQuestIcon]]
+-- A quest ready to hand in wears the game's yellow ?, as over a quest giver.
+local TURN_IN_ICON = [[Interface\GossipFrame\ActiveQuestIcon]]
+QuestPanel.QUEST_ICON, QuestPanel.TURN_IN_ICON = QUEST_ICON, TURN_IN_ICON
 
 -- The colour each kind of source is tagged in, as in the upgrade finder.
 local KIND_COLOR = { vendor = "accent", quest = "quest", dungeon = "dungeon", craft = "craft" }
@@ -546,6 +549,8 @@ function QuestPanel:Build()
     badge:SetSize(18, 18)
     badge:SetPoint("LEFT", PAD, 0)
     badge:SetTexture(QUEST_ICON)
+    self.badge = badge
+    self.badgeTexture = QUEST_ICON
 
     local fold = Widgets.CreateButton(header, "-", function() QuestPanel:ToggleFold() end,
         { width = 22, height = 20 })
@@ -806,7 +811,7 @@ function QuestPanel:FillStep(row, index, step, current)
         row.number:Hide()
         row.text:SetTextColor(Theme.Unpack("muted"))
     elseif now then
-        row.mark:SetTexture(NOW_ICON)
+        row.mark:SetTexture(step.turnIn and TURN_IN_ICON or NOW_ICON)
         row.mark:Show()
         row.number:Hide()
         row.text:SetTextColor(Theme.Unpack("text"))
@@ -843,6 +848,7 @@ function QuestPanel:Refresh()
 
     -- The Quest log tab: its own list in place of the quest's.
     if self:ShowsLog() and ns.QuestLogUI and ns.QuestLogUI.view then
+        self:SetBadge(QUEST_ICON)
         self.title:SetText(QuestPanel.LOG_TAB.name)
         self.body:Hide()
         self.filters:Hide()
@@ -881,6 +887,8 @@ function QuestPanel:Refresh()
         if step.done then done = done + 1 end
     end
     self.progress:SetText(quest and ("Step %d of %d"):format(math.min(current, #steps), #steps) or "")
+    local now = steps[current]
+    self:SetBadge(now and not now.done and now.turnIn and TURN_IN_ICON or QUEST_ICON)
 
     local height = HEADER
     if not self.folded then
@@ -898,6 +906,14 @@ function QuestPanel:Refresh()
         logic.stepDone = nil
         self:Cheer()
     end
+end
+
+--- The header's mark: ! for a quest to do, ? once the step to do now is
+--- handing one in. Set only when it changes.
+function QuestPanel:SetBadge(texture)
+    if not self.badge or self.badgeTexture == texture then return end
+    self.badgeTexture = texture
+    self.badge:SetTexture(texture)
 end
 
 --- Fill everything under the header; returns how tall it is.
