@@ -45,8 +45,20 @@ local function SkillLines()
 end
 
 --- The weapon skills this character knows, by weapon subclass ID, or nil
---- when the client gives no answer at all.
+--- when the client gives no answer at all. Kept until a skill or spell
+--- event says it may have changed, so lists that ask for every row stay
+--- cheap.
 function WeaponSkills:Known()
+    if self.kept == nil then self.kept = self:ReadKnown() or false end
+    return self.kept or nil
+end
+
+--- Forget the kept answer: a skill may have been learned.
+function WeaponSkills:Forget()
+    self.kept = nil
+end
+
+function WeaponSkills:ReadKnown()
     local lines = SkillLines()
     local known, any = {}, false
     for subclassID, skill in pairs(WeaponTrainers.SKILLS) do
@@ -98,6 +110,20 @@ function WeaponSkills:TrainerFor(link)
     local cities = WeaponTrainers:Cities(faction, info.subclassID)
     if #cities == 0 then return nil end
     return skill.name, cities, from
+end
+
+--- Does an item need a weapon skill this character can learn but has
+--- not? For the red "Train" in the upgrade lists. False when unsure.
+function WeaponSkills:NeedsTraining(link)
+    if not link then return false end
+    local ok, name = pcall(self.TrainerFor, self, link)
+    return ok and name ~= nil
+end
+
+function WeaponSkills:OnEnable()
+    for _, event in ipairs({ "SKILL_LINES_CHANGED", "LEARNED_SPELL_IN_TAB", "SPELLS_CHANGED" }) do
+        ns.RegisterEvent(self, event, self.Forget)
+    end
 end
 
 --- "A", "A or B", "A, B or C".
