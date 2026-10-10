@@ -428,5 +428,5 @@ function Probe:Upgrades()
 end
 
 ns.RegisterCommand("probe", "check what this client supports (reads only)", function()
-    Probe:Run()
+    ns.KeepCheck("probe", Probe.Run, Probe)
 end)
