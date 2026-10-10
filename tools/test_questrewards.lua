@@ -28,20 +28,23 @@ end
 
 local function Arrow(button) return button._textures[1] end
 
-local function LoadWith(choices, named)
+local function LoadWith(choices, named, fixed)
+    fixed = fixed or { "item:5" }
     local ns = env.Load()
     _G.UnitClass = function() return "HUNTER", "HUNTER" end
     env.InstallItems(ITEMS, { [5] = "item:1" })
     env.InstallHooks()
     _G.GetNumQuestChoices = function() return #choices end
+    _G.GetNumQuestRewards = function() return #fixed end
     _G.GetQuestItemLink = function(kind, index)
         if kind == "choice" then return choices[index] end
+        if kind == "reward" then return fixed[index] end
     end
 
     local buttons = {}
     for i = 1, #choices do buttons[i] = Button("choice", i) end
-    -- A fixed reward alongside the choices, which is never marked.
-    buttons[#buttons + 1] = Button("reward", 1)
+    -- Rewards given outright, alongside the choices.
+    for i = 1, #fixed do buttons[#buttons + 1] = Button("reward", i) end
 
     _G.QuestInfoRewardsFrame = nil
     for i = 1, 10 do _G["QuestInfoRewardsFrameQuestInfoItem" .. i] = nil end
@@ -65,7 +68,7 @@ suite.check("the empty boot slot is the bigger gain", index == 2, index)
 _G.QuestInfo_Display()
 suite.check("the hooked layout marks it", Arrow(buttons[2]) and Arrow(buttons[2]):IsShown())
 suite.check("the others are not marked", not Arrow(buttons[1]) and not Arrow(buttons[3]))
-suite.check("nor the fixed reward", not Arrow(buttons[4]))
+suite.check("nor a fixed reward that is no upgrade", not Arrow(buttons[4]))
 
 ns.QuestRewards:QUEST_COMPLETE()
 local chat = env.ChatText()
@@ -133,10 +136,48 @@ suite.check("the arrows setting switches it off", ns.QuestRewards:Mark() == nil)
 suite.check("and hides the arrow", not Arrow(buttons[2]):IsShown())
 ns.db.bagArrows = true
 
--- One reward, nothing to choose: no chat line.
-ns = LoadWith({ "item:2" })
+-- One reward that is no upgrade, nothing to choose: no chat line.
+env.chat = {}
+ns = LoadWith({ "item:5" })
 ns.QuestRewards:QUEST_COMPLETE()
 suite.check("a single reward is not announced", not env.ChatText():find("reward", 1, true), env.ChatText())
+
+-- A lone choice that is an upgrade comes with the quest anyway: said so.
+env.chat = {}
+ns = LoadWith({ "item:2" })
+ns.QuestRewards:QUEST_COMPLETE()
+suite.check("a lone upgrade is named", env.ChatText():find("this quest gives you item:2", 1, true), env.ChatText())
+suite.check("without a choice line", not env.ChatText():find("none of", 1, true), env.ChatText())
+
+-- Choices that are no upgrade, and gloves given outright that are
+-- (Cry of the Thunderhawk): the gloves get the arrow and the chat line.
+ITEMS["item:9"] = { loc = "INVTYPE_HAND", class = 4, subclass = 2, stats = Agi(6) }
+env.chat = {}
+ns, buttons = LoadWith({ "item:5", "item:6" }, false, { "item:9" })
+suite.check("no choice is picked", ns.QuestRewards:Mark() == nil)
+suite.check("the given gloves are marked", Arrow(buttons[3]) and Arrow(buttons[3]):IsShown())
+suite.check("the choices are not", not Arrow(buttons[1]) and not Arrow(buttons[2]))
+ns.QuestRewards:QUEST_COMPLETE()
+local said = env.ChatText()
+suite.check("chat names the given upgrade", said:find("this quest gives you item:9", 1, true), said)
+suite.check("and why", said:find("fills an empty slot", 1, true), said)
+suite.check("never says no reward helps", not said:find("none of these rewards", 1, true), said)
+suite.check("only that no choice does", said:find("none of the rewards to choose from", 1, true), said)
+
+-- A given reward the client has not described yet holds the line back.
+ITEMS["item:10"] = { loc = "INVTYPE_HAND", class = 4, subclass = 2, stats = nil }
+env.chat = {}
+ns = LoadWith({ "item:5", "item:6" }, false, { "item:10" })
+timers = {}
+_G.C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+ns.QuestRewards:QUEST_COMPLETE()
+suite.check("an unloaded given reward waits", not env.ChatText():find("none of", 1, true), env.ChatText())
+suite.check("and holds its line", ns.QuestRewards.announcePending == true)
+ITEMS["item:10"].stats = Agi(5)
+ns.QuestRewards:GET_ITEM_INFO_RECEIVED()
+suite.check("and is named once it arrives",
+    env.ChatText():find("this quest gives you item:10", 1, true), env.ChatText())
+_G.C_Timer.After = immediate
 
 -- A client that raises costs the arrow, not an error.
 ns = LoadWith({ "item:2", "item:3" })
