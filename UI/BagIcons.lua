@@ -55,6 +55,7 @@ local TOOLS = {
     [6218] = true, [6339] = true, [11130] = true, [11145] = true, [16207] = true,
     [15138] = true, [19901] = true,
 }
+BagIcons.TOOLS = TOOLS
 local TOOL_SKILLS = { "Mining", "Skinning", "Herbalism", "Fishing" }
 
 local function Field(object, key)

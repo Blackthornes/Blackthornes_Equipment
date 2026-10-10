@@ -61,6 +61,39 @@ change, change Tradeskills' `Logic/Upgrades.lua` too.
 The CurseForge project ID is **1720051** (the owner created it 2026-09-30), on the
 TOC's `X-Curse-Project-ID` line. The first release is 0.1.0.
 
+## What Butler calls here
+
+Blackthornes Butler (`Blackthornes/Blackthornes_Butler`) tells the player
+what to do with each item in the bags. When this addon is loaded it asks,
+once per carried item, inside a pcall and read only (its
+`Logic/Sisters.lua`):
+
+```lua
+_G.BlackthornesEquipment.Butler:Advise(link, bag, slot)   -- link or item ID; bag and slot optional
+```
+
+`Logic/Butler.lua` answers nil for anything that is not gear (or not
+loaded yet) after two cheap item calls, unless it is a known tool, and
+otherwise a table:
+
+- `upgrade`: "now" when the bag arrow shows (`Compare:JudgeCarried`,
+  `Compare.WearableUpgrade`), "later" for an upgrade waiting on a level or
+  on training, nil otherwise.
+- `gain`: the upgrade's size as a whole percent, nil when there is none to
+  give (an empty slot) or it is no upgrade.
+- `sell`: true when the bag's sell coin would show on it (`BagIcons:Sells`,
+  so false while "Sell coins" is unticked). Soulbound can only be told from
+  the bag slot, so without `bag` and `slot` green and better gear is never
+  `sell`.
+- `tool`: true for gathering and profession tools (`BagIcons.IsTool`,
+  `BagIcons.TOOLS`) and fishing poles; a tool is never `sell`.
+
+It never raises, scans no bags and keeps nothing new: scores, sell prices
+and tools are the per-link caches the bag icons already keep, since Butler
+asks a hundred times in a burst. Keep the global, `Butler:Advise` and these
+fields stable; if one has to change, change Butler's `Logic/Sisters.lua`
+too.
+
 ## What this addon calls in Tradeskills
 
 When a player changes a stat weight or picks a spec (`Weights:Changed` in
