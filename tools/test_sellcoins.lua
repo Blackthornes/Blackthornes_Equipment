@@ -17,6 +17,9 @@ local ITEMS = {
     -- A white shirt, and one a vendor will not buy.
     ["item:7"] = { loc = "INVTYPE_BODY", class = 4, subclass = 0, stats = {} },
     ["item:8"] = { loc = "INVTYPE_CHEST", class = 4, subclass = 2, stats = { ITEM_MOD_AGILITY_SHORT = 2 } },
+    -- The mining pick, and a dagger that adds to Skinning.
+    ["item:2901"] = { loc = "INVTYPE_WEAPON", class = 2, subclass = 0, stats = {} },
+    ["item:9"] = { loc = "INVTYPE_WEAPON", class = 2, subclass = 15, stats = {} },
 }
 
 -- Quality, soulbound and sell price for each bag slot.
@@ -28,6 +31,8 @@ local SLOTS = {
     [5] = { quality = 3, price = 200, bound = true },  -- upgrade, blue
     [6] = { quality = 1, price = 5 },                  -- shirt
     [7] = { quality = 1, price = 0 },                  -- no sell price
+    [8] = { quality = 1, price = 20 },                 -- mining pick
+    [9] = { quality = 2, price = 300, bound = true },  -- skinning dagger
 }
 
 local function Button(bag, slot)
@@ -48,7 +53,7 @@ local ns = env.Load()
 _G.UnitClass = function() return "HUNTER", "HUNTER" end
 env.InstallItems(ITEMS, { [5] = "item:1" }, { [0] = {
     [1] = "item:2", [2] = "item:3", [3] = "item:4", [4] = "item:5",
-    [5] = "item:6", [6] = "item:7", [7] = "item:8",
+    [5] = "item:6", [6] = "item:7", [7] = "item:8", [8] = "item:2901", [9] = "item:9",
 } })
 env.InstallHooks()
 _G.C_Container.GetContainerItemInfo = function(bag, slot)
@@ -57,9 +62,11 @@ _G.C_Container.GetContainerItemInfo = function(bag, slot)
     return { quality = s.quality, isBound = s.bound == true, stackCount = 1 }
 end
 local PRICES = { ["item:2"] = 50, ["item:3"] = 10, ["item:4"] = 80, ["item:5"] = 80,
-    ["item:6"] = 200, ["item:7"] = 5, ["item:8"] = 0 }
+    ["item:6"] = 200, ["item:7"] = 5, ["item:8"] = 0, ["item:2901"] = 20, ["item:9"] = 300 }
 _G.C_TooltipInfo = { GetHyperlink = function(link)
-    return { lines = { { type = 11, price = PRICES[link] } } }
+    local lines = { { type = 11, price = PRICES[link] } }
+    if link == "item:9" then lines[2] = { type = 0, leftText = "Equip: Skinning +10." } end
+    return { lines = lines }
 end }
 local priceReads = 0
 local readPrice = ns.Items.SellPrice
@@ -71,7 +78,7 @@ local enchanter = false
 _G.IsPlayerSpell = function(id) return enchanter and id == 13262 end
 
 local buttons = {}
-for slot = 1, 7 do buttons[slot] = Button(0, slot) end
+for slot = 1, 9 do buttons[slot] = Button(0, slot) end
 _G.ContainerFrameCombinedBags = env.Stub({ _shown = true })
 _G.ContainerFrameCombinedBags.EnumerateValidItems = function()
     local i = 0
@@ -100,6 +107,8 @@ suite.check("a green not yet bound gets none", not Coin(4))
 suite.check("an upgrade gets the arrow, not a coin", Arrow(5) and not Coin(5))
 suite.check("a shirt gets none", not Coin(6))
 suite.check("gear no vendor buys gets none", not Coin(7))
+suite.check("the mining pick gets none", not Coin(8))
+suite.check("a weapon that adds to Skinning gets none", not Coin(9))
 
 local reads = priceReads
 ns.BagIcons:Refresh()

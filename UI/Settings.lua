@@ -305,7 +305,7 @@ function SettingsUI:BuildGear()
     end)
 
     local coinRow = pages:Row("gear", 1, "Sell coins",
-        "A gold coin on gear in your bags that is not an upgrade and is worth selling to a vendor: white gear, and soulbound green or better gear when you can't disenchant it.")
+        "A gold coin on gear in your bags that is not an upgrade and is worth selling to a vendor: white gear, and soulbound green or better gear when you can't disenchant it. Never on gathering tools.")
     controls.sellCoins = Tick(coinRow, "Show them", "bagSellCoins", true, function()
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
     end)
