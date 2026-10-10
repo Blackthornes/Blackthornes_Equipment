@@ -318,34 +318,70 @@ Panel.frame:Show()
 -- The game's tracker
 --------------------------------------------------------------------------------
 
-local tracker = env.Stub({ _shown = true, _protected = false })
-tracker.IsProtected = function(self) return self._protected end
+-- A game frame that records its alpha and mouse, and fails the test if
+-- anything calls Hide or Show on it: that would run the game's own code as
+-- this addon and taint Edit Mode's layout.
+local touched = false
+local function GameFrame(fields)
+    local frame = env.Stub(fields)
+    frame._alpha, frame._mouse = 1, frame._mouse ~= false
+    frame._kids = frame._kids or {}
+    frame.Hide = function() touched = true end
+    frame.Show = function() touched = true end
+    frame.SetAlpha = function(self, value) self._alpha = value end
+    frame.GetAlpha = function(self) return self._alpha end
+    -- The retail engine's calls, clicks and mouse-over apart.
+    frame.IsMouseClickEnabled = function(self) return self._mouse end
+    frame.IsMouseMotionEnabled = function(self) return self._mouse end
+    frame.SetMouseClickEnabled = function(self, on)
+        if combat and self._protected then error("blocked in combat") end
+        self._mouse = on and true or false
+    end
+    frame.SetMouseMotionEnabled = frame.SetMouseClickEnabled
+    frame.IsProtected = function(self) return self._protected end
+    frame.GetChildren = function(self) return unpack(self._kids) end
+    return frame
+end
+
+local line = GameFrame({ _shown = true, _protected = false })
+local quiet = GameFrame({ _shown = true, _mouse = false })
+local tracker = GameFrame({ _shown = true, _protected = false, _mouse = false, _kids = { line, quiet } })
+local function Hidden() return tracker._alpha == 0 and not line._mouse end
+local function Back() return tracker._alpha == 1 and line._mouse and not quiet._mouse end
 _G.ObjectiveTrackerFrame = tracker
 Tab:ApplyTracker()
-suite.check("off unless ticked: the game's tracker stays", tracker:IsShown())
+suite.check("off unless ticked: the game's tracker stays", Back())
 Tab:SetHidesTracker(true)
-suite.check("ticked: hidden while the panel is up", not tracker:IsShown() and ns.db.hideQuestTracker == true)
-tracker:Show()
-tracker._scripts.OnShow(tracker)
-suite.check("hidden again whenever the game shows it", not tracker:IsShown())
+suite.check("ticked: out of sight while the panel is up", Hidden() and ns.db.hideQuestTracker == true)
+suite.check("its lines let clicks through", not line._mouse and Tab:TrackerHidden("ObjectiveTrackerFrame"))
 
-combat, tracker._protected = true, true
-tracker:Show()
-tracker._scripts.OnShow(tracker)
-suite.check("never hidden in combat while protected", tracker:IsShown())
-combat = false
-Fire("PLAYER_REGEN_ENABLED")
-suite.check("hidden once the fight ends", not tracker:IsShown())
-tracker._protected = false
+local added = GameFrame({ _shown = true })
+tracker._kids[3] = added
+Fire("QUEST_WATCH_LIST_CHANGED")
+suite.check("a line the game adds later lets clicks through too", not added._mouse)
 
 Panel.frame:Hide()
 Tab:OnPanelShown(false)
-suite.check("the panel closed: the game's tracker comes back", tracker:IsShown())
+suite.check("the panel closed: the game's tracker comes back", Back() and added._mouse)
 Panel.frame:Show()
 Tab:OnPanelShown(true)
-suite.check("and goes when it opens", not tracker:IsShown())
+suite.check("and goes when it opens", Hidden())
+
+-- A protected line keeps the mouse it had until the fight ends.
+Panel.frame:Hide()
+Tab:OnPanelShown(false)
+combat, line._protected = true, true
+Panel.frame:Show()
+Tab:OnPanelShown(true)
+suite.check("in combat the tracker still goes out of sight", tracker._alpha == 0 and line._mouse)
+combat = false
+Fire("PLAYER_REGEN_ENABLED")
+suite.check("and its protected line lets clicks through once the fight ends", Hidden())
+line._protected = false
+
 Tab:SetHidesTracker(false)
-suite.check("unticked: it comes back", tracker:IsShown() and ns.db.hideQuestTracker == false)
+suite.check("unticked: it comes back", Back() and ns.db.hideQuestTracker == false)
+suite.check("the game's tracker is never hidden or shown by the addon", not touched)
 
 --------------------------------------------------------------------------------
 -- Settings and the probe
@@ -354,9 +390,9 @@ suite.check("unticked: it comes back", tracker:IsShown() and ns.db.hideQuestTrac
 ns.SettingsUI:Show()
 local controls = ns.SettingsUI.controls
 controls.hideQuestTracker:GetScript("OnClick")(controls.hideQuestTracker)
-suite.check("Settings ticks the same setting", ns.db.hideQuestTracker == true and not tracker:IsShown())
+suite.check("Settings ticks the same setting", ns.db.hideQuestTracker == true and Hidden())
 controls.hideQuestTracker:GetScript("OnClick")(controls.hideQuestTracker)
-suite.check("and unticks it", ns.db.hideQuestTracker == false and tracker:IsShown())
+suite.check("and unticks it", ns.db.hideQuestTracker == false and Back())
 suite.check("the probe describes the log", Log:Describe():find("3 quests in 2 headings", 1, true), Log:Describe())
 
 --------------------------------------------------------------------------------

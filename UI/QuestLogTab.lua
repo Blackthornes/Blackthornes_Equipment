@@ -1006,62 +1006,53 @@ end
 -- The tracker on a retail client, and on a classic one.
 QuestLogUI.TRACKERS = { "ObjectiveTrackerFrame", "QuestWatchFrame" }
 
-local function Ask(frame, method, ...)
-    local fn = type(frame) == "table" and frame[method]
-    if type(fn) ~= "function" then return nil end
-    local ok, value = pcall(fn, frame, ...)
-    return ok and value or nil
-end
+-- The tracker is never hidden with Hide: that would run the game's own
+-- OnHide code as this addon, and the tracker is an Edit Mode frame, so the
+-- taint ends up in Edit Mode's layout (UI/Veil.lua says more). It is made
+-- see-through and stops taking the mouse instead, and the game goes on
+-- running it as before.
 
---- Should the game's tracker be hidden now: the setting on and the panel up?
+--- Should the game's tracker be out of sight now: the setting on and the
+--- panel up?
 function QuestLogUI:WantsTrackerHidden()
     local panel = ns.QuestPanel
     return self:HidesTracker() and panel and panel.frame ~= nil and panel.frame:IsShown() == true
 end
 
---- Hide one tracker now, or once combat ends. True when it was hidden.
-function QuestLogUI:HideTracker(name, frame)
-    if Ask(frame, "IsProtected") and InCombat() then
-        self.trackerAfterCombat = true
-        return false
-    end
-    local hide = frame.Hide
-    if type(hide) ~= "function" or not pcall(hide, frame) then return false end
-    self.trackerHidden = self.trackerHidden or {}
-    self.trackerHidden[name] = true
-    return true
+--- Is a tracker out of sight through this addon?
+function QuestLogUI:TrackerHidden(name)
+    local frame = rawget(_G, name)
+    return type(frame) == "table" and ns.Veil:Covers(frame)
 end
 
---- Hide or bring back the game's tracker, as the setting and the panel say.
+--- Put the game's tracker out of sight or bring it back, as the setting and
+--- the panel say.
 function QuestLogUI:ApplyTracker()
-    self.trackerHooked = self.trackerHooked or {}
+    local hide = self:WantsTrackerHidden()
     for _, name in ipairs(self.TRACKERS) do
         local frame = rawget(_G, name)
         if type(frame) == "table" then
-            if not self.trackerHooked[name] and type(frame.HookScript) == "function"
-                and pcall(frame.HookScript, frame, "OnShow", function(shown)
-                    if QuestLogUI:WantsTrackerHidden() then pcall(QuestLogUI.HideTracker, QuestLogUI, name, shown) end
-                end) then
-                self.trackerHooked[name] = true
+            local done
+            if hide then
+                done = ns.Veil:Cover(frame)
+            else
+                done = ns.Veil:Uncover(frame)
             end
-            if self:WantsTrackerHidden() then
-                if Ask(frame, "IsShown") then self:HideTracker(name, frame) end
-            elseif self.trackerHidden and self.trackerHidden[name] then
-                if Ask(frame, "IsProtected") and InCombat() then
-                    self.trackerAfterCombat = true
-                else
-                    self.trackerHidden[name] = nil
-                    pcall(frame.Show, frame)
-                    -- Let the game decide what it shows (a tracker with
-                    -- nothing to track hides itself again).
-                    for _, update in ipairs({ "QuestWatch_Update", "ObjectiveTracker_Update" }) do
-                        local fn = rawget(_G, update)
-                        if type(fn) == "function" then pcall(fn) end
-                    end
-                end
-            end
+            if not done then self.trackerAfterCombat = true end
         end
     end
+end
+
+--- The game may add lines to the tracker while it is out of sight: catch
+--- them once the burst of quest events is over.
+function QuestLogUI:TrackerChanged()
+    if self.trackerPending or not self:WantsTrackerHidden() then return end
+    self.trackerPending = true
+    local function Later()
+        QuestLogUI.trackerPending = false
+        QuestLogUI:ApplyTracker()
+    end
+    if C_Timer and C_Timer.After then C_Timer.After(0.2, Later) else Later() end
 end
 
 --------------------------------------------------------------------------------
@@ -1112,6 +1103,7 @@ function QuestLogUI:OnEnable()
         ns.RegisterEvent(self, event, function(_, _, unit)
             if event == "UNIT_QUEST_LOG_CHANGED" and unit ~= "player" then return end
             QuestLogUI:LogChanged()
+            QuestLogUI:TrackerChanged()
         end)
     end
     for _, event in ipairs({ "QUEST_REMOVED", "QUEST_TURNED_IN" }) do

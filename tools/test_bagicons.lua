@@ -112,31 +112,45 @@ local ok = pcall(ns.BagIcons.Refresh, ns.BagIcons)
 suite.check("a button that raises does not break the rest", ok)
 
 -- Forever's controller bag button, which covers the combined backpack's
--- sort button, is hidden unless the setting is unticked.
+-- sort button, is put out of sight (and lets clicks through) unless the
+-- setting is unticked. Hide and Show are never called on it: they would run
+-- the game's bag bar code as this addon and taint Edit Mode's layout.
 ns = Load()
-local pad = env.Stub({ _shown = true })
+local touched = false
+local pad = env.Stub({ _shown = true, _alpha = 1, _mouse = true })
+pad.Hide = function() touched = true end
+pad.Show = function() touched = true end
+pad.SetAlpha = function(self, value) self._alpha = value end
+pad.GetAlpha = function(self) return self._alpha end
+-- The retail engine's calls, clicks and mouse-over apart.
+pad.IsMouseClickEnabled = function(self) return self._mouse end
+pad.IsMouseMotionEnabled = function(self) return self._mouse end
+pad.SetMouseClickEnabled = function(self, on)
+    if self._protected and _G.InCombatLockdown and _G.InCombatLockdown() then error("blocked in combat") end
+    self._mouse = on and true or false
+end
+pad.SetMouseMotionEnabled = pad.SetMouseClickEnabled
+pad.IsProtected = function(self) return self._protected end
+pad.GetChildren = function() end
 _G.GamepadBackpackButton = pad
 ns.BagIcons:OnEnable()
-suite.check("the controller bag button is hidden", not pad:IsShown())
-pad:Show()
-pad._scripts.OnShow(pad)
-suite.check("and stays hidden when the game shows it again", not pad:IsShown())
+suite.check("the controller bag button is out of sight", pad._alpha == 0 and ns.BagIcons:GamepadHidden())
+suite.check("and lets clicks through to the sort button", not pad._mouse)
 
 ns.db.hideGamepadBag = false
 ns.BagIcons:ApplyGamepadBag()
-suite.check("unticking shows it again", pad:IsShown())
-pad._scripts.OnShow(pad)
-suite.check("and leaves it alone after", pad:IsShown())
+suite.check("unticking puts it back", pad._alpha == 1 and pad._mouse and not ns.BagIcons:GamepadHidden())
 ns.db.hideGamepadBag = true
 
--- A protected button waits for combat to end.
-pad.IsProtected = function() return true end
+-- A protected button lets clicks through once combat ends.
+pad._protected = true
 _G.InCombatLockdown = function() return true end
 ns.BagIcons:ApplyGamepadBag()
-suite.check("never hidden in combat when protected", pad:IsShown())
+suite.check("in combat a protected button keeps its mouse", pad._mouse)
 _G.InCombatLockdown = function() return false end
 ns.eventFrame:GetScript("OnEvent")(ns.eventFrame, "PLAYER_REGEN_ENABLED")
-suite.check("hidden once combat ends", not pad:IsShown())
+suite.check("and lets clicks through once combat ends", not pad._mouse and pad._alpha == 0)
+suite.check("the button is never hidden or shown by the addon", not touched)
 _G.InCombatLockdown = nil
 _G.GamepadBackpackButton = nil
 
