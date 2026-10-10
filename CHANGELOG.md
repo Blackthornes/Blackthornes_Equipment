@@ -4,6 +4,19 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.19.0
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- **Quest rewards given outright are judged too:** gear under "You will
+  also receive" now gets the green arrow on the quest window and its own
+  chat line when it's an upgrade, and the Upgrade quest step says "to get"
+  it instead of "choose" it.
+- **Best seller marked:** when none of a quest's rewards is an upgrade, the
+  one a vendor pays the most for gets a gold coin, and chat names it with
+  its sell price.
+
 ## 0.18.1
 
 For WoW: Forever (interface 16001). A file was added, so restart the game

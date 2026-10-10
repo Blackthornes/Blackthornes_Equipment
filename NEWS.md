@@ -12,6 +12,11 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.19.0
+
+- Quest rewards you get without picking are now checked for upgrades too.
+- When no reward is an upgrade, a gold coin shows the one that sells for the most.
+
 ## 0.18.1
 
 - Fixed an error that could pop up when the game's quest tracker or bag button was hidden.
