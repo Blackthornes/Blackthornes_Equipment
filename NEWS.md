@@ -12,6 +12,11 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.18.1
+
+- Fixed an error that could pop up when the game's quest tracker or bag button was hidden.
+- The quest arrow now moves on to the hand-in by itself when you finish a step.
+
 ## 0.18.0
 
 - The upgrade quest window has a new Quest log tab with all your quests in one place.
