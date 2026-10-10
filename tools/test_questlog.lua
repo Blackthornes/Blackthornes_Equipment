@@ -196,6 +196,27 @@ suite.check("Fold all folds the rest", #Tab.shown == 0 and Tab.foldButton.label:
 Tab:FoldAll()
 suite.check("and opens them all again", #Tab.shown == 3 and Tab.foldButton.label:GetText() == "Fold all")
 
+-- With Tracked only, Fold all acts on the zones listed: when every listed
+-- zone is folded it reads "Open all", and a click opens them.
+do
+    Tab.trackedBox:GetScript("OnClick")(Tab.trackedBox)
+    rows = Tab.shown
+    local listed = {}
+    for _, title in ipairs(Tab.listedZones) do listed[title] = true end
+    for _, zone in ipairs(Tab.data.zones) do
+        ns.charDB.questLogFolded[zone.title] = listed[zone.title] or nil
+    end
+    Tab:Changed()
+    local word = Tab.foldButton.label:GetText()
+    Tab:FoldAll()
+    suite.check("Tracked only: Fold all opens the listed zones", word == "Open all" and #Tab.shown > 0,
+        word .. " " .. #Tab.shown)
+    for title in pairs(ns.charDB.questLogFolded) do ns.charDB.questLogFolded[title] = nil end
+    Tab.trackedBox:GetScript("OnClick")(Tab.trackedBox)
+    Tab:Changed()
+    suite.check("and unticked, all three show again", #Tab.shown == 3, #Tab.shown)
+end
+
 -- Events while the tab is hidden read nothing.
 Panel.tabs[1]:GetScript("OnClick")(Panel.tabs[1])
 suite.check("a source tab takes over from the log", not Panel:ShowsLog() and not Tab.view:IsShown())
@@ -235,6 +256,17 @@ suite.check("and puts the log's own pick back", selected == 555, selected)
 Tab:Act("abandon", night)
 suite.check("Abandon goes through the game's own box", abandonSet == 102 and popup[1] == "ABANDON_QUEST"
     and popup[2] == "The Night Watch")
+
+-- A quest the game's log cannot be made to pick is never shared or
+-- abandoned: the game would act on whichever quest it had picked.
+do
+    local unpickable = { title = "No ID", index = 9 }
+    abandonSet, pushed = nil, 0
+    popup[1], popup[2] = nil, nil
+    suite.check("an unpickable quest is not abandoned", ns.QuestLog:Abandon(unpickable) == false
+        and abandonSet == nil and popup[1] == nil)
+    suite.check("nor shared", ns.QuestLog:Share(unpickable) == false and pushed == 0, pushed)
+end
 
 --------------------------------------------------------------------------------
 -- The arrow

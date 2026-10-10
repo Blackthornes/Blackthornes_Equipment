@@ -361,7 +361,9 @@ it is protected. Quest item buttons are secure buttons parented to
 UIParent and placed over their row by screen position (Pets' Feed button
 does the same), so the panel stays free to move and close in combat; in
 combat a button whose row moved fades (alpha 0) until
-`PLAYER_REGEN_ENABLED` puts it back. Quest events only mark the log stale;
+`PLAYER_REGEN_ENABLED` puts it back; a faded button shows no tooltip but
+can still be clicked until the fight ends, since nothing insecure can
+hide it then. Quest events only mark the log stale;
 it is read once, 0.2 s later, and only while the tab shows, and rows are
 filled again only when their key (title, objectives, tracked, item) changed.
 The probe (2026-10-10) found the C_QuestLog calls on Forever and none of

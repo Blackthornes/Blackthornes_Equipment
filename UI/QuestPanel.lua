@@ -512,12 +512,18 @@ function QuestPanel:Build()
 
     frame:SetScript("OnDragStart", function(self)
         self:StartMoving()
-        if ns.QuestLogUI then ns.QuestLogUI:PlaceItems() end
+        if ns.QuestLogUI then
+            ns.QuestLogUI.dragging = true
+            ns.QuestLogUI:PlaceItems()
+        end
     end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         QuestPanel:SavePosition()
-        if ns.QuestLogUI then ns.QuestLogUI:PlaceItemsSoon() end
+        if ns.QuestLogUI then
+            ns.QuestLogUI.dragging = nil
+            ns.QuestLogUI:PlaceItemsSoon()
+        end
     end)
     -- The Quest log tab hides the game's tracker while the panel is up, and
     -- its item buttons go with the panel.
