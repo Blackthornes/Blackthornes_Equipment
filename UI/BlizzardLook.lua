@@ -569,10 +569,10 @@ local function Portrait(trim)
     ring:SetAllPoints(portrait)
     ring:SetTexture(media .. "Portrait")
     -- The house ring in silver, the colour of the game's portrait rings.
-    -- SetDesaturated answers true when the client could; otherwise the ring
-    -- is tinted instead.
-    local ok, did = pcall(ring.SetDesaturated, ring, true)
-    if not (ok and did == true) then ring:SetVertexColor(0.75, 0.75, 0.78) end
+    -- Retail's SetDesaturated returns nothing; only a raise or an explicit
+    -- false means the ring could not be greyed, and is tinted instead.
+    local ok, greyed = pcall(ring.SetDesaturated, ring, true)
+    if not ok or greyed == false then ring:SetVertexColor(0.75, 0.75, 0.78) end
 
     local emblem = portrait:CreateTexture(nil, "ARTWORK", nil, 2)
     emblem:SetSize(EMBLEM, EMBLEM)

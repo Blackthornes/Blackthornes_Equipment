@@ -855,11 +855,8 @@ function SettingsUI:RegisterGameOptions()
     blurb:SetText("Equipment's settings have a window of their own.")
 
     local open = Widgets.CreateButton(panel, "Open Equipment settings", function()
-        -- Close the game's panel first, or the two windows fight for the
-        -- keyboard.
-        if SettingsPanel and HideUIPanel then
-            pcall(HideUIPanel, SettingsPanel)
-        end
+        -- The game's panel is left open: hiding one of its frames from here
+        -- would run its own code as this addon. Ours opens on top of it.
         SettingsUI:Show()
     end, { width = 190, height = 24 })
     open:SetPoint("TOPLEFT", blurb, "BOTTOMLEFT", 0, -14)
