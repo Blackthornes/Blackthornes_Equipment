@@ -220,13 +220,20 @@ function UI:BuildRows()
 
     self.rows = {}
     for index, entry in ipairs(SLOTS) do
-        local restKey = index % 2 == 0 and "row" or "rowAlt"
+        local restKey = index % 2 == 0 and "glassAlt" or "glass"
         local row = CreateFrame("Frame", nil, frame)
         -- Above the well, whatever order the client draws siblings in.
         row:SetFrameLevel(well:GetFrameLevel() + 1)
         row:SetSize(inner, ROW_HEIGHT)
         row:SetPoint("TOPLEFT", PADDING, top - COLUMN_HEADS - (index - 1) * ROW_HEIGHT)
         row.background = Theme.Fill(row, restKey)
+
+        -- Dark glass: a fine line under each row.
+        local line = row:CreateTexture(nil, "BACKGROUND", nil, 1)
+        line:SetPoint("BOTTOMLEFT")
+        line:SetPoint("BOTTOMRIGHT")
+        line:SetHeight(1)
+        line:SetColorTexture(Theme.Unpack("border", 0.6))
 
         -- A slot with an upgrade waiting gets a green edge and a faint green
         -- wash, so the eye finds it before reading anything.
@@ -257,16 +264,16 @@ function UI:BuildRows()
         gain:SetPoint("RIGHT", -8, 0)
         gain:SetWidth(GAIN_WIDTH)
 
-        -- Under the mouse the row lights from the left: a gold wash fading
-        -- across it (Titanforged).
+        -- Under the mouse the row lights from the left: a soft gold wash
+        -- fading across it (Titanforged). Hidden at rest.
         local hoverWash = row:CreateTexture(nil, "BACKGROUND", nil, 3)
         hoverWash:SetAllPoints(row)
-        Theme.SetGradientAlpha(hoverWash, "HORIZONTAL", "accent", 0.20, 0)
-        hoverWash:SetAlpha(0)
+        hoverWash:Hide()
+        row.hoverWash = hoverWash
 
         function row.Light(p)
-            row.background:SetColorTexture(Motion.Mix(restKey, "rowHover", p))
-            hoverWash:SetAlpha(p)
+            row.background:SetColorTexture(Motion.Mix(restKey, "glassHover", p))
+            Theme.LightGradient(hoverWash, "HORIZONTAL", "accent", 0.10, 0, p)
         end
 
         self.rows[index] = {
