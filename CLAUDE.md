@@ -364,7 +364,9 @@ combat a button whose row moved fades (alpha 0) until
 `PLAYER_REGEN_ENABLED` puts it back. Quest events only mark the log stale;
 it is read once, 0.2 s later, and only while the tab shows, and rows are
 filled again only when their key (title, objectives, tracked, item) changed.
-Not yet seen in game; `/beq probe` lists the quest log calls.
+The probe (2026-10-10) found the C_QuestLog calls on Forever and none of
+the classic globals, so the tab reads the retail way (see
+`docs/FOREVER_API_FINDINGS.md`); the tab itself not yet seen in game.
 
 ## The controller bag button
 
