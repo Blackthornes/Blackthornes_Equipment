@@ -217,6 +217,8 @@ function QuestLogUI:Build(frame, top)
     bar.thumb = bar:CreateTexture(nil, "ARTWORK")
     bar.thumb:SetWidth(SCROLL_BAR - 2)
     bar.thumb:SetColorTexture(Theme.Unpack("accent", 0.8))
+    -- The game's scroll knob in the Blizzard window style (UI/BlizzardLook.lua).
+    if ns.BlizzardLook then ns.BlizzardLook.Thumb(bar.thumb) end
     bar:EnableMouse(true)
     bar:SetScript("OnMouseDown", function(clicked)
         -- A click above or below the thumb moves a page that way.

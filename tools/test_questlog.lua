@@ -327,4 +327,52 @@ controls.hideQuestTracker:GetScript("OnClick")(controls.hideQuestTracker)
 suite.check("and unticks it", ns.db.hideQuestTracker == false and tracker:IsShown())
 suite.check("the probe describes the log", Log:Describe():find("3 quests in 2 headings", 1, true), Log:Describe())
 
+--------------------------------------------------------------------------------
+-- The Blizzard window style
+--------------------------------------------------------------------------------
+
+-- A fresh load with the style picked: the tab builds, fills and wears the
+-- game's colours, tick boxes and scroll knob.
+do
+    local questLog, itemInfo = _G.C_QuestLog, _G.GetQuestLogSpecialItemInfo
+    local blizz = env.Load()
+    _G.BlackthornesEquipmentDB.windowStyle = "blizzard"
+    blizz.LoadSavedVariables()
+    local Look = blizz.BlizzardLook
+    -- The pretend client has all of the game's art (test_blizzardlook covers
+    -- a client without it).
+    Look.HasArt = function() return true end
+    Look.Style()
+    _G.C_QuestLog, _G.GetQuestLogSpecialItemInfo = questLog, itemInfo
+    _G.UnitClass = function() return "Hunter", "HUNTER", 3 end
+    _G.UnitLevel = function() return 24 end
+    _G.GetRealZoneText = function() return "Duskwood" end
+    for id in pairs(watched) do watched[id] = nil end
+    watched[101], watched[103] = true, true
+
+    suite.check("Blizzard style: picked", Look.On())
+    -- Count the tick boxes dressed: Tracked only, Hide the tracker, a row each.
+    local dressedBoxes, checkbox = 0, Look.Checkbox
+    Look.Checkbox = function(...)
+        local dressed = checkbox(...)
+        if dressed then dressedBoxes = dressedBoxes + 1 end
+        return dressed
+    end
+    blizz.db.upgradeQuest = true
+    blizz.QuestLogUI:OnEnable()
+    blizz.QuestPanel:Build()
+    blizz.HandleSlash("quest log")
+    local BTab = blizz.QuestLogUI
+    suite.check("Blizzard style: the tab shows", blizz.QuestPanel:ShowsLog() and BTab.view:IsShown())
+    suite.check("Blizzard style: three rows", #BTab.shown == 3, #BTab.shown)
+    local glass = Look.PALETTE.glass
+    local band = { blizz.Theme.Unpack("glass") }
+    suite.check("Blizzard style: plain rows in the game's colours",
+        math.abs(band[1] - glass[1]) < 0.001, band[1])
+    suite.check("Blizzard style: tick boxes wear the game's art", dressedBoxes >= 5, dressedBoxes)
+    suite.check("Blizzard style: the scroll thumb is the game's knob", BTab.bar.thumb.blizzard == true)
+    suite.check("Blizzard style: the footer's main button wears the game's red",
+        rawget(BTab.mapButton or {}, "blizzardFace") ~= nil, tostring(BTab.mapButton))
+end
+
 suite.done()
