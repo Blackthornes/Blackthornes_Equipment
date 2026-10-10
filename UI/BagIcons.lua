@@ -10,7 +10,11 @@
 -- button ContainerFrame<n>Item<m> and keeps the bag id on the frame.
 -- /beq probe says which frames this client has.
 --
--- The arrow is a texture this addon owns, laid over the item button. Nothing
+-- Gear that is not an upgrade and is better sold gets a gold coin instead
+-- (BagIcons:Sells): white gear, and soulbound green or better gear when the
+-- character cannot disenchant it. Greys get none; the game marks its own junk.
+--
+-- The arrow and the coin are textures this addon owns, laid over the item button. Nothing
 -- of Blizzard's is changed or written to, so using an item from the bags in
 -- combat is not affected.
 
@@ -32,6 +36,16 @@ local ATLAS = "bags-greenarrow"
 local FALLBACK_TEXTURE = [[Interface\Buttons\UI-MicroStream-Green]]
 
 local arrows = setmetatable({}, { __mode = "k" })
+local coins = setmetatable({}, { __mode = "k" })
+
+-- The quest reward coin's look (UI/QuestRewards.lua).
+local COIN_TEXTURE = "Interface\\MoneyFrame\\UI-GoldIcon"
+-- Disenchant, the spell Enchanting teaches.
+local DISENCHANT = 13262
+local ENCHANTING_LINE = 333
+-- Kept to wear, not to sell: shirts, tabards and fishing poles.
+local KEEP_LOC = { INVTYPE_BODY = true, INVTYPE_TABARD = true }
+local CLASS_WEAPON, FISHING_POLE = 2, 20
 
 local function Field(object, key)
     if type(object) ~= "table" then return nil end
@@ -51,6 +65,10 @@ end
 
 function BagIcons:IsEnabled()
     return not (ns.db and ns.db.bagArrows == false)
+end
+
+function BagIcons:CoinsEnabled()
+    return not (ns.db and ns.db.bagSellCoins == false)
 end
 
 --------------------------------------------------------------------------------
@@ -151,13 +169,113 @@ function BagIcons:Arrow(button)
     return texture
 end
 
---- Show or hide the arrow on one button.
+--- The coin already made for a button, or nil; never makes one.
+function BagIcons:ExistingCoin(button)
+    return coins[button]
+end
+
+--- The gold coin for a button, made the first time it is asked for.
+function BagIcons:Coin(button)
+    local coin = coins[button]
+    if coin then return coin end
+    local create = Field(button, "CreateTexture")
+    if type(create) ~= "function" then return nil end
+    local ok, texture = pcall(create, button, nil, "OVERLAY", nil, 7)
+    if not ok or not texture then return nil end
+    texture:SetSize(14, 14)
+    texture:SetPoint("TOPLEFT", button, "TOPLEFT", 2, -2)
+    texture:SetTexture(COIN_TEXTURE)
+    texture:Hide()
+    coins[button] = texture
+    return texture
+end
+
+--------------------------------------------------------------------------------
+-- What is better sold
+--------------------------------------------------------------------------------
+
+local SPELL_CALLS = { "C_SpellBook.IsSpellKnown", "IsPlayerSpell", "IsSpellKnown" }
+
+--- value == want, false when the value is one the client will not let us touch.
+local function Is(value, want)
+    local ok, yes = pcall(function() return value == want end)
+    return ok and yes
+end
+
+--- Does this character have Enchanting? Any way the client says yes counts:
+--- the Disenchant spell, the profession list, or classic's skill list.
+function BagIcons:ReadEnchanter()
+    for _, path in ipairs(SPELL_CALLS) do
+        if Is(Items.Call({ path }, DISENCHANT), true) then return true end
+    end
+    local first, second = Items.Call({ "GetProfessions" })
+    for _, index in ipairs({ first, second }) do
+        local line = select(7, Items.Call({ "GetProfessionInfo" }, index))
+        if Is(line, ENCHANTING_LINE) then return true end
+    end
+    local count = tonumber((Items.Call({ "GetNumSkillLines" }))) or 0
+    for index = 1, count do
+        local name = Items.Call({ "GetSkillLineInfo" }, index)
+        if Is(name, "Enchanting") then return true end
+    end
+    return false
+end
+
+--- Can this character disenchant? Kept until a skill or spell event.
+function BagIcons:CanDisenchant()
+    if self.enchanter == nil then
+        local ok, yes = pcall(self.ReadEnchanter, self)
+        self.enchanter = ok and yes == true
+    end
+    return self.enchanter
+end
+
+-- Sell prices by link; a link's price never changes.
+local sellPrices = {}
+
+local function SellPrice(link)
+    local price = sellPrices[link]
+    if price == nil then
+        price = Items:SellPrice(link) or false
+        if price then sellPrices[link] = price end
+    end
+    return price
+end
+
+--- Should the item in a bag slot get the sell coin? `result` is how it was
+--- judged (Compare:JudgeCarried). Only gear judged and found no upgrade,
+--- now or later, that a vendor pays for: white, or soulbound green and up
+--- when the character cannot disenchant it.
+function BagIcons:Sells(bag, slot, link, result)
+    if not self:CoinsEnabled() then return false end
+    if type(result) ~= "table" or result.verdict == "upgrade" then return false end
+
+    local info = Items:Info(link)
+    if not info or KEEP_LOC[info.equipLoc] then return false end
+    if info.classID == CLASS_WEAPON and info.subclassID == FISHING_POLE then return false end
+
+    local quality = Items:SlotQuality(bag, slot, link)
+    if type(quality) ~= "number" or quality < 1 then return false end
+    if quality >= 2 and not (Items:SlotBound(bag, slot) and not self:CanDisenchant()) then
+        return false
+    end
+
+    local price = SellPrice(link)
+    return type(price) == "number" and price > 0
+end
+
+--- Show or hide the arrow and the coin on one button.
 function BagIcons:UpdateButton(button, frame)
-    local show = false
-    if self:IsEnabled() then
+    local show, sell = false, false
+    if self:IsEnabled() or self:CoinsEnabled() then
         local bag, slot = self:Location(button, frame)
         local link = bag and Items:InBag(bag, slot)
-        show = link ~= nil and Compare:IsUpgradeNow(link, true)
+        if link then
+            local ok, result = pcall(Compare.JudgeCarried, Compare, link)
+            if not ok then result = nil end
+            show = self:IsEnabled() and Compare.WearableUpgrade(result)
+            if not show then sell = self:Sells(bag, slot, link, result) end
+        end
     end
 
     if show then
@@ -165,6 +283,12 @@ function BagIcons:UpdateButton(button, frame)
         if arrow then arrow:Show() end
     elseif arrows[button] then
         arrows[button]:Hide()
+    end
+    if sell then
+        local coin = self:Coin(button)
+        if coin then coin:Show() end
+    elseif coins[button] then
+        coins[button]:Hide()
     end
     return show
 end
@@ -322,4 +446,16 @@ function BagIcons:OnEnable()
     for _, event in ipairs(EVENTS) do
         ns.RegisterEvent(self, event, self.RefreshSoon)
     end
+    -- Learning or dropping Enchanting changes which greens get a coin.
+    for _, event in ipairs({ "SKILL_LINES_CHANGED", "LEARNED_SPELL_IN_TAB", "SPELLS_CHANGED" }) do
+        ns.RegisterEvent(self, event, self.ForgetEnchanter)
+    end
+end
+
+--- Forget whether the character can disenchant, and look again at the bags
+--- only when the answer changed.
+function BagIcons:ForgetEnchanter()
+    local before = self.enchanter
+    self.enchanter = nil
+    if before ~= nil and self:CanDisenchant() ~= before then self:RefreshSoon() end
 end

@@ -304,6 +304,12 @@ function SettingsUI:BuildGear()
         end
     end)
 
+    local coinRow = pages:Row("gear", 1, "Sell coins",
+        "A gold coin on gear in your bags that is not an upgrade and is worth selling to a vendor: white gear, and soulbound green or better gear when you can't disenchant it.")
+    controls.sellCoins = Tick(coinRow, "Show them", "bagSellCoins", true, function()
+        if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
+    end)
+
     local chatRow = pages:Row("gear", 1, "Upgrade in chat",
         "One line in chat when an upgrade you can wear now lands in your bags.")
     controls.upgradeChat = Tick(chatRow, "Say so", "upgradeChat", true)
@@ -700,6 +706,7 @@ function SettingsUI:Refresh()
     controls.debug:SetChecked(ns.db.debug == true)
     controls.tooltip:SetChecked(ns.db.tooltipLine ~= false)
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
+    controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)
     controls.hideGamepadBag:SetChecked(ns.db.hideGamepadBag ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
     controls.suffixLine:SetChecked(ns.db.suffixLine ~= false)
