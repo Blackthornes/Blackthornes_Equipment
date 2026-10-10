@@ -114,10 +114,12 @@ function TomTomLink:Take(state)
     return true
 end
 
---- Take our waypoint off TomTom, if there is one.
+--- Take our waypoint off TomTom, if there is one. A place TomTom turned
+--- down or dropped is offered again next time, so turning the arrow or
+--- "Use TomTom" off and on hands the place back to it.
 function TomTomLink:Clear()
     local uid = self.uid
-    self.uid, self.key = nil, nil
+    self.uid, self.key, self.refused = nil, nil, nil
     if uid == nil then return end
     local tomtom = TomTomLink.Addon()
     if tomtom then pcall(tomtom.RemoveWaypoint, tomtom, uid) end

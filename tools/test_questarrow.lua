@@ -371,10 +371,13 @@ do
     ArrowUI:Draw(true)
     suite.check("and it is not put back on TomTom for the same place", dial:IsShown() and Count() == 0)
     _G.TomTom.IsValidWaypoint = nil
-    TomTom.refused = nil
+    -- Turning the arrow off and on offers the place to TomTom again.
+    ns.HandleSlash("arrow off")
+    ns.HandleSlash("arrow on")
     ArrowUI:Draw(true)
     uid = TomTom.uid
-    suite.check("a fresh waypoint once that is forgotten", not dial:IsShown() and Count() == 1)
+    suite.check("a fresh waypoint once the arrow is turned off and on", not dial:IsShown() and Count() == 1,
+        tostring(dial:IsShown()) .. " " .. Count())
 
     -- Another Blackthornes arrow aimed later: TomTom's goes too.
     local shared = _G.BlackthornesArrows
