@@ -190,8 +190,15 @@ function FinderUI:BuildRow(index)
     row:SetFrameLevel(self.well:GetFrameLevel() + 1)
     row:SetSize(inner, ROW_HEIGHT)
     row:SetPoint("TOPLEFT", PADDING, self.listTop - (index - 1) * ROW_HEIGHT)
-    row.background = Theme.Fill(row, index % 2 == 0 and "row" or "rowAlt")
-    row.restKey = index % 2 == 0 and "row" or "rowAlt"
+    row.restKey = index % 2 == 0 and "glassAlt" or "glass"
+    row.background = Theme.Fill(row, row.restKey)
+
+    -- Dark glass: a fine line under each row.
+    local line = row:CreateTexture(nil, "BACKGROUND", nil, 1)
+    line:SetPoint("BOTTOMLEFT")
+    line:SetPoint("BOTTOMRIGHT")
+    line:SetHeight(1)
+    line:SetColorTexture(Theme.Unpack("border", 0.6))
 
     -- A green edge that lights under the mouse.
     local edge = row:CreateTexture(nil, "ARTWORK")
@@ -201,12 +208,11 @@ function FinderUI:BuildRow(index)
     edge:SetColorTexture(Theme.Unpack("good", 0))
     row.edge = edge
 
-    -- Under the mouse the row lights from the left too: a gold wash fading
-    -- across it (Titanforged).
+    -- Under the mouse the row lights from the left too: a soft gold wash
+    -- fading across it (Titanforged). Hidden at rest.
     local wash = row:CreateTexture(nil, "BACKGROUND", nil, 3)
     wash:SetAllPoints(row)
-    Theme.SetGradientAlpha(wash, "HORIZONTAL", "accent", 0.20, 0)
-    wash:SetAlpha(0)
+    wash:Hide()
     row.hoverWash = wash
 
     local slot = Theme.CreateLabel(row, "small", "muted")
@@ -261,9 +267,9 @@ function FinderUI:BuildRow(index)
     row.queueIt = queueIt
 
     local function Light(p)
-        row.background:SetColorTexture(Motion.Mix(row.restKey, "rowHover", p))
+        row.background:SetColorTexture(Motion.Mix(row.restKey, "glassHover", p))
         row.edge:SetColorTexture(Theme.Unpack(rawget(row, "edgeKey") or "good", p))
-        wash:SetAlpha(p)
+        Theme.LightGradient(wash, "HORIZONTAL", "accent", 0.10, 0, p)
     end
 
     row:SetScript("OnEnter", function(self)

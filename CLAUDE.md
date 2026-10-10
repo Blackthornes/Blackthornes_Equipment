@@ -413,6 +413,13 @@ setting, so `Motion.Level()` is always full and the glint and the
 portrait's light always run; add the setting before anyone asks for them
 to stop.
 
+List rows in the gear window and the finder are dark glass (the owner
+picked it 2026-10-10 over a gold glow that lit every row; Tradeskills'
+lists have the same): `glass`/`glassAlt` bands in the well with a fine
+line under each, `glassHover` and the gold wash only under the mouse. A
+gradient that fades goes through `Theme.LightGradient`, which hides it at
+0; faded with SetAlpha alone it stayed lit on Forever.
+
 ## Discord
 
 The addons share a Discord server, Blackthornes AddOns (public invite
