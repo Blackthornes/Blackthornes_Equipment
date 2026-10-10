@@ -67,4 +67,7 @@ UI\QuestLogTab.lua
 UI\IgnoredWindow.lua
 UI\QuestArrow.lua
 
+# Answers for Blackthornes Butler, after the gear judging and bag icons it reads.
+Logic\Butler.lua
+
 Probe\Probe.lua
