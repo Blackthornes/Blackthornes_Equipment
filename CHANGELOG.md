@@ -4,6 +4,19 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.17.0
+
+For WoW: Forever (interface 16001). A file was added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **Queue it:** with Blackthornes Tradeskills loaded, crafted upgrades in
+  Where to get upgrades and on the Upgrade quest panel get a **Queue it**
+  button. If you or an alt can make it, it's queued in Tradeskills; if you
+  still have to learn it, its materials go on the shopping list; if nobody on
+  your account makes it, the gear itself goes on the list to buy. The button
+  then reads **Queued** and opens Tradeskills' Queue tab.
+- **One more Forever vendor spot**, learned in game.
+
 ## 0.16.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game

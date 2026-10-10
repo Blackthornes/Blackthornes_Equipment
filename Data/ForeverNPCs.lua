@@ -16,4 +16,5 @@ ns.ForeverNPCs = {
     [3079] = { "", "Mulgore", 45.3, 62.1 },
     [3080] = { "Harant Ironbrace", "Mulgore", 45.4, 62.1 },
     [3081] = { "Wunna Darkmane", "Mulgore", 45.5, 61.8 },
+    [3367] = { "Felika", "Orgrimmar", 57.4, 38 },
 }

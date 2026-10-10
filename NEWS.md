@@ -10,6 +10,14 @@ name, after their group; changes nobody asked for go in a group of their
 own with no thanks. This is the only report that names players. A version with no section here posts nothing in #general.
 This file does not ship in the addon.
 
+## 0.17.0
+
+Hey everyone! A small Equipment update just went up.
+
+Crafted upgrades have a Queue it button now. If you use Tradeskills too, one click puts the craft in your queue, or puts what you need on your shopping list. Thanks Ezmode for the idea!
+
+Restart the game fully after you update. Have fun!
+
 ## 0.16.0
 
 Hey everyone! A new Equipment update just went up.
