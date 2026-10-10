@@ -41,6 +41,7 @@ Logic\QuestArrow.lua
 Logic\TomTom.lua
 
 UI\Theme.lua
+UI\BlizzardLook.lua
 UI\Widgets.lua
 UI\Titanforged.lua
 UI\SettingsPages.lua

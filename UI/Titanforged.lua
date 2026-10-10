@@ -277,6 +277,11 @@ Titanforged.CloseGem = CloseGem
 -- .plate, .portrait and .closeButton when made. The rim and the soft light
 -- along the top are drawn on `frame` itself.
 function Titanforged:Dress(frame, opts)
+    -- The Blizzard window style (UI/BlizzardLook.lua) frames it instead,
+    -- with the same trim, so callers never need to know which is on.
+    local Look = ns.BlizzardLook
+    if Look and Look.On() then return Look.Dress(frame, opts) end
+
     opts = opts or {}
 
     for _, side in ipairs({ "TOP", "BOTTOM", "LEFT", "RIGHT" }) do Side(frame, side) end
@@ -353,7 +358,8 @@ end
 function Titanforged:Opened(frame)
     local trim = Trim(frame)
     local portrait = trim and rawget(trim, "portrait")
-    local sweep = portrait and portrait.sweep
+    -- Read raw: the Blizzard style's portrait has no sweep or halo.
+    local sweep = portrait and rawget(portrait, "sweep")
     local Motion = ns.Motion
     if not sweep or not Motion then return end
 
@@ -368,7 +374,8 @@ function Titanforged:Opened(frame)
         sweep:SetAlpha(p < 0.15 and p / 0.15 or (1 - p) / 0.85)
     end, { ease = Motion.EaseOut, done = function() sweep:SetAlpha(0) end })
 
-    local halo = portrait.halo
+    local halo = rawget(portrait, "halo")
+    if not halo then return end
     Motion:Run(halo, "flare", 0.9, function(p) halo:SetAlpha(0.9 - 0.45 * p) end)
 end
 

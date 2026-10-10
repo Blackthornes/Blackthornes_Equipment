@@ -412,7 +412,7 @@ for _, button in ipairs(made) do
 end
 check("buttons checked across the windows", #made > 20, true)
 check("every one readable at rest and lit", table.concat(unreadable, ", "), "")
-check("bar the few dimmed at the end of a range", dimmed > 0 and dimmed < 6, true)
+check("bar the few dimmed at the end of a range", dimmed > 0 and dimmed < 8, true)
 
 addon.Widgets.CreateButton = CreateButton
 

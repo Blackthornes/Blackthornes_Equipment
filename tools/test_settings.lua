@@ -204,6 +204,21 @@ for _, name in ipairs(ns.commandOrder) do
     suite.check("/beq " .. name .. " has a button in Settings", covered[name] == true)
 end
 
+-- Window style (2026-10-10): a stepper, saved flat, waiting for /reload.
+local style = controls.windowStyle
+suite.check("window style starts on Titanforged", style.text:GetText() == "Titanforged", style.text:GetText())
+suite.check("with no reload to offer", not style.reload:IsShown())
+style.plus:GetScript("OnClick")()
+suite.check("stepping picks Blizzard", ns.db.windowStyle == "blizzard" and style.text:GetText() == "Blizzard")
+suite.check("which waits for /reload", style.reload:IsShown() and ns.BlizzardLook.Style() == "titanforged")
+style.minus:GetScript("OnClick")()
+suite.check("stepping back saves Titanforged", ns.db.windowStyle == "titanforged" and not style.reload:IsShown())
+ns.db.windowStyle = "blizzard"
+SettingsUI:Refresh()
+suite.check("the page shows what is saved", style.text:GetText() == "Blizzard" and style.reload:IsShown())
+ns.db.windowStyle = "titanforged"
+SettingsUI:Refresh()
+
 -- Position.
 ns.db.settingsX = 400
 SettingsUI:ResetPositions()
