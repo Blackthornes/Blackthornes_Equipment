@@ -579,6 +579,14 @@ function SettingsUI:BuildGeneral()
         "Large and Larger add a point or two to all of this addon's text. Takes effect after /reload.")
     controls.textSize = ns.SettingsPages.TextSizeControl(textRow, CONTROL_X, function() return ns.db end)
 
+    -- Asked 2026-10-10: the game's own look for players who would rather
+    -- the windows matched the rest of their screen. Read at login, so it
+    -- waits for /reload as Text size does. See UI/BlizzardLook.lua. A
+    -- stepper, as Text size is: this addon's Widgets have no dropdown.
+    local styleRow = pages:Row("general", 1, "Window style",
+        "Titanforged is the house look, with a gold rim and glowing edges. Blizzard uses the game's own frames, red buttons and tick boxes. Takes effect after /reload.")
+    controls.windowStyle = self:WindowStyleControl(styleRow)
+
     pages:Section("general", 2, "ADVANCED")
 
     local debugRow = pages:Row("general", 2, "Debug output",
@@ -610,6 +618,64 @@ function SettingsUI:BuildGeneral()
         "Lists every /beq command in chat. Same as /beq help.",
         "List them", "help")
     controls.help = helpButton
+end
+
+-- The window styles, in the order the stepper steps through them.
+SettingsUI.WINDOW_STYLES = { "titanforged", "blizzard" }
+SettingsUI.WINDOW_STYLE_LABELS = { titanforged = "Titanforged", blizzard = "Blizzard" }
+
+--- The Window style stepper and its "Reload" button, shown while the
+--- pick differs from what is drawn. Returns the stepper; stepper:Sync()
+--- puts it back in step with the save.
+function SettingsUI:WindowStyleControl(row)
+    local styles = self.WINDOW_STYLES
+    local Look = ns.BlizzardLook
+
+    local function Drawn()
+        return Look and Look.Style() or "titanforged"
+    end
+
+    local reload
+    local stepper = Widgets.CreateStepper(row, {
+        min = 1, max = #styles, step = 1,
+        format = function(value) return self.WINDOW_STYLE_LABELS[styles[value]] end,
+        onChange = function(value)
+            ns.db.windowStyle = styles[value]
+            reload:SetShown(styles[value] ~= Drawn())
+        end,
+    })
+    -- As wide as "Titanforged" needs, with Reload still fitting beside it.
+    stepper:SetWidth(114)
+    stepper:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    -- ReloadUI is allowed from a click, and saves everything first.
+    reload = Widgets.CreateButton(row, "Reload", function()
+        if ReloadUI then ReloadUI() end
+    end, { width = 60, height = 20 })
+
+    -- To the stepper's right when the column has room, else between the
+    -- setting's name and the stepper, as Text size's Reload sits.
+    local width = tonumber(reload:GetWidth()) or 60
+    if CONTROL_X + 114 + 6 + width <= COLUMN_WIDTH then
+        reload:SetPoint("LEFT", stepper, "RIGHT", 6, 0)
+    else
+        reload:SetPoint("RIGHT", stepper, "LEFT", -6, 0)
+    end
+    Explain(reload, "Reload", "Reload the interface so the new window style shows (/reload).")
+    reload:Hide()
+    stepper.reload = reload
+
+    function stepper:Sync()
+        local wanted = Look and Look.Wanted() or "titanforged"
+        local index = 1
+        for i, key in ipairs(styles) do
+            if key == wanted then index = i end
+        end
+        self:SetValue(index, true)
+        reload:SetShown(wanted ~= Drawn())
+    end
+
+    return stepper
 end
 
 --------------------------------------------------------------------------------
@@ -668,6 +734,7 @@ function SettingsUI:Refresh()
     self.specRow:SetDescription(self:SpecHint())
 
     controls.textSize:Sync()
+    controls.windowStyle:Sync()
     self.pages:Refresh()
 end
 

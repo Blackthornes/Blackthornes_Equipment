@@ -454,6 +454,11 @@ local DEFAULTS = {
     settingsDescriptions = false,
     textSize = "normal",
 
+    -- Window style: "titanforged" (the house look) or "blizzard" (the
+    -- game's own frames, buttons and tick boxes, asked 2026-10-10). Read
+    -- at login, so a change waits for /reload. See UI/BlizzardLook.lua.
+    windowStyle = "titanforged",
+
     -- The player's own stat weights, by class and spec, are kept under
     -- `customWeights` (Logic/Weights.lua). Not given a default here: the
     -- table is made the first time a weight is changed, and once made it is
@@ -501,6 +506,9 @@ function bootstrap:ADDON_LOADED(_, loadedAddon)
     initialized = true
 
     LoadSavedVariables()
+    -- The window style is read before any module draws, so every colour
+    -- drawn is the style's (UI/BlizzardLook.lua).
+    if ns.BlizzardLook then ns.BlizzardLook.Style() end
     RunLifecycle("OnInitialize")
 end
 

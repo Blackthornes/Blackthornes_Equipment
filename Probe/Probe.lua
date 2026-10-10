@@ -314,6 +314,16 @@ function Probe:Run()
     end
     pcall(self.Upgrades, self)
 
+    -- The Blizzard window style draws with the game's own art; this says
+    -- which pieces the client has (UI/BlizzardLook.lua).
+    if ns.BlizzardLook then
+        local ok, lines = pcall(ns.BlizzardLook.ProbeLines)
+        for _, text in ipairs(ok and lines or {}) do
+            local name, value = text:match("^(.-): (.*)$")
+            Line(name or "window style", value or text)
+        end
+    end
+
     if not Has("GetInventoryItemLink") then return end
 
     for _, slot in ipairs(SLOTS) do
