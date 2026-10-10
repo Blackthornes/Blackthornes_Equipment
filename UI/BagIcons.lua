@@ -12,7 +12,7 @@
 --
 -- Gear that is not an upgrade and is better sold gets a gold coin instead
 -- (BagIcons:Sells): white gear, and soulbound green or better gear when the
--- character cannot disenchant it. Greys get none; the game marks its own junk.
+-- character cannot disenchant it. Greys and gathering tools get none.
 --
 -- The arrow and the coin are textures this addon owns, laid over the item button. Nothing
 -- of Blizzard's is changed or written to, so using an item from the bags in
@@ -46,6 +46,16 @@ local ENCHANTING_LINE = 333
 -- Kept to wear, not to sell: shirts, tabards and fishing poles.
 local KEEP_LOC = { INVTYPE_BODY = true, INVTYPE_TABARD = true }
 local CLASS_WEAPON, FISHING_POLE = 2, 20
+-- Gathering and profession tools, kept to use: the mining pick, skinning
+-- knife, blacksmith hammer, engineering tools, enchanting rods and the
+-- skinning weapons. Gear that adds to a gathering skill is found by its
+-- tooltip (BagIcons.IsTool).
+local TOOLS = {
+    [2901] = true, [7005] = true, [5956] = true, [6219] = true, [10498] = true,
+    [6218] = true, [6339] = true, [11130] = true, [11145] = true, [16207] = true,
+    [15138] = true, [19901] = true,
+}
+local TOOL_SKILLS = { "Mining", "Skinning", "Herbalism", "Fishing" }
 
 local function Field(object, key)
     if type(object) ~= "table" then return nil end
@@ -242,6 +252,42 @@ local function SellPrice(link)
     return price
 end
 
+-- Whether each link is a tool, read once.
+local tools = {}
+
+--- The tooltip's lines for a link, as plain strings.
+local function TooltipLines(link)
+    local data = Items.Call({ "C_TooltipInfo.GetHyperlink" }, link)
+    local ok, lines = pcall(function()
+        local found = {}
+        for _, line in ipairs(type(data) == "table" and type(data.lines) == "table" and data.lines or {}) do
+            if type(line) == "table" and type(line.leftText) == "string" then
+                found[#found + 1] = line.leftText .. ""
+            end
+        end
+        return found
+    end)
+    return ok and lines or {}
+end
+
+--- Is an item a gathering or profession tool? The known tools by ID, and
+--- gear whose tooltip adds to a gathering skill ("Skinning +10").
+function BagIcons.IsTool(link)
+    local known = tools[link]
+    if known ~= nil then return known end
+    local id = tonumber(link:match("item:(%d+)"))
+    local yes = id ~= nil and TOOLS[id] == true
+    if not yes then
+        for _, text in ipairs(TooltipLines(link)) do
+            for _, skill in ipairs(TOOL_SKILLS) do
+                if text:find(skill .. " %+%d") then yes = true end
+            end
+        end
+    end
+    tools[link] = yes
+    return yes
+end
+
 --- Should the item in a bag slot get the sell coin? `result` is how it was
 --- judged (Compare:JudgeCarried). Only gear judged and found no upgrade,
 --- now or later, that a vendor pays for: white, or soulbound green and up
@@ -253,6 +299,7 @@ function BagIcons:Sells(bag, slot, link, result)
     local info = Items:Info(link)
     if not info or KEEP_LOC[info.equipLoc] then return false end
     if info.classID == CLASS_WEAPON and info.subclassID == FISHING_POLE then return false end
+    if BagIcons.IsTool(link) then return false end
 
     local quality = Items:SlotQuality(bag, slot, link)
     if type(quality) ~= "number" or quality < 1 then return false end

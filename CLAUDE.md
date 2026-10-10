@@ -380,8 +380,10 @@ no upgrade, now or later (`Compare:JudgeCarried`), that a vendor pays for
 (`Items:SellPrice`, kept per link): white gear, and soulbound green or
 better gear when the character cannot disenchant (`BagIcons:CanDisenchant`:
 the Disenchant spell, the profession list or classic's skill list, kept
-until a skill or spell event). Greys, shirts, tabards and fishing poles get
-none. "Sell coins" in Settings (`bagSellCoins`, account wide, on unless
+until a skill or spell event). Greys, shirts, tabards, fishing poles and
+gathering or profession tools (`BagIcons.IsTool`: known tool IDs, and gear
+whose tooltip adds to Mining, Skinning, Herbalism or Fishing; the owner
+asked 2026-10-10) get none. "Sell coins" in Settings (`bagSellCoins`, account wide, on unless
 unticked). Not yet seen in game.
 
 ## The controller bag button
