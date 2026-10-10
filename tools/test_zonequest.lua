@@ -225,6 +225,20 @@ suite.check("unticked, a new zone keeps the quests", On("vendor") == 1002 and On
 Quest:Quests().vendor = nil
 Quest:Update()
 suite.check("an empty tab still picks from the zone it is in", On("vendor") == 1001, On("vendor"))
+-- A tab that found nothing in one zone looks again in the next, swap or no.
+zone = "Duskwood"
+Quest:Quests().vendor = nil
+Quest.rescan = true
+Quest:Update()
+suite.check("a zone with nothing leaves the tab empty", On("vendor") == nil and Quest.states.vendor == "none",
+    tostring(On("vendor")) .. " " .. tostring(Quest.states.vendor))
+zone = "Westfall"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+suite.check("unticked, the next zone still fills an empty tab", On("vendor") == 1002, On("vendor"))
+suite.check("and keeps the other tab's quest", On("quest") == 1004, On("quest"))
+zone = "Elwynn Forest"
+Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
+suite.check("while a full tab keeps its quest on a new zone", On("vendor") == 1002, On("vendor"))
 ns.SettingsUI:Show()
 suite.check("Settings shows it unticked", not ns.SettingsUI.controls.questZoneSwap:GetChecked())
 local T = ns.Theme

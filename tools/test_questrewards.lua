@@ -92,11 +92,21 @@ ITEMS["item:7"] = { loc = "INVTYPE_FEET", class = 4, subclass = 2, stats = nil }
 ns.QuestRewards:QUEST_COMPLETE()
 for _, fn in ipairs(timers) do if fn ~= timers[#timers] then fn() end end
 suite.check("an unloaded reward waits", not env.ChatText():find("none of these", 1, true), env.ChatText())
+-- An item's answer books one pass for the burst it comes in; this runs it.
+local ran = #timers
+local function Settle()
+    for index = ran + 1, #timers do timers[index]() end
+    ran = #timers
+end
 -- Some other item's answer arrives first: still waiting.
 ns.QuestRewards:GET_ITEM_INFO_RECEIVED()
+Settle()
 suite.check("an unrelated answer does not end the wait", ns.QuestRewards.announcePending == true)
 ITEMS["item:7"].stats = Agi(3)
 ns.QuestRewards:GET_ITEM_INFO_RECEIVED()
+ns.QuestRewards:GET_ITEM_INFO_RECEIVED()
+suite.check("a burst of answers books one pass", #timers == ran + 1, #timers - ran)
+Settle()
 suite.check("and is announced when it arrives",
     env.ChatText():find("best reward for Beast Mastery: item:7", 1, true), env.ChatText())
 
@@ -223,6 +233,7 @@ suite.check("an unloaded given reward waits", not env.ChatText():find("none of",
 suite.check("and holds its line", ns.QuestRewards.announcePending == true)
 ITEMS["item:10"].stats = Agi(5)
 ns.QuestRewards:GET_ITEM_INFO_RECEIVED()
+timers[#timers]()
 suite.check("and is named once it arrives",
     env.ChatText():find("this quest gives you item:10", 1, true), env.ChatText())
 _G.C_Timer.After = immediate

@@ -351,7 +351,6 @@ function FinderUI:Build()
     end)
     frame:EnableMouseWheel(true)
     frame:SetScript("OnMouseWheel", function(_, delta) FinderUI:ScrollBy(-delta) end)
-    frame:SetScript("OnHide", function() FinderUI.pending = false end)
 
     if type(UISpecialFrames) == "table" then
         table.insert(UISpecialFrames, "BlackthornesEquipmentFinder")
