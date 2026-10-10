@@ -699,6 +699,9 @@ end
 function QuestPanel.GainText(quest)
     local parts = {}
     if quest.howMuch then parts[#parts + 1] = quest.howMuch .. " over what you wear" end
+    if ns.WeaponSkills and ns.WeaponSkills:NeedsTraining(quest.link) then
+        parts[#parts + 1] = Colored("loss", "Train")
+    end
     local source = quest.source
     if source and source.kind and ns.Finder then
         local label = ns.Finder.Label(source)

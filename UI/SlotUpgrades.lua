@@ -55,9 +55,25 @@ end
 --- it waits on when planning ahead.
 function SlotUpgrades.Gain(pick)
     local result = pick.result or {}
-    if result.empty then return "empty slot" end
-    if result.percent then return ("%+d%%"):format(math.floor(result.percent + 0.5)) end
-    return "better"
+    local text = "better"
+    if result.empty then
+        text = "empty slot"
+    elseif result.percent then
+        text = ("%+d%%"):format(math.floor(result.percent + 0.5))
+    end
+    if SlotUpgrades.Train(pick) then text = "Train: " .. text end
+    return text
+end
+
+--- Does a pick need a weapon skill not learned yet? Then its gain is red.
+function SlotUpgrades.Train(pick)
+    return ns.WeaponSkills ~= nil and ns.WeaponSkills:NeedsTraining(pick.link)
+end
+
+--- The colour key for a pick's gain.
+function SlotUpgrades.GainKey(pick)
+    if SlotUpgrades.Train(pick) then return "loss" end
+    return (pick.needs or pick.remote) and "warn" or "good"
 end
 
 --- The best picks for an inventory slot (both of a pair), best first.
@@ -111,7 +127,7 @@ function SlotUpgrades:AddLines(tooltip, slot, picks)
     else
         tooltip:AddLine("Upgrades on offer", Theme.Unpack("accent"))
         for _, pick in ipairs(picks) do
-            local gainKey = (pick.needs or pick.remote) and "warn" or "good"
+            local gainKey = SlotUpgrades.GainKey(pick)
             if type(tooltip.AddDoubleLine) == "function" then
                 local r, g, b = Theme.Unpack(gainKey)
                 tooltip:AddDoubleLine(pick.link, SlotUpgrades.Gain(pick), 1, 1, 1, r, g, b)
@@ -271,7 +287,7 @@ function SlotUpgrades:Fill()
             Theme.SetItemIcon(row.icon, pick.link)
             row.item:SetText(pick.link)
             row.gain:SetText(SlotUpgrades.Gain(pick))
-            row.gain:SetTextColor(Theme.Unpack((pick.needs or pick.remote) and "warn" or "good"))
+            row.gain:SetTextColor(Theme.Unpack(SlotUpgrades.GainKey(pick)))
             local source = pick.sources and pick.sources[1]
             local text = source and ns.FinderUI and ns.FinderUI.SourceLine(source) or ""
             row.source:SetText(ns.FinderUI and ns.FinderUI.Fit("tiny", text, row.sourceWidth * 2 - 60) or text)

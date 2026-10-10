@@ -669,12 +669,21 @@ function FinderUI:FillRow(row, line)
     Theme.SetItemIcon(row.icon, line.pick.link)
     row.item:SetText(line.pick.link)
     local gain = Gain(line.pick.result)
-    if line.pick.at then gain = ("at %d: %s"):format(line.pick.at, gain) end
+    -- A weapon whose skill is not learned yet says "Train" in red, so the
+    -- weapon master comes first (a player asked, 2026-10-10).
+    local train = ns.WeaponSkills and ns.WeaponSkills:NeedsTraining(line.pick.link)
+    if train and line.pick.at then
+        gain = ("at %d, Train: %s"):format(line.pick.at, gain)
+    elseif train then
+        gain = ("Train: %s"):format(gain)
+    elseif line.pick.at then
+        gain = ("at %d: %s"):format(line.pick.at, gain)
+    end
     row.gain:SetText(gain)
     -- Gear that waits on a reputation, a level or a crafter is shown in
-    -- amber, not green.
+    -- amber, not green; gear that waits on a weapon trainer in red.
     row.edgeKey = (line.pick.needs or line.pick.at or line.pick.remote) and "warn" or "good"
-    row.gain:SetTextColor(Theme.Unpack(row.edgeKey))
+    row.gain:SetTextColor(Theme.Unpack(train and "loss" or row.edgeKey))
 
     local text = FinderUI.SourceLine(line.sources[1])
     if ns.Tracking and ns.Tracking:IsTracked(line.pick.itemID) then

@@ -179,6 +179,13 @@ first (`Finder.Nearness`: in the zone, by map distance when
 `Finder.Spot` can read where the character stands on that zone's own
 map, never a guessed spot), and `FinderUI.MarkZone` names the zone the
 character is in green on every row, tooltip and the character sheet's list.
+Weapons the character has not trained (a player asked, the owner agreed
+2026-10-10) show a red "Train" where the gain shows, in the finder, the
+character sheet's list and the upgrade quest panel
+(`WeaponSkills:NeedsTraining`, true only when the client says the skill is
+unknown). `WeaponSkills:Known` is kept and forgotten on
+`SKILL_LINES_CHANGED`, `LEARNED_SPELL_IN_TAB` and `SPELLS_CHANGED`, so a
+list asks the client once, not once a row.
 
 Forever's own boss drops: `tools/forever_drops.py` reads Farmer's
 `Data/Data_Harvested.lua` (no player names in it) and writes
