@@ -43,6 +43,8 @@ local WRAP_SLACK = 60
 
 local SLOT_WIDTH = 84
 local GAIN_WIDTH = 120
+-- Queue it, under the gain on crafted rows.
+local QUEUE_WIDTH = 64
 local ICON = 28
 local TEXT_X = SLOT_WIDTH + ICON + 10
 local SCROLL_WIDTH = 4
@@ -233,6 +235,30 @@ function FinderUI:BuildRow(index)
     pcall(source.SetMaxLines, source, SOURCE_LINES)
     row.source = source
     row.sourceWidth = inner - TEXT_X - 8
+    row.fullSourceWidth = row.sourceWidth
+
+    -- Queue it, on crafted gear while Tradeskills is loaded: sends the craft,
+    -- or what to buy, to Tradeskills' queue (Logic/TradeskillsQueue.lua).
+    local queueIt = Widgets.CreateButton(row, "Queue it", function(self)
+        local craft = rawget(self, "source")
+        if craft and ns.TradeskillsQueue then
+            ns.TradeskillsQueue:Queue(craft)
+            FinderUI:Draw()
+        end
+    end, { width = QUEUE_WIDTH, height = 18 })
+    queueIt:SetPoint("BOTTOMRIGHT", -8, 5)
+    queueIt:HookScript("OnEnter", function(self)
+        local craft = rawget(self, "source")
+        if not (craft and ns.TradeskillsQueue) then return end
+        local title, text = ns.TradeskillsQueue:Explain(craft)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(title, Theme.Unpack("accent"))
+        if text then GameTooltip:AddLine(text, 1, 1, 1, true) end
+        GameTooltip:Show()
+    end)
+    queueIt:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    queueIt:Hide()
+    row.queueIt = queueIt
 
     local function Light(p)
         row.background:SetColorTexture(Motion.Mix(row.restKey, "rowHover", p))
@@ -661,6 +687,20 @@ function FinderUI:FillRow(row, line)
         text = Colored("warn", ("Needs %s with %s"):format(line.pick.needs.standing,
             line.pick.needs.faction)) .. "  " .. text
     end
+    -- Queue it on crafted gear, with the line under the name kept clear of it.
+    local craft = ns.TradeskillsQueue and ns.TradeskillsQueue:Available()
+        and ns.TradeskillsQueue.CraftSource(line.sources) or nil
+    row.queueIt.source = craft
+    if craft then
+        row.queueIt:SetText(ns.TradeskillsQueue:Label(craft.itemID))
+        row.queueIt:Show()
+        row.sourceWidth = row.fullSourceWidth - QUEUE_WIDTH - 8
+    else
+        row.queueIt:Hide()
+        row.sourceWidth = row.fullSourceWidth
+    end
+    row.source:SetWidth(row.sourceWidth)
+
     local more = #line.sources - 1
     local tail = more > 0 and ("  +%d more"):format(more) or ""
     local room = row.sourceWidth * SOURCE_LINES - WRAP_SLACK - Theme.TextWidth("tiny", tail)
