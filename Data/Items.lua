@@ -185,6 +185,43 @@ function Items:SchoolDamageKnown(link)
     return link ~= nil and schoolCache[link] ~= nil
 end
 
+-- The tooltip line type retail gives "Sell Price:"; 11 where the client
+-- has no enum to say.
+local function SellPriceLineType()
+    local ok, kind = pcall(function() return _G.Enum.TooltipDataLineType.SellPrice end)
+    return ok and tonumber(kind) or 11
+end
+
+--- What a vendor pays for one of an item, in copper, or nil when it cannot
+--- be told. The tooltip's Sell Price wins: Forever changed some prices and
+--- only the tooltip has the new one (Tradeskills found it first). Then the
+--- item info's.
+function Items:SellPrice(link)
+    link = self.PlainLink(link)
+    if not link then return nil end
+    local data = Call({ "C_TooltipInfo.GetHyperlink" }, link)
+    if type(data) ~= "table" then
+        local itemID = tonumber(link:match("item:(%d+)"))
+        if itemID then data = Call({ "C_TooltipInfo.GetItemByID" }, itemID) end
+    end
+    local sellType = SellPriceLineType()
+    local ok, price = pcall(function()
+        for _, line in ipairs(type(data) == "table" and type(data.lines) == "table" and data.lines or {}) do
+            if type(line) == "table" and line.type == sellType and type(line.price) == "number" then
+                return line.price + 0
+            end
+        end
+        return nil
+    end)
+    if ok and price then return price end
+    local name, _, _, _, _, _, _, _, _, _, sellPrice = Call(ITEM_INFO, link)
+    ok, price = pcall(function()
+        if name and type(sellPrice) == "number" then return sellPrice + 0 end
+        return nil
+    end)
+    return ok and price or nil
+end
+
 --- The link of what is worn in an inventory slot, or nil when it is empty.
 function Items:Equipped(slot)
     return self.PlainLink(Call(WORN_LINK, "player", slot))

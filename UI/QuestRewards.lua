@@ -6,8 +6,8 @@
 --
 -- Each reward is judged exactly as bag items are (Compare:Judge), so the
 -- arrow here, the arrow in the bags and the tooltip line agree. Only an
--- upgrade that can be worn now is marked; when no reward is one, nothing
--- is marked and chat says so.
+-- upgrade that can be worn now is marked; when no choice is one, the choice
+-- a vendor pays the most for gets a gold coin instead, and chat says so.
 --
 -- The reward buttons are the game's own quest window buttons. As in the
 -- bags, the arrow is a texture this addon adds over one; nothing of
@@ -128,9 +128,52 @@ function QuestRewards:Best()
     return bestIndex, bestLink, bestResult, unknown
 end
 
+--- How many of choice `index` the quest hands over (a stack of potions).
+function QuestRewards:Quantity(index)
+    local _, _, count = Items.Call({ "GetQuestItemInfo" }, "choice", index)
+    local ok, number = pcall(function() return tonumber(count) end)
+    return ok and number and number > 0 and number or 1
+end
+
+--- The choice a vendor pays the most for, for when none is an upgrade.
+-- @return index, link, copper; or nil when no choice sells for anything
+-- (or there is only one: nothing to choose)
+function QuestRewards:MostValuable()
+    if self:Count() < 2 then return nil end
+    local bestIndex, bestLink, bestCopper
+    for index = 1, self:Count() do
+        local link = self:Link(index)
+        local price = link and Items:SellPrice(link)
+        local copper = price and price * self:Quantity(index) or 0
+        if copper > 0 and (not bestCopper or copper > bestCopper) then
+            bestIndex, bestLink, bestCopper = index, link, copper
+        end
+    end
+    return bestIndex, bestLink, bestCopper
+end
+
 --------------------------------------------------------------------------------
 -- The buttons
 --------------------------------------------------------------------------------
+
+-- The gold coin on the choice worth the most at a vendor: a texture this
+-- addon adds over the button, as the arrow is, kept here by button.
+local COIN_TEXTURE = "Interface\\MoneyFrame\\UI-GoldIcon"
+local coins = setmetatable({}, { __mode = "k" })
+
+function QuestRewards:Coin(button)
+    if coins[button] then return coins[button] end
+    local create = Field(button, "CreateTexture")
+    if type(create) ~= "function" then return nil end
+    local ok, texture = pcall(create, button, nil, "OVERLAY", nil, 7)
+    if not ok or not texture then return nil end
+    texture:SetSize(14, 14)
+    texture:SetPoint("TOPLEFT", button, "TOPLEFT", 2, -2)
+    texture:SetTexture(COIN_TEXTURE)
+    texture:Hide()
+    coins[button] = texture
+    return texture
+end
 
 --- Every reward button in the quest window, choices and fixed rewards alike.
 function QuestRewards:Buttons()
@@ -170,12 +213,21 @@ function QuestRewards:Mark()
     if enabled then
         for _, upgrade in ipairs((self:Given())) do fixed[upgrade.index] = true end
     end
+    -- No choice helps: the coin goes on the one worth the most to sell.
+    local richest = enabled and best == nil and self:MostValuable() or nil
     local marked = nil
 
     for _, button in ipairs(self:Buttons()) do
         local kind, id = Field(button, "type"), Ask(button, "GetID")
         local isBest = best ~= nil and kind == "choice" and id == best
         local isFixed = kind == "reward" and id ~= nil and fixed[id] == true
+        local coin = coins[button]
+        if richest ~= nil and kind == "choice" and id == richest then
+            coin = self:Coin(button)
+            if coin then coin:Show() end
+        elseif coin then
+            coin:Hide()
+        end
         if isBest or isFixed then
             local arrow = ns.BagIcons:Arrow(button)
             if arrow then
@@ -191,9 +243,10 @@ function QuestRewards:Mark()
     return marked
 end
 
---- Take the arrow off every reward button.
+--- Take the arrow and the coin off every reward button.
 function QuestRewards:HideArrows()
     for _, button in ipairs(self:Buttons()) do
+        if coins[button] then coins[button]:Hide() end
         local arrow = ns.BagIcons:ExistingArrow(button)
         if arrow then arrow:Hide() end
     end
@@ -262,10 +315,17 @@ function QuestRewards:Announce(final)
     if index then
         ns.Print(("best reward for %s: %s |c%s%s|r"):format(
             result.specName, link, ns.COLORS.upgrade, How(result)))
-    elseif #given > 0 then
-        ns.Print(("|c%snone of the rewards to choose from beats what you wear|r"):format(ns.COLORS.muted))
     else
-        ns.Print(("|c%snone of these rewards beats what you wear|r"):format(ns.COLORS.muted))
+        local none = #given > 0 and "none of the rewards to choose from beats what you wear"
+            or "none of these rewards beats what you wear"
+        local _, richLink, copper = self:MostValuable()
+        local money = copper and ns.Finder and ns.Finder.Money(copper)
+        if richLink and money then
+            ns.Print(("|c%s%s;|r take %s, it sells for the most (%s)"):format(
+                ns.COLORS.muted, none, richLink, money))
+        else
+            ns.Print(("|c%s%s|r"):format(ns.COLORS.muted, none))
+        end
     end
 end
 
