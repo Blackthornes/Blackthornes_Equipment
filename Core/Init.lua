@@ -437,6 +437,9 @@ local DEFAULTS = {
     -- switched off.
     tooltipLine = true,
     bagArrows = true,
+    -- A gold coin on bag gear better sold than kept (BagIcons:Sells). On
+    -- unless unticked.
+    bagSellCoins = true,
     -- Hide Forever's controller bag button, which covers the combined
     -- backpack's sort button (BagIcons:ApplyGamepadBag). On unless unticked.
     hideGamepadBag = true,

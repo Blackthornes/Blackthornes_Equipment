@@ -372,6 +372,18 @@ The probe (2026-10-10) found the C_QuestLog calls on Forever and none of
 the classic globals, so the tab reads the retail way (see
 `docs/FOREVER_API_FINDINGS.md`); the tab itself not yet seen in game.
 
+## Sell coins in the bags
+
+The owner asked (2026-10-10) for a gold coin on bag gear worth selling:
+`BagIcons:Sells` puts the quest reward coin's look on gear judged and found
+no upgrade, now or later (`Compare:JudgeCarried`), that a vendor pays for
+(`Items:SellPrice`, kept per link): white gear, and soulbound green or
+better gear when the character cannot disenchant (`BagIcons:CanDisenchant`:
+the Disenchant spell, the profession list or classic's skill list, kept
+until a skill or spell event). Greys, shirts, tabards and fishing poles get
+none. "Sell coins" in Settings (`bagSellCoins`, account wide, on unless
+unticked). Not yet seen in game.
+
 ## The controller bag button
 
 Forever's client draws a controller bag button (`GamepadBackpackButton`,

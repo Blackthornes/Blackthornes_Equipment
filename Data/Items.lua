@@ -233,6 +233,39 @@ function Items:InBag(bag, slot)
     return self.PlainLink(Call(BAG_LINK, bag, slot))
 end
 
+--- The quality of the item in a bag slot (0 grey, 1 white, 2 green and up),
+--- or nil when the client cannot say.
+function Items:SlotQuality(bag, slot, link)
+    local info = Call(SLOT_INFO, bag, slot)
+    local ok, quality = pcall(function()
+        if type(info) == "table" and type(info.quality) == "number" then return info.quality + 0 end
+    end)
+    if ok and quality then return quality end
+    link = self.PlainLink(link)
+    if not link then return nil end
+    local name, _, itemQuality = Call(ITEM_INFO, link)
+    ok, quality = pcall(function()
+        if name and type(itemQuality) == "number" then return itemQuality + 0 end
+    end)
+    return ok and quality or nil
+end
+
+--- Is the item in a bag slot soulbound? False when the client cannot say.
+function Items:SlotBound(bag, slot)
+    local info = Call(SLOT_INFO, bag, slot)
+    local ok, bound = pcall(function()
+        if type(info) == "table" and info.isBound ~= nil then return info.isBound == true end
+    end)
+    if ok and bound ~= nil then return bound end
+    local make = Resolve("ItemLocation.CreateFromBagAndSlot")
+    if type(make) ~= "function" then return false end
+    local made, location = pcall(make, _G.ItemLocation, bag, slot)
+    if not made or not location then return false end
+    local answer = Call({ "C_Item.IsBound" }, location)
+    local same, yes = pcall(function() return answer == true end)
+    return same and yes or false
+end
+
 --- How many slots a bag has (0 when there is no bag there).
 function Items:BagSize(bag)
     local size = Call(BAG_SLOTS, bag)
