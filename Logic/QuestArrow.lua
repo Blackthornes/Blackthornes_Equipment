@@ -734,7 +734,7 @@ ns.RegisterCommand("arrow", "an arrow to the upgrade quest's next place (on, off
             ns.Print("no other place in this quest's steps.")
         end
     elseif word == "check" then
-        QuestArrow:Check()
+        ns.KeepCheck("arrow check", QuestArrow.Check, QuestArrow)
     elseif word == "tomtom" then
         ns.TomTom:Command((rest or ""):lower():match("^%s*%a+%s+(%a+)"))
     elseif word == "reset" then
