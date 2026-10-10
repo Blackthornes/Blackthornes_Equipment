@@ -15,6 +15,7 @@ fully after updating (`/reload` is not enough).
   still have to learn it, its materials go on the shopping list; if nobody on
   your account makes it, the gear itself goes on the list to buy. The button
   then reads **Queued** and opens Tradeskills' Queue tab.
+- **One more Forever vendor spot**, learned in game.
 
 ## 0.16.0
 
