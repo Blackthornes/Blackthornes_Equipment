@@ -12,6 +12,11 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.24.0
+
+- Works on German game clients too.
+- A short note at login tells you about our other addons, just once.
+
 ## 0.23.0
 
 - Weapons you can't use yet now offer to show you the trainer, or let you ignore that weapon type.
