@@ -37,9 +37,16 @@ local QuestArrow = ns.NewModule("QuestArrow")
 local ARRIVED = 15
 QuestArrow.ARRIVED = ARRIVED
 
--- How often the places are worked out again from the steps, seconds. The
--- pointing and the distance are redone every time the dial draws.
-QuestArrow.REFRESH = 2
+-- How often the places are worked out again from the steps, seconds, when
+-- nothing said they changed. The upgrade quest re-lists them at once after
+-- every bag, quest log, zone or gear change it hears (OnUpgradeQuestChanged),
+-- so this only catches what no event told it; reading the steps every two
+-- seconds while the dial was up was work for nothing. The pointing and the
+-- distance are redone every time the dial draws.
+QuestArrow.REFRESH = 10
+-- A quest from the quest log is one cheap read of the log, and nothing tells
+-- the arrow when its objectives move on, so it keeps the old pace.
+QuestArrow.REFRESH_FREE = 2
 
 -- Map types, as the client numbers them (Enum.UIMapType).
 local CONTINENT = 2
@@ -172,6 +179,7 @@ function QuestArrow:Places(quest)
     if not ok or type(steps) ~= "table" then return {} end
 
     local list, seen = {}, {}
+    current = tonumber(current)
     for index = math.max(current or 1, 1), #steps do
         local step = steps[index]
         local place = step.place
@@ -195,7 +203,7 @@ function QuestArrow:Places(quest)
     for _, place in ipairs(list) do
         if place.x and place.y or not spotIn[place.zone] then kept[#kept + 1] = place end
     end
-    return kept, steps
+    return kept, steps, current
 end
 
 --- Does a place picked on the panel still stand? Only while its step reads
@@ -506,7 +514,9 @@ function QuestArrow:Targets(quest, here)
         pinned, self.pinned = nil, nil
     end
 
-    local places, steps = self:Places(quest)
+    local places, steps, current = self:Places(quest)
+    -- Kept for the dial's step line, so the steps are read once a listing.
+    self.readSteps, self.readCurrent = steps, current
     if pinned and not QuestArrow.PinHolds(pinned, steps) then
         pinned, self.pinned = nil, nil
     end
@@ -595,8 +605,13 @@ function QuestArrow:State(clock)
     -- right-click stays picked while it is still listed.
     clock = clock or 0
     local stamp = Stamp(quest)
-    if self.stamp ~= stamp or not self.listedAt or clock - self.listedAt >= QuestArrow.REFRESH
-        or clock < self.listedAt then
+    local every = quest.free and QuestArrow.REFRESH_FREE or QuestArrow.REFRESH
+    -- A list made while the client would not say where you are (just after
+    -- a loading screen) calls every spot far; it is made again as soon as
+    -- the position is back, not after REFRESH.
+    if self.stamp ~= stamp or not self.listedAt or clock - self.listedAt >= every
+        or clock < self.listedAt or (here and self.listedBlind) then
+        self.listedBlind = here == nil
         if self.stamp ~= stamp then self.choice = nil end
         self.targets = self:Targets(quest, here)
         self.listedAt = clock
@@ -605,9 +620,9 @@ function QuestArrow:State(clock)
         -- Read here, with the places, rather than 33 times a second.
         self.stepText = nil
         if #self.targets == 0 and not quest.free then
-            local ok, steps, current = pcall(ns.UpgradeQuest.Steps, ns.UpgradeQuest, quest)
-            local step = ok and type(steps) == "table" and steps[current]
-            self.stepText = step and step.text or nil
+            local steps, current = self.readSteps, self.readCurrent
+            local step = type(steps) == "table" and current and steps[current]
+            self.stepText = type(step) == "table" and step.text or nil
         end
 
         self.index = 1

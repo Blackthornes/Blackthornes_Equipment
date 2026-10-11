@@ -96,6 +96,13 @@ Panel:ToggleFold()
 Click(RowFor(1001))
 suite.check("a folded panel unfolds", not Panel.folded and Quest:Tab() == "vendor")
 
+-- Following from the finder while the panel shows the Quest log tab shows
+-- the followed quest's tab instead.
+ns.charDB.questLogTab = true
+Click(RowFor(1002))
+suite.check("following leaves the Quest log tab", ns.charDB.questLogTab == nil and Quest:Tab() == "quest")
+Click(RowFor(1001))
+
 -- Other clicks keep their jobs.
 Click(RowFor(1002), "RightButton")
 suite.check("right-click tracks", ns.Tracking:IsTracked(1002) and Quest:Tab() == "vendor")

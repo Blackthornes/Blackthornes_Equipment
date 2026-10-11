@@ -18,10 +18,12 @@
 --   * "Hide the game's quest tracker" (off unless ticked) hides the game's
 --     own tracker while this panel is up; untick it and it comes back.
 --
--- Nothing of the game's tracker is moved or re-parented. Hiding it is a
--- plain Hide while the setting is on, done again whenever the game shows it,
--- and never in combat while it is protected: that waits for combat to end,
--- as the controller bag button does (UI/BagIcons.lua).
+-- Nothing of the game's tracker is moved, re-parented, hidden or shown.
+-- "Hiding" it is ns.Veil (UI/Veil.lua): see-through, its lines no longer
+-- taking the mouse, caught again after a burst of quest events, and put back
+-- when the panel closes. Never Hide or Show: that runs the game's own code
+-- as this addon and taints Edit Mode. A protected line waits for combat to
+-- end, as the controller bag button does (UI/BagIcons.lua).
 --
 -- Quest item buttons are secure buttons (using an item is protected), so
 -- they are kept outside the panel and placed over their row by screen
@@ -748,6 +750,9 @@ function QuestLogUI:BuildMenu()
     menu.title = Theme.CreateLabel(menu, "small", "gilt")
     menu.title:SetPoint("TOPLEFT", 12, -8)
     menu.title:SetWidth(MENU_WIDTH - 24)
+    -- A long quest title wraps rather than ending in "...".
+    menu.title:SetWordWrap(true)
+    menu.title:SetJustifyV("TOP")
     menu.line = menu:CreateTexture(nil, "ARTWORK")
     menu.line:SetPoint("TOPLEFT", 10, -26)
     menu.line:SetSize(MENU_WIDTH - 20, 1)
@@ -800,8 +805,14 @@ function QuestLogUI:OpenMenu(quest)
     local menu = self:BuildMenu()
     menu.quest = quest
     menu.title:SetText(quest.title)
+    -- The line and the entries sit under however many lines the title took.
+    local okHeight, titleHeight = pcall(menu.title.GetStringHeight, menu.title)
+    titleHeight = okHeight and tonumber(titleHeight) or 0
+    titleHeight = math.max(titleHeight, Theme.sizes.small or 12)
+    menu.line:ClearAllPoints()
+    menu.line:SetPoint("TOPLEFT", 10, -(titleHeight + 15))
     local list = self:MenuFor(quest)
-    local y = 32
+    local y = titleHeight + 21
     for index, item in ipairs(list) do
         local entry = MenuEntry(menu, index)
         entry.action = item[2]

@@ -206,10 +206,13 @@ function SlotUpgrades:BuildRow(index)
     item:SetWidth(textWidth - 60)
     row.item = item
 
+    -- The gain sits at the right of the item's line and grows leftward to
+    -- fit ("Train: empty slot"), the item's name giving it the room.
     local gain = Theme.CreateLabel(row, "normal", "good", "RIGHT")
-    gain:SetPoint("TOPLEFT", 44 + textWidth - 56, -6)
+    gain:SetPoint("TOPRIGHT", row, "TOPLEFT", 44 + textWidth - 2, -6)
     gain:SetWidth(54)
     row.gain = gain
+    row.textWidth = textWidth
 
     local source = Theme.CreateLabel(row, "tiny", "muted")
     source:SetPoint("TOPLEFT", 44, -26)
@@ -286,7 +289,11 @@ function SlotUpgrades:Fill()
         if pick then
             Theme.SetItemIcon(row.icon, pick.link)
             row.item:SetText(pick.link)
-            row.gain:SetText(SlotUpgrades.Gain(pick))
+            local gainText = SlotUpgrades.Gain(pick)
+            row.gain:SetText(gainText)
+            local gainWidth = math.max(54, math.ceil(Theme.TextWidth("normal", gainText or "")) + 4)
+            row.gain:SetWidth(gainWidth)
+            row.item:SetWidth(row.textWidth - gainWidth - 6)
             row.gain:SetTextColor(Theme.Unpack(SlotUpgrades.GainKey(pick)))
             local source = pick.sources and pick.sources[1]
             local text = source and ns.FinderUI and ns.FinderUI.SourceLine(source) or ""

@@ -324,7 +324,7 @@ function QuestPanel:LayoutTabs(frame)
     local widths, total = Widths()
     if total > room then
         size = "tiny"
-        for _, button in ipairs(self.tabs) do button.label:SetFont(Theme.FONT, Theme.sizes.tiny) end
+        for _, button in ipairs(self.tabs) do button.label:SetFont(Theme.FONT, Theme.sizes.tiny, "") end
         widths, total = Widths()
     end
     local extra = math.max(0, room - total) / #self.tabs

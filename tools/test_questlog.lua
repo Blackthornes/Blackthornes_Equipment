@@ -245,6 +245,15 @@ _G.GetNumGroupMembers = function() return 2 end
 suite.check("Share shows in a group", Labels(night):find("Share with party", 1, true))
 Tab.shown[1]:GetScript("OnClick")(Tab.shown[1], "RightButton")
 suite.check("right-click opens it", Tab.menu:IsShown() and Tab.menu.title:GetText() == "The Night Watch")
+do
+    local oneLine = Tab.menu:GetHeight()
+    Tab.menu.title.GetStringHeight = function() return 36 end
+    Tab.shown[1]:GetScript("OnClick")(Tab.shown[1], "RightButton")
+    suite.check("a long quest title wraps and the menu grows under it",
+        Tab.menu:GetHeight() > oneLine + 20, Tab.menu:GetHeight())
+    Tab.menu.title.GetStringHeight = nil
+    Tab.shown[1]:GetScript("OnClick")(Tab.shown[1], "RightButton")
+end
 local share
 for _, entry in ipairs(Tab.menu.entries) do
     if entry:IsShown() and entry.label:GetText() == "Share with party" then share = entry end
