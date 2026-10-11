@@ -12,6 +12,12 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.21.2
+
+- The upgrade quest and the upgrade finder are a lot lighter while you play.
+- The quest arrow is calmer and doesn't get lost after a loading screen.
+- A bunch of small fixes to the finder and the quest panel.
+
 ## 0.21.1
 
 - When an alt can craft an upgrade, it now shows their full name.
