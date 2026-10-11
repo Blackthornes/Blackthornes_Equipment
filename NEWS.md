@@ -12,6 +12,10 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.21.0
+
+- The upgrade quest shows a yellow ? when a quest is ready to turn in, just like the game does.
+
 ## 0.20.1
 
 - Your mining pick, skinning knife and other profession tools don't get the sell coin anymore.

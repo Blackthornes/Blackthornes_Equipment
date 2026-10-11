@@ -4,6 +4,20 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.21.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **The game's ? when a quest is ready:** on the Upgrade quest panel, when
+  the step to do now is to hand in a completed quest, the yellow ! next to
+  it and in the header turns into the game's yellow ?. It stays a ! while
+  the quest still has work left.
+- **More Forever data:** boss and mob drops seen in Ragefire Chasm and the
+  Wailing Caverns, and five more vendor and trainer spots plus one moved.
+- **Fixes:** in the Blizzard window style, the Window style box fits its
+  words and the Reload buttons sit under their setting.
+
 ## 0.20.1
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
