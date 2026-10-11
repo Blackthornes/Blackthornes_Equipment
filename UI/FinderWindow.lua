@@ -816,18 +816,36 @@ local NO_UPGRADES = {
     craft = "No crafted gear beats what you wear.",
 }
 
---- Look again and redraw.
+--- Look again and redraw, at once: for opening the window and for clicks.
 -- @return the scan, or nil when there was nothing to look with
 function FinderUI:Refresh()
     if not (self.frame and self.frame:IsShown()) then return nil end
+    -- A slower scan still under way would only draw something older.
+    Finder.sliced = nil
+    return self:Present(Finder:Scan(self:Filter(), self:Ahead()))
+end
 
+--- Look again a slice per frame and redraw once done, keeping what shows
+--- meanwhile: for the events that come in bursts while the window is open.
+function FinderUI:RefreshInBackground()
+    if not (self.frame and self.frame:IsShown()) then return end
+    local filter, ahead = self:Filter(), self:Ahead()
+    Finder:ScanSliced(filter, ahead, function(found, why)
+        -- The window closed, or the filter or the stepper moved, meanwhile.
+        if not (FinderUI.frame and FinderUI.frame:IsShown()) then return end
+        if FinderUI:Filter() ~= filter or FinderUI:Ahead() ~= ahead then return end
+        FinderUI:Present(found, why)
+    end)
+end
+
+--- Draw a scan.
+function FinderUI:Present(found, why)
     for _, button in ipairs(self.filters) do
         local on = button.kind == self:Filter()
         button.mark:SetShown(on)
         button:SetLabelColor(on and "accent" or "text")
     end
 
-    local found, why = Finder:Scan(self:Filter(), self:Ahead())
     if not found then
         self.lines = {}
         self:Draw()
@@ -894,11 +912,11 @@ function FinderUI:RefreshSoon()
     if C_Timer and C_Timer.After then
         C_Timer.After(0.5, function()
             FinderUI.pending = false
-            FinderUI:Refresh()
+            FinderUI:RefreshInBackground()
         end)
     else
         self.pending = false
-        self:Refresh()
+        self:RefreshInBackground()
     end
 end
 
@@ -977,7 +995,7 @@ function FinderUI:Follow(pick)
 end
 
 local EVENTS = {
-    "GET_ITEM_INFO_RECEIVED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
+    "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
     "QUEST_TURNED_IN", "TRAIT_CONFIG_UPDATED", "BAG_UPDATE_DELAYED",
 }
 
@@ -985,6 +1003,11 @@ function FinderUI:OnEnable()
     for _, event in ipairs(EVENTS) do
         ns.RegisterEvent(self, event, self.RefreshSoon)
     end
+    -- Only answers the finder asked for: the client loads items for chat
+    -- links, the auction house and other addons all the time.
+    ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", function(_, _, itemID)
+        if Finder:Asked(itemID) then FinderUI:RefreshSoon() end
+    end)
     -- A new zone has its own list while "This zone only" is ticked, and
     -- always its own green zone names and nearest-first order.
     ns.RegisterEvent(self, "ZONE_CHANGED_NEW_AREA", function()

@@ -337,6 +337,37 @@ suite.check("/beq find closes it", not UI.frame:IsShown())
 ns.HandleSlash("find")
 suite.check("and opens it", UI.frame:IsShown())
 
+-- While the window is open, events rescan a slice at a time, and an item
+-- the client loaded for someone else rescans nothing.
+do
+    UI:Show()
+    UI:OnEnable()
+    local function Fire(event, ...)
+        ns.eventFrame:GetScript("OnEvent")(ns.eventFrame, event, ...)
+    end
+    local realBuild, builds, paused = ns.Finder.Build, 0, 0
+    ns.Finder.Build = function(self, only, ahead, pause)
+        builds = builds + 1
+        if pause then paused = paused + 1 end
+        return realBuild(self, only, ahead, pause)
+    end
+    ns.Finder.asked = ns.Finder.asked or {}
+    ns.Finder.asked[1003] = nil
+    Fire("GET_ITEM_INFO_RECEIVED", 987654, true)
+    suite.check("an item nobody here asked for rescans nothing", builds == 0, builds)
+    ns.Finder.asked[1003] = true
+    Fire("GET_ITEM_INFO_RECEIVED", 1003, true)
+    suite.check("one the finder asked for rescans", builds >= 1, builds)
+    builds, paused = 0, 0
+    Fire("BAG_UPDATE_DELAYED")
+    suite.check("a bag change rescans a slice at a time", builds >= 1 and paused == builds, paused .. "/" .. builds)
+    builds = 0
+    UI:SetFilter("vendor")
+    suite.check("a click still answers at once", builds >= 1)
+    UI:SetFilter(nil)
+    ns.Finder.Build = realBuild
+end
+
 -- The gear window has a button for it.
 ns.UI:Show()
 suite.check("the gear window has a Find upgrades button", ns.UI.findButton ~= nil)
