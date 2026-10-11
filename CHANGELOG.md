@@ -4,6 +4,20 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.22.1
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- **Smoother play:** a skill point (from a craft, a node or a weapon
+  swing) no longer throws away every upgrade verdict and starts a new
+  scan; only learning or dropping a skill does. `/beq perf` now keeps
+  its results.
+- **Fixes:** when the game holds back who you're playing (in a dungeon,
+  for example), gear no longer says it's an upgrade for the character
+  you're already on. The alt line comes back once the game says who you
+  are.
+
 ## 0.22.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game
