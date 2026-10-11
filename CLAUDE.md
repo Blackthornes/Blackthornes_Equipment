@@ -87,8 +87,21 @@ otherwise a table:
   `sell`.
 - `tool`: true for gathering and profession tools (`BagIcons.IsTool`,
   `BagIcons.TOOLS`) and fishing poles; a tool is never `sell`.
+- `alt`: only when it is no upgrade here, `{ key, gain, level }` for the
+  other character it helps most (`Alts:BestFor`, the owner asked
+  2026-10-11): `key` that character's GUID (Butler names it from
+  Tradeskills' record), `gain` a whole percent (nil for an empty slot),
+  `level` when it waits on that character's level. Butler mails it there.
 
-It never raises, scans no bags and keeps nothing new: scores, sell prices
+Each character keeps a note of itself when it plays (`Logic/Alts.lua`,
+account wide in `BlackthornesEquipmentDB.characterGear[guid]` = `{ class,
+level, spec, realm, faction, worn = { [slot] = link }, at }`; never rename
+it), written 1 second after a burst of gear, level or talent events. Only
+characters on the same realm and side are judged, with their own class,
+spec, level and worn gear, through `Compare:ScoreOf`; a character counts
+once it has logged in with this version.
+
+It never raises, scans no bags and, past the notes above, keeps nothing new: scores, sell prices
 and tools are the per-link caches the bag icons already keep, since Butler
 asks a hundred times in a burst. Keep the global, `Butler:Advise` and these
 fields stable; if one has to change, change Butler's `Logic/Sisters.lua`

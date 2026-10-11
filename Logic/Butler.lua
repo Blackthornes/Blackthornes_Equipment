@@ -72,6 +72,11 @@ local function Read(item, bag, slot)
     end
     if not tool then
         advice.sell = BagIcons:Sells(bag, slot, link, result) == true
+        -- No use to the character playing: is it an upgrade for another?
+        if not advice.upgrade and type(result) == "table" and ns.Alts then
+            local alt = ns.Alts:BestFor(link)
+            if alt then advice.alt = { key = alt.key, gain = alt.gain, level = alt.level } end
+        end
     end
     return advice
 end
@@ -87,6 +92,10 @@ end
 --   sell     true when the bag's sell coin would show on it
 --   tool     true for gathering and profession tools and fishing poles,
 --            kept to use and never sold
+--   alt      when it is no upgrade here but is for another of the player's
+--            characters on this realm and side (Alts:BestFor): { key (that
+--            character's GUID), gain (whole percent, nil for an empty
+--            slot), level (when it waits on that character's level) }
 -- Never raises.
 function Butler:Advise(item, bag, slot)
     local ok, advice = pcall(Read, item, bag, slot)
