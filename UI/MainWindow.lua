@@ -72,6 +72,7 @@ local function CreateItemCell(parent, width)
         if type(self.link) ~= "string" then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         pcall(GameTooltip.SetHyperlink, GameTooltip, self.link)
+        if self.wears then GameTooltip:AddLine("Click to put it on", Theme.Unpack("good")) end
         GameTooltip:Show()
     end)
     cell:SetScript("OnLeave", function(self)
@@ -83,8 +84,13 @@ local function CreateItemCell(parent, width)
         if type(self.link) ~= "string" then return end
         if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
             local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
-            if ok and chatLink then pcall(ChatEdit_InsertLink, self.link) end
+            if ok and chatLink then
+                pcall(ChatEdit_InsertLink, self.link)
+                return
+            end
         end
+        -- A click on an upgrade in the bags puts it on.
+        if self.wears and ns.Wear then ns.Wear:PutOn(self.link) end
     end)
     return cell
 end
@@ -161,7 +167,7 @@ function UI:Build()
     local hint = Theme.CreateLabel(frame, "tiny", "dim")
     hint:SetPoint("BOTTOMLEFT", PADDING, 11)
     hint:SetPoint("BOTTOMRIGHT", version, "BOTTOMLEFT", -12, 0)
-    hint:SetText("Hover an item for its tooltip. Equipping is up to you.")
+    hint:SetText("Hover an item for its tooltip. Click an upgrade to put it on.")
     self.hint = hint
 
     frame:Hide()
@@ -259,6 +265,7 @@ function UI:BuildRows()
 
         local best = CreateItemCell(row, inner - BEST_X - GAIN_WIDTH - 10)
         best:SetPoint("LEFT", BEST_X, 0)
+        best.wears = true
 
         local gain = Theme.CreateLabel(row, "small", "good", "RIGHT")
         gain:SetPoint("RIGHT", -8, 0)
@@ -360,9 +367,9 @@ function UI:Refresh()
     end
 
     if spec and Weights:IsCustom(class, spec) then
-        self.hint:SetText("Judged by your own stat weights. Equipping is up to you.")
+        self.hint:SetText("Judged by your own stat weights. Click an upgrade to put it on.")
     else
-        self.hint:SetText("Hover an item for its tooltip. Equipping is up to you.")
+        self.hint:SetText("Hover an item for its tooltip. Click an upgrade to put it on.")
     end
 
     self.footer:SetTextColor(Theme.Unpack(upgrades > 0 and "good" or "muted"))

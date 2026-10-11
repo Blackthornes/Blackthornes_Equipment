@@ -180,7 +180,7 @@ function Tracking:Check()
             hunt.got = Now()
             changed = true
             if ns.Toast then
-                ns.Toast:Show({ title = "Tracked upgrade in your bags", link = hunt.link,
+                ns.Toast:Show({ title = "Tracked upgrade in your bags", link = hunt.link, wear = true,
                     text = "Put it on to finish the hunt." })
             end
         elseif hunt.got and not carried[itemID] then

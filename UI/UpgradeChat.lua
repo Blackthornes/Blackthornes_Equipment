@@ -132,7 +132,7 @@ function UpgradeChat:Consider(link)
         -- which gets its own.
         local itemID = tonumber(link:match("item:(%d+)"))
         if ns.Toast and not (ns.Tracking and itemID and ns.Tracking:IsTracked(itemID)) then
-            ns.Toast:Show({ title = "Upgrade in your bags", link = link,
+            ns.Toast:Show({ title = "Upgrade in your bags", link = link, wear = true,
                 text = ("%s for %s"):format(Compare:HowMuch(result), result.specName or "you") })
         end
     end

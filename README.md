@@ -16,11 +16,14 @@ So far it judges the gear in your bags: hovering a piece says on its tooltip
 whether it beats what you wear and by how much, and an upgrade you can wear
 now gets a green arrow on its icon in the bags. When a quest lets you choose a
 reward, the biggest upgrade among them gets the same arrow, and chat names it
-when you hand the quest in. Gear up for a group loot roll gets the arrow too,
+when you hand the quest in; a **Take** button under the quest window takes
+the biggest upgrade (or, with none, the reward that sells for the most) in
+one click. Gear up for a group loot roll gets the arrow too,
 with how much better it is under the icon, so you know when to Need. When an upgrade you can wear now lands in your
 bags (looted, bought, mailed or traded), chat says so once, with how much
-better it is. The gear window lists every slot with what you
-wear and the biggest upgrade for it in your bags.
+better it is, and its banner has a **Put it on** button. The gear window lists
+every slot with what you wear and the biggest upgrade for it in your bags;
+click an upgrade there to put it on.
 
 Its **Find upgrades** button (or `/beq find`) opens "Where to get upgrades":
 for each slot, the best gear a vendor sells, a quest gives or a dungeon or

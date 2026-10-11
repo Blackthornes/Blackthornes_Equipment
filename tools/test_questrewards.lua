@@ -238,6 +238,49 @@ suite.check("and is named once it arrives",
     env.ChatText():find("this quest gives you item:10", 1, true), env.ChatText())
 _G.C_Timer.After = immediate
 
+-- Take the reward: a button under the quest window on the hand-in page,
+-- for the biggest upgrade, and one click hands the quest in with it.
+ns, buttons = LoadWith({ "item:2", "item:3", "item:4" })
+_G.QuestFrame.GetLeft = function() return 100 end
+_G.QuestFrame.GetRight = function() return 450 end
+_G.QuestFrame.GetBottom = function() return 200 end
+local taken
+_G.GetQuestReward = function(choice) taken = choice end
+ns.QuestRewards:QUEST_COMPLETE()
+local take = ns.QuestRewards.take
+suite.check("a Take button on the hand-in page", take and take:IsShown())
+suite.check("naming the biggest upgrade", take and take.label:GetText():find("fills an empty slot", 1, true) ~= nil,
+    take and take.label:GetText())
+suite.check("under the quest window, placed by screen position, not anchored to it",
+    take and take._point and take._point[2] == UIParent)
+take:GetScript("OnClick")(take)
+suite.check("a click takes that reward", taken == 2, taken)
+
+-- Not on the page where the quest is offered.
+ns.QuestRewards:Moved()
+suite.check("gone when the window moves on", not take:IsShown())
+_G.QuestInfo_Display()
+suite.check("and not shown when a quest is only offered", not take:IsShown())
+
+-- No upgrade: it takes what sells for the most.
+ns = LoadWith({ "item:5", "item:6" })
+_G.QuestFrame.GetLeft = function() return 100 end
+_G.QuestFrame.GetRight = function() return 450 end
+_G.QuestFrame.GetBottom = function() return 200 end
+local index = ns.QuestRewards:MostValuable()
+ns.QuestRewards:QUEST_COMPLETE()
+take = ns.QuestRewards.take
+if index then
+    suite.check("with no upgrade, it takes what sells for the most", take and take:IsShown() and take.choice == index)
+else
+    suite.check("with nothing worth anything, no button", not (take and take:IsShown()))
+end
+
+-- Turned off in Settings.
+ns.db.rewardButton = false
+ns.QuestRewards:UpdateTake()
+suite.check("the setting turns it off", not (take and take:IsShown()))
+
 -- A client that raises costs the arrow, not an error.
 ns = LoadWith({ "item:2", "item:3" })
 _G.GetQuestItemLink = function() error("secret value") end

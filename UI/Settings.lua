@@ -310,6 +310,12 @@ function SettingsUI:BuildGear()
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
     end)
 
+    local takeRow = pages:Row("gear", 1, "Take reward button",
+        "When you hand in a quest with rewards to choose from, a button under the quest window takes the best one in a click: the biggest upgrade, or the one that sells for the most.")
+    controls.rewardButton = Tick(takeRow, "Show it", "rewardButton", true, function()
+        if ns.QuestRewards then pcall(ns.QuestRewards.UpdateTake, ns.QuestRewards) end
+    end)
+
     local chatRow = pages:Row("gear", 1, "Upgrade in chat",
         "One line in chat when an upgrade you can wear now lands in your bags.")
     controls.upgradeChat = Tick(chatRow, "Say so", "upgradeChat", true)
@@ -693,6 +699,7 @@ function SettingsUI:Refresh()
     controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)
     controls.hideGamepadBag:SetChecked(ns.db.hideGamepadBag ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
+    controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:SetChecked(ns.db.suffixLine ~= false)
     for _, entry in ipairs(HUNTING) do
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)

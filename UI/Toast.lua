@@ -5,6 +5,7 @@
 -- House style: the dark shell with the gold halo, the item's icon in its
 -- quality colour, a title in gold and the item below. It drops in, glows,
 -- waits, and fades. Click it to open the upgrade finder; the X closes it.
+-- An upgrade in the bags gets a Put it on button (Logic/Wear.lua).
 -- Several at once wait their turn. Switched off with the "Upgrade banner"
 -- setting (`upgradeToast`); the chat line has its own switch.
 
@@ -60,6 +61,15 @@ function Toast:Build()
         { width = 18, height = 16, danger = true })
     close:SetPoint("TOPRIGHT", -6, -6)
 
+    -- An upgrade in the bags can be put on from here, out of combat.
+    local wear = Widgets.CreateButton(frame, "Put it on", function()
+        local link = rawget(Toast, "link")
+        if link and ns.Wear:PutOn(link) then Toast:Dismiss() end
+    end, { width = 76, height = 18, primary = true })
+    wear:SetPoint("BOTTOMRIGHT", -6, 6)
+    wear:Hide()
+    self.wear = wear
+
     frame:SetScript("OnClick", function()
         if ns.FinderUI then ns.FinderUI:Show() end
         Toast:Dismiss()
@@ -105,6 +115,11 @@ function Toast:Present(banner)
     self.item:SetText(banner.link or "")
     self.text:SetText(banner.text or "")
     Theme.SetItemIcon(self.icon, banner.link)
+    local wears = banner.wear == true and banner.link ~= nil and ns.Wear ~= nil
+        and (ns.Wear:Can(banner.link)) == true
+    self.wear:SetShown(wears)
+    -- The last line stops short of the button.
+    self.text:SetWidth(WIDTH - ICON - 40 - (wears and 84 or 0))
 
     self.frame:SetAlpha(1)
     self.frame:Show()
