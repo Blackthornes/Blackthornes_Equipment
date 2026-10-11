@@ -29,6 +29,7 @@ Data\Rolls.lua
 Logic\Weights.lua
 Logic\Compare.lua
 Logic\WeaponSkills.lua
+Logic\Alts.lua
 Logic\NPCSpots.lua
 Logic\Crafting.lua
 Logic\TradeskillsQueue.lua
