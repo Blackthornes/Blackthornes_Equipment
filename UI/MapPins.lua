@@ -159,7 +159,8 @@ function MapPins:Draw()
     local huntsKey = view and ("%d:%s:%d"):format(view.mapID, tostring(view.name), self.version or 0) or "none"
     if huntsKey ~= self.huntsKey or not self.hunts then
         self.huntsKey = huntsKey
-        self.hunts = view and self:HuntsOn(view.name) or {}
+        self.hunts = view and self:HuntsOn(ns.Waypoints and ns.Waypoints:DataZone(view.name, view.mapID)
+            or view.name) or {}
     end
     local hunts = self.hunts
 

@@ -156,6 +156,8 @@ function env.InstallClient()
     _G.C_Reputation = nil
     _G.GetFactionInfoByID = nil
     _G.GetRealZoneText = nil
+    _G.GetLocale = nil
+    _G.GetInstanceInfo = nil
     _G.C_QuestLog = nil
     _G.QuestFrame = nil
     _G.IsQuestFlaggedCompleted = nil

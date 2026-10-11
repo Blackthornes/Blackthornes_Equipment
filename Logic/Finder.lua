@@ -103,6 +103,8 @@ function Finder:Player()
 
     local class = Weights:PlayerClass()
     local zone = Plain(Read(_G.GetRealZoneText))
+    -- By the data's name for it, on a client in another language too.
+    if ns.Waypoints then zone = ns.Waypoints:DataZone(zone) end
     return {
         level = level,
         zone = zone,

@@ -326,7 +326,10 @@ that names the one these features were asked to match.
 Upgrade hunts, kept per character in `BlackthornesEquipmentCharDB.tracked`
 and `.trackedDone` (never rename them): `Logic/Tracking.lua`,
 `UI/TrackerPanel.lua`, `UI/MapPins.lua`, `UI/Toast.lua`,
-`Logic/Waypoints.lua` (map IDs found by zone name at runtime),
+`Logic/Waypoints.lua` (map IDs found by zone name at runtime; on a
+client in another language, Classic's map IDs in `Waypoints.ZONE_MAPS`,
+and `Waypoints:DataZone` turns the client's zone name into the data's for
+every "zone you are in" check),
 `UI/SlotUpgrades.lua` (character sheet) and `UI/MoreMarks.lua` (vendor and
 loot arrows). None of it has been seen in game yet; `/beq probe` reports the
 calls they need.

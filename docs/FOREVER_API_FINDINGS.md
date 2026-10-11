@@ -290,7 +290,11 @@ calls no probe has seen on Forever yet. `/beq probe` prints a line for each:
   plain and the tooltip has no roll line.
 - `map pin`: whether `C_Map.SetUserWaypoint` and `UiMapPoint` exist. Zone
   map IDs are looked up by name under the top map
-  (`C_Map.GetMapChildrenInfo`), never typed in.
+  (`C_Map.GetMapChildrenInfo`). Only on a client that is not English
+  (`GetLocale`), whose map names are in its own language, Classic's map
+  IDs (`Waypoints.ZONE_MAPS`, Elwynn Forest 1429) stand in after the name,
+  and turn the client's zone name back into the data's (`Waypoints:DataZone`;
+  a dungeon by `GetInstanceInfo`'s instance ID). Not yet seen on Forever.
 
 The merchant and loot arrows read `C_MerchantFrame.GetItemLink` or
 `GetMerchantItemLink`, and `GetLootSlotLink`, on the game's
