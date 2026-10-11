@@ -8,6 +8,15 @@
 -- way says known counts as known. Every character starts with at least one
 -- weapon skill, so when neither way finds any the client is not answering
 -- and nothing is said: a wrong "go learn this" is worse than none.
+--
+-- An untrained weapon is still an upgrade (the owner, 2026-10-02: "it gives
+-- you a reason to go learn the skill"), but one that can't be put on yet, so
+-- the banner offers two things instead of Put it on (2026-10-11): point the
+-- quest arrow at the weapon master who teaches it (ShowMaster), or ignore
+-- that weapon type until it is trained (Ignore). Ignored types are kept per
+-- character in `ignoredWeaponTypes[subclassID] = true` (never rename it);
+-- Compare then calls such a weapon one this character doesn't use, and
+-- learning the skill brings it back by itself.
 
 local _, ns = ...
 
@@ -56,6 +65,15 @@ end
 --- Forget the kept answer: a skill may have been learned.
 function WeaponSkills:Forget()
     self.kept = nil
+end
+
+--- A skill was learned (the skill list or the spellbook changed): forget,
+--- and let the banner look again at weapons waiting on one.
+function WeaponSkills:Learned()
+    self.kept = nil
+    if ns.UpgradeChat and ns.UpgradeChat.SkillsChanged then
+        pcall(ns.UpgradeChat.SkillsChanged, ns.UpgradeChat)
+    end
 end
 
 function WeaponSkills:ReadKnown()
@@ -109,7 +127,7 @@ function WeaponSkills:TrainerFor(link)
 
     local cities = WeaponTrainers:Cities(faction, info.subclassID)
     if #cities == 0 then return nil end
-    return skill.name, cities, from
+    return skill.name, cities, from, info.subclassID
 end
 
 --- Does an item need a weapon skill this character can learn but has
@@ -120,11 +138,153 @@ function WeaponSkills:NeedsTraining(link)
     return ok and name ~= nil
 end
 
+--- The weapon skill an item still needs, when this character's class can
+--- learn it and has not: its name and the weapon's subclass ID, or nil.
+function WeaponSkills:Untrained(link)
+    if not link then return nil end
+    local ok, name, _, _, subclassID = pcall(self.TrainerFor, self, link)
+    if ok and name then return name, subclassID end
+    return nil
+end
+
+--------------------------------------------------------------------------------
+-- Ignoring a weapon type until it is trained
+--------------------------------------------------------------------------------
+
+local function IgnoredList()
+    local char = ns.charDB
+    if type(char) ~= "table" then return nil end
+    if type(char.ignoredWeaponTypes) ~= "table" then char.ignoredWeaponTypes = {} end
+    return char.ignoredWeaponTypes
+end
+
+--- Is this weapon type ignored by this character?
+function WeaponSkills:IsIgnored(subclassID)
+    local char = ns.charDB
+    local list = type(char) == "table" and char.ignoredWeaponTypes
+    return type(list) == "table" and subclassID ~= nil and list[subclassID] == true
+end
+
+--- The names of the weapon types this character ignores, sorted.
+function WeaponSkills:IgnoredNames()
+    local names = {}
+    local char = ns.charDB
+    local list = type(char) == "table" and char.ignoredWeaponTypes
+    if type(list) ~= "table" then return names end
+    for subclassID, on in pairs(list) do
+        local skill = WeaponTrainers.SKILLS[subclassID]
+        if on == true and skill then names[#names + 1] = skill.name end
+    end
+    table.sort(names)
+    return names
+end
+
+--- Every verdict on a weapon may have changed: redraw what shows them.
+local function Changed()
+    if Weights and Weights.Changed then pcall(Weights.Changed, Weights) end
+    if ns.SettingsUI and ns.SettingsUI.Refresh then pcall(ns.SettingsUI.Refresh, ns.SettingsUI) end
+end
+
+--- Stop calling weapons of this type upgrades until the skill is trained.
+function WeaponSkills:Ignore(subclassID)
+    local skill = WeaponTrainers.SKILLS[subclassID]
+    local list = IgnoredList()
+    if not (skill and list) then return false end
+    list[subclassID] = true
+    ns.Print(("ignoring %s until you train them. Settings or /beq weapons show brings them back."):format(skill.name))
+    Changed()
+    return true
+end
+
+--- Show every ignored weapon type again.
+function WeaponSkills:ShowAll()
+    local list = IgnoredList()
+    if not list or next(list) == nil then
+        ns.Print("no weapon types are ignored.")
+        return false
+    end
+    for key in pairs(list) do list[key] = nil end
+    ns.Print("untrained weapons show as upgrades again.")
+    Changed()
+    return true
+end
+
+--------------------------------------------------------------------------------
+-- The weapon master
+--------------------------------------------------------------------------------
+
+--- The zone the character is in, plain, or nil.
+local function ZoneNow()
+    local zone = Items.Call({ "GetRealZoneText", "GetZoneText" })
+    local ok, copy = pcall(function()
+        if type(zone) == "string" and zone ~= "" then return zone .. "" end
+    end)
+    return ok and copy or nil
+end
+
+--- Where to learn the skill an item needs: { name, zone, x, y, skill },
+--- the trainer in the city the character is in when one there teaches it,
+--- else the first listed. Forever's spot wins when one was learned. Nil
+--- when the item needs no training.
+function WeaponSkills:Master(link)
+    local skillName, subclassID = self:Untrained(link)
+    local faction = skillName and self:Faction()
+    if not faction then return nil end
+    local teachers = WeaponTrainers:Teachers(faction, subclassID)
+    if #teachers == 0 then return nil end
+    local here = ZoneNow()
+    local pick = teachers[1]
+    for _, trainer in ipairs(teachers) do
+        if trainer.city == here then pick = trainer break end
+    end
+    local name, zone, x, y = pick.name, pick.city, pick.x, pick.y
+    if ns.NPCSpots and pick.npc then
+        local ok, a, b, c, d = pcall(ns.NPCSpots.Place, ns.NPCSpots, pick.npc, name, zone, x, y)
+        if ok and a then name, zone, x, y = a, b, c, d end
+    end
+    return { name = name, zone = zone, x = x, y = y, skill = skillName }
+end
+
+--- Point the quest arrow at the weapon master for an item's skill, and say
+--- where in chat. True when there was one to point at.
+function WeaponSkills:ShowMaster(link)
+    local place = self:Master(link)
+    if not place then
+        ns.Print("no weapon master to show for that.")
+        return false
+    end
+    local where = place.x and ("%s (%.0f, %.0f)"):format(place.zone, place.x, place.y) or place.zone
+    ns.Print(("%s teaches %s, in %s."):format(place.name, place.skill, where))
+    local arrow = ns.QuestArrow
+    if arrow and arrow.AimAtQuest then
+        pcall(arrow.AimAtQuest, arrow, nil, ("Learn %s"):format(place.skill),
+            { zone = place.zone, x = place.x, y = place.y, name = place.name })
+    end
+    return true
+end
+
 function WeaponSkills:OnEnable()
-    for _, event in ipairs({ "SKILL_LINES_CHANGED", "LEARNED_SPELL_IN_TAB", "SPELLS_CHANGED" }) do
-        ns.RegisterEvent(self, event, self.Forget)
+    -- SPELLS_CHANGED comes often and only forgets; the other two are a
+    -- skill being learned.
+    ns.RegisterEvent(self, "SPELLS_CHANGED", self.Forget)
+    for _, event in ipairs({ "SKILL_LINES_CHANGED", "LEARNED_SPELL_IN_TAB" }) do
+        ns.RegisterEvent(self, event, self.Learned)
     end
 end
+
+ns.RegisterCommand("weapons", "weapon types you haven't trained (show: call ignored ones upgrades again)", function(rest)
+    rest = (rest or ""):lower()
+    if rest:match("^show") then
+        WeaponSkills:ShowAll()
+        return
+    end
+    local names = WeaponSkills:IgnoredNames()
+    if #names == 0 then
+        ns.Print("untrained weapons show as upgrades, with where to learn them. Ignore a type from the upgrade banner.")
+    else
+        ns.Print(("ignored until trained: %s. /beq weapons show brings them back."):format(table.concat(names, ", ")))
+    end
+end)
 
 --- "A", "A or B", "A, B or C".
 local function List(cities)

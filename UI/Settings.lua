@@ -350,6 +350,23 @@ function SettingsUI:BuildGear()
     local altRow = pages:Row("gear", 2, "Upgrades for your alts",
         "On gear that does nothing for you, a tooltip line names the other character it helps most, and by how much.")
     controls.altTooltipLine = Tick(altRow, "Show them", "altTooltipLine", true)
+
+    local weaponsRow, weaponsButton = CommandRow(pages, "gear", 2, "Untrained weapons",
+        function() return SettingsUI:WeaponsHint() end, "Show them", "weapons show")
+    controls.weapons = weaponsButton
+    self.weaponsRow = weaponsRow
+end
+
+--- What the Untrained weapons row says: which types this character
+--- ignores, if any.
+function SettingsUI:WeaponsHint()
+    local skills = ns.WeaponSkills
+    local names = skills and skills:IgnoredNames() or {}
+    if #names == 0 then
+        return "Weapons you haven't trained still show as upgrades, with where to learn them. Their banner can point the arrow at the weapon master, or ignore that type until you train it."
+    end
+    return ("Ignored until you train them: %s. Show them brings them back. Same as /beq weapons show."):format(
+        table.concat(names, ", "))
 end
 
 -- The upgrade hunt switches: saved key, page column, label, what it does,
@@ -715,6 +732,7 @@ function SettingsUI:Refresh()
     controls.questLogTracked:SetChecked(ns.db.questLogTrackedOnly == true)
     controls.hideQuestTracker:SetChecked(ns.db.hideQuestTracker == true)
     self:RefreshQuestSize()
+    if self.weaponsRow then self.weaponsRow:SetDescription(self:WeaponsHint()) end
     controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
     controls.questZoneSwap:SetChecked(ns.db.upgradeQuestZoneSwap ~= false)
     -- Dimmed while there is nothing for them to do; still clickable, so a

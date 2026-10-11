@@ -67,7 +67,7 @@ local function Read(item, bag, slot)
 
     local advice = { tool = tool, sell = false }
     if type(result) == "table" and result.verdict == "upgrade" then
-        advice.upgrade = Compare.WearableUpgrade(result) and "now" or "later"
+        advice.upgrade = (Compare.WearableUpgrade(result) and not result.skill) and "now" or "later"
         advice.gain = Gain(result)
     end
     if not tool then

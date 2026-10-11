@@ -59,6 +59,7 @@ function Wear:Can(link)
     if not (ok and ns.Compare.WearableUpgrade(result)) then
         return false, "it's not an upgrade you can wear now"
     end
+    if result.skill then return false, ("train %s first"):format(result.skill) end
     return true, nil, result
 end
 
