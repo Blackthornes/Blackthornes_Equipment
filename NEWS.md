@@ -12,6 +12,11 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.22.1
+
+- Less stutter when you gain a skill point while crafting or gathering.
+- Fixed the alt upgrade line sometimes naming the character you're playing.
+
 ## 0.22.0
 
 - New upgrade? Hit Put it on and you're wearing it.
