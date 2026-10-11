@@ -650,30 +650,14 @@ function SettingsUI:WindowStyleControl(row)
             reload:SetShown(styles[value] ~= Drawn())
         end,
     })
-    -- As wide as "Titanforged" needs at the Text size picked (two 22 px
-    -- buttons and a little room), never under 114.
-    local wordWidth = 0
-    for _, key in ipairs(styles) do
-        local ok, w = pcall(Theme.TextWidth, "small", self.WINDOW_STYLE_LABELS[key])
-        if ok and tonumber(w) and tonumber(w) > wordWidth then wordWidth = tonumber(w) end
-    end
-    local stepWidth = math.max(114, math.ceil(wordWidth) + 22 * 2 + 14)
-    stepper:SetWidth(stepWidth)
+    ns.SettingsPages.FitStepper(stepper, self.WINDOW_STYLE_LABELS)
     stepper:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- ReloadUI is allowed from a click, and saves everything first.
     reload = Widgets.CreateButton(row, "Reload", function()
         if ReloadUI then ReloadUI() end
     end, { width = 60, height = 20 })
-
-    -- To the stepper's right when the column has room, else between the
-    -- setting's name and the stepper, as Text size's Reload sits.
-    local width = tonumber(reload:GetWidth()) or 60
-    if CONTROL_X + stepWidth + 6 + width <= COLUMN_WIDTH then
-        reload:SetPoint("LEFT", stepper, "RIGHT", 6, 0)
-    else
-        reload:SetPoint("RIGHT", stepper, "LEFT", -6, 0)
-    end
+    ns.SettingsPages.ReloadUnder(row, stepper, reload)
     Explain(reload, "Reload", "Reload the interface so the new window style shows (/reload).")
     reload:Hide()
     stepper.reload = reload
