@@ -5,7 +5,9 @@
 -- House style: the dark shell with the gold halo, the item's icon in its
 -- quality colour, a title in gold and the item below. It drops in, glows,
 -- waits, and fades. Click it to open the upgrade finder; the X closes it.
--- An upgrade in the bags gets a Put it on button (Logic/Wear.lua).
+-- An upgrade in the bags gets a Put it on button (Logic/Wear.lua). A banner
+-- can carry its own buttons instead (`actions`, up to two, each { text, fn }),
+-- in a row along its foot: an untrained weapon's Show the trainer and Ignore.
 -- Several at once wait their turn. Switched off with the "Upgrade banner"
 -- setting (`upgradeToast`); the chat line has its own switch.
 
@@ -22,6 +24,9 @@ local HEIGHT = 64
 local ICON = 40
 local SHOWN_FOR = 6
 local QUEUE_MOST = 4
+local ACTIONS_MOST = 2
+-- The row of a banner's own buttons adds this much height.
+local ACTION_ROW = 24
 
 function Toast:IsEnabled()
     return not (ns.db and ns.db.upgradeToast == false)
@@ -70,6 +75,23 @@ function Toast:Build()
     wear:Hide()
     self.wear = wear
 
+    -- A banner's own buttons, right to left along its foot.
+    self.actions = {}
+    for index = 1, ACTIONS_MOST do
+        local button = Widgets.CreateButton(frame, "", function(button)
+            local fn = button.fn
+            Toast:Dismiss()
+            if type(fn) == "function" then pcall(fn) end
+        end, { width = 60, height = 18, primary = index == 1 })
+        if index == 1 then
+            button:SetPoint("BOTTOMRIGHT", -6, 6)
+        else
+            button:SetPoint("RIGHT", self.actions[index - 1], "LEFT", -6, 0)
+        end
+        button:Hide()
+        self.actions[index] = button
+    end
+
     frame:SetScript("OnClick", function()
         if ns.FinderUI then ns.FinderUI:Show() end
         Toast:Dismiss()
@@ -115,11 +137,31 @@ function Toast:Present(banner)
     self.item:SetText(banner.link or "")
     self.text:SetText(banner.text or "")
     Theme.SetItemIcon(self.icon, banner.link)
-    local wears = banner.wear == true and banner.link ~= nil and ns.Wear ~= nil
+    local actions = type(banner.actions) == "table" and banner.actions or {}
+    local wears = #actions == 0 and banner.wear == true and banner.link ~= nil and ns.Wear ~= nil
         and (ns.Wear:Can(banner.link)) == true
     self.wear:SetShown(wears)
-    -- The last line stops short of the button.
+    for index, button in ipairs(self.actions) do
+        local action = actions[index]
+        if type(action) == "table" and action.text then
+            button:SetText(action.text)
+            button.fn = action.fn
+            button:Show()
+        else
+            button.fn = nil
+            button:Hide()
+        end
+    end
+    -- The last line stops short of Put it on; a row of buttons sits below.
     self.text:SetWidth(WIDTH - ICON - 40 - (wears and 84 or 0))
+    self.frame:SetHeight(HEIGHT + (#actions > 0 and ACTION_ROW or 0))
+    -- A long weapon name ("Ignore Two-Handed Swords") widens the banner
+    -- rather than squeezing a label.
+    local row = 12
+    for _, button in ipairs(self.actions) do
+        if button:IsShown() then row = row + (tonumber(button:GetWidth()) or 0) + 6 end
+    end
+    self.frame:SetWidth(math.max(WIDTH, row))
 
     self.frame:SetAlpha(1)
     self.frame:Show()

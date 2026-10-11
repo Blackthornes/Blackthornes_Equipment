@@ -11,7 +11,9 @@
 -- Forever; if a trainer there teaches something else, change it here.
 --
 -- Skills are the client's weapon subclass IDs (item class 2), the same
--- numbers Logic/Weights.lua uses for what each class can equip.
+-- numbers Logic/Weights.lua uses for what each class can equip. Each
+-- trainer's NPC ID and spot on its city's map are Classic's, from pfQuest's
+-- database; a spot learned on Forever (Logic/NPCSpots.lua) wins over it.
 
 local _, ns = ...
 
@@ -23,23 +25,23 @@ local FIST, DAGGER, THROWN, CROSSBOW = 13, 15, 16, 18
 
 WeaponTrainers.TRAINERS = {
     Horde = {
-        { name = "Hanashi", city = "Orgrimmar",
+        { name = "Hanashi", city = "Orgrimmar", npc = 2704, x = 81.5, y = 19.6,
           skills = { BOW, AXE, AXE2H, STAFF, THROWN } },
-        { name = "Sayoc", city = "Orgrimmar",
+        { name = "Sayoc", city = "Orgrimmar", npc = 11868, x = 81.7, y = 19.5,
           skills = { BOW, AXE, AXE2H, STAFF, THROWN, DAGGER, FIST } },
-        { name = "Archibald", city = "Undercity",
+        { name = "Archibald", city = "Undercity", npc = 11870, x = 57.3, y = 32.8,
           skills = { CROSSBOW, DAGGER, SWORD, SWORD2H, POLEARM } },
-        { name = "Ansekhwa", city = "Thunder Bluff",
+        { name = "Ansekhwa", city = "Thunder Bluff", npc = 11869, x = 40.9, y = 62.7,
           skills = { GUN, MACE, MACE2H, STAFF } },
     },
     Alliance = {
-        { name = "Woo Ping", city = "Stormwind",
+        { name = "Woo Ping", city = "Stormwind", npc = 11867, x = 57.1, y = 57.7,
           skills = { CROSSBOW, DAGGER, SWORD, SWORD2H, POLEARM, STAFF } },
-        { name = "Buliwyf Stonehand", city = "Ironforge",
+        { name = "Buliwyf Stonehand", city = "Ironforge", npc = 11865, x = 61.2, y = 89.5,
           skills = { GUN, AXE, AXE2H, MACE, MACE2H, FIST } },
-        { name = "Bixi Wobblebonk", city = "Ironforge",
+        { name = "Bixi Wobblebonk", city = "Ironforge", npc = 13084, x = 62.2, y = 89.6,
           skills = { DAGGER, CROSSBOW, THROWN } },
-        { name = "Ilyenia Moonfire", city = "Darnassus",
+        { name = "Ilyenia Moonfire", city = "Darnassus", npc = 11866, x = 57.6, y = 46.7,
           skills = { DAGGER, FIST, STAFF, BOW, THROWN } },
     },
 }
@@ -78,4 +80,19 @@ function WeaponTrainers:Cities(faction, subclassID)
         end
     end
     return cities
+end
+
+--- The trainers who teach this weapon skill to `faction`, in the order
+--- listed: { name, city, npc, x, y, skills } each.
+function WeaponTrainers:Teachers(faction, subclassID)
+    local teachers = {}
+    for _, trainer in ipairs(self.TRAINERS[faction] or {}) do
+        for _, skill in ipairs(trainer.skills) do
+            if skill == subclassID then
+                teachers[#teachers + 1] = trainer
+                break
+            end
+        end
+    end
+    return teachers
 end

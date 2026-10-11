@@ -125,7 +125,9 @@ function UpgradeChat:Consider(link)
     if not ok then return true end
     if not result then return not MaybeGear(link) end
 
-    if Compare.WearableUpgrade(result) then
+    if Compare.WearableUpgrade(result) and result.skill then
+        self:Untrained(link, result)
+    elseif Compare.WearableUpgrade(result) then
         ns.Print(("upgrade in your bags: %s |c%s%s|r"):format(
             link, ns.COLORS.upgrade, Compare:HowMuch(result)))
         -- The banner too (UI/Toast.lua), unless it is a tracked upgrade,
@@ -137,6 +139,63 @@ function UpgradeChat:Consider(link)
         end
     end
     return true
+end
+
+--- An upgrade whose weapon skill is not trained yet: no Put it on, which
+--- the game would refuse, but the two things to do about it. Kept, so that
+--- learning the skill brings the usual banner (SkillsChanged).
+function UpgradeChat:Untrained(link, result)
+    local skill = result.skill
+    ns.Print(("upgrade in your bags once you train %s: %s |c%s%s|r"):format(
+        skill, link, ns.COLORS.upgrade, Compare:HowMuch(result)))
+    self.untrained = self.untrained or {}
+    self.untrained[link] = true
+
+    local itemID = tonumber(link:match("item:(%d+)"))
+    if not ns.Toast or (ns.Tracking and itemID and ns.Tracking:IsTracked(itemID)) then return end
+    local skills = ns.WeaponSkills
+    local subclassID
+    if skills then subclassID = select(2, skills:Untrained(link)) end
+    local actions = {}
+    if skills and skills:Master(link) then
+        actions[#actions + 1] = { text = "Show the trainer", fn = function() skills:ShowMaster(link) end }
+    end
+    if skills and subclassID then
+        actions[#actions + 1] = { text = ("Ignore %s"):format(skill), fn = function() skills:Ignore(subclassID) end }
+    end
+    ns.Toast:Show({ title = ("Upgrade once you train %s"):format(skill), link = link, actions = actions,
+        text = ("%s for %s"):format(Compare:HowMuch(result), result.specName or "you") })
+end
+
+--- A weapon skill may have been learned: an upgrade that was waiting on one
+--- and is still carried gets the usual banner, with Put it on. Only those
+--- few items are judged, a moment after the burst of skill events.
+function UpgradeChat:SkillsChanged()
+    if not (self.untrained and next(self.untrained)) or self.recheck then return end
+    self.recheck = true
+    local after = Field(_G.C_Timer, "After")
+    local function Run()
+        UpgradeChat.recheck = false
+        pcall(UpgradeChat.Recheck, UpgradeChat)
+    end
+    if type(after) == "function" then after(1, Run) else Run() end
+end
+
+function UpgradeChat:Recheck()
+    local carried = self.counts or {}
+    for link in pairs(self.untrained or {}) do
+        local ok, result = pcall(Compare.JudgeCarried, Compare, link)
+        if not carried[link] or not ok or not (result and result.verdict == "upgrade" and result.skill) then
+            self.untrained[link] = nil
+            if carried[link] and ok and Compare.WearableUpgrade(result) and not result.skill then
+                ns.Print(("you can wear %s now: |c%s%s|r"):format(link, ns.COLORS.upgrade, Compare:HowMuch(result)))
+                if ns.Toast then
+                    ns.Toast:Show({ title = "Ready to wear", link = link, wear = true,
+                        text = ("%s for %s"):format(Compare:HowMuch(result), result.specName or "you") })
+                end
+            end
+        end
+    end
 end
 
 --- Look at the bags once. A baseline scan only takes the counts.

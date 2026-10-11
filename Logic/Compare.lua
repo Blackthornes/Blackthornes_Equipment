@@ -205,6 +205,23 @@ function Compare:Judge(link)
         return result
     end
 
+    -- A weapon whose skill is not trained yet is still an upgrade, but one
+    -- that can't be put on until it is (`skill`, its name). One of a type
+    -- this character ignores until trained (Logic/WeaponSkills.lua) is not
+    -- for it at all.
+    local skills = ns.WeaponSkills
+    if info.classID == 2 and skills then
+        local skill, subclassID = skills:Untrained(link)
+        if skill then
+            if skills:IsIgnored(subclassID) then
+                result.verdict = "cantuse"
+                result.ignoredSkill = skill
+                return result
+            end
+            result.skill = skill
+        end
+    end
+
     local playerLevel = Items:PlayerLevel()
     local needs = math.max(info.minLevel or 0, fromLevel or 0)
     if playerLevel and needs > playerLevel then
@@ -440,7 +457,9 @@ function Compare:Describe(result)
     local verdict, spec = result.verdict, result.specName
     local percent = result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5)) or nil
 
-    if verdict == "cantuse" then
+    if verdict == "cantuse" and result.ignoredSkill then
+        return ("Ignored until you train %s"):format(result.ignoredSkill), "muted"
+    elseif verdict == "cantuse" then
         return ("%s can't use this"):format(CLASS_NAMES[result.className] or "Your class"), "muted"
     elseif verdict == "equipped" then
         return nil
@@ -449,8 +468,8 @@ function Compare:Describe(result)
         if result.level then
             return ("Upgrade for %s at level %d: %s"):format(spec, result.level, how), "warn"
         end
-        if result.train then
-            return ("Upgrade for %s once you train %s: %s"):format(spec, result.train, how), "warn"
+        if result.train or result.skill then
+            return ("Upgrade for %s once you train %s: %s"):format(spec, result.train or result.skill, how), "warn"
         end
         return ("Upgrade for %s: %s"):format(spec, how), "upgrade"
     elseif verdict == "downgrade" then

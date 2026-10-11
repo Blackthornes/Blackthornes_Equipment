@@ -258,6 +258,25 @@ character sheet's list and the upgrade quest panel
 unknown). `WeaponSkills:Known` is kept and forgotten on
 `SKILL_LINES_CHANGED`, `LEARNED_SPELL_IN_TAB` and `SPELLS_CHANGED`, so a
 list asks the client once, not once a row.
+Such a weapon is still an upgrade (the owner's call, 2026-10-02), but
+`Compare:Judge` marks it `skill` (the skill's name), so its tooltip says
+"once you train Staves", Put it on refuses it and Butler hears "later".
+Its banner (a player found a staff offered to a warrior without Staves;
+the owner asked 2026-10-11 for a choice) has no Put it on but **Show the
+trainer** (`WeaponSkills:ShowMaster`: the quest arrow, through
+`QuestArrow:AimAtQuest` with no quest ID, at the weapon master in the city
+the character is in, else the first listed; `Data/WeaponTrainers.lua`
+carries Classic's NPC IDs and spots from pfQuest, a Forever spot learned
+by `NPCSpots` winning) and **Ignore Staves** (`WeaponSkills:Ignore`, per
+character in `BlackthornesEquipmentCharDB.ignoredWeaponTypes[subclassID]`,
+never rename it): `Judge` then answers "cantuse" with `ignoredSkill`, so
+it is no upgrade anywhere until the skill is learned. Learning a skill
+(`WeaponSkills:Learned` on `SKILL_LINES_CHANGED` or `LEARNED_SPELL_IN_TAB`)
+judges again only the untrained upgrades the banner announced
+(`UpgradeChat:SkillsChanged`, a second later) and shows "Ready to wear"
+with Put it on. "Untrained weapons" in Settings and `/beq weapons [show]`
+list and clear the ignored types. Tested in `tools/test_untrained.lua`.
+Not yet seen in game.
 
 Forever's own boss drops: `tools/forever_drops.py` reads Farmer's
 `Data/Data_Harvested.lua` (no player names in it) and writes
