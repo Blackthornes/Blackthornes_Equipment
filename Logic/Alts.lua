@@ -202,7 +202,10 @@ function Alts:BetterElsewhere()
         end
     end
 
+    -- Without the character playing's GUID (a dungeon can keep it back),
+    -- its own note can't be told from another's: nothing is offered.
     local me = self.PlayerGUID()
+    if not me then return best end
     local realm, faction = self.Realm(), self.Faction()
     for key, note in pairs(self:Notes()) do
         if type(note) == "table" then
@@ -328,7 +331,12 @@ end
 function Alts:BestFor(link)
     link = Items.PlainLink(link)
     if not link then return nil end
+    -- Without the character playing's GUID its own note can't be told from
+    -- an alt's, and an upgrade "for an alt" could be mailed to itself
+    -- (2026-10-11): no answer then. A character is its GUID, the one way
+    -- every Blackthornes addon names one in saved data.
     local me = self.PlayerGUID()
+    if not me then return nil end
     local realm, faction = self.Realm(), self.Faction()
     local best, bestKey
     for key, note in pairs(self:Notes()) do
