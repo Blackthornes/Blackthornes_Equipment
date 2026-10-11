@@ -94,6 +94,15 @@ function Alts:Record()
     end
     local spec = Weights:CurrentSpec()
     local old = self:Notes()[guid]
+    local spare = self.GearIn(self.BAGS, true)
+    -- A read that finds nothing worn is the client not saying (on a
+    -- /reload or logout it can answer nil for every slot), not a character
+    -- that took everything off: keep the gear the last note read, or every
+    -- piece would look like an upgrade for an empty slot (2026-10-11).
+    if not next(worn) and type(old) == "table" then
+        if type(old.worn) == "table" then worn = old.worn end
+        if not next(spare) and type(old.spare) == "table" then spare = old.spare end
+    end
     local note = {
         class = class,
         level = level,
@@ -103,7 +112,7 @@ function Alts:Record()
         worn = worn,
         at = Call(_G.time),
         name = Text(Call(_G.UnitName, "player")),
-        spare = self.GearIn(self.BAGS, true),
+        spare = spare,
         -- The bank is only read while it is open; kept from the last time.
         bank = type(old) == "table" and old.bank or nil,
         bankAt = type(old) == "table" and old.bankAt or nil,
@@ -269,11 +278,13 @@ local function Against(note, link, info, weights)
     return weakest or 0, empty, false
 end
 
---- How one item does for one character's note: nil when it is no upgrade,
---- else { gain (whole percent, nil for an empty slot), level (when it can
+--- How one item does for one character's note: nil when it is no upgrade
+--- (or the note has no worn gear to judge it against), else { gain (whole percent, nil for an empty slot), level (when it can
 --- only be worn later) }.
 function Alts:Judge(note, link)
     if type(note) ~= "table" or not note.class then return nil end
+    -- With no gear on record nothing is known to be an upgrade.
+    if type(note.worn) ~= "table" or not next(note.worn) then return nil end
     local info = Items:Info(link)
     if not info or not Compare.SLOTS[info.equipLoc] then return nil end
 
