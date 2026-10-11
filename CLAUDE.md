@@ -427,6 +427,25 @@ The probe (2026-10-10) found the C_QuestLog calls on Forever and none of
 the classic globals, so the tab reads the retail way (see
 `docs/FOREVER_API_FINDINGS.md`); the tab itself not yet seen in game.
 
+## Put it on, and Take the reward
+
+The owner's goal (2026-10-11): the addons should do the work for the
+player. `Logic/Wear.lua` puts an upgrade on in one click: the upgrade
+banner's **Put it on** button (`UI/Toast.lua`, shown when the banner was
+made with `wear = true` and `Wear:Can` says yes) and a click on the gear
+window's best-in-bags cell. `Wear:Can` checks combat, that the client has
+`C_Item.EquipItemByName` or `EquipItemByName`, that the item is still in
+the bags (`Wear.Find`, bags 0 to 4) and that `Compare:JudgeCarried` still
+calls it a wearable upgrade; the slot it was judged for is passed on, so a
+ring goes over the weaker one. Gear that binds when worn still shows the
+game's own box. On the hand-in page a **Take** button under the quest
+window (`QuestRewards:UpdateTake`, our own button on UIParent placed by
+screen position, never on the quest frame) names the biggest upgrade, or
+with none what sells for the most, and calls `GetQuestReward(choice)`.
+"Take reward button" in Settings (`rewardButton`, account wide, on unless
+unticked; never rename it). `/beq probe` lists the calls. Not yet seen in
+game.
+
 ## Sell coins in the bags
 
 The owner asked (2026-10-10) for a gold coin on bag gear worth selling:

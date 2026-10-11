@@ -28,6 +28,7 @@ Data\Rolls.lua
 
 Logic\Weights.lua
 Logic\Compare.lua
+Logic\Wear.lua
 Logic\WeaponSkills.lua
 Logic\Alts.lua
 Logic\NPCSpots.lua

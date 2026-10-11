@@ -253,6 +253,100 @@ function QuestRewards:HideArrows()
 end
 
 --------------------------------------------------------------------------------
+-- Take it
+--
+-- One click on the right reward (the owner, 2026-10-11: the addons should do
+-- the work for the player). A button of this addon's own, parented to
+-- UIParent and placed under the quest window by screen position (read
+-- only), never anchored to it or put inside it. It names the pick: the
+-- biggest upgrade, else the choice a vendor pays the most for. Its click
+-- hands the quest in with that reward through the game's GetQuestReward,
+-- the call the window's own Complete button makes. "Take reward button"
+-- in Settings (`rewardButton`, on unless unticked).
+--------------------------------------------------------------------------------
+
+local function NameOf(link)
+    local name = type(link) == "string" and link:match("%[(.-)%]")
+    if not name then
+        local info = Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, link)
+        name = type(info) == "string" and info or nil
+    end
+    return name or "it"
+end
+
+function QuestRewards:TakeEnabled()
+    return not (ns.db and ns.db.rewardButton == false)
+end
+
+--- What the button would take: index, link and its words, or nil.
+function QuestRewards:Pick()
+    if self:Count() < 2 then return nil end
+    local index, link, result, unknown = self:Best()
+    if index then
+        return index, link, ("Take %s (%s)"):format(NameOf(link), Compare:HowMuch(result))
+    end
+    if unknown and unknown > 0 then return nil end
+    local richIndex, richLink, copper = self:MostValuable()
+    if richIndex then
+        local money = copper and ns.Finder and ns.Finder.Money and ns.Finder.Money(copper)
+        local name = NameOf(richLink)
+        return richIndex, richLink, money and ("Take %s (sells for %s)"):format(name, money)
+            or ("Take %s"):format(name)
+    end
+end
+
+function QuestRewards:BuildTake()
+    if self.take then return self.take end
+    local button = ns.Widgets.CreateButton(UIParent, "Take", function(frame)
+        local index = rawget(frame, "choice")
+        if not index then return end
+        local take = rawget(_G, "GetQuestReward")
+        if type(take) == "function" then pcall(take, index) end
+        frame:Hide()
+    end, { width = 220, height = 24, primary = true })
+    button:SetFrameStrata("DIALOG")
+    button:SetScript("OnEnter", function(frame)
+        local link = rawget(frame, "link")
+        if not link or not GameTooltip then return end
+        GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
+        pcall(GameTooltip.SetHyperlink, GameTooltip, link)
+        GameTooltip:AddLine("Click to hand in the quest and take this", ns.Theme.Unpack("good"))
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    button:Hide()
+    self.take = button
+    return button
+end
+
+--- Show the button under the quest window for the pick, or hide it.
+function QuestRewards:UpdateTake()
+    local index, link, words
+    if self:IsEnabled() and self:TakeEnabled() and Ask(_G.QuestFrame, "IsShown") then
+        index, link, words = self:Pick()
+    end
+    if not index then
+        if self.take then self.take:Hide() end
+        return
+    end
+    local left, bottom = Ask(_G.QuestFrame, "GetLeft"), Ask(_G.QuestFrame, "GetBottom")
+    local right = Ask(_G.QuestFrame, "GetRight")
+    if not (left and bottom and right) then return end
+    local button = self:BuildTake()
+    button.choice, button.link = index, link
+    button:SetText(words)
+    local width = math.max(160, (ns.Theme.TextWidth and ns.Theme.TextWidth("normal", words) or 200) + 28)
+    button:SetWidth(width)
+    button:ClearAllPoints()
+    button:SetPoint("TOP", UIParent, "BOTTOMLEFT", (left + right) / 2, bottom - 4)
+    button:Show()
+end
+
+function QuestRewards:HideTake()
+    if self.take then self.take:Hide() end
+end
+
+--------------------------------------------------------------------------------
 -- Saying so in chat
 --------------------------------------------------------------------------------
 
@@ -334,7 +428,9 @@ end
 --------------------------------------------------------------------------------
 
 function QuestRewards:Refresh()
-    return (pcall(self.Mark, self))
+    local ok = pcall(self.Mark, self)
+    if self.handingIn then pcall(self.UpdateTake, self) end
+    return ok
 end
 
 --- Mark once the game has laid the window out: the quest events can reach
@@ -364,6 +460,8 @@ function QuestRewards:RefreshSoon(announce)
 end
 
 function QuestRewards:QUEST_COMPLETE()
+    -- The hand-in page: the only one where a reward can be taken.
+    self.handingIn = true
     self:RefreshSoon()
     pcall(self.Announce, self)
 end
@@ -383,6 +481,8 @@ end
 function QuestRewards:Moved()
     self.announcePending = false
     self.waitToken = nil
+    self.handingIn = false
+    pcall(self.HideTake, self)
 end
 
 function QuestRewards:OnEnable()

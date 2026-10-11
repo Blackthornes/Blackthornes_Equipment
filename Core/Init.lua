@@ -436,6 +436,9 @@ local DEFAULTS = {
     -- bags and on the best quest reward when it is an upgrade. Both on unless
     -- switched off.
     tooltipLine = true,
+    -- The button under the quest window that takes the best reward
+    -- (UI/QuestRewards.lua, asked 2026-10-11).
+    rewardButton = true,
     bagArrows = true,
     -- A gold coin on bag gear better sold than kept (BagIcons:Sells). On
     -- unless unticked.
