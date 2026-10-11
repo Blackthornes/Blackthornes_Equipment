@@ -87,6 +87,8 @@ function NPCSpots:Here()
         name = read and Plain(value) or nil
     end
     if not name then return nil end
+    -- Kept by the data's name, on a client in another language too.
+    if ns.Waypoints then name = ns.Waypoints:DataZone(name, mapID) or name end
     return name, Round(x), Round(y), mapID
 end
 

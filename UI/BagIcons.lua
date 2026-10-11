@@ -57,6 +57,12 @@ local TOOLS = {
 }
 BagIcons.TOOLS = TOOLS
 local TOOL_SKILLS = { "Mining", "Skinning", "Herbalism", "Fishing" }
+-- The same skills as the client names them, for a client in another
+-- language: their skill lines, classic's and Forever's modern ones
+-- (Tradeskills' findings; 356 is classic's Fishing), and the spells that
+-- carry a skill's own name (Farmer's: 2575 Mining, 8613 Skinning).
+local TOOL_LINES = { 186, 2946, 393, 2947, 182, 2944, 356 }
+local TOOL_SPELLS = { 2575, 8613 }
 
 local function Field(object, key)
     if type(object) ~= "table" then return nil end
@@ -213,6 +219,27 @@ local function Is(value, want)
     return ok and yes
 end
 
+--- A string, copied, or nil (a secret value raises when touched).
+local function Text(value)
+    local ok, copy = pcall(function()
+        if type(value) == "string" and value ~= "" then return value .. "" end
+    end)
+    return ok and copy or nil
+end
+
+--- A profession's name as the client gives it, or nil.
+local function ProfessionName(skillLineID)
+    local info = Items.Call({ "C_TradeSkillUI.GetProfessionInfoBySkillLineID" }, skillLineID)
+    local ok, name = pcall(function() return type(info) == "table" and info.professionName or nil end)
+    return ok and Text(name) or nil
+end
+BagIcons.ProfessionName = ProfessionName
+
+--- A spell's name as the client gives it, or nil.
+local function SpellName(spellID)
+    return Text(Items.Call({ "C_Spell.GetSpellName", "GetSpellInfo" }, spellID))
+end
+
 --- Does this character have Enchanting? Any way the client says yes counts:
 --- the Disenchant spell, the profession list, or classic's skill list.
 function BagIcons:ReadEnchanter()
@@ -224,10 +251,12 @@ function BagIcons:ReadEnchanter()
         local line = select(7, Items.Call({ "GetProfessionInfo" }, index))
         if Is(line, ENCHANTING_LINE) then return true end
     end
+    -- Classic's skill list names it, in the client's own language too.
+    local own = ProfessionName(ENCHANTING_LINE)
     local count = tonumber((Items.Call({ "GetNumSkillLines" }))) or 0
     for index = 1, count do
         local name = Items.Call({ "GetSkillLineInfo" }, index)
-        if Is(name, "Enchanting") then return true end
+        if Is(name, "Enchanting") or (own and Is(name, own)) then return true end
     end
     return false
 end
@@ -271,17 +300,43 @@ local function TooltipLines(link)
     return ok and lines or {}
 end
 
+-- The gathering skills' names to look for: English, then the client's own,
+-- read once. Kept as plain-text patterns ("Kürschnerei" has no magic
+-- characters, but a name could).
+local toolSkillPatterns
+
+local function ToolSkillPatterns()
+    if toolSkillPatterns then return toolSkillPatterns end
+    local names, seen, read = {}, {}, 0
+    local function Add(name, own)
+        if name and own then read = read + 1 end
+        if name and not seen[name] then
+            seen[name] = true
+            names[#names + 1] = name:gsub("[%%%^%$%(%)%.%[%]%*%+%-%?]", "%%%0") .. " %+%d"
+        end
+    end
+    for _, skill in ipairs(TOOL_SKILLS) do Add(skill) end
+    for _, line in ipairs(TOOL_LINES) do Add(ProfessionName(line), true) end
+    for _, spellID in ipairs(TOOL_SPELLS) do Add(SpellName(spellID), true) end
+    -- Kept once the client named any; until then (names not loaded yet at
+    -- login, or a client without the calls) asked again next time.
+    if read > 0 then toolSkillPatterns = names end
+    return names
+end
+
 --- Is an item a gathering or profession tool? The known tools by ID, and
---- gear whose tooltip adds to a gathering skill ("Skinning +10").
+--- gear whose tooltip adds to a gathering skill ("Skinning +10", or the
+--- client's own name for it).
 function BagIcons.IsTool(link)
     local known = tools[link]
     if known ~= nil then return known end
     local id = tonumber(link:match("item:(%d+)"))
     local yes = id ~= nil and TOOLS[id] == true
     if not yes then
+        local patterns = ToolSkillPatterns()
         for _, text in ipairs(TooltipLines(link)) do
-            for _, skill in ipairs(TOOL_SKILLS) do
-                if text:find(skill .. " %+%d") then yes = true end
+            for _, pattern in ipairs(patterns) do
+                if text:find(pattern) then yes = true end
             end
         end
     end

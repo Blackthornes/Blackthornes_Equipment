@@ -55,9 +55,25 @@ local function LineByName(name)
     return nil
 end
 
+-- Forever's modern skill line IDs for the classic ones (Tradeskills'
+-- findings: GetAllProfessionTradeSkillLines lists both).
+local MODERN_LINES = {
+    [2938] = 164, [2945] = 165, [2937] = 171, [2948] = 197, [2941] = 202, [2940] = 333,
+}
+
+--- The classic skill line of one the client lists: by its ID, so a client in
+--- another language counts too, else by its name, as before.
+local function LineOf(skillLineID, name)
+    local id = Number(skillLineID)
+    if id and ns.Crafts.PROFESSIONS[id] then return id end
+    if id and MODERN_LINES[id] then return MODERN_LINES[id] end
+    return LineByName(name)
+end
+Crafting.LineOf = LineOf
+
 --- Read the professions this character has, { [skill line] = skill }, from
 --- whichever calls the client has. Forever lists each profession twice
---- (a modern and a classic ID) with the same skill, which the name folds.
+--- (a modern and a classic ID) with the same skill, which the line folds.
 local function ReadProfessions()
     local found = {}
 
@@ -67,7 +83,7 @@ local function ReadProfessions()
         for _, skillLineID in ipairs(lines) do
             local info = Read(trade.GetProfessionInfoBySkillLineID, skillLineID)
             if type(info) == "table" then
-                local line = LineByName(Plain(info.professionName))
+                local line = LineOf(skillLineID, Plain(info.professionName))
                 local rank, most = Number(info.skillLevel), Number(info.maxSkillLevel)
                 if line and most and most > 0 then
                     found[line] = math.max(found[line] or 0, rank or 0)

@@ -647,9 +647,12 @@ local function Plain(value)
     return ok and copy or nil
 end
 
---- The zone the character is in: the instance's name inside a dungeon.
+--- The zone the character is in: the instance's name inside a dungeon. By
+--- the data's name for it, on a client in another language too.
 function UpgradeQuest.Zone()
-    return Plain(Read(_G.GetRealZoneText))
+    local zone = Plain(Read(_G.GetRealZoneText))
+    if ns.Waypoints then zone = ns.Waypoints:DataZone(zone) end
+    return zone
 end
 
 --- How many of an item the bags hold.

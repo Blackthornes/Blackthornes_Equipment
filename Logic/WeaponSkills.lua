@@ -76,6 +76,16 @@ function WeaponSkills:Learned()
     end
 end
 
+--- The skill's spell as the client names it ("Stäbe"), or nil: the skill
+--- list's name for it on a client in another language.
+local function SpellName(spellID)
+    local name = Items.Call({ "C_Spell.GetSpellName", "GetSpellInfo" }, spellID)
+    local ok, copy = pcall(function()
+        if type(name) == "string" and name ~= "" then return name .. "" end
+    end)
+    return ok and copy or nil
+end
+
 function WeaponSkills:ReadKnown()
     local lines = SkillLines()
     local known, any = {}, false
@@ -83,6 +93,10 @@ function WeaponSkills:ReadKnown()
         local has = SpellKnown(skill.spell)
         for _, line in ipairs(skill.lines) do
             if lines[line] then has = true end
+        end
+        if not has and next(lines) ~= nil then
+            local own = SpellName(skill.spell)
+            if own and lines[own] then has = true end
         end
         if has then
             known[subclassID] = true
@@ -213,13 +227,16 @@ end
 -- The weapon master
 --------------------------------------------------------------------------------
 
---- The zone the character is in, plain, or nil.
+--- The zone the character is in, plain, or nil: by the data's name for it,
+--- on a client in another language too.
 local function ZoneNow()
     local zone = Items.Call({ "GetRealZoneText", "GetZoneText" })
     local ok, copy = pcall(function()
         if type(zone) == "string" and zone ~= "" then return zone .. "" end
     end)
-    return ok and copy or nil
+    copy = ok and copy or nil
+    if copy and ns.Waypoints then copy = ns.Waypoints:DataZone(copy) end
+    return copy
 end
 
 --- Where to learn the skill an item needs: { name, zone, x, y, skill },
