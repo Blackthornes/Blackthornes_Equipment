@@ -109,6 +109,18 @@ ns.db.characterGear["Player-5"].worn = { [1] = "item:11" }
 ns.db.characterGear["Player-1"].worn = {}
 suite.check("the character playing's own note is never judged", Alts:BestFor("item:4").key == "Player-5")
 
+-- A GUID the client keeps back (a dungeon): the character's own note can't
+-- be told from an alt's, so nothing is an upgrade for an alt.
+ns.db.characterGear["Player-1"].worn = { [1] = "item:11" }
+ns.db.characterGear["Player-5"].worn = { [5] = "item:1" }
+local realGUID = _G.UnitGUID
+_G.UnitGUID = function() return nil end
+suite.check("without the GUID, nothing is offered for an alt", Alts:BestFor("item:4") == nil)
+suite.check("nor found elsewhere", next(Alts:BetterElsewhere()) == nil)
+_G.UnitGUID = realGUID
+ns.db.characterGear["Player-1"].worn = {}
+ns.db.characterGear["Player-5"].worn = { [1] = "item:11" }
+
 -- A note the code cannot read is skipped, not an error.
 ns.db.characterGear["Player-6"] = { class = "NOBODY" }
 ns.db.characterGear["Player-7"] = "garbage"
