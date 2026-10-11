@@ -481,9 +481,20 @@ function Crafting:OnEvent()
     self:Forget()
 end
 
+--- A skill point or a craft: the skill levels are read again, but who
+--- knows which recipe stays. Reading that walks every recipe of every
+--- character in Tradeskills, and the profession window says its list
+--- changed after every craft (a hitch on finished crafts, 2026-10-11).
+function Crafting:OnSkillPoint()
+    self.stale = true
+end
+
 function Crafting:OnEnable()
-    for _, event in ipairs({ "SKILL_LINES_CHANGED", "TRADE_SKILL_SHOW", "TRADE_SKILL_LIST_UPDATE",
-        "LEARNED_SPELL_IN_TAB", "NEW_RECIPE_LEARNED", "PLAYER_ENTERING_WORLD" }) do
+    for _, event in ipairs({ "TRADE_SKILL_SHOW", "LEARNED_SPELL_IN_TAB", "NEW_RECIPE_LEARNED",
+        "PLAYER_ENTERING_WORLD" }) do
         ns.RegisterEvent(self, event, self.OnEvent)
+    end
+    for _, event in ipairs({ "SKILL_LINES_CHANGED", "TRADE_SKILL_LIST_UPDATE" }) do
+        ns.RegisterEvent(self, event, self.OnSkillPoint)
     end
 end

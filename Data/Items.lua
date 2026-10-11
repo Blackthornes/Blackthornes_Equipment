@@ -316,6 +316,43 @@ function Items:BagSignature()
     return table.concat(parts, ";")
 end
 
+--- The skills the character has, without their points, as one string:
+--- the weapon skills it knows (WeaponSkills:ReadKnown) and its professions
+--- by name. nil when the client names none, so nothing is held back.
+function Items:SkillSignature()
+    local parts = {}
+    local weapons = ns.WeaponSkills
+    local known = weapons and weapons.ReadKnown and weapons:ReadKnown()
+    if type(known) == "table" then
+        for subclassID in pairs(known) do parts[#parts + 1] = "w" .. tostring(subclassID) end
+    end
+
+    local lines = Call({ "C_TradeSkillUI.GetAllProfessionTradeSkillLines" })
+    if type(lines) == "table" then
+        for _, skillLineID in ipairs(lines) do
+            local info = Call({ "C_TradeSkillUI.GetProfessionInfoBySkillLineID" }, skillLineID)
+            local ok, name = pcall(function()
+                if type(info) == "table" and type(info.professionName) == "string" then
+                    return info.professionName .. ""
+                end
+            end)
+            if ok and name and name ~= "" then parts[#parts + 1] = "p" .. name end
+        end
+    end
+    local count = tonumber((Call({ "GetNumSkillLines" }))) or 0
+    for index = 1, count do
+        local name = Call({ "GetSkillLineInfo" }, index)
+        local ok, copy = pcall(function()
+            if type(name) == "string" then return name .. "" end
+        end)
+        if ok and copy then parts[#parts + 1] = "s" .. copy end
+    end
+
+    if #parts == 0 then return nil end
+    table.sort(parts)
+    return table.concat(parts, ";")
+end
+
 --- Everything worn, leaving out the ammo slot, as one string.
 function Items:WornSignature()
     local parts = {}
