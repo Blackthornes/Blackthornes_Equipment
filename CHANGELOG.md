@@ -4,6 +4,20 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.23.0
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- **Untrained weapons:** a weapon you haven't trained yet is still called
+  an upgrade, but "once you train" the skill, and its banner gives you two
+  buttons instead of Put it on: Show the trainer points the quest arrow at
+  the weapon master and says where in chat, and Ignore stops that weapon
+  type counting as an upgrade for that character until the skill is
+  learned. Once you learn it, a "Ready to wear" banner with Put it on
+  comes up by itself. "Untrained weapons" in Settings and `/beq weapons`
+  bring ignored types back.
+
 ## 0.22.1
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is

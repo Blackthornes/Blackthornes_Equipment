@@ -12,6 +12,13 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.23.0
+
+- Weapons you can't use yet now offer to show you the trainer, or let you ignore that weapon type.
+- Learn the skill and the weapon pops up ready to wear.
+
+Thanks Ezmode for the report!
+
 ## 0.22.1
 
 - Less stutter when you gain a skill point while crafting or gathering.
