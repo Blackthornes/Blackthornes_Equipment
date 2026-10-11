@@ -4,6 +4,25 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.21.2
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **Smoother play:** with the upgrade quest on, loot, bag changes and quest
+  log updates only redraw the quest panel, map pins, arrow and finder when
+  something they show has changed. The open upgrade finder rescans a bit at
+  a time and keeps its list until the new one is ready.
+- **Fixes:** the quest arrow reads the quest's steps far less often, and
+  no longer says "Far from here" for a while after a loading screen. The
+  quest panel opens at Large and Larger text. Finder lines cut to fit keep
+  their colours, and long gains like "Train: empty slot" show in full.
+  Long quest titles wrap in the Quest log menu. Following a pick shows its
+  tab, learning Dual Wield refreshes the finder, and picks sort steadily
+  by the percent shown, then nearness, then gain.
+- **Forever data:** one Orgrimmar vendor's spot moved to where she stands
+  on Forever.
+
 ## 0.21.1
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
