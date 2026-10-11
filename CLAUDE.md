@@ -113,12 +113,17 @@ pcall, read only, and only when it is loaded:
 
 ```lua
 ts.Recipes:GetAccountWide(true)        -- [recipeID] = { knownBy = { charKey, ... } }; recipe ID = spell ID
-ts.Recipes:GetShortCharacterName(key)  -- "Bob", for "Bob can make this"
+ts.Recipes:GetCharacterName(key)       -- "Bob Wither", for "Bob Wither can make this"
+ts.Recipes:GetShortCharacterName(key)  -- only when GetCharacterName is missing
 ts.Config:GetCharacterKey()            -- the character playing
 ts.db.characters[key].faction          -- alts of the other faction are left out
 ts.Prices:GetValue(itemID)             -- material and auction prices, copper
 ts.RecipeBook:GetSkill(recipeID)       -- the skill a recipe needs on Forever, or nil
 ```
+
+Character names are always shown whole, first and last (the owner,
+2026-10-11: Forever characters have last names), so never "Bob" or
+"Bob B.".
 
 `GetSkill` (2026-10-09): Forever moved some recipes to other skill levels,
 and Tradeskills reads the right one from the recipe item's tooltip.
