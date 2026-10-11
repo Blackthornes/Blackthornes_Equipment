@@ -493,6 +493,9 @@ local DEFAULTS = {
     mapPins = true,
     slotUpgrades = true,
     suffixLine = true,
+    -- "Upgrade for Ana Smith: +9%" on gear that helps another of your
+    -- characters (UI/Tooltip.lua, asked 2026-10-11).
+    altTooltipLine = true,
 
     -- The upgrade quest: the best next upgrade handed out as a quest, with
     -- the steps to get it (Logic/UpgradeQuest.lua). Off unless the player

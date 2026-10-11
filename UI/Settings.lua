@@ -346,6 +346,10 @@ function SettingsUI:BuildGear()
     local suffixRow = pages:Row("gear", 2, "Random roll names",
         "Names a green's random roll on its tooltip (of the Monkey), which Forever leaves off.")
     controls.suffixLine = Tick(suffixRow, "Show them", "suffixLine", true)
+
+    local altRow = pages:Row("gear", 2, "Upgrades for your alts",
+        "On gear that does nothing for you, a tooltip line names the other character it helps most, and by how much.")
+    controls.altTooltipLine = Tick(altRow, "Show them", "altTooltipLine", true)
 end
 
 -- The upgrade hunt switches: saved key, page column, label, what it does,
@@ -701,6 +705,7 @@ function SettingsUI:Refresh()
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:SetChecked(ns.db.suffixLine ~= false)
+    controls.altTooltipLine:SetChecked(ns.db.altTooltipLine ~= false)
     for _, entry in ipairs(HUNTING) do
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
     end

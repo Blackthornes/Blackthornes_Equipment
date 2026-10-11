@@ -72,7 +72,8 @@ local function CreateItemCell(parent, width)
         if type(self.link) ~= "string" then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         pcall(GameTooltip.SetHyperlink, GameTooltip, self.link)
-        if self.wears then GameTooltip:AddLine("Click to put it on", Theme.Unpack("good")) end
+        if self.elsewhere then GameTooltip:AddLine(self.elsewhere, Theme.Unpack("accent")) end
+        if self.wears and not self.elsewhere then GameTooltip:AddLine("Click to put it on", Theme.Unpack("good")) end
         GameTooltip:Show()
     end)
     cell:SetScript("OnLeave", function(self)
@@ -90,7 +91,7 @@ local function CreateItemCell(parent, width)
             end
         end
         -- A click on an upgrade in the bags puts it on.
-        if self.wears and ns.Wear then ns.Wear:PutOn(self.link) end
+        if self.wears and not self.elsewhere and ns.Wear then ns.Wear:PutOn(self.link) end
     end)
     return cell
 end
@@ -346,15 +347,34 @@ function UI:Refresh()
         self.specLabel:SetText("")
     end
 
-    local upgrades = 0
+    -- Better gear you own but do not carry: in your bank, or loose on
+    -- another character (Alts:BetterElsewhere), for slots the bags leave
+    -- empty-handed.
+    local elsewhere = {}
+    if spec and ns.Alts then
+        local ok, found = pcall(ns.Alts.BetterElsewhere, ns.Alts)
+        if ok then elsewhere = found end
+    end
+
+    local upgrades, owned = 0, 0
     for _, row in ipairs(self.rows) do
         SetCell(row.worn, Items:Equipped(row.slot), "empty")
 
         local pick = best[row.slot]
+        local other = not pick and elsewhere[row.slot] or nil
+        row.best.elsewhere = nil
         if pick then
             upgrades = upgrades + 1
             SetCell(row.best, pick.link)
             row.gain:SetText(Compare:HowMuch(pick.result))
+            row.gain:SetTextColor(Theme.Unpack("good"))
+        elseif other then
+            owned = owned + 1
+            SetCell(row.best, other.link)
+            row.best.elsewhere = UI.WhereText(other.where)
+            row.best.text:SetText(("%s |c%s(%s)|r"):format(other.link, ns.COLORS.accent, UI.ShortWhere(other.where)))
+            row.gain:SetText(Compare:HowMuch(other.result))
+            row.gain:SetTextColor(Theme.Unpack("accent"))
         else
             SetCell(row.best, nil, "-")
             row.gain:SetText("")
@@ -375,6 +395,10 @@ function UI:Refresh()
     self.footer:SetTextColor(Theme.Unpack(upgrades > 0 and "good" or "muted"))
     if not spec then
         self.footer:SetText(("There are no stat weights for %s yet."):format(class or "this class"))
+    elseif upgrades == 0 and owned > 0 then
+        self.footer:SetTextColor(Theme.Unpack("accent"))
+        self.footer:SetText(("Nothing in your bags beats what you wear, but you own %d better piece%s elsewhere."):format(
+            owned, owned == 1 and "" or "s"))
     elseif upgrades == 0 then
         self.footer:SetText("Nothing in your bags beats what you wear.")
     elseif upgrades == 1 then
@@ -384,6 +408,21 @@ function UI:Refresh()
     end
     self.upgrades = upgrades
     return upgrades
+end
+
+--- Where better gear is, for its tooltip: "In your bank" or "On Ana
+--- Smith: mail it over".
+function UI.WhereText(where)
+    if where == "bank" then return "In your bank: take it out to wear it" end
+    local name = ns.Alts and ns.Alts:NameOf(where) or nil
+    return ("On %s: mail it over to wear it"):format(name or "another of your characters")
+end
+
+--- The same, short, beside the item: "bank" or the character's name.
+function UI.ShortWhere(where)
+    if where == "bank" then return "in your bank" end
+    local name = ns.Alts and ns.Alts:NameOf(where) or nil
+    return name and ("on " .. name) or "on an alt"
 end
 
 --- Refresh once a burst of bag events settles.

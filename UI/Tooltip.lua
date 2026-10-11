@@ -148,14 +148,33 @@ function Tooltip.ForgetLines()
     lastLines = nil
 end
 
+--- "Upgrade for Ana Smith: +9%" when the item is no upgrade for the
+--- character playing but is for another of the player's characters on this
+--- realm and side (Alts:BestFor, the same answer Butler mails by), or nil.
+function Tooltip:AltLine(link, result)
+    if ns.db and ns.db.altTooltipLine == false then return nil end
+    if not ns.Alts or type(result) ~= "table" or result.verdict == "upgrade"
+        or result.verdict == "equipped" then return nil end
+    local alt = ns.Alts:BestFor(link)
+    if not alt then return nil end
+    local name = ns.Alts:NameOf(alt.key) or "another of your characters"
+    local how = alt.gain and ("%+d%%"):format(alt.gain) or "fills an empty slot"
+    if alt.level then return ("Upgrade for %s at level %d: %s"):format(name, alt.level, how) end
+    return ("Upgrade for %s: %s"):format(name, how)
+end
+
 --- The lines for one item, worked out afresh.
 function Tooltip:WorkOutLines(link, carried)
     local lines = {}
     -- An item shown from a bag slot is a carried copy, so a second copy of a
     -- worn ring is judged against the other ring, as its bag arrow is.
     local judge = carried and Compare.JudgeCarried or Compare.Judge
-    local text, color = Compare:Describe(judge(Compare, link))
+    local result = judge(Compare, link)
+    local text, color = Compare:Describe(result)
     if text then lines[#lines + 1] = { text, color } end
+    -- No use to you, but an upgrade for another of your characters.
+    local okAlt, altLine = pcall(Tooltip.AltLine, Tooltip, link, result)
+    if okAlt and altLine then lines[#lines + 1] = { altLine, "accent" } end
     local okTrainer, trainer, trainerColor = pcall(WeaponSkills.Describe, WeaponSkills, link)
     if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true } end
     local okMore, more = pcall(Tooltip.MoreLines, Tooltip, link)

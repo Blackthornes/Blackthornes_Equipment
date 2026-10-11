@@ -23,7 +23,11 @@ with how much better it is under the icon, so you know when to Need. When an upg
 bags (looted, bought, mailed or traded), chat says so once, with how much
 better it is, and its banner has a **Put it on** button. The gear window lists
 every slot with what you wear and the biggest upgrade for it in your bags;
-click an upgrade there to put it on.
+click an upgrade there to put it on. A slot with nothing better in your bags
+shows a better piece you already own elsewhere instead, in your bank or in
+another of your characters' bags or bank (when it can be mailed), so you
+know to fetch it. Hovering gear that does nothing for you says which of
+your other characters it would be an upgrade for, and by how much.
 
 Its **Find upgrades** button (or `/beq find`) opens "Where to get upgrades":
 for each slot, the best gear a vendor sells, a quest gives or a dungeon or
