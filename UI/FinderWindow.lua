@@ -71,22 +71,65 @@ local MOST_AHEAD = 10
 
 --- `text` cut down with "..." until it fits in `width` pixels at `size`.
 -- Measured, never guessed: the game's font runs wider than it looks.
+-- Colour codes take no room and are kept whole, so a cut line keeps its
+-- green zone, its source colour and its tags; a colour left open by the
+-- cut is closed.
 function FinderUI.Fit(size, text, width)
     if Theme.TextWidth(size, text) <= width then return text end
 
-    -- Colour codes take no room but must not be cut in half, so the cut is
-    -- made on the plain text.
-    local plain = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-    local low, high = 0, #plain
+    -- The text as pieces: a colour code, a colour end, or one character.
+    local pieces, visible = {}, 0
+    local index = 1
+    while index <= #text do
+        local code = text:match("^|c%x%x%x%x%x%x%x%x", index)
+        if code then
+            pieces[#pieces + 1] = { code, open = true }
+            index = index + #code
+        elseif text:sub(index, index + 1) == "|r" then
+            pieces[#pieces + 1] = { "|r", close = true }
+            index = index + 2
+        else
+            -- A whole character, never half of one ("Zul'Farrak" is plain,
+            -- but a name with an accent is two bytes).
+            local char = text:match("^[\194-\244][\128-\191]*", index) or text:sub(index, index)
+            pieces[#pieces + 1] = { char, char = true }
+            visible = visible + 1
+            index = index + #char
+        end
+    end
+
+    -- The first `count` characters, with every code before them.
+    local function Prefix(count)
+        local out, seen, open = {}, 0, false
+        for _, piece in ipairs(pieces) do
+            if piece.char then
+                if seen >= count then break end
+                seen = seen + 1
+            elseif piece.open then
+                open = true
+            elseif piece.close then
+                open = false
+            end
+            out[#out + 1] = piece[1]
+        end
+        local cut = table.concat(out):gsub("%s+$", "")
+        return cut, open
+    end
+    local function Line(count)
+        local cut, open = Prefix(count)
+        return cut .. "..." .. (open and "|r" or "")
+    end
+
+    local low, high = 0, visible
     while low < high do
         local mid = math.ceil((low + high) / 2)
-        if Theme.TextWidth(size, plain:sub(1, mid) .. "...") <= width then
+        if Theme.TextWidth(size, Line(mid)) <= width then
             low = mid
         else
             high = mid - 1
         end
     end
-    return plain:sub(1, low):gsub("%s+$", "") .. "..."
+    return Line(low)
 end
 
 local function Colored(key, text)
@@ -228,6 +271,7 @@ function FinderUI:BuildRow(index)
     item:SetPoint("TOPLEFT", TEXT_X, -6)
     item:SetWidth(inner - TEXT_X - GAIN_WIDTH - 8)
     row.item = item
+    row.itemRoom = inner - TEXT_X - 8
 
     local gain = Theme.CreateLabel(row, "normal", "good", "RIGHT")
     gain:SetPoint("TOPRIGHT", -8, -6)
@@ -689,6 +733,11 @@ function FinderUI:FillRow(row, line)
         gain = ("at %d: %s"):format(line.pick.at, gain)
     end
     row.gain:SetText(gain)
+    -- A long gain ("at 23, Train: empty slot") grows leftward rather than
+    -- being cut; the item's name gives it the room.
+    local gainWidth = math.max(GAIN_WIDTH, math.ceil(Theme.TextWidth("normal", gain or "")) + 4)
+    row.gain:SetWidth(gainWidth)
+    row.item:SetWidth(row.itemRoom - gainWidth)
     -- Gear that waits on a reputation, a level or a crafter is shown in
     -- amber, not green; gear that waits on a weapon trainer in red.
     row.edgeKey = (line.pick.needs or line.pick.at or line.pick.remote) and "warn" or "good"

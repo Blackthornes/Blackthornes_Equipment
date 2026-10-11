@@ -205,8 +205,11 @@ inside = false
 
 local saved = _G.C_Map.GetPlayerMapPosition
 _G.C_Map.GetPlayerMapPosition = function() error("secret value") end
+Arrow.listedAt = nil
 suite.check("an unreadable position says so", Arrow:State(clock).mode == "blind")
 _G.C_Map.GetPlayerMapPosition = saved
+suite.check("a list made blind is made again once the position is back",
+    Arrow:State(clock + 0.1).mode ~= "far", Arrow:State(clock + 0.1).mode)
 
 -- Without world coordinates, only the map you are on can be measured.
 worldCoords = false
@@ -528,6 +531,55 @@ do
     suite.check("a drag with no mouse-up of its own swallows no later click", clicks == 4, clicks)
     _G.GetTime = realTime
     ArrowUI.OnClick = realClick
+end
+
+--------------------------------------------------------------------------------
+-- The steps are read again when the upgrade quest says something changed,
+-- not every two seconds while the dial is up; once a listing, not twice
+--------------------------------------------------------------------------------
+
+do
+    local reads = 0
+    local realSteps = Quest.Steps
+    Quest.Steps = function(...) reads = reads + 1; return realSteps(...) end
+    local wasOn = ns.db.questArrow
+    ns.db.questArrow, inside = true, false
+    Arrow:Changed(false)
+    clock = 5000
+    reads, Arrow.listedAt = 0, nil
+    Arrow:State(clock)
+    local after = reads
+    suite.check("a fresh listing reads the steps once", after == 1, after)
+    for _ = 1, 9 do
+        clock = clock + 1
+        Arrow:State(clock)
+    end
+    suite.check("nine quiet seconds read nothing more", reads == after, reads)
+    clock = clock + 0.5
+    Arrow:OnUpgradeQuestChanged()
+    Arrow:State(clock)
+    suite.check("the upgrade quest changing reads them at once, once", reads == after + 1, reads)
+    clock = clock + Arrow.REFRESH
+    Arrow:State(clock)
+    suite.check("and with nothing said, again after a while", reads == after + 2, reads)
+    Quest.Steps = realSteps
+    ns.db.questArrow = wasOn
+
+    -- The dial's lines on drag and drop are the same as Farmer's and Pets'.
+    local function Lines(path)
+        local file = io.open(path, "r")
+        if not file then return nil end
+        local text = file:read("*a")
+        file:close()
+        return text:match('frame:SetScript%("OnDragStart".-ArrowUI:OnClick%(button%)')
+    end
+    local mine = Lines(lfs_cwd .. "/UI/QuestArrow.lua")
+    suite.check("the drag lines use the guarded clock", mine and mine:find("Clock()", 1, true) ~= nil
+        and not mine:find("GetTime", 1, true))
+    for _, sister in ipairs({ "/../Blackthornes_Farmer/UI/Arrow.lua", "/../Blackthornes_Pets/UI/BeastArrow.lua" }) do
+        local theirs = Lines(lfs_cwd .. sister)
+        if theirs then suite.check("the drag lines match " .. sister, theirs == mine) end
+    end
 end
 
 suite.done()

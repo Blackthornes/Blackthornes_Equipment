@@ -304,6 +304,15 @@ env.worn[5], env.worn[8] = "item:900", nil
 local fitted = UI.Fit("tiny", ("x"):rep(200), 120)
 suite.check("a long line is cut", fitted:sub(-3) == "..." and #fitted * 6 <= 120, fitted)
 suite.check("a short line is left alone", UI.Fit("tiny", "short", 120) == "short")
+local coloured = "|cff33ff33Elwynn Forest|r, " .. ("x"):rep(200)
+local cut = UI.Fit("tiny", coloured, 120)
+suite.check("a cut line keeps its colours", cut:find("|cff33ff33Elwynn Forest|r", 1, true) == 1, cut)
+local openCut = UI.Fit("tiny", "|cffff8800" .. ("y"):rep(200) .. "|r", 120)
+suite.check("a colour the cut leaves open is closed", openCut:sub(-5) == "...|r"
+    and openCut:find("|cffff8800", 1, true) == 1, openCut)
+local accented = UI.Fit("tiny", ("\195\169"):rep(100), 60)
+suite.check("never half a character", accented:gsub("%.%.%.$", ""):match("^[\195\169]*$") ~= nil
+    and #accented:gsub("%.%.%.$", "") % 2 == 0, accented)
 
 -- Many upgrades scroll.
 local LOCS = { "INVTYPE_HEAD", "INVTYPE_NECK", "INVTYPE_SHOULDER", "INVTYPE_CLOAK",

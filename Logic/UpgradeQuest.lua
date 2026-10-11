@@ -515,6 +515,8 @@ function UpgradeQuest:Follow(pick)
     -- Picked by hand: "This zone only" never lets it go.
     quest.followed = true
     ns.charDB.upgradeQuestTab = self.TabOf(source)
+    -- Shown on its tab, not left behind the Quest log tab.
+    ns.charDB.questLogTab = nil
     -- Chosen by hand: no level-up offer to swap it straight away.
     self.offer = nil
     self.levelledAt = nil

@@ -35,6 +35,12 @@ local MAX_WIDTH = 320
 -- Redrawn this often, seconds: smooth to the eye, cheap to run.
 local STEP = 0.03
 
+local function Clock()
+    if type(GetTime) ~= "function" then return 0 end
+    local ok, now = pcall(GetTime)
+    return ok and tonumber(now) or 0
+end
+
 -- Gold while it points the way, green once you are there, pale blue when it
 -- cannot point (far away, no position).
 local TINTS = {
@@ -148,12 +154,6 @@ function ArrowUI:Build()
     note:SetPoint("TOP", place, "BOTTOM", 0, -2)
     self.note = note
 
-    -- The button coming up after a drag is not a click, whichever order the
-    -- client runs OnDragStop and OnMouseUp in: `dragging` covers the drag
-    -- itself, and `droppedAt` a mouse-up in the same frame as the drop. A
-    -- client that sends no mouse-up after a drag leaves nothing set, so the
-    -- next real click still counts. The same lines are in Farmer's and
-    -- Pets' dials.
     frame:SetScript("OnDragStart", function(self)
         ArrowUI.dragging = true
         self:StartMoving()
@@ -161,11 +161,15 @@ function ArrowUI:Build()
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         ArrowUI:SavePosition()
+        -- The button coming up after a drag is not a click. The client may
+        -- send OnMouseUp before this, after it, or not at all, so the drop
+        -- is remembered by the moment it happened, never as a flag that
+        -- could swallow the next real click.
         ArrowUI.dragging = nil
-        ArrowUI.droppedAt = GetTime()
+        ArrowUI.droppedAt = Clock()
     end)
     frame:SetScript("OnMouseUp", function(_, button)
-        if ArrowUI.dragging or (ArrowUI.droppedAt and ArrowUI.droppedAt == GetTime()) then
+        if ArrowUI.dragging or (ArrowUI.droppedAt and ArrowUI.droppedAt == Clock()) then
             ArrowUI.dragging, ArrowUI.droppedAt = nil, nil
             return
         end
@@ -221,12 +225,6 @@ end
 --------------------------------------------------------------------------------
 -- Drawing
 --------------------------------------------------------------------------------
-
-local function Clock()
-    if type(GetTime) ~= "function" then return 0 end
-    local ok, now = pcall(GetTime)
-    return ok and tonumber(now) or 0
-end
 
 --------------------------------------------------------------------------------
 -- One arrow at a time

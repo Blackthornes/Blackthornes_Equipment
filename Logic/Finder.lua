@@ -607,6 +607,9 @@ function Finder:JudgeKey()
     return table.concat({
         tostring(Items:WornSignature()), tostring(WornStatsRead()), tostring(Items:PlayerLevel()),
         tostring(Weights.generation or 0), tostring(self.judgeGeneration or 0),
+        -- Learning Dual Wield changes what an off-hand weapon is judged
+        -- against, and may come with no skill or talent event.
+        tostring(Weights:CanDualWield(Weights:PlayerClass(), Items:PlayerLevel())),
     }, "|")
 end
 
@@ -742,8 +745,14 @@ function Finder:Build(only, ahead, pause)
         table.sort(list, function(a, b)
             if (a.needs == nil) ~= (b.needs == nil) then return a.needs == nil end
             if a.remote ~= b.remote then return not a.remote end
+            -- By the percent shown first (an empty slot, which shows none,
+            -- ahead of any), so a tie broken by nearness never fights the
+            -- gain: mixing the two could order three picks in a circle,
+            -- which table.sort may refuse with an error.
             local pa, pb = Finder.Shown(a.result), Finder.Shown(b.result)
-            if pa and pb and pa == pb and a.near ~= b.near then return a.near < b.near end
+            if (pa == nil) ~= (pb == nil) then return pa == nil end
+            if pa and pa ~= pb then return pa > pb end
+            if a.near ~= b.near then return a.near < b.near end
             if a.gain ~= b.gain then return a.gain > b.gain end
             return a.itemID < b.itemID
         end)
