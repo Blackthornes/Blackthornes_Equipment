@@ -12,6 +12,13 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.22.0
+
+- New upgrade? Hit Put it on and you're wearing it.
+- Quest rewards get a Take button that grabs the best one for you.
+- Upgrades sitting in your bank or on an alt show up now.
+- Fixed alts losing their saved gear after a reload.
+
 ## 0.21.2
 
 - The upgrade quest and the upgrade finder are a lot lighter while you play.

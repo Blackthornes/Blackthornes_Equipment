@@ -4,6 +4,28 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.22.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **Put it on:** the upgrade banner has a Put it on button, and clicking an
+  upgrade in the gear window puts it on too. Out of combat only; gear that
+  binds when worn still shows the game's warning first.
+- **Take the best quest reward:** on a quest hand-in, a Take button under
+  the quest window names the best reward (the biggest upgrade, or the one
+  that sells for the most) and takes it in one click. "Take reward button"
+  in Settings turns it off.
+- **Upgrades in your bank or on an alt:** a slot with no upgrade in your
+  bags shows a better piece you already own, marked as in your bank or
+  with the name of the character carrying it, and the footer says how many
+  are waiting elsewhere. Gear that does nothing for you says in its tooltip which of
+  your characters it would help. "Upgrades for your alts" in Settings turns
+  the tooltip line off.
+- **Fixes:** a reload or logout that read a character's gear as empty no
+  longer wipes their recorded gear, so gear is no longer called an
+  upgrade for an alt's "empty slot".
+
 ## 0.21.2
 
 For WoW: Forever (interface 16001). Files were added, so restart the game
