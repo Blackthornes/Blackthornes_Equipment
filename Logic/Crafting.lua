@@ -144,8 +144,16 @@ function Crafting:Known()
                     local record = characters[key]
                     local faction = type(record) == "table" and record.faction
                     if not faction or not myFaction or faction == myFaction then
-                        local name = recipes.GetShortCharacterName and recipes:GetShortCharacterName(key)
-                        entry.alts[#entry.alts + 1] = Plain(name) or "an alt"
+                        -- The whole name, first and last: WoW Forever
+                        -- characters have a last name, and "Bob" or
+                        -- "Bob B." may be more than one of them (asked
+                        -- 2026-10-11). The short name is only for an older
+                        -- Tradeskills without GetCharacterName.
+                        local name = Plain(recipes.GetCharacterName and recipes:GetCharacterName(key))
+                        if not name or name == "?" then
+                            name = Plain(recipes.GetShortCharacterName and recipes:GetShortCharacterName(key))
+                        end
+                        entry.alts[#entry.alts + 1] = name or "an alt"
                     end
                 end
             end

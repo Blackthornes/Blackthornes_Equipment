@@ -123,6 +123,7 @@ _G.BlackthornesTS = {
         GetAccountWide = function()
             return { [9003] = { knownBy = { "alt-1", "horde-alt" } }, [9001] = { knownBy = { "me" } } }
         end,
+        GetCharacterName = function(_, key) return key == "alt-1" and "Bob Wither" or "Grom Hall" end,
         GetShortCharacterName = function(_, key) return key == "alt-1" and "Bob" or "Grom" end,
     },
     Config = { GetCharacterKey = function() return "me" end },
@@ -134,12 +135,19 @@ known = Source(3001)
 suite.check("auction prices fill in the rest", known.cost == 440 and not known.partial, tostring(known.cost))
 local alt = Source(3003)
 suite.check("an alt of your side who knows it can make it", alt.state == "alt" and #alt.who == 1
-    and alt.who[1] == "Bob", alt.state)
+    and alt.who[1] == "Bob Wither", alt.who[1])
 suite.check("in words, with the auction price beside it",
-    Crafting:Describe(alt, Finder.Money):find("Bob can make it (Tailoring)", 1, true) == 1
+    Crafting:Describe(alt, Finder.Money):find("Bob Wither can make it (Tailoring)", 1, true) == 1
     and Crafting:Describe(alt, Finder.Money):find("|cffffd7002g|r |cffc7c7cf50s|r at the auction house", 1, true) ~= nil,
     Crafting:Describe(alt, Finder.Money))
-suite.check("the tooltip says so too", Crafting:TooltipLine(3003) == "Bob can make this")
+suite.check("the tooltip says so too", Crafting:TooltipLine(3003) == "Bob Wither can make this")
+
+-- An older Tradeskills without the full name still gives the short one.
+_G.BlackthornesTS.Recipes.GetCharacterName = nil
+Crafting:Forget()
+suite.check("an older Tradeskills falls back to the short name", Source(3003).who[1] == "Bob")
+_G.BlackthornesTS.Recipes.GetCharacterName = function(_, key) return key == "alt-1" and "Bob Wither" or "Grom Hall" end
+Crafting:Forget()
 suite.check("and for your own", Crafting:TooltipLine(3001) == "You can make this")
 
 -- The skill Forever asks for, as Tradeskills read it from the recipe item.
