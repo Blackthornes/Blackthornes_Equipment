@@ -626,6 +626,16 @@ function SettingsUI:BuildGeneral()
         "Extra messages in chat, to help track down a problem.")
     controls.debug = Tick(debugRow, "Enabled", "debug", false)
 
+    -- Core/SisterNote.lua: one chat line, once, naming the Blackthornes
+    -- addons the player does not have. Off here is off in all of them.
+    local sistersRow = pages:Row("general", 2, "Sister addons",
+        "Once, a few seconds after login, says in chat which Blackthornes addons you don't have "
+        .. "and what each adds. Turning it off here turns it off in all of them. Same as /beq sisters.")
+    controls.sisters = Widgets.CreateCheckbox(sistersRow, "Mention them", function(checked)
+        ns.SisterNote:SetOn(checked)
+    end, true)
+    controls.sisters:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- /beq perf and /beq perf clear as buttons.
     local speedRow = pages:Row("general", 2, "Speed check",
         "If the game hitches, Show lists in chat what Equipment spent longest on. Clear starts the count again.")
@@ -715,6 +725,7 @@ function SettingsUI:Refresh()
     local controls = self.controls
     controls.minimap:SetChecked(not ns.db.minimapHidden)
     controls.debug:SetChecked(ns.db.debug == true)
+    controls.sisters:SetChecked(ns.SisterNote:IsOn())
     controls.tooltip:SetChecked(ns.db.tooltipLine ~= false)
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
     controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)

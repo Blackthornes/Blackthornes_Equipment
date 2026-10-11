@@ -148,6 +148,7 @@ function env.InstallClient()
     -- Suites share one Lua state; what one suite saved must not leak into the
     -- next.
     _G.BlackthornesEquipmentDB = nil
+    _G.BlackthornesSisterNote = nil
     _G.BlackthornesEquipmentCharDB = nil
     _G.UnitClass = nil
     _G.UnitFactionGroup = nil

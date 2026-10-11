@@ -96,6 +96,13 @@ suite.check("/beq minimap ticks it again", minimapBox:GetChecked())
 controls.debug:GetScript("OnClick")(controls.debug)
 suite.check("the debug box sets debug", ns.db.debug == true)
 
+-- The sister note (Core/SisterNote.lua).
+suite.check("the sister addons box starts ticked", controls.sisters:GetChecked())
+controls.sisters:GetScript("OnClick")(controls.sisters)
+suite.check("unticking it turns the note off", ns.db.sisterNote == false)
+ns.HandleSlash("sisters")
+suite.check("/beq sisters turns it back on", ns.db.sisterNote == true and controls.sisters:GetChecked())
+
 -- The verdict switches.
 suite.check("the tooltip box starts ticked", controls.tooltip:GetChecked())
 suite.check("so does the bag arrows box", controls.arrows:GetChecked())
@@ -201,7 +208,7 @@ suite.check("the command buttons run their commands",
     table.concat(ran, ",") == "window,bags,find,tracked,arrow next,probe,help", table.concat(ran, ","))
 
 -- And every command registered has a control (house rule).
-local covered = {
+local covered = { sisters = true,
     window = true, bags = true, find = true, tracked = true, quest = true, arrow = true,
     probe = true, help = true, perf = true, spec = true, weights = true, minimap = true,
     settings = true, weapons = true,
