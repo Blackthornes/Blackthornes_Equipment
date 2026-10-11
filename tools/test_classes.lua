@@ -140,7 +140,7 @@ end
 -- class can use.
 local RANGED = { ["item:11"] = 19, ["item:12"] = 2, ["item:13"] = 16 }
 local CAN = {
-    WARRIOR = { [2] = true, [16] = true }, HUNTER = { [2] = true, [16] = true },
+    WARRIOR = { [2] = true, [16] = true }, HUNTER = { [2] = true },
     ROGUE = { [2] = true, [16] = true }, PRIEST = { [19] = true }, MAGE = { [19] = true },
     WARLOCK = { [19] = true }, PALADIN = {}, SHAMAN = {}, DRUID = {},
 }

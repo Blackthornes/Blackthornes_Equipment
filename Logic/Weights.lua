@@ -67,8 +67,9 @@ local SPECS = {
             [10] = 0,               -- staves
             [13] = 0,               -- fist weapons
             [15] = 0,               -- daggers
-            [16] = 0,               -- thrown
             [18] = 0,               -- crossbows
+            -- No thrown: in classic only warriors and rogues learn it, so a
+            -- hunter is never offered a throwing dagger.
         },
         beast = {
             name = "Beast Mastery",
