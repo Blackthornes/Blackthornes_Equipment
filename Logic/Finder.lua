@@ -874,19 +874,9 @@ function Finder:Scanning()
     return self.background ~= nil
 end
 
---- Make a full scan for now, a slice per frame, then call each of the
---- waiting `done` functions with it (or with nil and why). A scan already
---- under way takes the new caller too. Without timers it runs at once.
-function Finder:ScanInBackground(done)
-    if self.background then
-        if done then self.background.waiting[#self.background.waiting + 1] = done end
-        return
-    end
-    local job = { waiting = { done } }
-    self.background = job
-    -- Whatever changes from here on makes this scan stale.
-    self.stale = false
-
+--- Run `build(pause)` a slice per frame and hand what it returns to
+--- `finish(found, why)`. Without timers or coroutines it runs at once.
+local function Sliced(build, finish)
     local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
     local started, count = Clock(), 0
     local after = _G.C_Timer and _G.C_Timer.After
@@ -901,20 +891,12 @@ function Finder:ScanInBackground(done)
         end
     end
 
-    local function Finish(found, why)
-        Finder.background = nil
-        for _, fn in ipairs(job.waiting) do
-            local ok, err = pcall(fn, found, why)
-            if not ok then ns.Debug("finder:", tostring(err)) end
-        end
-    end
-
     if not canYield then
-        Finish(self:Build(nil, nil))
+        finish(build(nil))
         return
     end
 
-    local worker = coroutine.create(function() return Finder:Build(nil, nil, Pause) end)
+    local worker = coroutine.create(function() return build(Pause) end)
     local function Step()
         started, count = Clock(), 0
         local ok, found, why = coroutine.resume(worker)
@@ -922,14 +904,55 @@ function Finder:ScanInBackground(done)
         if ns.Perf and started and finished then ns.Perf:Add("Finder:background slice", finished - started) end
         if not ok then
             ns.Debug("finder:", tostring(found))
-            Finish(nil, "error")
+            finish(nil, "error")
         elseif coroutine.status(worker) == "dead" then
-            Finish(found, why)
+            finish(found, why)
         else
             after(0, Step)
         end
     end
     Step()
+end
+
+--- Make a full scan for now, a slice per frame, then call each of the
+--- waiting `done` functions with it (or with nil and why). A scan already
+--- under way takes the new caller too. Without timers it runs at once.
+function Finder:ScanInBackground(done)
+    if self.background then
+        if done then self.background.waiting[#self.background.waiting + 1] = done end
+        return
+    end
+    local job = { waiting = { done } }
+    self.background = job
+    -- Whatever changes from here on makes this scan stale.
+    self.stale = false
+
+    Sliced(function(pause) return Finder:Build(nil, nil, pause) end, function(found, why)
+        Finder.background = nil
+        for _, fn in ipairs(job.waiting) do
+            local ok, err = pcall(fn, found, why)
+            if not ok then ns.Debug("finder:", tostring(err)) end
+        end
+    end)
+end
+
+--- The finder window's own scan (its filter and how far ahead it looks), a
+--- slice per frame, for a refresh after an event: a bag change or an item
+--- answer no longer freezes the game while the window is open. Only the
+--- latest one asked for calls `done`; one it replaces is left to finish
+--- quietly. Kept apart from ScanInBackground, whose scan the upgrade
+--- quest and the character sheet share.
+function Finder:ScanSliced(only, ahead, done)
+    local job = {}
+    self.sliced = job
+    Sliced(function(pause) return Finder:Build(only, ahead, pause) end, function(found, why)
+        if Finder.sliced ~= job then return end
+        Finder.sliced = nil
+        if done then
+            local ok, err = pcall(done, found, why)
+            if not ok then ns.Debug("finder:", tostring(err)) end
+        end
+    end)
 end
 
 function Finder:OnEnable()

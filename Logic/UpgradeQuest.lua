@@ -1315,17 +1315,50 @@ function UpgradeQuest:Check()
     end
 
     -- A step ticked off since last time: a little cheer.
+    local steps
     if quest and quest.itemID == before then
-        local _, current = self:Steps(quest)
+        local current
+        steps, current = self:Steps(quest)
         if lastStep and current > lastStep then self.stepDone = current - 1 end
         self.lastStep = current
     elseif quest then
-        local _, current = self:Steps(quest)
+        local current
+        steps, current = self:Steps(quest)
         self.lastStep = current
     end
 
     self:Mirror()
+    -- After an event (a bag change, a quest log tick, a new zone), the
+    -- panel, the map pins and the arrow are drawn again only when what they
+    -- show moved. A click or a command always draws them.
+    local shows = self:Shows(steps)
+    if self.fromEvent and shows == self.shown then return end
+    self.shown = shows
     self:Changed()
+end
+
+--- Everything the panel, the map pins, the arrow and the finder's Quest
+--- marks are drawn from, as one string: two that match draw the same.
+function UpgradeQuest:Shows(steps)
+    local parts = { tostring(self:Tab()), tostring(self.state), tostring(self.scanFailed),
+        tostring(self.stepDone), tostring(self.offer and self.offer.questItemID),
+        tostring(self.offer and self.offer.pick and self.offer.pick.itemID) }
+    local quests = self:Quests()
+    for _, tab in ipairs(TABS) do
+        local quest = quests[tab.key]
+        parts[#parts + 1] = ("%s=%s/%s/%s"):format(tab.key, tostring(type(quest) == "table" and quest.itemID),
+            tostring(self.states[tab.key]), tostring(type(quest) == "table" and quest.here))
+    end
+    local skipped = 0
+    for _ in pairs(self:Skipped()) do skipped = skipped + 1 end
+    parts[#parts + 1] = "skipped=" .. skipped
+    for index, step in ipairs(type(steps) == "table" and steps or {}) do
+        local place = type(step.place) == "table" and step.place or {}
+        parts[#parts + 1] = table.concat({ tostring(index), tostring(step.text), tostring(step.done),
+            tostring(step.note), tostring(step.turnIn), tostring(step.soft), tostring(step.short),
+            tostring(place.zone), tostring(place.x), tostring(place.y), tostring(place.name) }, "~")
+    end
+    return table.concat(parts, "|")
 end
 
 --- Update after a short pause, so a burst of bag events is one update.
@@ -1342,7 +1375,9 @@ function UpgradeQuest:UpdateSoon(delay)
     end
     after(delay or 0.5, function()
         UpgradeQuest.waiting = false
+        UpgradeQuest.fromEvent = true
         local ok, err = pcall(UpgradeQuest.Update, UpgradeQuest)
+        UpgradeQuest.fromEvent = nil
         if not ok then ns.Debug("upgrade quest:", tostring(err)) end
     end)
 end

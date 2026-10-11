@@ -644,5 +644,36 @@ suite.check("new gear worn looks again", scans == 2, scans)
 ns.Finder.Build = realBuild
 _G.time = realTime
 
+--------------------------------------------------------------------------------
+-- A bag change or quest log tick that moves nothing on the panel draws
+-- nothing again; one that ticks a step off does
+--------------------------------------------------------------------------------
+
+do
+    local realChanged, draws = Quest.Changed, 0
+    Quest.Changed = function(self, ...) draws = draws + 1 return realChanged(self, ...) end
+    local quest = Quest:Current()
+    suite.check("a quest is shown to draw", quest ~= nil)
+    Quest:OnEvent("BAG_UPDATE_DELAYED")
+    draws = 0
+    for _ = 1, 10 do
+        Quest:OnEvent("BAG_UPDATE_DELAYED")
+        Quest:OnEvent("QUEST_LOG_UPDATE")
+    end
+    suite.check("ten quiet bag changes and quest log ticks draw nothing", draws == 0, draws)
+    if quest then
+        env.bags[0] = { [1] = "item:" .. quest.itemID }
+        Quest:OnEvent("BAG_UPDATE_DELAYED")
+        suite.check("getting the upgrade ticks a step off and draws once", draws == 1, draws)
+        env.bags[0] = {}
+        Quest:OnEvent("BAG_UPDATE_DELAYED")
+    end
+    draws = 0
+    local other = Quest:Tab() == "vendor" and "quest" or "vendor"
+    Quest:SelectTab(other)
+    suite.check("a click always draws", draws >= 1, draws)
+    Quest.Changed = realChanged
+end
+
 ns.Toast.Show = realShow
 suite.done()
