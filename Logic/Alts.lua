@@ -6,11 +6,16 @@
 -- Each character, when it plays, keeps a note of itself account wide in
 -- BlackthornesEquipmentDB.characterGear[guid] (never rename it):
 --
---   { class, level, spec, realm, faction, worn = { [slot] = link }, at }
+--   { class, level, spec, realm, faction, worn = { [slot] = link }, at,
+--     name, spare = { link, ... }, bank = { { link, bound }, ... }, bankAt }
 --
--- Only what judging needs: no bags, no names (Butler names characters from
--- Tradeskills' record, by the same GUID). A character counts once it has
--- been played with this version.
+-- Only what judging needs. Added 2026-10-11 (the owner: the addons should
+-- do the work): `name` (UnitName, for the tooltip's "Upgrade for Ana
+-- Smith"; Tradeskills' record, by the same GUID, is asked first for the
+-- whole name), `spare` (gear in its bags that is not soulbound, so it can be
+-- mailed to whoever it helps; read as the character settles in and as it
+-- logs out) and `bank` (gear in its bank, read while the bank is open). A
+-- character counts once it has been played with this version.
 --
 -- Alts:BestFor(link) judges one item for every other character on the
 -- same realm and side, with that character's class, spec, level and worn
@@ -30,6 +35,9 @@ local Weights = ns.Weights
 local Compare = ns.Compare
 
 Alts.SETTLE = 1
+-- At most this many pieces kept in `spare` and `bank` a character.
+Alts.SPARE_MOST = 80
+Alts.BAGS = { 0, 1, 2, 3, 4 }
 
 -- Every slot a judged item can go in.
 local WORN_SLOTS = { 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 }
@@ -85,6 +93,7 @@ function Alts:Record()
         worn[slot] = Items:Equipped(slot)
     end
     local spec = Weights:CurrentSpec()
+    local old = self:Notes()[guid]
     local note = {
         class = class,
         level = level,
@@ -93,10 +102,117 @@ function Alts:Record()
         faction = self.Faction(),
         worn = worn,
         at = Call(_G.time),
+        name = Text(Call(_G.UnitName, "player")),
+        spare = self.GearIn(self.BAGS, true),
+        -- The bank is only read while it is open; kept from the last time.
+        bank = type(old) == "table" and old.bank or nil,
+        bankAt = type(old) == "table" and old.bankAt or nil,
     }
     self:Notes()[guid] = note
     self.version = (self.version or 0) + 1
     return true
+end
+
+--- Gear in these bags, as links (one each), at most SPARE_MOST. With
+--- `unboundOnly`, soulbound pieces are left out; otherwise each entry is
+--- { link, bound }.
+function Alts.GearIn(bags, unboundOnly)
+    local list, seen = {}, {}
+    for _, bag in ipairs(bags) do
+        for slot = 1, Items:BagSize(bag) do
+            local link = Items:InBag(bag, slot)
+            if link and not seen[link] then
+                local info = Items:Info(link)
+                if info and Compare.SLOTS[info.equipLoc] then
+                    seen[link] = true
+                    local bound = Items:SlotBound(bag, slot)
+                    if unboundOnly then
+                        if not bound then list[#list + 1] = link end
+                    else
+                        list[#list + 1] = { link = link, bound = bound }
+                    end
+                    if #list >= Alts.SPARE_MOST then return list end
+                end
+            end
+        end
+    end
+    return list
+end
+
+--- The bank's containers: the bank itself and its bag slots.
+function Alts.BankBags()
+    local index = rawget(_G, "Enum") and _G.Enum.BagIndex
+    local bags = { type(index) == "table" and index.Bank or -1 }
+    local first = type(index) == "table" and index.BankBag_1 or ((tonumber(rawget(_G, "NUM_BAG_SLOTS")) or 4) + 1)
+    local count = tonumber(rawget(_G, "NUM_BANKBAGSLOTS")) or 7
+    for bag = first, first + count - 1 do bags[#bags + 1] = bag end
+    return bags
+end
+
+--- The bank is open: keep the gear in it on the character's note.
+function Alts:ReadBank()
+    local guid = self.PlayerGUID()
+    local note = guid and self:Notes()[guid]
+    if type(note) ~= "table" then return false end
+    note.bank = self.GearIn(self.BankBags(), false)
+    note.bankAt = Call(_G.time)
+    self.version = (self.version or 0) + 1
+    return true
+end
+
+--- A character's whole name: Tradeskills' record (first and last) when it
+--- has one, else the name the note kept. Nil when neither knows.
+function Alts:NameOf(key)
+    local ts = rawget(_G, "BlackthornesTS")
+    local recipes = type(ts) == "table" and rawget(ts, "Recipes")
+    local db = type(ts) == "table" and rawget(ts, "db")
+    if type(recipes) == "table" and type(db) == "table" and type(db.characters) == "table"
+        and db.characters[key] and type(recipes.GetCharacterName) == "function" then
+        local ok, name = pcall(recipes.GetCharacterName, recipes, key)
+        if ok and type(name) == "string" and name ~= "" and name ~= "?" then return name end
+    end
+    local note = self:Notes()[key]
+    return type(note) == "table" and note.name or nil
+end
+
+--- Better gear the character playing already owns but does not carry:
+--- in its own bank, or not soulbound in another character's bags or bank
+--- on this realm and side. { [slot] = { link, result, gain, where } }, the
+--- best for each slot; `where` is "bank" or the other character's GUID.
+--- For the gear window, worked out only while it draws.
+function Alts:BetterElsewhere()
+    local best = {}
+    local function Consider(link, where)
+        local ok, result = pcall(Compare.JudgeCarried, Compare, link)
+        if ok and Compare.WearableUpgrade(result) and result.slot then
+            local gain = (result.score or 0) - (result.against or 0)
+            local held = best[result.slot]
+            if not held or gain > held.gain then
+                best[result.slot] = { link = link, result = result, gain = gain, where = where }
+            end
+        end
+    end
+
+    local me = self.PlayerGUID()
+    local realm, faction = self.Realm(), self.Faction()
+    for key, note in pairs(self:Notes()) do
+        if type(note) == "table" then
+            if key == me then
+                for _, entry in ipairs(type(note.bank) == "table" and note.bank or {}) do
+                    if type(entry) == "table" and entry.link then Consider(entry.link, "bank") end
+                end
+            elseif (not realm or not note.realm or note.realm == realm)
+                and (not faction or not note.faction or note.faction == faction) then
+                for _, link in ipairs(type(note.spare) == "table" and note.spare or {}) do
+                    Consider(link, key)
+                end
+                for _, entry in ipairs(type(note.bank) == "table" and note.bank or {}) do
+                    if type(entry) == "table" and entry.link and not entry.bound then Consider(entry.link, key) end
+                end
+            end
+        end
+    end
+    return best
 end
 
 --- Gear, a level or talents changed: write the note once the burst is over.
@@ -230,4 +346,10 @@ function Alts:OnEnable()
         "TRAIT_CONFIG_UPDATED", "PLAYER_TALENT_UPDATE", "CHARACTER_POINTS_CHANGED" }) do
         ns.RegisterEvent(self, event, function() Alts:Changed() end)
     end
+    -- What the bags carry is kept as the character logs out, and the bank's
+    -- gear a moment after the bank opens (its slots come in after the event).
+    ns.RegisterEvent(self, "PLAYER_LOGOUT", function() pcall(Alts.Record, Alts) end)
+    ns.RegisterEvent(self, "BANKFRAME_OPENED", function()
+        C_Timer.After(0.5, function() pcall(Alts.ReadBank, Alts) end)
+    end)
 end

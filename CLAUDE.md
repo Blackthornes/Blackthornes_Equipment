@@ -95,13 +95,29 @@ otherwise a table:
 
 Each character keeps a note of itself when it plays (`Logic/Alts.lua`,
 account wide in `BlackthornesEquipmentDB.characterGear[guid]` = `{ class,
-level, spec, realm, faction, worn = { [slot] = link }, at }`; never rename
-it), written 1 second after a burst of gear, level or talent events. Only
-characters on the same realm and side are judged, with their own class,
-spec, level and worn gear, through `Compare:ScoreOf`; a character counts
-once it has logged in with this version.
+level, spec, realm, faction, worn = { [slot] = link }, at, name, spare,
+bank, bankAt }`; never rename it or its fields), written 1 second after a
+burst of gear, level or talent events and at logout. Only characters on the
+same realm and side are judged, with their own class, spec, level and worn
+gear, through `Compare:ScoreOf`; a character counts once it has logged in
+with this version.
 
-It never raises, scans no bags and, past the notes above, keeps nothing new: scores, sell prices
+Upgrades you already own (the owner, 2026-10-11, "do the work for the
+player"): the note also keeps `name` (`UnitName`), `spare` (links of gear
+in bags 0 to 4 that is not soulbound, `Alts.GearIn`, at most
+`Alts.SPARE_MOST`) and, read 0.5 s after `BANKFRAME_OPENED`, `bank` (`{
+link, bound }` each, `Alts:ReadBank`, kept by later notes) with `bankAt`.
+`Alts:BetterElsewhere` judges, only while the gear window draws, the
+character's own bank and the other characters' unbound spare and bank gear
+for the character playing; a slot the bags leave without an upgrade then
+shows it with "(in your bank)" or "(on NAME)", and the footer counts them.
+`Alts:NameOf(key)` gives the whole name, Tradeskills' record first. The
+tooltip adds "Upgrade for NAME: +N%" (`Tooltip:AltLine`, `Alts:BestFor`,
+the answer Butler mails by) on gear that is no upgrade here; "Upgrades for
+your alts" in Settings (`altTooltipLine`, account wide, on unless unticked,
+never rename it). Tested in `tools/test_alts.lua`. Not yet seen in game.
+
+Advise never raises, scans no bags and, past the notes above, keeps nothing new: scores, sell prices
 and tools are the per-link caches the bag icons already keep, since Butler
 asks a hundred times in a burst. Keep the global, `Butler:Advise` and these
 fields stable; if one has to change, change Butler's `Logic/Sisters.lua`

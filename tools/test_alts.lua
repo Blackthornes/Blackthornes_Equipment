@@ -112,4 +112,71 @@ ns.db.characterGear["Player-7"] = "garbage"
 local ok = pcall(Alts.BestFor, Alts, "item:4")
 suite.check("a broken note is skipped", ok)
 
+-- What it carries: unbound bag gear is kept as `spare`, with its name.
+_G.UnitName = function() return "Ana" end
+Alts:Record()
+mine = ns.db.characterGear["Player-1"]
+suite.check("the note keeps the name", mine.name == "Ana", mine.name)
+suite.check("and the unbound gear in the bags", mine.spare and #mine.spare == 4, mine.spare and #mine.spare)
+_G.C_Container.GetContainerItemInfo = function(bag, slot)
+    if bag ~= 0 then return nil end
+    return { quality = 2, isBound = slot == 4, stackCount = 1 }
+end
+Alts:Record()
+mine = ns.db.characterGear["Player-1"]
+local hasBound = false
+for _, link in ipairs(mine.spare) do if link == "item:4" then hasBound = true end end
+suite.check("soulbound bag gear is not spare", not hasBound and #mine.spare == 3, #mine.spare)
+
+-- The bank, read while it is open, is kept on the next note.
+mine.bank, mine.bankAt = { { link = "item:6", bound = true } }, 100
+Alts:Record()
+mine = ns.db.characterGear["Player-1"]
+suite.check("a new note keeps the bank it read before", mine.bank and mine.bank[1].link == "item:6" and mine.bankAt == 100)
+suite.check("the bank's containers start with the bank", Alts.BankBags()[1] == -1 and #Alts.BankBags() == 8)
+
+-- Names: Tradeskills' whole name first, else the note's.
+suite.check("a note's name", Alts:NameOf("Player-1") == "Ana")
+_G.BlackthornesTS = { db = { characters = { ["Player-1"] = {} } },
+    Recipes = { GetCharacterName = function(_, key) return key == "Player-1" and "Ana Smith" or nil end } }
+suite.check("Tradeskills' whole name wins", Alts:NameOf("Player-1") == "Ana Smith")
+_G.BlackthornesTS.Recipes.GetCharacterName = function() error("broken") end
+suite.check("a Tradeskills error falls back to the note", Alts:NameOf("Player-1") == "Ana")
+_G.BlackthornesTS = nil
+
+-- Better gear owned elsewhere: in the bank, or spare on another character.
+for key in pairs(ns.db.characterGear) do if key ~= "Player-1" then ns.db.characterGear[key] = nil end end
+local found = Alts:BetterElsewhere()
+suite.check("an upgrade in the bank is found", found[5] and found[5].link == "item:6" and found[5].where == "bank",
+    found[5] and found[5].where)
+suite.check("with its gain", found[5].gain > 0)
+mine.bank = { { link = "item:4", bound = false } }
+suite.check("nothing better in the bank, nothing found", Alts:BetterElsewhere()[5] == nil)
+ns.db.characterGear["Player-8"] = { class = "ROGUE", level = 20, realm = "Here", faction = "Horde",
+    worn = {}, spare = { "item:6" }, bank = { { link = "item:5", bound = true } } }
+found = Alts:BetterElsewhere()
+suite.check("an upgrade spare on another character is found", found[5] and found[5].where == "Player-8")
+ns.db.characterGear["Player-8"].spare = {}
+ns.db.characterGear["Player-8"].bank = { { link = "item:6", bound = true } }
+suite.check("bound gear in another bank is not", Alts:BetterElsewhere()[5] == nil)
+ns.db.characterGear["Player-8"].bank = { { link = "item:6", bound = false } }
+suite.check("unbound gear in another bank is", (Alts:BetterElsewhere()[5] or {}).where == "Player-8")
+ns.db.characterGear["Player-8"].faction = "Alliance"
+suite.check("the other side's gear is left out", Alts:BetterElsewhere()[5] == nil)
+ns.db.characterGear["Player-8"] = nil
+
+-- The tooltip's line: no upgrade here, an upgrade for an alt.
+ns.db.characterGear["Player-2"] = { class = "ROGUE", level = 20, realm = "Here", faction = "Horde",
+    worn = { [5] = "item:11" }, name = "Bob" }
+local Tooltip = ns.Tooltip
+local result = ns.Compare:JudgeCarried("item:4")
+suite.check("the tooltip names the alt it helps", Tooltip:AltLine("item:4", result) == "Upgrade for Bob: +100%",
+    Tooltip:AltLine("item:4", result))
+suite.check("an upgrade here says nothing about alts",
+    Tooltip:AltLine("item:6", ns.Compare:JudgeCarried("item:6")) == nil)
+suite.check("a level wait is named", (Tooltip:AltLine("item:7", ns.Compare:JudgeCarried("item:7")) or ""):find("at level 30", 1, true))
+ns.db.altTooltipLine = false
+suite.check("the setting turns it off", Tooltip:AltLine("item:4", result) == nil)
+ns.db.altTooltipLine = nil
+
 suite.done()
