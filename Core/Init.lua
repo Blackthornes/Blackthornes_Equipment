@@ -244,7 +244,12 @@ end
 -- Events a hunter's every shot fires, with what each says changed. Each is
 -- passed on only when that has really changed (Data/Items.lua): looking
 -- again at every upgrade per arrow made the game hang after each shot.
-local QUIET = { BAG_UPDATE_DELAYED = "BagSignature", PLAYER_EQUIPMENT_CHANGED = "WornSignature" }
+-- A skill point (crafting, gathering or a weapon swing) fires
+-- SKILL_LINES_CHANGED; only a skill learned or dropped is passed on, since
+-- a point threw every upgrade verdict away and started a new upgrade scan
+-- (a hitch on some finished crafts, 2026-10-11).
+local QUIET = { BAG_UPDATE_DELAYED = "BagSignature", PLAYER_EQUIPMENT_CHANGED = "WornSignature",
+    SKILL_LINES_CHANGED = "SkillSignature" }
 local lastSeen = {}
 
 --- True when the event changed nothing worth looking at again.
@@ -320,6 +325,7 @@ Perf.WATCH = {
     { "TrackerPanel", "Refresh" }, { "MapPins", "Draw" }, { "SlotUpgrades", "Fill" },
     { "QuestRewards", "Refresh" }, { "LootRolls", "Refresh" },
     { "MoreMarks", "RefreshMerchant" }, { "MoreMarks", "RefreshLoot" },
+    { "Crafting", "Known" }, { "Butler", "Advise" }, { "Compare", "IsUpgrade" },
 }
 
 function Perf:WrapAll()
@@ -619,7 +625,8 @@ ns.RegisterCommand("perf", "what took longest this session, to find a hitch (/be
         ns.Print("speed check cleared.")
         return
     end
-    Perf:Report(10)
+    -- Kept for Claude too, as the probe is (2026-10-11).
+    ns.KeepCheck("perf", Perf.Report, Perf, 15)
 end)
 
 SLASH_BLACKTHORNESEQUIPMENT1 = "/beq"
