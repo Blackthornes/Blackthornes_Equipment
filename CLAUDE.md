@@ -100,7 +100,12 @@ bank, bankAt }`; never rename it or its fields), written 1 second after a
 burst of gear, level or talent events and at logout. Only characters on the
 same realm and side are judged, with their own class, spec, level and worn
 gear, through `Compare:ScoreOf`; a character counts once it has logged in
-with this version.
+with this version. A read that finds nothing worn (the client can answer
+nil for every slot on a /reload or logout) keeps the last note's `worn`
+and, when the bags read empty too, its `spare`; and `Alts:Judge` answers
+nil for a note with no worn gear, so nothing is called an upgrade (and
+mailed by Butler) for "an empty slot" it only looks empty because of a
+blank record (2026-10-11).
 
 Upgrades you already own (the owner, 2026-10-11, "do the work for the
 player"): the note also keeps `name` (`UnitName`), `spare` (links of gear

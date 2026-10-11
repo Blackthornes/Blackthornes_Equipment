@@ -100,9 +100,12 @@ suite.check("other realms and sides are left out", Alts:BestFor("item:4") == nil
 ns.db.characterGear["Player-5"] = { class = "HUNTER", level = 20, realm = "Here", faction = "Horde",
     worn = { [5] = "item:1" } }
 suite.check("a hunter wearing the same is no upgrade", Alts:BestFor("item:4") == nil)
-ns.db.characterGear["Player-5"].worn = {}
+ns.db.characterGear["Player-5"].worn = { [1] = "item:11" }
 local best = Alts:BestFor("item:4")
 suite.check("an empty slot is, with no percent", best and best.key == "Player-5" and best.gain == nil)
+ns.db.characterGear["Player-5"].worn = {}
+suite.check("a note with no gear on record is never judged", Alts:BestFor("item:4") == nil)
+ns.db.characterGear["Player-5"].worn = { [1] = "item:11" }
 ns.db.characterGear["Player-1"].worn = {}
 suite.check("the character playing's own note is never judged", Alts:BestFor("item:4").key == "Player-5")
 
@@ -134,6 +137,20 @@ Alts:Record()
 mine = ns.db.characterGear["Player-1"]
 suite.check("a new note keeps the bank it read before", mine.bank and mine.bank[1].link == "item:6" and mine.bankAt == 100)
 suite.check("the bank's containers start with the bank", Alts.BankBags()[1] == -1 and #Alts.BankBags() == 8)
+
+-- A read that finds nothing worn (a /reload or logout, when the client
+-- answers nil for every slot) keeps the gear and bags the last note read.
+local wornBefore = env.worn
+env.worn = {}
+local bags = env.bags
+env.bags = {}
+Alts:Record()
+mine = ns.db.characterGear["Player-1"]
+suite.check("an empty read keeps the worn gear", mine.worn[5] == "item:1", mine.worn[5])
+suite.check("and the spare gear", #mine.spare == 3, #mine.spare)
+env.worn, env.bags = wornBefore, bags
+Alts:Record()
+mine = ns.db.characterGear["Player-1"]
 
 -- Names: Tradeskills' whole name first, else the note's.
 suite.check("a note's name", Alts:NameOf("Player-1") == "Ana")
