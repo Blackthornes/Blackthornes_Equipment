@@ -16,5 +16,10 @@ ns.ForeverNPCs = {
     [3079] = { "", "Mulgore", 45.3, 62.1 },
     [3080] = { "Harant Ironbrace", "Mulgore", 45.4, 62.1 },
     [3081] = { "Wunna Darkmane", "Mulgore", 45.5, 61.8 },
-    [3367] = { "Felika", "Orgrimmar", 57.4, 38 },
+    [3367] = { "Felika", "Orgrimmar", 59.5, 55.8 },
+    [3534] = { "Wallace the Blind", "Silverpine Forest", 43.9, 84.4 },
+    [3658] = { "Lizzarik", "The Barrens", 52.4, 30.7 },
+    [5783] = { "Kalldan Felmoon", "Kalimdor", 51.9, 55.4 },
+    [5784] = { "Waldor", "Kalimdor", 51.9, 55.5 },
+    [8362] = { "Kuruk", "Thunder Bluff", 39, 64.3 },
 }
