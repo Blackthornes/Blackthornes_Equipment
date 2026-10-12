@@ -5,15 +5,16 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "0.26.0", lines = {
+        "A new What's New window shows what changed after each update.",
+        "Gear that Forever changed now uses Forever's own levels and prices.",
+        "More lists got the new dark look.",
+    } },
     { version = "0.25.0", lines = {
         "Equipment speaks Deutsch now if your game is in German.",
     } },
     { version = "0.24.0", lines = {
         "Works on German game clients too.",
         "A short note at login tells you about our other addons, just once.",
-    } },
-    { version = "0.23.0", lines = {
-        "Weapons you can't use yet now offer to show you the trainer, or let you ignore that weapon type.",
-        "Learn the skill and the weapon pops up ready to wear.",
     } },
 }
