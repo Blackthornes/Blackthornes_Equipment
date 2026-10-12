@@ -186,6 +186,8 @@ function SlotUpgrades:BuildRow(index)
     row.rule:SetPoint("BOTTOMRIGHT")
     row.rule:SetHeight(1)
     row.rule:SetColorTexture(Theme.Unpack("border", 0.6))
+    -- Under the mouse: the house row light (gold edge and wash).
+    Widgets.RowLight(row)
     row:EnableMouse(true)
 
     local icon = Theme.CreateItemIcon(row, 30)
@@ -233,13 +235,24 @@ function SlotUpgrades:BuildRow(index)
     row.source = source
     row.sourceWidth = textWidth
 
+    local function Lit(p) Widgets.SetRowLight(row, p) end
     row:SetScript("OnEnter", function(self)
+        Motion:Blend(self, "hover", 1, 0.12, Lit)
         if not self.pick then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         pcall(GameTooltip.SetHyperlink, GameTooltip, self.pick.link)
         GameTooltip:Show()
     end)
-    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row:SetScript("OnLeave", function(self)
+        Motion:Blend(self, "hover", 0, 0.18, Lit)
+        GameTooltip:Hide()
+    end)
+    -- Hidden under the mouse, no leave comes: start dark next time.
+    row:SetScript("OnHide", function(self)
+        Motion:Stop(self, "hover")
+        Motion:SetValue(self, "hover", 0)
+        Lit(0)
+    end)
     row:Hide()
     return row
 end

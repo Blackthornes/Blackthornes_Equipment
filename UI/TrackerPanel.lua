@@ -90,7 +90,9 @@ function TrackerPanel:BuildRow(index)
     row.where = where
     row.textWidth = WIDTH - PAD * 2 - ICON - 14
 
-    local function Light(p) row.background:SetColorTexture(Motion.Mix(row.restKey, "glassHover", p)) end
+    -- Under the mouse: the house row light (gold edge and wash).
+    Widgets.RowLight(row)
+    local function Light(p) Widgets.SetRowLight(row, p) end
     row:SetScript("OnEnter", function(self)
         Motion:Blend(self, "hover", 1, 0.12, Light)
         ShowTooltip(self)
