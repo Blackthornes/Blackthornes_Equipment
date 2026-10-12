@@ -63,7 +63,14 @@ function TrackerPanel:BuildRow(index)
     local row = CreateFrame("Button", nil, self.frame)
     row:SetSize(WIDTH - PAD * 2, ROW_HEIGHT)
     row:SetPoint("TOPLEFT", PAD, -(HEADER + 4 + (index - 1) * ROW_HEIGHT))
-    row.background = Theme.Fill(row, "row", 0)
+    -- Dark glass, a shade apart row by row, with a fine line under each.
+    row.restKey = index % 2 == 0 and "glassAlt" or "glass"
+    row.background = Theme.Fill(row, row.restKey)
+    row.rule = row:CreateTexture(nil, "BACKGROUND", nil, 1)
+    row.rule:SetPoint("BOTTOMLEFT")
+    row.rule:SetPoint("BOTTOMRIGHT")
+    row.rule:SetHeight(1)
+    row.rule:SetColorTexture(Theme.Unpack("border", 0.6))
 
     local icon = Theme.CreateItemIcon(row, ICON)
     icon:SetPoint("LEFT", 2, 0)
@@ -83,7 +90,7 @@ function TrackerPanel:BuildRow(index)
     row.where = where
     row.textWidth = WIDTH - PAD * 2 - ICON - 14
 
-    local function Light(p) row.background:SetColorTexture(Theme.Unpack("rowHover", 0.8 * p)) end
+    local function Light(p) row.background:SetColorTexture(Motion.Mix(row.restKey, "glassHover", p)) end
     row:SetScript("OnEnter", function(self)
         Motion:Blend(self, "hover", 1, 0.12, Light)
         ShowTooltip(self)
