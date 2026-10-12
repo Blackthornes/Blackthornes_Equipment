@@ -156,10 +156,8 @@ function IgnoredUI:BuildRow(index)
     row.rule:SetPoint("BOTTOMRIGHT")
     row.rule:SetHeight(1)
     row.rule:SetColorTexture(Theme.Unpack("border", 0.6))
-    -- Filled whole and hidden with SetAlpha: filled clear, as it was, no
-    -- alpha could ever show it.
-    row.hover = Theme.Fill(row, "glassHover")
-    row.hover:SetAlpha(0)
+    -- Under the mouse: the house row light (gold edge and wash).
+    Widgets.RowLight(row)
 
     row.icon = Theme.CreateItemIcon(row, ICON)
     row.icon:SetPoint("LEFT", 8, 0)
@@ -181,7 +179,7 @@ function IgnoredUI:BuildRow(index)
     row.name:SetWordWrap(false)
 
     row:SetScript("OnEnter", function(self)
-        self.hover:SetAlpha(1)
+        Motion:Blend(self, "hover", 1, 0.12, function(p) Widgets.SetRowLight(self, p) end)
         local entry = self.entry
         if not entry then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -190,7 +188,7 @@ function IgnoredUI:BuildRow(index)
         GameTooltip:Show()
     end)
     row:SetScript("OnLeave", function(self)
-        self.hover:SetAlpha(0)
+        Motion:Blend(self, "hover", 0, 0.18, function(p) Widgets.SetRowLight(self, p) end)
         GameTooltip:Hide()
     end)
     row:SetScript("OnClick", function(self)

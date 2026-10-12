@@ -242,6 +242,48 @@ function Motion:Open(frame, rise)
 end
 
 --------------------------------------------------------------------------------
+-- Row light (Farmer's)
+--------------------------------------------------------------------------------
+
+--- The house hover for a list row: a lighter glass, a gold edge down its
+--- left and a soft gold wash from the left, only under the mouse. Unlit
+--- until Widgets.SetRowLight lights it.
+function Widgets.RowLight(row)
+    -- Filled at full strength and hidden with SetAlpha: a texture whose
+    -- colour is clear stays clear whatever alpha it is given later.
+    row.highlight = Theme.Fill(row, "glassHover", nil, "BORDER")
+    row.highlight:SetAlpha(0)
+
+    row.edge = row:CreateTexture(nil, "OVERLAY")
+    row.edge:SetPoint("TOPLEFT")
+    row.edge:SetPoint("BOTTOMLEFT")
+    row.edge:SetWidth(2)
+    row.edge:SetColorTexture(Theme.Unpack("accentHi"))
+    row.edge:SetAlpha(0)
+
+    -- Both gold lights hide at rest and are lit by Theme.LightGradient:
+    -- faded with SetAlpha alone they stayed on every row in game.
+    row.lightWash = row:CreateTexture(nil, "BORDER", nil, 1)
+    row.lightWash:SetAllPoints(row)
+    row.lightWash:Hide()
+
+    row.bleed = row:CreateTexture(nil, "BORDER", nil, 1)
+    row.bleed:SetPoint("TOPLEFT", 2, 0)
+    row.bleed:SetPoint("BOTTOMLEFT", 2, 0)
+    row.bleed:SetWidth(18)
+    pcall(row.bleed.SetBlendMode, row.bleed, "ADD")
+    row.bleed:Hide()
+end
+
+--- How lit a row from Widgets.RowLight is: 0 at rest, 1 under the mouse.
+function Widgets.SetRowLight(row, value)
+    row.highlight:SetAlpha(value)
+    row.edge:SetAlpha(value)
+    Theme.LightGradient(row.bleed, "HORIZONTAL", "accent", 0.18, 0, value)
+    Theme.LightGradient(row.lightWash, "HORIZONTAL", "accent", 0.10, 0, value)
+end
+
+--------------------------------------------------------------------------------
 -- Button
 --------------------------------------------------------------------------------
 
