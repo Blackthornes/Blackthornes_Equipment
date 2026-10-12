@@ -69,6 +69,27 @@ Finder.Band = Band
 
 Finder.KINDS = { "vendor", "quest", "dungeon", "craft" }
 
+--- Lay the Forever client's own numbers (Data/ForeverItems.lua) over the
+--- Classic rows: required level, item level, classes and races, and the
+--- vendor price of gear a vendor sells. Done once as the addon loads, so the
+--- finder's level and class checks read Forever's numbers with no lookup
+--- per item. Reputations and sources stay as they are.
+function Finder.LayForeverItems(client, sources, crafts)
+    for itemID, row in pairs(client or {}) do
+        local item = sources and sources[itemID]
+        if item then
+            item[1], item[2], item[3], item[4] = row[1], row[2], row[3], row[4]
+            if item.v then item[5] = row[5] end
+        end
+        local craft = crafts and crafts[itemID]
+        if craft then
+            craft[4], craft[5], craft[6], craft[7] = row[1], row[2], row[3], row[4]
+        end
+    end
+end
+
+Finder.LayForeverItems(ns.ForeverItems, ns.Sources and ns.Sources.ITEMS, ns.Crafts and ns.Crafts.ITEMS)
+
 --------------------------------------------------------------------------------
 -- The character
 --------------------------------------------------------------------------------

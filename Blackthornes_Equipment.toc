@@ -29,6 +29,7 @@ Data\QuestEnds.lua
 Data\ForeverDrops.lua
 Data\ForeverNPCs.lua
 Data\Crafts.lua
+Data\ForeverItems.lua
 Data\Rolls.lua
 
 Logic\Weights.lua

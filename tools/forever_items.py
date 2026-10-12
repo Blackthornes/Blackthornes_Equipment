@@ -1,0 +1,173 @@
+"""Writes Data/ForeverItems.lua: gear whose level, classes, races or vendor
+price on WoW: Forever differ from the Classic data in Data/Sources.lua and
+Data/Crafts.lua.
+
+Run from the repository root:
+
+    python tools/forever_items.py <tables folder> [--build 1.60.1.70338] [--stdout]
+
+The tables folder holds the Forever client's game tables as CSV, one file
+per table. Only ItemSparse.csv is read, and only these columns: ID,
+RequiredLevel, ItemLevel, AllowableClass, AllowableRace_0 and BuyPrice. The
+tables are never copied into the repository; only the items that differ go
+in the data file.
+
+An item is listed when the client's numbers differ from the shipped Classic
+ones in any of: required level, item level, classes, races, or (for gear a
+vendor sells) the vendor price. Class and race masks that cover every
+Classic class or race count as "anyone" (0), as the Classic data writes it.
+Items the client's table does not carry are left as they are, and so is
+every reputation: the vendor, not the item, asks for the standing.
+
+Rerun it after tools/make_sources.py or tools/make_crafts.py, and whenever
+the client tables are pulled again. Stats are never written: the game
+gives those when an item is judged.
+
+Options:
+    --build    the client build, written in the file's header
+    --stdout   print the file instead of writing it
+"""
+
+import csv
+import os
+import re
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUTPUT = os.path.join(ROOT, "Data", "ForeverItems.lua")
+SOURCES = os.path.join(ROOT, "Data", "Sources.lua")
+CRAFTS = os.path.join(ROOT, "Data", "Crafts.lua")
+
+# Warrior, Paladin, Hunter, Rogue, Priest, Shaman, Mage, Warlock, Druid.
+ALL_CLASSES = 1 | 2 | 4 | 8 | 16 | 64 | 128 | 256 | 1024
+# Human, Orc, Dwarf, Night Elf, Undead, Tauren, Gnome, Troll.
+ALL_RACES = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128
+
+COLUMNS = ("ID", "RequiredLevel", "ItemLevel", "AllowableClass", "AllowableRace_0", "BuyPrice")
+
+ROW = re.compile(r"^\s+\[(\d+)\] = \{ ([-\d, ]+?)(?:,? [a-z] = |\s*\},?\s*$)", re.M)
+VENDOR = re.compile(r"^\s+\[(\d+)\] = \{[^\n]* v = \{", re.M)
+
+
+def mask(value, everyone):
+    """A client mask as the Classic data writes it: 0 for anyone."""
+    value = int(value)
+    if value <= 0 or value & everyone == everyone:
+        return 0
+    return value & everyone
+
+
+def read_table(folder):
+    """{ itemID: (required level, item level, classes, races, price) }."""
+    path = os.path.join(folder, "ItemSparse.csv")
+    out = {}
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        missing = [c for c in COLUMNS if c not in (reader.fieldnames or [])]
+        if missing:
+            raise SystemExit("ItemSparse.csv has no column " + ", ".join(missing))
+        for row in reader:
+            try:
+                out[int(row["ID"])] = (
+                    int(row["RequiredLevel"]), int(row["ItemLevel"]),
+                    mask(row["AllowableClass"], ALL_CLASSES),
+                    mask(row["AllowableRace_0"], ALL_RACES),
+                    int(row["BuyPrice"]),
+                )
+            except ValueError:
+                continue
+    return out
+
+
+def read_items(path, table):
+    """The leading numbers of each row of `table` = { ... } in a data file,
+    and the set of rows with vendors."""
+    text = open(path, encoding="utf-8").read()
+    start = text.find(table + " = {")
+    if start < 0:
+        raise SystemExit(f"{os.path.basename(path)} has no {table}")
+    end = text.find("\n}", start)
+    body = text[start:end]
+    rows = {int(m.group(1)): [int(x) for x in m.group(2).split(",") if x.strip()] for m in ROW.finditer(body)}
+    vendors = {int(m.group(1)) for m in VENDOR.finditer(body)}
+    return rows, vendors
+
+
+def differences(client, sources, vendors, crafts):
+    """{ itemID: client row } for every item the client says differently."""
+    out = {}
+    for item_id, row in sources.items():
+        mine = client.get(item_id)
+        if not mine or len(row) < 5:
+            continue
+        old = (row[0], row[1], mask(row[2], ALL_CLASSES), mask(row[3], ALL_RACES))
+        if old != mine[:4] or (item_id in vendors and row[4] != mine[4]):
+            out[item_id] = mine
+    for item_id, row in crafts.items():
+        mine = client.get(item_id)
+        if not mine or len(row) < 7:
+            continue
+        old = (row[3], row[4], mask(row[5], ALL_CLASSES), mask(row[6], ALL_RACES))
+        if old != mine[:4]:
+            out[item_id] = mine
+    return out
+
+
+def render(rows, build):
+    lines = [
+        "-- Blackthornes Equipment -- Data/ForeverItems.lua",
+        "-- Gear WoW: Forever changed from Classic: its required level, item",
+        "-- level, classes, races and vendor price as the Forever client has them,",
+        "-- for items where Data/Sources.lua or Data/Crafts.lua say otherwise.",
+        "--",
+        "-- Generated by tools/forever_items.py from the Forever client's game",
+        "-- tables" + (f" (build {build})" if build else "") + ". Do not edit by hand: the next run overwrites",
+        "-- this file. Each item is { required level, item level, classes (0 for",
+        "-- all), races (0 for all), vendor price in copper }. Finder lays them over",
+        "-- the Classic rows as the addon loads; stats still come from the game.",
+        "",
+        "local _, ns = ...",
+        "",
+        "ns.ForeverItems = {",
+    ]
+    for item_id in sorted(rows):
+        lines.append("    [%d] = { %d, %d, %d, %d, %d }," % ((item_id,) + tuple(rows[item_id])))
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
+def main(argv):
+    args, build, stdout = [], None, False
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--build" and i + 1 < len(argv):
+            build = argv[i + 1]
+            i += 2
+            continue
+        if argv[i] == "--stdout":
+            stdout = True
+        else:
+            args.append(argv[i])
+        i += 1
+    if len(args) != 1:
+        print(__doc__)
+        return 2
+    if build and not re.fullmatch(r"[\d.]+", build):
+        raise SystemExit("--build takes a build number like 1.60.1.70338")
+
+    client = read_table(args[0])
+    sources, vendors = read_items(SOURCES, "Sources.ITEMS")
+    crafts, _ = read_items(CRAFTS, "Crafts.ITEMS")
+    rows = differences(client, sources, vendors, crafts)
+    text = render(rows, build)
+    if stdout:
+        sys.stdout.write(text)
+    else:
+        with open(OUTPUT, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+        print(f"Wrote {len(rows)} items to Data/ForeverItems.lua")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
