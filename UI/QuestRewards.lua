@@ -14,6 +14,7 @@
 -- Blizzard's is changed.
 
 local _, ns = ...
+local L = ns.L
 
 local QuestRewards = ns.NewModule("QuestRewards")
 
@@ -271,7 +272,7 @@ local function NameOf(link)
         local info = Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, link)
         name = type(info) == "string" and info or nil
     end
-    return name or "it"
+    return name or L["it"]
 end
 
 function QuestRewards:TakeEnabled()
@@ -283,21 +284,21 @@ function QuestRewards:Pick()
     if self:Count() < 2 then return nil end
     local index, link, result, unknown = self:Best()
     if index then
-        return index, link, ("Take %s (%s)"):format(NameOf(link), Compare:HowMuch(result))
+        return index, link, L.Format("Take %s (%s)", NameOf(link), Compare:HowMuch(result))
     end
     if unknown and unknown > 0 then return nil end
     local richIndex, richLink, copper = self:MostValuable()
     if richIndex then
         local money = copper and ns.Finder and ns.Finder.Money and ns.Finder.Money(copper)
         local name = NameOf(richLink)
-        return richIndex, richLink, money and ("Take %s (sells for %s)"):format(name, money)
-            or ("Take %s"):format(name)
+        return richIndex, richLink, money and L.Format("Take %s (sells for %s)", name, money)
+            or L.Format("Take %s", name)
     end
 end
 
 function QuestRewards:BuildTake()
     if self.take then return self.take end
-    local button = ns.Widgets.CreateButton(UIParent, "Take", function(frame)
+    local button = ns.Widgets.CreateButton(UIParent, L["Take"], function(frame)
         local index = rawget(frame, "choice")
         if not index then return end
         local take = rawget(_G, "GetQuestReward")
@@ -310,7 +311,7 @@ function QuestRewards:BuildTake()
         if not link or not GameTooltip then return end
         GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
         pcall(GameTooltip.SetHyperlink, GameTooltip, link)
-        GameTooltip:AddLine("Click to hand in the quest and take this", ns.Theme.Unpack("good"))
+        GameTooltip:AddLine(L["Click to hand in the quest and take this"], ns.Theme.Unpack("good"))
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
@@ -352,9 +353,9 @@ end
 
 --- How much better a verdict is, in words.
 local function How(result)
-    return result.empty and "fills an empty slot"
+    return result.empty and L["fills an empty slot"]
         or result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5))
-        or "better stats"
+        or L["better stats"]
 end
 
 --- One line when a quest is handed in with rewards to choose from, and one
@@ -401,21 +402,21 @@ function QuestRewards:Announce(final)
     end
     self.waitToken = nil
     for _, upgrade in ipairs(given) do
-        ns.Print(("this quest gives you %s, an upgrade for %s |c%s%s|r"):format(
+        ns.Print(L.Format("this quest gives you %s, an upgrade for %s |c%s%s|r",
             upgrade.link, upgrade.result.specName, ns.COLORS.upgrade, How(upgrade.result)))
     end
     if choices < 2 then return end
     if unknown > 0 and not index then return end
     if index then
-        ns.Print(("best reward for %s: %s |c%s%s|r"):format(
+        ns.Print(L.Format("best reward for %s: %s |c%s%s|r",
             result.specName, link, ns.COLORS.upgrade, How(result)))
     else
-        local none = #given > 0 and "none of the rewards to choose from beats what you wear"
-            or "none of these rewards beats what you wear"
+        local none = #given > 0 and L["none of the rewards to choose from beats what you wear"]
+            or L["none of these rewards beats what you wear"]
         local _, richLink, copper = self:MostValuable()
         local money = copper and ns.Finder and ns.Finder.Money(copper)
         if richLink and money then
-            ns.Print(("|c%s%s;|r take %s, it sells for the most (%s)"):format(
+            ns.Print(L.Format("|c%s%s;|r take %s, it sells for the most (%s)",
                 ns.COLORS.muted, none, richLink, money))
         else
             ns.Print(("|c%s%s|r"):format(ns.COLORS.muted, none))

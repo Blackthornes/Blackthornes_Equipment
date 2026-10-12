@@ -11,6 +11,7 @@
 -- bound without the player's say.
 
 local _, ns = ...
+local L = ns.L
 
 local Wear = ns.NewModule("Wear")
 
@@ -50,16 +51,16 @@ end
 
 --- Can `link` be put on with a click now? True, or false and why.
 function Wear:Can(link)
-    if InCombat() then return false, "in combat: put it on after the fight" end
+    if InCombat() then return false, L["in combat: put it on after the fight"] end
     if not (Global("C_Item.EquipItemByName") or Global("EquipItemByName")) then
-        return false, "this game client can't equip from an addon"
+        return false, L["this game client can't equip from an addon"]
     end
-    if not Wear.Find(link) then return false, "it's not in your bags" end
+    if not Wear.Find(link) then return false, L["it's not in your bags"] end
     local ok, result = pcall(ns.Compare.JudgeCarried, ns.Compare, link)
     if not (ok and ns.Compare.WearableUpgrade(result)) then
-        return false, "it's not an upgrade you can wear now"
+        return false, L["it's not an upgrade you can wear now"]
     end
-    if result.skill then return false, ("train %s first"):format(result.skill) end
+    if result.skill then return false, L.Format("train %s first", result.skill) end
     return true, nil, result
 end
 
@@ -68,13 +69,13 @@ end
 function Wear:PutOn(link)
     local can, why, result = self:Can(link)
     if not can then
-        ns.Print(("can't put that on: %s."):format(why))
+        ns.Print(L.Format("can't put that on: %s.", why))
         return false, why
     end
     local equip = Global("C_Item.EquipItemByName") or Global("EquipItemByName")
     local ok = pcall(equip, Items.PlainLink(link), result and result.slot or nil)
     if not ok then
-        ns.Print("the game wouldn't put that on just now.")
+        ns.Print(L["the game wouldn't put that on just now."])
         return false, "refused"
     end
     return true

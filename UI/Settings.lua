@@ -10,6 +10,7 @@
 -- game's own Options > AddOns list. Nothing here deletes anything.
 
 local _, ns = ...
+local L = ns.L
 
 local SettingsUI = ns.NewModule("SettingsUI")
 
@@ -34,14 +35,14 @@ local TITLE = "Blackthornes Equipment"
 -- The pages along the top (UI/SettingsPages.lua), as Tradeskills' Settings
 -- tab has them. Every setting kept its saved name; only its place moved.
 local PAGES = {
-    { key = "gear", text = "GEAR",
-      tip = "How gear is judged, and the arrows, tooltip lines and chat lines that say so" },
-    { key = "hunts", text = "UPGRADE HUNTS",
-      tip = "Where to get upgrades, tracking them, map pins and the banner" },
-    { key = "quest", text = "UPGRADE QUEST",
-      tip = "The upgrade quest, its panel and the arrow that points the way" },
-    { key = "general", text = "GENERAL",
-      tip = "The minimap button, window positions, text size and help" },
+    { key = "gear", text = L["GEAR"],
+      tip = L["How gear is judged, and the arrows, tooltip lines and chat lines that say so"] },
+    { key = "hunts", text = L["UPGRADE HUNTS"],
+      tip = L["Where to get upgrades, tracking them, map pins and the banner"] },
+    { key = "quest", text = L["UPGRADE QUEST"],
+      tip = L["The upgrade quest, its panel and the arrow that points the way"] },
+    { key = "general", text = L["GENERAL"],
+      tip = L["The minimap button, window positions, text size and help"] },
 }
 
 --------------------------------------------------------------------------------
@@ -105,16 +106,16 @@ end
 function SettingsUI:SpecHint()
     local spec, why, class = ns.Weights:CurrentSpec()
     if not spec then
-        return ("There are no stat weights for %s yet."):format(class or "this class")
+        return L.Format("There are no stat weights for %s yet.", class or L["this class"])
     end
 
-    local name = ns.Weights.SPECS[class][spec].name
+    local name = ns.Weights:SpecName(class, spec)
     if why == "picked" then
-        return ("Judging gear as %s because you picked it. Auto goes back to your talents."):format(name)
+        return L.Format("Judging gear as %s because you picked it. Auto goes back to your talents.", name)
     elseif why == "talents" then
-        return ("Judging gear as %s, the tree with most of your talent points."):format(name)
+        return L.Format("Judging gear as %s, the tree with most of your talent points.", name)
     end
-    return ("Judging gear as %s until your talents say otherwise."):format(name)
+    return L.Format("Judging gear as %s until your talents say otherwise.", name)
 end
 
 -- Where each window keeps its spot in the saved data.
@@ -209,7 +210,7 @@ function SettingsUI:Build()
     local footer = Theme.CreateLabel(frame, "tiny", "dim")
     footer:SetPoint("BOTTOMLEFT", PADDING, 14)
     footer:SetPoint("BOTTOMRIGHT", -PADDING, 14)
-    footer:SetText("Changes save as you make them.")
+    footer:SetText(L["Changes save as you make them."])
     self.footer = footer
 
     frame:Hide()
@@ -229,7 +230,7 @@ function SettingsUI:BuildHeader()
 
     local subtitle = Theme.CreateLabel(header, "normal", "muted")
     subtitle:SetPoint("LEFT", PADDING - RIM, -4)
-    subtitle:SetText("Settings")
+    subtitle:SetText(L["Settings"])
 
     -- Clear of the close gem on the corner.
     local version = Theme.CreateLabel(header, "tiny", "dim", "RIGHT")
@@ -260,16 +261,16 @@ function SettingsUI:BuildGear()
     local controls = self.controls
     local pages = self.pages
 
-    pages:Section("gear", 1, "JUDGING GEAR")
+    pages:Section("gear", 1, L["JUDGING GEAR"])
 
-    local specRow = pages:Row("gear", 1, "Judge gear as", function() return SettingsUI:SpecHint() end)
+    local specRow = pages:Row("gear", 1, L["Judge gear as"], function() return SettingsUI:SpecHint() end)
     controls.spec = Widgets.CreateStepper(specRow, {
         min = 1, max = #SettingsUI:SpecChoices(), step = 1, value = 1,
         format = function(index)
             local choices, specs = SettingsUI:SpecChoices()
             local key = choices[index]
-            if key == "auto" or not key then return "Auto" end
-            return specs[key].name
+            if key == "auto" or not key then return L["Auto"] end
+            return ns.Weights.Label(specs[key].name)
         end,
         onChange = function(index)
             local choices = SettingsUI:SpecChoices()
@@ -280,21 +281,21 @@ function SettingsUI:BuildGear()
     controls.spec:SetPoint("TOPLEFT", CONTROL_X, 0)
     self.specRow = specRow
 
-    local weightsRow = pages:Row("gear", 1, "Stat weights",
-        "How much each stat counts when gear is judged. Change them for any class and spec. Same as /beq weights.")
-    controls.weights = Widgets.CreateButton(weightsRow, "Change weights", function()
+    local weightsRow = pages:Row("gear", 1, L["Stat weights"],
+        L["How much each stat counts when gear is judged. Change them for any class and spec. Same as /beq weights."])
+    controls.weights = Widgets.CreateButton(weightsRow, L["Change weights"], function()
         if ns.WeightsUI then ns.WeightsUI:Show() end
     end, { width = 120, height = 20 })
     controls.weights:SetPoint("TOPLEFT", CONTROL_X, 0)
     self.weightsRow = weightsRow
 
-    local tooltipRow = pages:Row("gear", 1, "Tooltip line",
-        "Whether gear beats what you wear, and where to learn a weapon skill.")
-    controls.tooltip = Tick(tooltipRow, "Show it", "tooltipLine", true)
+    local tooltipRow = pages:Row("gear", 1, L["Tooltip line"],
+        L["Whether gear beats what you wear, and where to learn a weapon skill."])
+    controls.tooltip = Tick(tooltipRow, L["Show it"], "tooltipLine", true)
 
-    local arrowRow = pages:Row("gear", 1, "Upgrade arrows",
-        "A green arrow on upgrades you can wear now: in your bags, on the best quest reward and on loot up for a roll.")
-    controls.arrows = Tick(arrowRow, "Show them", "bagArrows", true, function()
+    local arrowRow = pages:Row("gear", 1, L["Upgrade arrows"],
+        L["A green arrow on upgrades you can wear now: in your bags, on the best quest reward and on loot up for a roll."])
+    controls.arrows = Tick(arrowRow, L["Show them"], "bagArrows", true, function()
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
         if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
         if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
@@ -304,55 +305,55 @@ function SettingsUI:BuildGear()
         end
     end)
 
-    local coinRow = pages:Row("gear", 1, "Sell coins",
-        "A gold coin on gear in your bags that is not an upgrade and is worth selling to a vendor: white gear, and soulbound green or better gear when you can't disenchant it. Never on gathering tools.")
-    controls.sellCoins = Tick(coinRow, "Show them", "bagSellCoins", true, function()
+    local coinRow = pages:Row("gear", 1, L["Sell coins"],
+        L["A gold coin on gear in your bags that is not an upgrade and is worth selling to a vendor: white gear, and soulbound green or better gear when you can't disenchant it. Never on gathering tools."])
+    controls.sellCoins = Tick(coinRow, L["Show them"], "bagSellCoins", true, function()
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
     end)
 
-    local takeRow = pages:Row("gear", 1, "Take reward button",
-        "When you hand in a quest with rewards to choose from, a button under the quest window takes the best one in a click: the biggest upgrade, or the one that sells for the most.")
-    controls.rewardButton = Tick(takeRow, "Show it", "rewardButton", true, function()
+    local takeRow = pages:Row("gear", 1, L["Take reward button"],
+        L["When you hand in a quest with rewards to choose from, a button under the quest window takes the best one in a click: the biggest upgrade, or the one that sells for the most."])
+    controls.rewardButton = Tick(takeRow, L["Show it"], "rewardButton", true, function()
         if ns.QuestRewards then pcall(ns.QuestRewards.UpdateTake, ns.QuestRewards) end
     end)
 
-    local chatRow = pages:Row("gear", 1, "Upgrade in chat",
-        "One line in chat when an upgrade you can wear now lands in your bags.")
-    controls.upgradeChat = Tick(chatRow, "Say so", "upgradeChat", true)
+    local chatRow = pages:Row("gear", 1, L["Upgrade in chat"],
+        L["One line in chat when an upgrade you can wear now lands in your bags."])
+    controls.upgradeChat = Tick(chatRow, L["Say so"], "upgradeChat", true)
     self.chatRow = chatRow
 
-    pages:Section("gear", 2, "GEAR WINDOW")
+    pages:Section("gear", 2, L["GEAR WINDOW"])
 
-    local windowRow = pages:Row("gear", 2, "Gear window",
-        "What you wear and how each piece scores. Same as /beq window, or /beq on its own.")
-    controls.openWindow = Widgets.CreateButton(windowRow, "Open it", function()
+    local windowRow = pages:Row("gear", 2, L["Gear window"],
+        L["What you wear and how each piece scores. Same as /beq window, or /beq on its own."])
+    controls.openWindow = Widgets.CreateButton(windowRow, L["Open it"], function()
         ns.HandleSlash("window")
     end, { width = 100, height = 20, primary = true })
     controls.openWindow:SetPoint("TOPLEFT", CONTROL_X, 0)
 
-    local _, bagsButton = CommandRow(pages, "gear", 2, "Gear in your bags",
-        "Judges every piece of gear in your bags against what you wear, in chat. Same as /beq bags.",
-        "Judge it", "bags")
+    local _, bagsButton = CommandRow(pages, "gear", 2, L["Gear in your bags"],
+        L["Judges every piece of gear in your bags against what you wear, in chat. Same as /beq bags."],
+        L["Judge it"], "bags")
     controls.bags = bagsButton
 
-    pages:Section("gear", 2, "BAGS AND TOOLTIPS")
+    pages:Section("gear", 2, L["BAGS AND TOOLTIPS"])
 
-    local gamepadRow = pages:Row("gear", 2, "Bag sort button",
-        "Hide the controller bag button that covers the sort button on the combined backpack.")
-    controls.hideGamepadBag = Tick(gamepadRow, "Hide it", "hideGamepadBag", true, function()
+    local gamepadRow = pages:Row("gear", 2, L["Bag sort button"],
+        L["Hide the controller bag button that covers the sort button on the combined backpack."])
+    controls.hideGamepadBag = Tick(gamepadRow, L["Hide it"], "hideGamepadBag", true, function()
         if ns.BagIcons then pcall(ns.BagIcons.ApplyGamepadBag, ns.BagIcons) end
     end)
 
-    local suffixRow = pages:Row("gear", 2, "Random roll names",
-        "Names a green's random roll on its tooltip (of the Monkey), which Forever leaves off.")
-    controls.suffixLine = Tick(suffixRow, "Show them", "suffixLine", true)
+    local suffixRow = pages:Row("gear", 2, L["Random roll names"],
+        L["Names a green's random roll on its tooltip (of the Monkey), which Forever leaves off."])
+    controls.suffixLine = Tick(suffixRow, L["Show them"], "suffixLine", true)
 
-    local altRow = pages:Row("gear", 2, "Upgrades for your alts",
-        "On gear that does nothing for you, a tooltip line names the other character it helps most, and by how much.")
-    controls.altTooltipLine = Tick(altRow, "Show them", "altTooltipLine", true)
+    local altRow = pages:Row("gear", 2, L["Upgrades for your alts"],
+        L["On gear that does nothing for you, a tooltip line names the other character it helps most, and by how much."])
+    controls.altTooltipLine = Tick(altRow, L["Show them"], "altTooltipLine", true)
 
-    local weaponsRow, weaponsButton = CommandRow(pages, "gear", 2, "Untrained weapons",
-        function() return SettingsUI:WeaponsHint() end, "Show them", "weapons show")
+    local weaponsRow, weaponsButton = CommandRow(pages, "gear", 2, L["Untrained weapons"],
+        function() return SettingsUI:WeaponsHint() end, L["Show them"], "weapons show")
     controls.weapons = weaponsButton
     self.weaponsRow = weaponsRow
 end
@@ -363,24 +364,24 @@ function SettingsUI:WeaponsHint()
     local skills = ns.WeaponSkills
     local names = skills and skills:IgnoredNames() or {}
     if #names == 0 then
-        return "Weapons you haven't trained still show as upgrades, with where to learn them. Their banner can point the arrow at the weapon master, or ignore that type until you train it."
+        return L["Weapons you haven't trained still show as upgrades, with where to learn them. Their banner can point the arrow at the weapon master, or ignore that type until you train it."]
     end
-    return ("Ignored until you train them: %s. Show them brings them back. Same as /beq weapons show."):format(
+    return L.Format("Ignored until you train them: %s. Show them brings them back. Same as /beq weapons show.",
         table.concat(names, ", "))
 end
 
 -- The upgrade hunt switches: saved key, page column, label, what it does,
 -- the tick box's words, and the module to tell when it changes.
 local HUNTING = {
-    { "slotUpgrades", 1, "Character sheet",
-        "Hover a gear slot for the upgrades on offer for it; Alt-click it to track one.", "Show them" },
-    { "upgradeToast", 1, "Upgrade banner",
-        "A glowing banner when an upgrade lands in your bags, or a tracked one is got.", "Show it" },
-    { "showTracker", 2, "Upgrade tracker",
-        "The panel of upgrades you are tracking. Right-click a row in Where to get upgrades to track it.",
-        "Show it", "TrackerPanel" },
-    { "mapPins", 2, "Map pins",
-        "Pins on the world map where each tracked upgrade comes from.", "Show them", "MapPins" },
+    { "slotUpgrades", 1, L["Character sheet"],
+        L["Hover a gear slot for the upgrades on offer for it; Alt-click it to track one."], L["Show them"] },
+    { "upgradeToast", 1, L["Upgrade banner"],
+        L["A glowing banner when an upgrade lands in your bags, or a tracked one is got."], L["Show it"] },
+    { "showTracker", 2, L["Upgrade tracker"],
+        L["The panel of upgrades you are tracking. Right-click a row in Where to get upgrades to track it."],
+        L["Show it"], "TrackerPanel" },
+    { "mapPins", 2, L["Map pins"],
+        L["Pins on the world map where each tracked upgrade comes from."], L["Show them"], "MapPins" },
 }
 
 --- Upgrade hunts: finding upgrades on the left, tracking them on the right.
@@ -388,11 +389,11 @@ function SettingsUI:BuildHunts()
     local controls = self.controls
     local pages = self.pages
 
-    pages:Section("hunts", 1, "FINDING UPGRADES")
+    pages:Section("hunts", 1, L["FINDING UPGRADES"])
 
-    local _, findButton = CommandRow(pages, "hunts", 1, "Where to get upgrades",
-        "Upgrades from vendors, quests, dungeons and crafting, best first. Same as /beq find.",
-        "Open it", "find", { primary = true })
+    local _, findButton = CommandRow(pages, "hunts", 1, L["Where to get upgrades"],
+        L["Upgrades from vendors, quests, dungeons and crafting, best first. Same as /beq find."],
+        L["Open it"], "find", { primary = true })
     controls.find = findButton
 
     local function HuntRow(entry)
@@ -407,12 +408,12 @@ function SettingsUI:BuildHunts()
     HuntRow(HUNTING[1])
     HuntRow(HUNTING[2])
 
-    pages:Section("hunts", 2, "TRACKING")
+    pages:Section("hunts", 2, L["TRACKING"])
 
     HuntRow(HUNTING[3])
-    local _, trackedButton = CommandRow(pages, "hunts", 2, "Tracked upgrades",
-        "Lists in chat the upgrades you are tracking and where each comes from. Same as /beq tracked.",
-        "List them", "tracked")
+    local _, trackedButton = CommandRow(pages, "hunts", 2, L["Tracked upgrades"],
+        L["Lists in chat the upgrades you are tracking and where each comes from. Same as /beq tracked."],
+        L["List them"], "tracked")
     controls.tracked = trackedButton
     HuntRow(HUNTING[4])
 end
@@ -422,56 +423,56 @@ function SettingsUI:BuildQuest()
     local controls = self.controls
     local pages = self.pages
 
-    pages:Section("quest", 1, "UPGRADE QUEST")
+    pages:Section("quest", 1, L["UPGRADE QUEST"])
 
     -- Off unless the player turns it on, unlike the switches on the other
     -- pages.
-    local questRow = pages:Row("quest", 1, "Upgrade quest",
-        "A quest for your best next upgrade, with the steps to go and get it.")
-    controls.upgradeQuest = Widgets.CreateCheckbox(questRow, "Turn it on", function(checked)
+    local questRow = pages:Row("quest", 1, L["Upgrade quest"],
+        L["A quest for your best next upgrade, with the steps to go and get it."])
+    controls.upgradeQuest = Widgets.CreateCheckbox(questRow, L["Turn it on"], function(checked)
         if ns.UpgradeQuest then ns.UpgradeQuest:SetEnabled(checked) end
     end, false)
     controls.upgradeQuest:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- The /beq quest commands as buttons, each doing just what its command
     -- does, chat line included.
-    local thisRow = pages:Row("quest", 1, "This upgrade",
-        "Ignore never offers it again and moves on to the next best. Switch takes the upgrade a level up opened.")
-    controls.questSkip = Widgets.CreateButton(thisRow, "Ignore", function()
+    local thisRow = pages:Row("quest", 1, L["This upgrade"],
+        L["Ignore never offers it again and moves on to the next best. Switch takes the upgrade a level up opened."])
+    controls.questSkip = Widgets.CreateButton(thisRow, L["Ignore"], function()
         ns.HandleSlash("quest ignore")
     end, { width = 64, height = 20 })
     controls.questSkip:SetPoint("TOPLEFT", CONTROL_X, 0)
-    Explain(controls.questSkip, "Ignore this upgrade",
-        "Never offer the upgrade you are following again on this character, and get a quest for the next best one. Ignored brings it back. Same as /beq quest ignore.")
-    controls.questSwitch = Widgets.CreateButton(thisRow, "Switch", function()
+    Explain(controls.questSkip, L["Ignore this upgrade"],
+        L["Never offer the upgrade you are following again on this character, and get a quest for the next best one. Ignored brings it back. Same as /beq quest ignore."])
+    controls.questSwitch = Widgets.CreateButton(thisRow, L["Switch"], function()
         ns.HandleSlash("quest switch")
     end, { width = 72, height = 20, primary = true })
     controls.questSwitch:SetPoint("LEFT", controls.questSkip, "RIGHT", 12, 0)
-    Explain(controls.questSwitch, "Switch to the new upgrade",
-        "Follow the upgrade your new level opened instead. Lit when one is on offer. Same as /beq quest switch.")
+    Explain(controls.questSwitch, L["Switch to the new upgrade"],
+        L["Follow the upgrade your new level opened instead. Lit when one is on offer. Same as /beq quest switch."])
 
-    local panelRow = pages:Row("quest", 1, "Quest panel",
-        "Open shows the panel (and turns the quest on). Ignored lists the upgrades you ignored, to restore them.")
+    local panelRow = pages:Row("quest", 1, L["Quest panel"],
+        L["Open shows the panel (and turns the quest on). Ignored lists the upgrades you ignored, to restore them."])
     self.questPanelRow = panelRow
-    controls.questOpen = Widgets.CreateButton(panelRow, "Open", function()
+    controls.questOpen = Widgets.CreateButton(panelRow, L["Open"], function()
         ns.HandleSlash("quest")
     end, { width = 64, height = 20 })
     controls.questOpen:SetPoint("TOPLEFT", CONTROL_X, 0)
-    Explain(controls.questOpen, "Open the quest panel",
-        "Shows the upgrade quest panel, unfolded, and turns the quest on if it is off. Same as /beq quest.")
+    Explain(controls.questOpen, L["Open the quest panel"],
+        L["Shows the upgrade quest panel, unfolded, and turns the quest on if it is off. Same as /beq quest."])
     -- The list of ignored upgrades, each with Restore, and Restore all
     -- (UI/IgnoredWindow.lua).
-    controls.questReset = Widgets.CreateButton(panelRow, "Ignored", function()
+    controls.questReset = Widgets.CreateButton(panelRow, L["Ignored"], function()
         ns.HandleSlash("quest ignored")
     end, { width = 84, height = 20 })
     controls.questReset:SetPoint("LEFT", controls.questOpen, "RIGHT", 12, 0)
-    Explain(controls.questReset, "Ignored upgrades",
-        "Lists the upgrades you ignored on this character, to restore one or all of them. Same as /beq quest ignored.")
+    Explain(controls.questReset, L["Ignored upgrades"],
+        L["Lists the upgrades you ignored on this character, to restore one or all of them. Same as /beq quest ignored."])
 
     -- The upgrade quest panel's size, as its gold corner grip and /beq quest
     -- size set it (the owner asked 2026-10-07). The size in use is lit green
     -- and named in the row's description, a dragged one by its percent.
-    local questSizeRow = pages:Row("quest", 1, "Panel size", "")
+    local questSizeRow = pages:Row("quest", 1, L["Panel size"], "")
     self.questSizeRow = questSizeRow
     controls.questSizes = {}
     local previous
@@ -484,8 +485,8 @@ function SettingsUI:BuildQuest()
         else
             button:SetPoint("TOPLEFT", CONTROL_X, 0)
         end
-        Explain(button, ("%s quest panel"):format(size.text),
-            ("Draws the upgrade quest panel at %d%%, text and all. Same as /beq quest size %s."):format(
+        Explain(button, L.Format("%s quest panel", size.text),
+            L.Format("Draws the upgrade quest panel at %d%%, text and all. Same as /beq quest size %s.",
                 math.floor(size.scale * 100 + 0.5), size.key))
         button.scale = size.scale
         controls.questSizes[#controls.questSizes + 1] = button
@@ -494,8 +495,8 @@ function SettingsUI:BuildQuest()
 
     -- Which tab the panel shows, as clicking a tab or /beq quest vendor
     -- (quest, dungeon, crafted) does.
-    local tabRow = pages:Row("quest", 1, "Quest tab",
-        "Each kind of source keeps its own upgrade. Pick the one the panel shows.")
+    local tabRow = pages:Row("quest", 1, L["Quest tab"],
+        L["Each kind of source keeps its own upgrade. Pick the one the panel shows."])
     controls.questTab = Widgets.CreateStepper(tabRow, {
         min = 1, max = 4, step = 1, value = 1,
         format = function(index)
@@ -513,72 +514,73 @@ function SettingsUI:BuildQuest()
     -- Two switches that are also tick boxes on the quest panel: Solo only
     -- (the same as in Where to get upgrades) and Zone swap, the panel's
     -- "Change on a new zone" (the owner asked 2026-10-08), side by side.
-    local soloRow = pages:Row("quest", 1, "Quest filters",
-        "Solo only leaves out group, dungeon, raid and battleground quests. Zone swap lets This zone only change quests in a new zone.")
-    controls.soloQuests = Widgets.CreateCheckbox(soloRow, "Solo only", function(checked)
+    local soloRow = pages:Row("quest", 1, L["Quest filters"],
+        L["Solo only leaves out group, dungeon, raid and battleground quests. Zone swap lets This zone only change quests in a new zone."])
+    controls.soloQuests = Widgets.CreateCheckbox(soloRow, L["Solo only"], function(checked)
         if ns.Finder then ns.Finder:SetSoloOnly(checked) end
     end, false)
     controls.soloQuests:SetPoint("TOPLEFT", CONTROL_X, -2)
-    Explain(controls.soloQuests, "Solo quests only",
-        "Leaves out quests that need a group, a dungeon, a raid or a battleground. The same switch as in Where to get upgrades and on the quest panel.")
-    controls.questZoneSwap = Widgets.CreateCheckbox(soloRow, "Zone swap", function(checked)
+    Explain(controls.soloQuests, L["Solo quests only"],
+        L["Leaves out quests that need a group, a dungeon, a raid or a battleground. The same switch as in Where to get upgrades and on the quest panel."])
+    controls.questZoneSwap = Widgets.CreateCheckbox(soloRow, L["Zone swap"], function(checked)
         if ns.UpgradeQuest then ns.UpgradeQuest:SetZoneSwap(checked) end
     end, true)
-    controls.questZoneSwap:SetPoint("TOPLEFT", CONTROL_X + 92, -2)
-    Explain(controls.questZoneSwap, "Change on a new zone",
-        "With This zone only ticked on the quest panel, entering a new zone swaps your quests for ones there. Untick it to keep them as you travel. The same switch as Change on a new zone on the panel.")
+    -- Past the first box however long its words run (German runs longer).
+    controls.questZoneSwap:SetPoint("TOPLEFT", CONTROL_X + math.max(92, controls.soloQuests:GetWidth() + 12), -2)
+    Explain(controls.questZoneSwap, L["Change on a new zone"],
+        L["With This zone only ticked on the quest panel, entering a new zone swaps your quests for ones there. Untick it to keep them as you travel. The same switch as Change on a new zone on the panel."])
 
     -- The quest arrow, as the Arrow button on the quest panel and /beq
     -- arrow switch it, and /beq arrow check and next as buttons.
-    pages:Section("quest", 2, "QUEST ARROW")
+    pages:Section("quest", 2, L["QUEST ARROW"])
 
-    local arrowRow = pages:Row("quest", 2, "Quest arrow",
-        "A dial that points the way to the quest's next place. Click a step on the panel to aim it there. Also /beq arrow.")
-    controls.questArrow = Widgets.CreateCheckbox(arrowRow, "Show it", function(checked)
+    local arrowRow = pages:Row("quest", 2, L["Quest arrow"],
+        L["A dial that points the way to the quest's next place. Click a step on the panel to aim it there. Also /beq arrow."])
+    controls.questArrow = Widgets.CreateCheckbox(arrowRow, L["Show it"], function(checked)
         if ns.QuestArrow then ns.QuestArrow:SetOn(checked) end
     end, false)
     controls.questArrow:SetPoint("TOPLEFT", CONTROL_X, -2)
-    controls.questArrowCheck = Widgets.CreateButton(arrowRow, "Check", function()
+    controls.questArrowCheck = Widgets.CreateButton(arrowRow, L["Check"], function()
         ns.HandleSlash("arrow check")
     end, { width = 64, height = 20 })
-    controls.questArrowCheck:SetPoint("TOPLEFT", CONTROL_X + 96, 0)
-    Explain(controls.questArrowCheck, "Check the quest arrow",
-        "Lists in chat what the arrow can read where you stand: your spot, your facing, the map. Same as /beq arrow check.")
+    controls.questArrowCheck:SetPoint("TOPLEFT", CONTROL_X + math.max(96, controls.questArrow:GetWidth() + 12), 0)
+    Explain(controls.questArrowCheck, L["Check the quest arrow"],
+        L["Lists in chat what the arrow can read where you stand: your spot, your facing, the map. Same as /beq arrow check."])
 
-    local _, nextButton = CommandRow(pages, "quest", 2, "Next place",
-        "Points the arrow at the next place in the quest's steps. Same as /beq arrow next.",
-        "Next", "arrow next")
+    local _, nextButton = CommandRow(pages, "quest", 2, L["Next place"],
+        L["Points the arrow at the next place in the quest's steps. Same as /beq arrow next."],
+        L["Next"], "arrow next")
     controls.questArrowNext = nextButton
 
     -- TomTom's arrow instead of the dial, when TomTom is installed.
-    local tomtomRow = pages:Row("quest", 2, "Use TomTom",
-        "With TomTom installed, its arrow points the way instead of this one. Same as /beq arrow tomtom.")
-    controls.useTomTom = Widgets.CreateCheckbox(tomtomRow, "When installed", function(checked)
+    local tomtomRow = pages:Row("quest", 2, L["Use TomTom"],
+        L["With TomTom installed, its arrow points the way instead of this one. Same as /beq arrow tomtom."])
+    controls.useTomTom = Widgets.CreateCheckbox(tomtomRow, L["When installed"], function(checked)
         if ns.TomTom then ns.TomTom:SetOn(checked) end
     end, true)
     controls.useTomTom:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- The panel's Quest log tab (UI/QuestLogTab.lua) and its two tick boxes.
-    pages:Section("quest", 2, "QUEST LOG")
+    pages:Section("quest", 2, L["QUEST LOG"])
 
-    local logRow = pages:Row("quest", 2, "Quest log",
-        "Your quests on a tab of the quest panel, as the game's tracker shows them. Same as /beq quest log.")
-    controls.questLogOpen = Widgets.CreateButton(logRow, "Show it", function()
+    local logRow = pages:Row("quest", 2, L["Quest log"],
+        L["Your quests on a tab of the quest panel, as the game's tracker shows them. Same as /beq quest log."])
+    controls.questLogOpen = Widgets.CreateButton(logRow, L["Show it"], function()
         ns.HandleSlash("quest log")
     end, { width = 64, height = 20 })
     controls.questLogOpen:SetPoint("TOPLEFT", CONTROL_X, 0)
-    Explain(controls.questLogOpen, "Show the quest log",
-        "Opens the quest panel on its Quest log tab, and turns the upgrade quest on if it is off. Same as /beq quest log.")
-    controls.questLogTracked = Widgets.CreateCheckbox(logRow, "Tracked only", function(checked)
+    Explain(controls.questLogOpen, L["Show the quest log"],
+        L["Opens the quest panel on its Quest log tab, and turns the upgrade quest on if it is off. Same as /beq quest log."])
+    controls.questLogTracked = Widgets.CreateCheckbox(logRow, L["Tracked only"], function(checked)
         if ns.QuestLogUI then ns.QuestLogUI:SetTrackedOnly(checked) end
     end, false)
-    controls.questLogTracked:SetPoint("TOPLEFT", CONTROL_X + 76, -2)
-    Explain(controls.questLogTracked, "Tracked only",
-        "The Quest log tab lists only the quests you track. The same tick box as on the tab.")
+    controls.questLogTracked:SetPoint("TOPLEFT", CONTROL_X + math.max(76, controls.questLogOpen:GetWidth() + 12), -2)
+    Explain(controls.questLogTracked, L["Tracked only"],
+        L["The Quest log tab lists only the quests you track. The same tick box as on the tab."])
 
-    local trackerRow = pages:Row("quest", 2, "Game's tracker",
-        "Hides the game's own quest tracker while the quest panel is up, so your quests show in one place.")
-    controls.hideQuestTracker = Widgets.CreateCheckbox(trackerRow, "Hide it", function(checked)
+    local trackerRow = pages:Row("quest", 2, L["Game's tracker"],
+        L["Hides the game's own quest tracker while the quest panel is up, so your quests show in one place."])
+    controls.hideQuestTracker = Widgets.CreateCheckbox(trackerRow, L["Hide it"], function(checked)
         if ns.QuestLogUI then ns.QuestLogUI:SetHidesTracker(checked) end
     end, false)
     controls.hideQuestTracker:SetPoint("TOPLEFT", CONTROL_X, -2)
@@ -589,77 +591,76 @@ function SettingsUI:BuildGeneral()
     local controls = self.controls
     local pages = self.pages
 
-    pages:Section("general", 1, "WINDOWS")
+    pages:Section("general", 1, L["WINDOWS"])
 
-    local minimapRow = pages:Row("general", 1, "Minimap button",
-        "Click it for the gear window, right-click for this page. Drag it to move it. Also /beq minimap.")
-    controls.minimap = Widgets.CreateCheckbox(minimapRow, "Show it", function(checked)
+    local minimapRow = pages:Row("general", 1, L["Minimap button"],
+        L["Click it for the gear window, right-click for this page. Drag it to move it. Also /beq minimap."])
+    controls.minimap = Widgets.CreateCheckbox(minimapRow, L["Show it"], function(checked)
         ns.db.minimapHidden = not checked
         if ns.MinimapButton then ns.MinimapButton:ApplyVisibility() end
     end, true)
     controls.minimap:SetPoint("TOPLEFT", CONTROL_X, -2)
 
-    local positionRow = pages:Row("general", 1, "Window positions",
-        "Moves every Equipment window, and the quest arrow, back where it started, if one ends up off screen.")
-    local reset = Widgets.CreateButton(positionRow, "Put them back", function()
+    local positionRow = pages:Row("general", 1, L["Window positions"],
+        L["Moves every Equipment window, and the quest arrow, back where it started, if one ends up off screen."])
+    local reset = Widgets.CreateButton(positionRow, L["Put them back"], function()
         SettingsUI:ResetPositions()
     end, { width = 100, height = 20 })
     reset:SetPoint("TOPLEFT", CONTROL_X, 0)
 
     -- Bigger letters in the same windows, as Tradeskills has. Every size
     -- is read as text is drawn, so it waits for /reload.
-    local textRow = pages:Row("general", 1, "Text size",
-        "Large and Larger add a point or two to all of this addon's text. Takes effect after /reload.")
+    local textRow = pages:Row("general", 1, L["Text size"],
+        L["Large and Larger add a point or two to all of this addon's text. Takes effect after /reload."])
     controls.textSize = ns.SettingsPages.TextSizeControl(textRow, CONTROL_X, function() return ns.db end)
 
     -- Asked 2026-10-10: the game's own look for players who would rather
     -- the windows matched the rest of their screen. Read at login, so it
     -- waits for /reload as Text size does. See UI/BlizzardLook.lua. A
     -- stepper, as Text size is: this addon's Widgets have no dropdown.
-    local styleRow = pages:Row("general", 1, "Window style",
-        "Titanforged is the house look, with a gold rim and glowing edges. Blizzard uses the game's own frames, red buttons and tick boxes. Takes effect after /reload.")
+    local styleRow = pages:Row("general", 1, L["Window style"],
+        L["Titanforged is the house look, with a gold rim and glowing edges. Blizzard uses the game's own frames, red buttons and tick boxes. Takes effect after /reload."])
     controls.windowStyle = self:WindowStyleControl(styleRow)
 
-    pages:Section("general", 2, "ADVANCED")
+    pages:Section("general", 2, L["ADVANCED"])
 
-    local debugRow = pages:Row("general", 2, "Debug output",
-        "Extra messages in chat, to help track down a problem.")
-    controls.debug = Tick(debugRow, "Enabled", "debug", false)
+    local debugRow = pages:Row("general", 2, L["Debug output"],
+        L["Extra messages in chat, to help track down a problem."])
+    controls.debug = Tick(debugRow, L["Enabled"], "debug", false)
 
     -- Core/SisterNote.lua: one chat line, once, naming the Blackthornes
     -- addons the player does not have. Off here is off in all of them.
-    local sistersRow = pages:Row("general", 2, "Sister addons",
-        "Once, a few seconds after login, says in chat which Blackthornes addons you don't have "
-        .. "and what each adds. Turning it off here turns it off in all of them. Same as /beq sisters.")
-    controls.sisters = Widgets.CreateCheckbox(sistersRow, "Mention them", function(checked)
+    local sistersRow = pages:Row("general", 2, L["Sister addons"],
+        L["Once, a few seconds after login, says in chat which Blackthornes addons you don't have and what each adds. Turning it off here turns it off in all of them. Same as /beq sisters."])
+    controls.sisters = Widgets.CreateCheckbox(sistersRow, L["Mention them"], function(checked)
         ns.SisterNote:SetOn(checked)
     end, true)
     controls.sisters:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- /beq perf and /beq perf clear as buttons.
-    local speedRow = pages:Row("general", 2, "Speed check",
-        "If the game hitches, Show lists in chat what Equipment spent longest on. Clear starts the count again.")
-    controls.perfShow = Widgets.CreateButton(speedRow, "Show", function()
+    local speedRow = pages:Row("general", 2, L["Speed check"],
+        L["If the game hitches, Show lists in chat what Equipment spent longest on. Clear starts the count again."])
+    controls.perfShow = Widgets.CreateButton(speedRow, L["Show"], function()
         ns.HandleSlash("perf")
     end, { width = 64, height = 20 })
     controls.perfShow:SetPoint("TOPLEFT", CONTROL_X, 0)
-    Explain(controls.perfShow, "Show what took longest",
-        "Lists in chat the slowest things Equipment did since you logged in or last cleared. Same as /beq perf.")
-    controls.perfClear = Widgets.CreateButton(speedRow, "Clear", function()
+    Explain(controls.perfShow, L["Show what took longest"],
+        L["Lists in chat the slowest things Equipment did since you logged in or last cleared. Same as /beq perf."])
+    controls.perfClear = Widgets.CreateButton(speedRow, L["Clear"], function()
         ns.HandleSlash("perf clear")
     end, { width = 64, height = 20 })
     controls.perfClear:SetPoint("LEFT", controls.perfShow, "RIGHT", 12, 0)
-    Explain(controls.perfClear, "Start the count again",
-        "Forgets the times so far, so the next Show covers only what happens from now. Same as /beq perf clear.")
+    Explain(controls.perfClear, L["Start the count again"],
+        L["Forgets the times so far, so the next Show covers only what happens from now. Same as /beq perf clear."])
 
-    local _, probeButton = CommandRow(pages, "general", 2, "Client check",
-        "Lists in chat which calls this client has, to help track down a problem. It only reads. Same as /beq probe.",
-        "Check", "probe")
+    local _, probeButton = CommandRow(pages, "general", 2, L["Client check"],
+        L["Lists in chat which calls this client has, to help track down a problem. It only reads. Same as /beq probe."],
+        L["Check"], "probe")
     controls.probe = probeButton
 
-    local _, helpButton = CommandRow(pages, "general", 2, "Commands",
-        "Lists every /beq command in chat. Same as /beq help.",
-        "List them", "help")
+    local _, helpButton = CommandRow(pages, "general", 2, L["Commands"],
+        L["Lists every /beq command in chat. Same as /beq help."],
+        L["List them"], "help")
     controls.help = helpButton
 end
 
@@ -691,11 +692,11 @@ function SettingsUI:WindowStyleControl(row)
     stepper:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- ReloadUI is allowed from a click, and saves everything first.
-    reload = Widgets.CreateButton(row, "Reload", function()
+    reload = Widgets.CreateButton(row, L["Reload"], function()
         if ReloadUI then ReloadUI() end
     end, { width = 60, height = 20 })
     ns.SettingsPages.ReloadUnder(row, stepper, reload)
-    Explain(reload, "Reload", "Reload the interface so the new window style shows (/reload).")
+    Explain(reload, L["Reload"], L["Reload the interface so the new window style shows (/reload)."])
     reload:Hide()
     stepper.reload = reload
 
@@ -755,7 +756,7 @@ function SettingsUI:Refresh()
     if quest and self.questPanelRow then
         local count = 0
         for _ in pairs(quest:Skipped()) do count = count + 1 end
-        controls.questReset:SetText(count > 0 and ("Ignored (%d)"):format(count) or "Ignored")
+        controls.questReset:SetText(count > 0 and L.Format("Ignored (%d)", count) or L["Ignored"])
     end
     if quest then
         for index, tab in ipairs(quest.TABS) do
@@ -785,7 +786,7 @@ function SettingsUI:RefreshQuestSize()
     for _, button in ipairs(self.controls.questSizes) do
         button:SetLabelColor(math.abs(button.scale - scale) < 0.005 and "good" or "gilt")
     end
-    self.questSizeRow:SetDescription(("Now %s. Or drag the gold corner below the panel; right-click it for Normal."):format(
+    self.questSizeRow:SetDescription(L.Format("Now %s. Or drag the gold corner below the panel; right-click it for Normal.",
         panel.ScaleText(scale)))
 end
 
@@ -877,9 +878,9 @@ function SettingsUI:RegisterGameOptions()
 
     local blurb = Theme.CreateLabel(panel, "normal", "text")
     blurb:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
-    blurb:SetText("Equipment's settings have a window of their own.")
+    blurb:SetText(L["Equipment's settings have a window of their own."])
 
-    local open = Widgets.CreateButton(panel, "Open Equipment settings", function()
+    local open = Widgets.CreateButton(panel, L["Open Equipment settings"], function()
         -- The game's panel is left open: hiding one of its frames from here
         -- would run its own code as this addon. Ours opens on top of it.
         SettingsUI:Show()
@@ -888,7 +889,7 @@ function SettingsUI:RegisterGameOptions()
 
     local hint = Theme.CreateLabel(panel, "small", "muted")
     hint:SetPoint("TOPLEFT", open, "BOTTOMLEFT", 0, -10)
-    hint:SetText("Or type /beq settings, or click the minimap button.")
+    hint:SetText(L["Or type /beq settings, or click the minimap button."])
 
     self.optionsPanel = panel
 
@@ -921,7 +922,7 @@ function SettingsUI:OnEnable()
     end
 end
 
-ns.RegisterCommand("settings", "open the settings window", function()
+ns.RegisterCommand("settings", L["open the settings window"], function()
     SettingsUI:Toggle()
 end)
 

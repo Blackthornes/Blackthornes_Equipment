@@ -15,6 +15,7 @@
 -- hidden inside dungeons and while the tab shown has no quest.
 
 local ADDON, ns = ...
+local L = ns.L
 
 local ArrowUI = ns.NewModule("QuestArrowUI")
 
@@ -192,9 +193,9 @@ end
 function ArrowUI:OnClick(button)
     local Arrow = ns.QuestArrow
     if button == "RightButton" then
-        if not Arrow:NextPlace() then ns.Print("no other place in this quest's steps.") end
+        if not Arrow:NextPlace() then ns.Print(L["no other place in this quest's steps."]) end
     elseif not Arrow:NextTab() then
-        ns.Print("no other tab has an upgrade quest.")
+        ns.Print(L["no other tab has an upgrade quest."])
     end
     self.since = STEP
     self:Draw(true)
@@ -203,22 +204,22 @@ end
 --- The close gem: the arrow off until turned on again.
 function ArrowUI:Close()
     ns.QuestArrow:SetOn(false)
-    ns.Print("quest arrow off. The Arrow button on the quest panel, /beq arrow or Settings brings it back.")
+    ns.Print(L["quest arrow off. The Arrow button on the quest panel, /beq arrow or Settings brings it back."])
 end
 
 function ArrowUI:ShowTooltip(owner)
     if not GameTooltip then return end
     GameTooltip:SetOwner(owner, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("Quest arrow", Theme.Unpack("accent"))
+    GameTooltip:AddLine(L["Quest arrow"], Theme.Unpack("accent"))
     local state = self.state
     local target = state and state.target
     if target and target.text then GameTooltip:AddLine(target.text, 1, 1, 1, true) end
     if state and state.count and state.count > 1 then
-        GameTooltip:AddLine(("Place %d of %d"):format(state.index or 1, state.count), 1, 1, 1)
+        GameTooltip:AddLine(L.Format("Place %d of %d", state.index or 1, state.count), 1, 1, 1)
     end
-    GameTooltip:AddLine("Click for the next tab's upgrade quest.", 0.9, 0.9, 0.9)
-    GameTooltip:AddLine("Right-click for the next place.", 0.9, 0.9, 0.9)
-    GameTooltip:AddLine("Drag to move it. The red gem closes it.", 0.9, 0.9, 0.9)
+    GameTooltip:AddLine(L["Click for the next tab's upgrade quest."], 0.9, 0.9, 0.9)
+    GameTooltip:AddLine(L["Right-click for the next place."], 0.9, 0.9, 0.9)
+    GameTooltip:AddLine(L["Drag to move it. The red gem closes it."], 0.9, 0.9, 0.9)
     GameTooltip:Show()
 end
 
@@ -277,10 +278,10 @@ end
 function ArrowUI.Words(state)
     local mode = state.mode
     if mode == "blind" then
-        return "Can't see you here", "The game won't say where you are", "/beq arrow check", "muted"
+        return L["Can't see you here"], L["The game won't say where you are"], "/beq arrow check", "muted"
     end
     if mode == "nowhere" then
-        return "Nowhere to go", state.step or "No step left has a place", "", "muted"
+        return L["Nowhere to go"], state.step or L["No step left has a place"], "", "muted"
     end
     return state.distance or "", state.place or "", state.note or "", state.noteColor or "muted"
 end

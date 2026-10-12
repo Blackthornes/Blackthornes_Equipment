@@ -11,6 +11,7 @@
 -- tooltip says which spec gear is being judged for.
 
 local _, ns = ...
+local L = ns.L
 
 local MinimapButton = ns.NewModule("MinimapButton")
 
@@ -39,9 +40,9 @@ function MinimapButton:SpecLine()
     local ok, spec, _, class = pcall(Weights.CurrentSpec, Weights)
     if not ok then return nil end
     if not spec then
-        return ("No stat weights for %s yet"):format(class or "this class")
+        return L.Format("No stat weights for %s yet", class or L["this class"])
     end
-    return "Judging gear as " .. Weights.SPECS[class][spec].name
+    return L.Format("Judging gear as %s", Weights:SpecName(class, spec))
 end
 
 --- "2 upgrades in your bags", or nil when there are none (or no weights).
@@ -57,7 +58,7 @@ function MinimapButton:UpgradeLine()
     local count = 0
     for _ in pairs(best) do count = count + 1 end
     if count == 0 then return nil end
-    return count == 1 and "1 upgrade in your bags" or ("%d upgrades in your bags"):format(count)
+    return count == 1 and L["1 upgrade in your bags"] or L.Format("%d upgrades in your bags", count)
 end
 
 function MinimapButton:Build()
@@ -169,12 +170,12 @@ function MinimapButton:Build()
         if upgradeLine then GameTooltip:AddLine(upgradeLine, Theme.Unpack("good")) end
 
         if ns.UI and ns.UI.Toggle then
-            GameTooltip:AddLine("Click to open", 0.7, 0.7, 0.7)
-            GameTooltip:AddLine("Right-click for settings", 0.7, 0.7, 0.7)
+            GameTooltip:AddLine(L["Click to open"], 0.7, 0.7, 0.7)
+            GameTooltip:AddLine(L["Right-click for settings"], 0.7, 0.7, 0.7)
         else
-            GameTooltip:AddLine("Click for settings", 0.7, 0.7, 0.7)
+            GameTooltip:AddLine(L["Click for settings"], 0.7, 0.7, 0.7)
         end
-        GameTooltip:AddLine("Drag to move it round the minimap", 0.5, 0.5, 0.5)
+        GameTooltip:AddLine(L["Drag to move it round the minimap"], 0.5, 0.5, 0.5)
         GameTooltip:Show()
     end)
 
@@ -239,10 +240,10 @@ function MinimapButton:OnEnable()
     end
 end
 
-ns.RegisterCommand("minimap", "show or hide the minimap button", function()
+ns.RegisterCommand("minimap", L["show or hide the minimap button"], function()
     if MinimapButton:Toggle() then
-        ns.Print("minimap button shown.")
+        ns.Print(L["minimap button shown."])
     else
-        ns.Print("minimap button hidden. /beq minimap brings it back.")
+        ns.Print(L["minimap button hidden. /beq minimap brings it back."])
     end
 end)

@@ -23,6 +23,7 @@
 -- later (QuestLogUI:RefreshSoon).
 
 local _, ns = ...
+local L = ns.L
 
 local QuestLog = ns.NewModule("QuestLog")
 
@@ -182,7 +183,7 @@ local function Tag(quest)
         name = Plain(name)
         if name then return name end
     end
-    if (quest.group or 0) > 1 then return ("Group (%d)"):format(quest.group) end
+    if (quest.group or 0) > 1 then return L.Format("Group (%d)", quest.group) end
     return nil
 end
 
@@ -200,7 +201,9 @@ function QuestLog:Read()
             zones[#zones + 1] = zone
         elseif line then
             if not zone then
-                zone = { title = "Other", quests = {} }
+                -- `title` stays English: it keys the saved folds. `label` is
+                -- what a list shows for it.
+                zone = { title = "Other", label = L["Other"], quests = {} }
                 zones[#zones + 1] = zone
             end
             State(line)
@@ -357,7 +360,7 @@ function QuestLog:Abandon(quest)
     local ok = restore ~= nil and type(set) == "function" and pcall(set)
     if restore then restore() end
     if not ok or type(_G.StaticPopup_Show) ~= "function" then
-        ns.Print(("open your quest log to abandon %s."):format(quest.title or "that quest"))
+        ns.Print(L.Format("open your quest log to abandon %s.", quest.title or L["that quest"]))
         return false
     end
     pcall(_G.StaticPopup_Show, "ABANDON_QUEST", quest.title)
@@ -405,7 +408,7 @@ function QuestLog:ShowOnMap(quest)
         and pcall(_G.QuestMapFrame_OpenToQuestDetails, quest.questID) then
         return true
     end
-    ns.Print(("no spot is known for %s."):format(quest.title or "that quest"))
+    ns.Print(L.Format("no spot is known for %s.", quest.title or L["that quest"]))
     return false
 end
 
@@ -418,7 +421,7 @@ function QuestLog:Aim(quest)
         if mapID then place = { zone = quest.zone, name = quest.zone } end
     end
     if not (place and ns.QuestArrow and ns.QuestArrow.AimAtQuest) then
-        ns.Print(("no spot is known for %s, so the arrow can't point at it."):format(quest.title or "that quest"))
+        ns.Print(L.Format("no spot is known for %s, so the arrow can't point at it.", quest.title or L["that quest"]))
         return false
     end
     return ns.QuestArrow:AimAtQuest(quest.questID, quest.title, place)

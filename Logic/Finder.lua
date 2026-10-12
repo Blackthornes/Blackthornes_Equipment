@@ -15,6 +15,7 @@
 -- bag arrow always agree.
 
 local _, ns = ...
+local L = ns.L
 
 local Finder = ns.NewModule("Finder")
 
@@ -280,7 +281,7 @@ end
 
 -- The game's standings, 1 Hated to 8 Exalted.
 local STANDINGS = {
-    "Hated", "Hostile", "Unfriendly", "Neutral", "Friendly", "Honored", "Revered", "Exalted",
+    L["Hated"], L["Hostile"], L["Unfriendly"], L["Neutral"], L["Friendly"], L["Honored"], L["Revered"], L["Exalted"],
 }
 Finder.STANDINGS = STANDINGS
 
@@ -318,7 +319,7 @@ function Finder:Needs(itemID)
     local have, name = self:Standing(rep[1])
     if have and have >= need then return nil end
     if type(name) ~= "string" or name == "" then
-        name = ns.Sources.FACTIONS[rep[1]] or "a faction"
+        name = ns.Sources.FACTIONS[rep[1]] or L["a faction"]
     end
     return { faction = name, standing = STANDINGS[need] or "?", have = have and STANDINGS[have] }
 end
@@ -1017,6 +1018,11 @@ function Finder.Short(price)
     return price - held
 end
 
+-- What a quest needs besides the player, in words.
+local NEED_WORDS = {
+    group = L["group"], dungeon = L["dungeon"], raid = L["raid"], battleground = L["battleground"],
+}
+
 local function Place(source)
     if not source.zone then return nil end
     if source.x and source.y then
@@ -1035,32 +1041,37 @@ function Finder:Describe(source)
         local price = self.Money(source.price)
         if price then text = text .. "  " .. price end
         local short = self.Money(self.Short(source.price))
-        if short then text = text .. ("  |c%sneed|r %s |c%smore|r"):format(ns.COLORS.downgrade, short, ns.COLORS.downgrade) end
-        if source.limited then text = text .. "  (limited stock)" end
+        if short then
+            text = L.Format("%s  |c%sneed|r %s |c%smore|r", text, ns.COLORS.downgrade, short, ns.COLORS.downgrade)
+        end
+        if source.limited then text = L.Format("%s  (limited stock)", text) end
         return text
     elseif source.kind == "quest" then
-        local text = ("%s (level %d)"):format(source.title, source.questLevel or 0)
+        local text = L.Format("%s (level %d)", source.title, source.questLevel or 0)
         local need = Finder.Need(source.group)
-        if need then text = text .. ", " .. need end
+        if need then text = text .. ", " .. (NEED_WORDS[need] or need) end
         if (source.chain or 0) > 1 then
-            text = text .. (", after %d earlier quests"):format(source.chain)
+            text = L.Format("%s, after %d earlier quests", text, source.chain)
         elseif (source.chain or 0) == 1 and source.first then
-            text = text .. ", after " .. source.first
+            text = L.Format("%s, after %s", text, source.first)
         end
         local where = Place(source)
         if source.x then
-            text = text .. ", from " .. source.name
-            if where then text = text .. " in " .. where end
+            if where then
+                text = L.Format("%s, from %s in %s", text, source.name, where)
+            else
+                text = L.Format("%s, from %s", text, source.name)
+            end
         else
-            text = text .. ", starts from " .. source.name
+            text = L.Format("%s, starts from %s", text, source.name)
         end
         return text
     elseif source.kind == "dungeon" then
-        local text = ("%s in %s"):format(source.name, source.dungeon)
+        local text = L.Format("%s in %s", source.name, source.dungeon)
         if not source.raid then
             text = text .. (" (%d-%d)"):format(source.minLevel, source.maxLevel)
         end
-        if source.chance then text = text .. (", %s%% drop"):format(tostring(source.chance)) end
+        if source.chance then text = L.Format("%s, %s%% drop", text, tostring(source.chance)) end
         return text
     elseif source.kind == "craft" and ns.Crafting then
         return ns.Crafting:Describe(source, self.Money)
@@ -1068,21 +1079,22 @@ function Finder:Describe(source)
     return ""
 end
 
-Finder.LABELS = { vendor = "Vendor", quest = "Quest", dungeon = "Dungeon", craft = "Crafted" }
+Finder.LABELS = { vendor = L["Vendor"], quest = L["Quest"], dungeon = L["Dungeon"], craft = L["Crafted"] }
 
 --- The tag a source shows: "Vendor", "Quest", "Dungeon", "Raid" or
 --- "Crafted".
 function Finder.Label(source)
-    if source.kind == "dungeon" and source.raid then return "Raid" end
+    if source.kind == "dungeon" and source.raid then return L["Raid"] end
     return Finder.LABELS[source.kind] or ""
 end
 
 --- What a reputation still asks for, in words: "Needs Honored with
 --- Warsong Outriders (you are Friendly)".
 function Finder.NeedsText(needs)
-    local text = ("Needs %s with %s"):format(needs.standing, needs.faction)
-    if needs.have then text = text .. (" (you are %s)"):format(needs.have) end
-    return text
+    if needs.have then
+        return L.Format("Needs %s with %s (you are %s)", needs.standing, needs.faction, needs.have)
+    end
+    return L.Format("Needs %s with %s", needs.standing, needs.faction)
 end
 
 --------------------------------------------------------------------------------
@@ -1095,14 +1107,14 @@ function Finder.RollText(pick)
     local roll = pick and pick.roll
     if not (roll and ns.Rolls) then return nil end
     local name = ns.Rolls:Describe(roll.link)
-    local text = ("Best roll%s: %s of drops"):format(name and (" " .. name) or "",
-        ns.Rolls.Percent(roll.chance))
+    local text = name and L.Format("Best roll %s: %s of drops", name, ns.Rolls.Percent(roll.chance))
+        or L.Format("Best roll: %s of drops", ns.Rolls.Percent(roll.chance))
     if roll.upgradeChance and roll.upgradeChance > roll.chance then
-        text = text .. ("; %s of drops are an upgrade"):format(ns.Rolls.Percent(roll.upgradeChance))
+        text = L.Format("%s; %s of drops are an upgrade", text, ns.Rolls.Percent(roll.upgradeChance))
     end
     return text
 end
 
-ns.RegisterCommand("find", "where to get upgrades: vendors, quests, dungeons and crafting", function()
+ns.RegisterCommand("find", L["where to get upgrades: vendors, quests, dungeons and crafting"], function()
     if ns.FinderUI then ns.FinderUI:Toggle() end
 end)

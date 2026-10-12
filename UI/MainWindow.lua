@@ -8,6 +8,7 @@
 -- putting on a bind-on-equip item binds it, and that cannot be undone.
 
 local _, ns = ...
+local L = ns.L
 
 local UI = ns.NewModule("UI")
 
@@ -36,11 +37,11 @@ local WIDTH = 640
 
 -- The slots in the order the character sheet runs down them.
 local SLOTS = {
-    { 1, "Head" }, { 2, "Neck" }, { 3, "Shoulder" }, { 15, "Back" },
-    { 5, "Chest" }, { 9, "Wrist" }, { 10, "Hands" }, { 6, "Waist" },
-    { 7, "Legs" }, { 8, "Feet" }, { 11, "Ring" }, { 12, "Ring" },
-    { 13, "Trinket" }, { 14, "Trinket" }, { 16, "Main hand" },
-    { 17, "Off hand" }, { 18, "Ranged" },
+    { 1, L["Head"] }, { 2, L["Neck"] }, { 3, L["Shoulder"] }, { 15, L["Back"] },
+    { 5, L["Chest"] }, { 9, L["Wrist"] }, { 10, L["Hands"] }, { 6, L["Waist"] },
+    { 7, L["Legs"] }, { 8, L["Feet"] }, { 11, L["Ring"] }, { 12, L["Ring"] },
+    { 13, L["Trinket"] }, { 14, L["Trinket"] }, { 16, L["Main hand"] },
+    { 17, L["Off hand"] }, { 18, L["Ranged"] },
 }
 
 local HEIGHT = HEADER + 12 + COLUMN_HEADS + #SLOTS * ROW_HEIGHT + FOOTER
@@ -146,7 +147,7 @@ function UI:Build()
 
     -- Where to go for an upgrade that is not in the bags yet. Down here
     -- rather than in the header, where the spec line needs the room.
-    local find = Widgets.CreateButton(frame, "Find upgrades", function()
+    local find = Widgets.CreateButton(frame, L["Find upgrades"], function()
         if ns.FinderUI then ns.FinderUI:Toggle() end
     end, { width = 100, height = 24, primary = true })
     find:SetPoint("BOTTOMRIGHT", -PADDING, 12)
@@ -168,7 +169,7 @@ function UI:Build()
     local hint = Theme.CreateLabel(frame, "tiny", "dim")
     hint:SetPoint("BOTTOMLEFT", PADDING, 11)
     hint:SetPoint("BOTTOMRIGHT", version, "BOTTOMLEFT", -12, 0)
-    hint:SetText("Hover an item for its tooltip. Click an upgrade to put it on.")
+    hint:SetText(L["Hover an item for its tooltip. Click an upgrade to put it on."])
     self.hint = hint
 
     frame:Hide()
@@ -187,7 +188,7 @@ function UI:BuildHeader()
     header:SetPoint("TOPRIGHT", -RIM, 0)
     header:SetHeight(HEADER)
 
-    local settings = Widgets.CreateButton(header, "Settings", function()
+    local settings = Widgets.CreateButton(header, L["Settings"], function()
         if ns.SettingsUI then ns.SettingsUI:Toggle() end
     end, { width = 70, height = 20 })
     settings:SetPoint("RIGHT", -(PADDING + 6 - RIM), -4)
@@ -212,7 +213,7 @@ function UI:BuildRows()
     local top = -(HEADER + 12)
     local inner = WIDTH - PADDING * 2
 
-    local heads = { { SLOT_X, "SLOT" }, { WORN_X, "WEARING" }, { BEST_X, "BEST IN BAGS" } }
+    local heads = { { SLOT_X, L["SLOT"] }, { WORN_X, L["WEARING"] }, { BEST_X, L["BEST IN BAGS"] } }
     for _, head in ipairs(heads) do
         local label = Theme.CreateLabel(frame, "tiny", "accent")
         label:SetPoint("TOPLEFT", PADDING + head[1], top - 4)
@@ -342,7 +343,7 @@ function UI:Refresh()
     if spec then
         local ok, found = pcall(Compare.BestInBags, Compare)
         if ok then best = found end
-        self.specLabel:SetText(("judging gear as %s"):format(Weights.SPECS[class][spec].name))
+        self.specLabel:SetText(L.Format("judging gear as %s", Weights:SpecName(class, spec)))
     else
         self.specLabel:SetText("")
     end
@@ -387,24 +388,27 @@ function UI:Refresh()
     end
 
     if spec and Weights:IsCustom(class, spec) then
-        self.hint:SetText("Judged by your own stat weights. Click an upgrade to put it on.")
+        self.hint:SetText(L["Judged by your own stat weights. Click an upgrade to put it on."])
     else
-        self.hint:SetText("Hover an item for its tooltip. Click an upgrade to put it on.")
+        self.hint:SetText(L["Hover an item for its tooltip. Click an upgrade to put it on."])
     end
 
     self.footer:SetTextColor(Theme.Unpack(upgrades > 0 and "good" or "muted"))
     if not spec then
-        self.footer:SetText(("There are no stat weights for %s yet."):format(class or "this class"))
+        self.footer:SetText(L.Format("There are no stat weights for %s yet.", class or L["this class"]))
     elseif upgrades == 0 and owned > 0 then
         self.footer:SetTextColor(Theme.Unpack("accent"))
-        self.footer:SetText(("Nothing in your bags beats what you wear, but you own %d better piece%s elsewhere."):format(
-            owned, owned == 1 and "" or "s"))
+        if owned == 1 then
+            self.footer:SetText(L["Nothing in your bags beats what you wear, but you own 1 better piece elsewhere."])
+        else
+            self.footer:SetText(L.Format("Nothing in your bags beats what you wear, but you own %d better pieces elsewhere.", owned))
+        end
     elseif upgrades == 0 then
-        self.footer:SetText("Nothing in your bags beats what you wear.")
+        self.footer:SetText(L["Nothing in your bags beats what you wear."])
     elseif upgrades == 1 then
-        self.footer:SetText("1 upgrade in your bags.")
+        self.footer:SetText(L["1 upgrade in your bags."])
     else
-        self.footer:SetText(("%d upgrades in your bags."):format(upgrades))
+        self.footer:SetText(L.Format("%d upgrades in your bags.", upgrades))
     end
     self.upgrades = upgrades
     return upgrades
@@ -413,16 +417,16 @@ end
 --- Where better gear is, for its tooltip: "In your bank" or "On Ana
 --- Smith: mail it over".
 function UI.WhereText(where)
-    if where == "bank" then return "In your bank: take it out to wear it" end
+    if where == "bank" then return L["In your bank: take it out to wear it"] end
     local name = ns.Alts and ns.Alts:NameOf(where) or nil
-    return ("On %s: mail it over to wear it"):format(name or "another of your characters")
+    return L.Format("On %s: mail it over to wear it", name or L["another of your characters"])
 end
 
 --- The same, short, beside the item: "bank" or the character's name.
 function UI.ShortWhere(where)
-    if where == "bank" then return "in your bank" end
+    if where == "bank" then return L["in your bank"] end
     local name = ns.Alts and ns.Alts:NameOf(where) or nil
-    return name and ("on " .. name) or "on an alt"
+    return name and L.Format("on %s", name) or L["on an alt"]
 end
 
 --- Refresh once a burst of bag events settles.
@@ -493,6 +497,6 @@ function UI:OnEnable()
     end
 end
 
-ns.RegisterCommand("window", "open the gear window (so does /beq on its own)", function()
+ns.RegisterCommand("window", L["open the gear window (so does /beq on its own)"], function()
     UI:Toggle()
 end)

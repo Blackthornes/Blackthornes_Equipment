@@ -12,6 +12,7 @@
 -- (`slotUpgrades`).
 
 local _, ns = ...
+local L = ns.L
 
 local SlotUpgrades = ns.NewModule("SlotUpgrades")
 
@@ -31,9 +32,9 @@ local SLOT_BUTTONS = {
 local PAIRS = { [11] = { 11, 12 }, [12] = { 11, 12 }, [13] = { 13, 14 }, [14] = { 13, 14 } }
 
 local SLOT_NAMES = {
-    [1] = "Head", [2] = "Neck", [3] = "Shoulder", [5] = "Chest", [6] = "Waist", [7] = "Legs",
-    [8] = "Feet", [9] = "Wrist", [10] = "Hands", [11] = "Rings", [12] = "Rings", [13] = "Trinkets",
-    [14] = "Trinkets", [15] = "Back", [16] = "Main hand", [17] = "Off hand", [18] = "Ranged",
+    [1] = L["Head"], [2] = L["Neck"], [3] = L["Shoulder"], [5] = L["Chest"], [6] = L["Waist"], [7] = L["Legs"],
+    [8] = L["Feet"], [9] = L["Wrist"], [10] = L["Hands"], [11] = L["Rings"], [12] = L["Rings"], [13] = L["Trinkets"],
+    [14] = L["Trinkets"], [15] = L["Back"], [16] = L["Main hand"], [17] = L["Off hand"], [18] = L["Ranged"],
 }
 
 local SHOWN = 3
@@ -55,13 +56,13 @@ end
 --- it waits on when planning ahead.
 function SlotUpgrades.Gain(pick)
     local result = pick.result or {}
-    local text = "better"
+    local text = L["better"]
     if result.empty then
-        text = "empty slot"
+        text = L["empty slot"]
     elseif result.percent then
         text = ("%+d%%"):format(math.floor(result.percent + 0.5))
     end
-    if SlotUpgrades.Train(pick) then text = "Train: " .. text end
+    if SlotUpgrades.Train(pick) then text = L.Format("Train: %s", text) end
     return text
 end
 
@@ -117,15 +118,15 @@ function SlotUpgrades:AddLines(tooltip, slot, picks)
     if #picks == 0 then
         local latest = ns.Finder and ns.Finder.latest
         if not latest and ns.Finder and ns.Finder:Scanning() then
-            tooltip:AddLine("Looking for upgrades, hover again in a moment", Theme.Unpack("muted"))
+            tooltip:AddLine(L["Looking for upgrades, hover again in a moment"], Theme.Unpack("muted"))
         elseif latest and (latest.waiting or 0) > 0 then
-            tooltip:AddLine("Still reading gear from the server, hover again in a moment",
+            tooltip:AddLine(L["Still reading gear from the server, hover again in a moment"],
                 Theme.Unpack("muted"))
         else
-            tooltip:AddLine("Nothing on offer beats this yet", Theme.Unpack("muted"))
+            tooltip:AddLine(L["Nothing on offer beats this yet"], Theme.Unpack("muted"))
         end
     else
-        tooltip:AddLine("Upgrades on offer", Theme.Unpack("accent"))
+        tooltip:AddLine(L["Upgrades on offer"], Theme.Unpack("accent"))
         for _, pick in ipairs(picks) do
             local gainKey = SlotUpgrades.GainKey(pick)
             if type(tooltip.AddDoubleLine) == "function" then
@@ -140,7 +141,7 @@ function SlotUpgrades:AddLines(tooltip, slot, picks)
             end
         end
     end
-    tooltip:AddLine("Alt-click for upgrades you can track", Theme.Unpack("dim"))
+    tooltip:AddLine(L["Alt-click for upgrades you can track"], Theme.Unpack("dim"))
     pcall(tooltip.Show, tooltip)
 end
 
@@ -185,7 +186,7 @@ function SlotUpgrades:BuildRow(index)
     icon:SetPoint("LEFT", 6, 0)
     row.icon = icon
 
-    local track = Widgets.CreateButton(row, "Track", function()
+    local track = Widgets.CreateButton(row, L["Track"], function()
         local pick = row.pick
         if pick and ns.Tracking then ns.Tracking:Toggle(pick) end
         SlotUpgrades:Fill()
@@ -193,14 +194,17 @@ function SlotUpgrades:BuildRow(index)
     track:SetPoint("TOPRIGHT", -6, -5)
     row.track = track
 
-    local map = Widgets.CreateButton(row, "Map", function()
+    local map = Widgets.CreateButton(row, L["Map"], function()
         local source = row.pick and row.pick.sources and row.pick.sources[1]
         if source and ns.Waypoints then ns.Waypoints:Show(source, source.name) end
     end, { width = 58, height = 18 })
     map:SetPoint("TOPRIGHT", track, "BOTTOMRIGHT", 0, -2)
     row.map = map
 
-    local textWidth = WIDTH - PAD * 2 - 6 - 30 - 8 - 70
+    -- The buttons grow to fit their words (German runs longer); the text
+    -- keeps clear of them.
+    local buttons = math.max(70, (tonumber(track:GetWidth()) or 0) + 12, (tonumber(map:GetWidth()) or 0) + 12)
+    local textWidth = WIDTH - PAD * 2 - 6 - 30 - 8 - buttons
     local item = Theme.CreateLabel(row, "normal", "text")
     item:SetPoint("TOPLEFT", 44, -6)
     item:SetWidth(textWidth - 60)
@@ -266,7 +270,7 @@ function SlotUpgrades:Build()
     empty:SetWidth(WIDTH - PAD * 2)
     self.empty = empty
 
-    local all = Widgets.CreateButton(frame, "All upgrades", function()
+    local all = Widgets.CreateButton(frame, L["All upgrades"], function()
         frame:Hide()
         if ns.FinderUI then ns.FinderUI:Show() end
     end, { width = 110, height = 22, primary = true })
@@ -281,7 +285,7 @@ end
 
 function SlotUpgrades:Fill()
     if not (self.frame and self.slot) then return end
-    self.title:SetText(("Upgrades: %s"):format(SLOT_NAMES[self.slot] or "this slot"))
+    self.title:SetText(L.Format("Upgrades: %s", SLOT_NAMES[self.slot] or L["this slot"]))
     local picks = self:PicksFor(self.slot)
     for index, row in ipairs(self.rows) do
         local pick = picks[index]
@@ -299,7 +303,7 @@ function SlotUpgrades:Fill()
             local text = source and ns.FinderUI and ns.FinderUI.SourceLine(source) or ""
             row.source:SetText(ns.FinderUI and ns.FinderUI.Fit("tiny", text, row.sourceWidth * 2 - 60) or text)
             local tracked = ns.Tracking and ns.Tracking:IsTracked(pick.itemID)
-            row.track:SetText(tracked and "Untrack" or "Track")
+            row.track:SetText(tracked and L["Untrack"] or L["Track"])
             row.track:SetLabelColor(tracked and "accent" or "text")
             row.map:SetShown(source ~= nil and source.x ~= nil)
             row:Show()
@@ -308,7 +312,7 @@ function SlotUpgrades:Fill()
         end
     end
     self.empty:SetShown(#picks == 0)
-    self.empty:SetText("Nothing on offer beats what you wear here.")
+    self.empty:SetText(L["Nothing on offer beats what you wear here."])
 end
 
 function SlotUpgrades:Open(slot, anchor)

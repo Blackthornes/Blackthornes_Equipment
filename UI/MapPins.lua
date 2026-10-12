@@ -12,6 +12,7 @@
 -- off with the "Map pins" setting (`mapPins`).
 
 local _, ns = ...
+local L = ns.L
 
 local MapPins = ns.NewModule("MapPins")
 
@@ -96,7 +97,7 @@ function MapPins:HuntsOn(zone)
         list[#list + 1] = {
             link = quest.link, quest = true,
             place = { zone = spot.zone, x = spot.x, y = spot.y, name = spot.name,
-                text = spot.name and ("Upgrade quest: go to %s"):format(spot.name) or "Upgrade quest" },
+                text = spot.name and L.Format("Upgrade quest: go to %s", spot.name) or L["Upgrade quest"] },
         }
     end
     return list
@@ -132,9 +133,9 @@ function MapPins:MakePin(canvas)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         pcall(GameTooltip.SetHyperlink, GameTooltip, hunt.link)
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine(hunt.quest and "Upgrade quest" or "Tracked upgrade", Theme.Unpack("accent"))
+        GameTooltip:AddLine(hunt.quest and L["Upgrade quest"] or L["Tracked upgrade"], Theme.Unpack("accent"))
         if hunt.place.text then GameTooltip:AddLine(hunt.place.text, Theme.Unpack("text")) end
-        GameTooltip:AddLine("Click to pin it on your map", Theme.Unpack("muted"))
+        GameTooltip:AddLine(L["Click to pin it on your map"], Theme.Unpack("muted"))
         GameTooltip:Show()
     end)
     pin:SetScript("OnLeave", function() GameTooltip:Hide() end)

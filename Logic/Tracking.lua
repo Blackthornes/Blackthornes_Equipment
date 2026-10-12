@@ -15,6 +15,8 @@
 
 local _, ns = ...
 
+local L = ns.L
+
 local Tracking = ns.NewModule("Tracking")
 
 local Items = ns.Items
@@ -174,14 +176,14 @@ function Tracking:Check()
             for i = #done, DONE_KEPT + 1, -1 do done[i] = nil end
             changed = true
             if ns.Toast then
-                ns.Toast:Show({ title = "Hunt done", link = hunt.link, text = "Wearing it now. Nice." })
+                ns.Toast:Show({ title = L["Hunt done"], link = hunt.link, text = L["Wearing it now. Nice."] })
             end
         elseif carried[itemID] and not hunt.got then
             hunt.got = Now()
             changed = true
             if ns.Toast then
-                ns.Toast:Show({ title = "Tracked upgrade in your bags", link = hunt.link, wear = true,
-                    text = "Put it on to finish the hunt." })
+                ns.Toast:Show({ title = L["Tracked upgrade in your bags"], link = hunt.link, wear = true,
+                    text = L["Put it on to finish the hunt."] })
             end
         elseif hunt.got and not carried[itemID] then
             -- Sold, banked or mailed away: back to being hunted.
@@ -225,25 +227,25 @@ end
 -- /beq tracked
 --------------------------------------------------------------------------------
 
-ns.RegisterCommand("tracked", "the upgrades you are tracking (/beq tracked clear stops them all)", function(rest)
+ns.RegisterCommand("tracked", L["the upgrades you are tracking (/beq tracked clear stops them all)"], function(rest)
     if (rest or ""):lower():match("^%s*clear") then
         local store = Store(false)
         if store then
             for itemID in pairs(store) do store[itemID] = nil end
         end
         Tracking:Changed()
-        ns.Print("stopped tracking every upgrade")
+        ns.Print(L["stopped tracking every upgrade"])
         return
     end
     local list = Tracking:List()
     if #list == 0 then
-        ns.Print("you are not tracking any upgrades. Right-click one in /beq find to track it.")
+        ns.Print(L["you are not tracking any upgrades. Right-click one in /beq find to track it."])
         return
     end
-    ns.Print(("tracking %d upgrade%s"):format(#list, #list == 1 and "" or "s"))
+    ns.Print(#list == 1 and L.Format("tracking %d upgrade", #list) or L.Format("tracking %d upgrades", #list))
     for _, hunt in ipairs(list) do
         local where = hunt.place and hunt.place.text or ""
-        local state = hunt.got and ("|c%s in your bags|r"):format(ns.COLORS.upgrade) or ""
+        local state = hunt.got and L.Format("|c%s in your bags|r", ns.COLORS.upgrade) or ""
         ns.PrintRaw(("  %s%s  |c%s%s|r"):format(hunt.link or "?", state, ns.COLORS.muted, where))
     end
 end)

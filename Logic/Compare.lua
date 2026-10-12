@@ -10,6 +10,7 @@
 -- The tooltip line and the bag arrow both ask Judge, so they cannot disagree.
 
 local _, ns = ...
+local L = ns.L
 
 local Compare = ns.NewModule("Compare")
 
@@ -181,7 +182,7 @@ function Compare:Judge(link)
     local class = Weights:PlayerClass()
     local result = {
         className = class,
-        specName = Weights.SPECS[class][spec].name,
+        specName = Weights:SpecName(class, spec),
     }
 
     local usable, fromLevel = Weights:CanUse(class, info.classID, info.subclassID, info.equipLoc)
@@ -391,9 +392,9 @@ end
 
 --- How much better, in words: "+14%", "fills an empty slot" or "better stats".
 function Compare:HowMuch(result)
-    if result.empty then return "fills an empty slot" end
+    if result.empty then return L["fills an empty slot"] end
     if result.percent then return ("%+d%%"):format(math.floor(result.percent + 0.5)) end
-    return "better stats"
+    return L["better stats"]
 end
 
 --- Should this item get the upgrade arrow in the bags? Only a real upgrade
@@ -444,9 +445,9 @@ end
 --------------------------------------------------------------------------------
 
 local CLASS_NAMES = {
-    WARRIOR = "Warriors", PALADIN = "Paladins", HUNTER = "Hunters", ROGUE = "Rogues",
-    PRIEST = "Priests", SHAMAN = "Shamans", MAGE = "Mages", WARLOCK = "Warlocks",
-    DRUID = "Druids",
+    WARRIOR = L["Warriors"], PALADIN = L["Paladins"], HUNTER = L["Hunters"], ROGUE = L["Rogues"],
+    PRIEST = L["Priests"], SHAMAN = L["Shamans"], MAGE = L["Mages"], WARLOCK = L["Warlocks"],
+    DRUID = L["Druids"],
 }
 
 --- The line a tooltip shows for a verdict, and the colour to show it in, or
@@ -458,24 +459,24 @@ function Compare:Describe(result)
     local percent = result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5)) or nil
 
     if verdict == "cantuse" and result.ignoredSkill then
-        return ("Ignored until you train %s"):format(result.ignoredSkill), "muted"
+        return L.Format("Ignored until you train %s", result.ignoredSkill), "muted"
     elseif verdict == "cantuse" then
-        return ("%s can't use this"):format(CLASS_NAMES[result.className] or "Your class"), "muted"
+        return L.Format("%s can't use this", CLASS_NAMES[result.className] or L["Your class"]), "muted"
     elseif verdict == "equipped" then
         return nil
     elseif verdict == "upgrade" then
-        local how = result.empty and "fills an empty slot" or percent or "better stats"
+        local how = result.empty and L["fills an empty slot"] or percent or L["better stats"]
         if result.level then
-            return ("Upgrade for %s at level %d: %s"):format(spec, result.level, how), "warn"
+            return L.Format("Upgrade for %s at level %d: %s", spec, result.level, how), "warn"
         end
         if result.train or result.skill then
-            return ("Upgrade for %s once you train %s: %s"):format(spec, result.train or result.skill, how), "warn"
+            return L.Format("Upgrade for %s once you train %s: %s", spec, result.train or result.skill, how), "warn"
         end
-        return ("Upgrade for %s: %s"):format(spec, how), "upgrade"
+        return L.Format("Upgrade for %s: %s", spec, how), "upgrade"
     elseif verdict == "downgrade" then
-        return ("Worse for %s: %s"):format(spec, percent), "downgrade"
+        return L.Format("Worse for %s: %s", spec, percent), "downgrade"
     end
-    return ("About the same for %s"):format(spec), "muted"
+    return L.Format("About the same for %s", spec), "muted"
 end
 
 --------------------------------------------------------------------------------
@@ -485,12 +486,12 @@ end
 function Compare:ReportBags()
     local weights, spec = Weights:ForPlayer()
     if not weights then
-        ns.Print(("no stat weights for %s yet"):format(Weights:PlayerClass() or "this class"))
+        ns.Print(L.Format("no stat weights for %s yet", Weights:PlayerClass() or L["this class"]))
         return
     end
 
-    ns.Print(("gear in your bags, judged as |c%s%s|r"):format(ns.COLORS.accent,
-        Weights.SPECS[Weights:PlayerClass()][spec].name))
+    ns.Print(L.Format("gear in your bags, judged as |c%s%s|r", ns.COLORS.accent,
+        Weights:SpecName(Weights:PlayerClass(), spec)))
 
     local shown = 0
     for bag = FIRST_BAG, LAST_BAG do
@@ -507,10 +508,10 @@ function Compare:ReportBags()
     end
 
     if shown == 0 then
-        ns.PrintRaw(("  |c%snothing in your bags to wear|r"):format(ns.COLORS.muted))
+        ns.PrintRaw(L.Format("  |c%snothing in your bags to wear|r", ns.COLORS.muted))
     end
 end
 
-ns.RegisterCommand("bags", "judge every piece of gear in your bags", function()
+ns.RegisterCommand("bags", L["judge every piece of gear in your bags"], function()
     Compare:ReportBags()
 end)

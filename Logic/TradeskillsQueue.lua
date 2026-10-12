@@ -13,6 +13,7 @@
 -- inside a pcall; nothing of Tradeskills' is read or written directly.
 
 local _, ns = ...
+local L = ns.L
 
 local TSQueue = ns.NewModule("TradeskillsQueue")
 
@@ -70,7 +71,7 @@ end
 
 --- The button's words: "Queued" once Tradeskills holds it.
 function TSQueue:Label(itemID)
-    return self:Holds(itemID) and "Queued" or "Queue it"
+    return self:Holds(itemID) and L["Queued"] or L["Queue it"]
 end
 
 local function Name(itemID)
@@ -80,38 +81,38 @@ local function Name(itemID)
         return info
     end)
     if ok and type(name) == "string" then return name end
-    return "that upgrade"
+    return L["that upgrade"]
 end
 
 --- The button's tooltip: a title and what a click does.
 function TSQueue:Explain(source)
     source = TSQueue.Fresh(source)
-    if not source then return "Queue it", nil end
+    if not source then return L["Queue it"], nil end
     if self:Holds(source.itemID) then
-        return "In Tradeskills' queue", "Click to open Tradeskills on the Queue tab."
+        return L["In Tradeskills' queue"], L["Click to open Tradeskills on the Queue tab."]
     end
     local plan = TSQueue.Plan(source)
     if plan == "craft" then
         local who = source.state == "alt" and source.who and source.who[1]
-        return "Queue the craft",
-            ("Queues it in Tradeskills, so its materials go on the shopping list.%s")
-                :format(who and (" %s makes it; Tradeskills says who when you log in."):format(who) or "")
+        return L["Queue the craft"],
+            who and L.Format("Queues it in Tradeskills, so its materials go on the shopping list. %s makes it; Tradeskills says who when you log in.", who)
+                or L["Queues it in Tradeskills, so its materials go on the shopping list."]
     elseif plan == "materials" then
-        return "Queue the materials",
-            "Puts its materials on Tradeskills' shopping list, ready for when you can make it."
+        return L["Queue the materials"],
+            L["Puts its materials on Tradeskills' shopping list, ready for when you can make it."]
     end
-    return "Put it on the shopping list",
-        "Nobody on your account makes it, so it goes on Tradeskills' shopping list to buy from a vendor or the auction house."
+    return L["Put it on the shopping list"],
+        L["Nobody on your account makes it, so it goes on Tradeskills' shopping list to buy from a vendor or the auction house."]
 end
 
 --- Every material of a crafted item onto the list to buy, for that item.
 local function BuyMaterials(queue, itemID)
     local craft = ns.Crafts and ns.Crafts.ITEMS[itemID]
     local list = craft and craft.m
-    if not list or #list == 0 then return nil, "its materials aren't known" end
+    if not list or #list == 0 then return nil, L["its materials aren't known"] end
     for i = 1, #list, 2 do
         local ok, done, why = pcall(queue.EnsureBuy, queue, list[i], list[i + 1], itemID)
-        if not ok then return nil, "Tradeskills ran into an error" end
+        if not ok then return nil, L["Tradeskills ran into an error"] end
         if not done then return nil, why end
     end
     return true
@@ -124,7 +125,7 @@ function TSQueue:Queue(source)
     local queue = TSQueueModule()
     source = TSQueue.Fresh(source)
     if not (queue and source and source.itemID) then
-        ns.Print("Queue it needs Blackthornes Tradeskills.")
+        ns.Print(L["Queue it needs Blackthornes Tradeskills."])
         return false
     end
     local itemID = source.itemID
@@ -140,35 +141,35 @@ function TSQueue:Queue(source)
         local craft = ns.Crafts.ITEMS[itemID]
         local ok
         ok, done, why = pcall(queue.Ensure, queue, craft and craft[3], 1)
-        if not ok then done, why = nil, "Tradeskills ran into an error" end
+        if not ok then done, why = nil, L["Tradeskills ran into an error"] end
         if done then
-            ns.Print(("Queued %s in Tradeskills. Its materials are on the shopping list."):format(name))
+            ns.Print(L.Format("Queued %s in Tradeskills. Its materials are on the shopping list.", name))
             return true
         end
         -- Tradeskills has not read the recipe yet: its materials still help.
         local bought, buyWhy = BuyMaterials(queue, itemID)
         if bought then
-            ns.Print(("Put the materials for %s on Tradeskills' shopping list (%s)."):format(name, why or "it couldn't queue the craft"))
+            ns.Print(L.Format("Put the materials for %s on Tradeskills' shopping list (%s).", name, why or L["it couldn't queue the craft"]))
             return true
         end
         why = buyWhy or why
     elseif plan == "materials" then
         done, why = BuyMaterials(queue, itemID)
         if done then
-            ns.Print(("Put the materials for %s on Tradeskills' shopping list."):format(name))
+            ns.Print(L.Format("Put the materials for %s on Tradeskills' shopping list.", name))
             return true
         end
     else
         local ok
         ok, done, why = pcall(queue.EnsureBuy, queue, itemID, 1, itemID)
-        if not ok then done, why = nil, "Tradeskills ran into an error" end
+        if not ok then done, why = nil, L["Tradeskills ran into an error"] end
         if done then
-            ns.Print(("Put %s on Tradeskills' shopping list."):format(name))
+            ns.Print(L.Format("Put %s on Tradeskills' shopping list.", name))
             return true
         end
     end
 
-    ns.Print(("Couldn't queue %s: %s."):format(name, why or "Tradeskills said no"))
+    ns.Print(L.Format("Couldn't queue %s: %s.", name, why or L["Tradeskills said no"]))
     return false
 end
 

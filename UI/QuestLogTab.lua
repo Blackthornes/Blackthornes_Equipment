@@ -38,6 +38,7 @@
 -- their quest changed.
 
 local _, ns = ...
+local L = ns.L
 
 local QuestLogUI = ns.NewModule("QuestLogUI")
 
@@ -163,29 +164,28 @@ function QuestLogUI:Build(frame, top)
     self.view = view
 
     -- The two switches and Settings.
-    local tracked = Widgets.CreateCheckbox(view, "Tracked only", function(checked)
+    local tracked = Widgets.CreateCheckbox(view, L["Tracked only"], function(checked)
         QuestLogUI:SetTrackedOnly(checked)
     end, self:TrackedOnly())
     tracked:SetPoint("TOPLEFT", pad, -2)
-    Explain(tracked, "Tracked only", "List only the quests you track. Untick it to see your whole quest log.",
+    Explain(tracked, L["Tracked only"], L["List only the quests you track. Untick it to see your whole quest log."],
         "ANCHOR_BOTTOM")
     self.trackedBox = tracked
 
-    local hide = Widgets.CreateCheckbox(view, "Hide the game's quest tracker", function(checked)
+    local hide = Widgets.CreateCheckbox(view, L["Hide the game's quest tracker"], function(checked)
         QuestLogUI:SetHidesTracker(checked)
     end, self:HidesTracker())
     hide:SetPoint("TOPLEFT", pad, -26)
-    Explain(hide, "Hide the game's quest tracker",
-        "Hides the game's own quest tracker while this panel is up, so your quests show in one place. "
-            .. "Untick it and the game's tracker comes back. Off unless you tick it.", "ANCHOR_BOTTOM")
+    Explain(hide, L["Hide the game's quest tracker"],
+        L["Hides the game's own quest tracker while this panel is up, so your quests show in one place. Untick it and the game's tracker comes back. Off unless you tick it."], "ANCHOR_BOTTOM")
     self.hideBox = hide
 
-    local settings = Widgets.CreateButton(view, "Settings", function()
+    local settings = Widgets.CreateButton(view, L["Settings"], function()
         if ns.db then ns.db.settingsPage = "quest" end
         if ns.SettingsUI then ns.SettingsUI:Show() end
-    end, { width = Theme.TextWidth("small", "Settings") + 24, height = 20 })
+    end, { width = Theme.TextWidth("small", L["Settings"]) + 24, height = 20 })
     settings:SetPoint("TOPRIGHT", -pad, -1)
-    Explain(settings, "Settings", "Open Equipment's settings, on its Upgrade quest page.")
+    Explain(settings, L["Settings"], L["Open Equipment's settings, on its Upgrade quest page."])
 
     -- The list, sunk into the panel and scrolled with the mouse wheel.
     local well = Theme.CreatePanel(view, "panel", "border")
@@ -243,26 +243,26 @@ function QuestLogUI:Build(frame, top)
 
     -- The buttons along the bottom act on the quest picked, or the first one
     -- in this zone.
-    local map = Widgets.CreateButton(view, "Show on map", function() QuestLogUI:Act("map") end,
+    local map = Widgets.CreateButton(view, L["Show on map"], function() QuestLogUI:Act("map") end,
         { width = 96, height = 22, primary = true })
-    Explain(map, "Show on map",
-        "Puts the game's map pin on where to go for the quest you picked (or the first one in this zone): its objective, or who to hand it in to once it's done.")
+    Explain(map, L["Show on map"],
+        L["Puts the game's map pin on where to go for the quest you picked (or the first one in this zone): its objective, or who to hand it in to once it's done."])
     self.mapButton = map
 
-    local arrow = Widgets.CreateButton(view, "Arrow", function() QuestLogUI:Act("arrow") end,
+    local arrow = Widgets.CreateButton(view, L["Arrow"], function() QuestLogUI:Act("arrow") end,
         { width = 60, height = 22 })
-    Explain(arrow, "Quest arrow",
-        "Points the quest arrow at the quest you picked. Click again to go back to your upgrade quest.")
+    Explain(arrow, L["Quest arrow"],
+        L["Points the quest arrow at the quest you picked. Click again to go back to your upgrade quest."])
     self.arrowButton = arrow
 
-    local open = Widgets.CreateButton(view, "Open log", function() QuestLogUI:Act("open") end,
+    local open = Widgets.CreateButton(view, L["Open log"], function() QuestLogUI:Act("open") end,
         { width = 76, height = 22 })
-    Explain(open, "Open the quest log", "Opens the game's quest log on the quest you picked.")
+    Explain(open, L["Open the quest log"], L["Opens the game's quest log on the quest you picked."])
     self.openButton = open
 
-    local fold = Widgets.CreateButton(view, "Fold all", function() QuestLogUI:FoldAll() end,
+    local fold = Widgets.CreateButton(view, L["Fold all"], function() QuestLogUI:FoldAll() end,
         { width = 64, height = 22 })
-    Explain(fold, "Fold all", "Folds every zone to its heading, or opens them all again. Click a heading to fold just that zone.")
+    Explain(fold, L["Fold all"], L["Folds every zone to its heading, or opens them all again. Click a heading to fold just that zone."])
     self.foldButton = fold
 
     self.rows, self.heads = {}, {}
@@ -295,7 +295,7 @@ function QuestLogUI:BuildHead(index)
         self.label:SetTextColor(Theme.Unpack("accentHi"))
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine(self.zone or "", Theme.Unpack("accent"))
-        GameTooltip:AddLine(self.note or "Click to fold or open this zone.", 1, 1, 1, true)
+        GameTooltip:AddLine(self.note or L["Click to fold or open this zone."], 1, 1, 1, true)
         GameTooltip:Show()
     end)
     head:SetScript("OnLeave", function(self)
@@ -337,7 +337,7 @@ function QuestLogUI:BuildRow(index)
     end, false)
     row.track:SetPoint("TOPLEFT", 5, -3)
     row.track:SetWidth(MARK)
-    Explain(row.track, "Track", "Tick to track this quest, as the game's tracker does.")
+    Explain(row.track, L["Track"], L["Tick to track this quest, as the game's tracker does."])
 
     row.title = Theme.CreateLabel(row, "small", "text")
     row.title:SetPoint("TOPLEFT", MARK + 10, -4)
@@ -370,9 +370,9 @@ function QuestLogUI:BuildRow(index)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine(quest.title, Theme.Unpack("accent"))
         if quest.zone then GameTooltip:AddLine(quest.zone, 1, 1, 1) end
-        GameTooltip:AddLine("Click to pick it for the buttons below.", 0.9, 0.9, 0.9)
-        GameTooltip:AddLine("Shift-click to link it in chat.", 0.9, 0.9, 0.9)
-        GameTooltip:AddLine("Right-click for the map, the arrow, sharing and more.", 0.9, 0.9, 0.9)
+        GameTooltip:AddLine(L["Click to pick it for the buttons below."], 0.9, 0.9, 0.9)
+        GameTooltip:AddLine(L["Shift-click to link it in chat."], 0.9, 0.9, 0.9)
+        GameTooltip:AddLine(L["Right-click for the map, the arrow, sharing and more."], 0.9, 0.9, 0.9)
         GameTooltip:Show()
     end)
     row:SetScript("OnLeave", function(self)
@@ -420,10 +420,10 @@ local function Words(quest, upgrades)
 
     local lines = {}
     if quest.failed then
-        lines[#lines + 1] = { text = "- Failed", color = "loss" }
+        lines[#lines + 1] = { text = L["- Failed"], color = "loss" }
     elseif quest.complete then
         local who = ns.QuestLog.HandIn(quest)
-        lines[#lines + 1] = { text = "- Ready to hand in" .. (who and (" to " .. who) or ""), color = "accent" }
+        lines[#lines + 1] = { text = who and L.Format("- Ready to hand in to %s", who) or L["- Ready to hand in"], color = "accent" }
     else
         for _, objective in ipairs(quest.objectives or {}) do
             lines[#lines + 1] = objective.done and { text = DONE_MARK .. objective.text, color = "good" }
@@ -433,7 +433,7 @@ local function Words(quest, upgrades)
     local note
     local link = quest.questID and upgrades[quest.questID]
     if link then
-        note = "Part of your upgrade quest" .. (type(link) == "string" and (": " .. link) or "")
+        note = type(link) == "string" and L.Format("Part of your upgrade quest: %s", link) or L["Part of your upgrade quest"]
     end
 
     local key = { title, tostring(quest.tracked), tostring(quest.item and quest.item.link), note or "" }
@@ -492,11 +492,11 @@ function QuestLogUI:FillHead(head, zone, shown, here, folded)
     head.zone = zone.title
     head.here = here
     head.sign:SetText((folded or zone.collapsed) and "+" or "-")
-    head.label:SetText(zone.title)
+    head.label:SetText(zone.label or zone.title)
     head.label:SetTextColor(Theme.Unpack(here and "good" or "gilt"))
     if zone.collapsed then
-        head.count:SetText("folded in your quest log")
-        head.note = "Folded in the game's quest log. Open it there to see these quests here."
+        head.count:SetText(L["folded in your quest log"])
+        head.note = L["Folded in the game's quest log. Open it there to see these quests here."]
     else
         head.count:SetText(tostring(shown))
         head.note = nil
@@ -578,11 +578,11 @@ function QuestLogUI:Fill()
     local width = ns.QuestPanel.WIDTH - ns.QuestPanel.PAD * 2
     local text
     if not data.how then
-        text = "This game client's quest log can't be read. /beq probe lists the quest calls it has."
+        text = L["This game client's quest log can't be read. /beq probe lists the quest calls it has."]
     elseif data.count == 0 then
-        text = "Your quest log is empty."
+        text = L["Your quest log is empty."]
     elseif headIndex == 0 then
-        text = "No tracked quests. Tick a quest's box to track it, or untick Tracked only to see them all."
+        text = L["No tracked quests. Tick a quest's box to track it, or untick Tracked only to see them all."]
     end
     local listHeight
     if text then
@@ -616,7 +616,7 @@ function QuestLogUI:Fill()
     self.openButton:SetPoint("LEFT", self.arrowButton, "RIGHT", 6, 0)
     self.foldButton:ClearAllPoints()
     self.foldButton:SetPoint("TOPRIGHT", -pad, -footY)
-    self.foldButton:SetText((anyFolded and not anyOpen) and "Open all" or "Fold all")
+    self.foldButton:SetText((anyFolded and not anyOpen) and L["Open all"] or L["Fold all"])
     local any = data.count > 0
     self.mapButton:SetShown(any)
     self.arrowButton:SetShown(any)
@@ -632,7 +632,8 @@ end
 function QuestLogUI:Progress()
     local data = self.data
     if not (data and data.how) then return "" end
-    return ("%d %s, %d tracked"):format(data.count, data.count == 1 and "quest" or "quests", data.tracked)
+    if data.count == 1 then return L.Format("%d quest, %d tracked", data.count, data.tracked) end
+    return L.Format("%d quests, %d tracked", data.count, data.tracked)
 end
 
 function QuestLogUI:Hide()
@@ -790,14 +791,14 @@ end
 --- The menu's lines for a quest: { text, action, color }.
 function QuestLogUI:MenuFor(quest)
     local log = ns.QuestLog
-    local list = { { "Show on map", "map" } }
+    local list = { { L["Show on map"], "map" } }
     if log.Place(quest) or (ns.Waypoints and quest.zone and ns.Waypoints:MapFor(quest.zone)) then
-        list[#list + 1] = { "Point the arrow here", "arrow" }
+        list[#list + 1] = { L["Point the arrow here"], "arrow" }
     end
-    list[#list + 1] = quest.tracked and { "Untrack", "untrack" } or { "Track", "track" }
-    list[#list + 1] = { "Open in quest log", "open" }
-    if log:CanShare(quest) then list[#list + 1] = { "Share with party", "share" } end
-    list[#list + 1] = { "Abandon quest", "abandon", "loss" }
+    list[#list + 1] = quest.tracked and { L["Untrack"], "untrack" } or { L["Track"], "track" }
+    list[#list + 1] = { L["Open in quest log"], "open" }
+    if log:CanShare(quest) then list[#list + 1] = { L["Share with party"], "share" } end
+    list[#list + 1] = { L["Abandon quest"], "abandon", "loss" }
     return list
 end
 
@@ -888,7 +889,7 @@ local function NewItemButton(index)
         if not hovered.link or hovered:GetAlpha() == 0 then return end
         GameTooltip:SetOwner(hovered, "ANCHOR_LEFT")
         pcall(GameTooltip.SetHyperlink, GameTooltip, hovered.link)
-        GameTooltip:AddLine("Click to use it.", Theme.Unpack("accent"))
+        GameTooltip:AddLine(L["Click to use it."], Theme.Unpack("accent"))
         GameTooltip:Show()
     end)
     button:HookScript("OnLeave", function() GameTooltip:Hide() end)

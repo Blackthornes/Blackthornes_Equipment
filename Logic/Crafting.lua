@@ -14,6 +14,7 @@
 -- offered to a character who has the profession.
 
 local _, ns = ...
+local L = ns.L
 
 local Crafting = ns.NewModule("Crafting")
 
@@ -169,7 +170,7 @@ function Crafting:Known()
                         if not name or name == "?" then
                             name = Plain(recipes.GetShortCharacterName and recipes:GetShortCharacterName(key))
                         end
-                        entry.alts[#entry.alts + 1] = name or "an alt"
+                        entry.alts[#entry.alts + 1] = name or L["an alt"]
                     end
                 end
             end
@@ -396,40 +397,50 @@ end
 
 local function Who(names)
     if #names == 1 then return names[1] end
-    if #names == 2 then return names[1] .. " or " .. names[2] end
-    return ("%s, %s or %d more"):format(names[1], names[2], #names - 2)
+    if #names == 2 then return L.Format("%s or %s", names[1], names[2]) end
+    return L.Format("%s, %s or %d more", names[1], names[2], #names - 2)
 end
 
+--- Where, as "Darnassus (64, 21)" or "Darnassus", or nil.
 local function Place(place)
-    if not place.zone then return "" end
-    if place.x and place.y then return (" in %s (%s, %s)"):format(place.zone, place.x, place.y) end
-    return " in " .. place.zone
+    if not place.zone then return nil end
+    if place.x and place.y then return ("%s (%s, %s)"):format(place.zone, place.x, place.y) end
+    return place.zone
 end
 
 --- How to learn it, in words: "learn it from Darianna in Darnassus (64,
 --- 21) for 50s".
 function Crafting:LearnText(learn, money)
     if not learn then return nil end
-    if learn.how == "start" then return "comes with the profession" end
+    if learn.how == "start" then return L["comes with the profession"] end
     if learn.how == "trainer" then
-        local text = "learn it from " .. learn.name .. Place(learn)
-        local cost = money(learn.cost)
-        if cost then text = text .. " for " .. cost end
-        return text
+        local where, cost = Place(learn), money(learn.cost)
+        if where and cost then return L.Format("learn it from %s in %s for %s", learn.name, where, cost) end
+        if where then return L.Format("learn it from %s in %s", learn.name, where) end
+        if cost then return L.Format("learn it from %s for %s", learn.name, cost) end
+        return L.Format("learn it from %s", learn.name)
     end
     if learn.how == "recipe" then
-        local text = learn.recipe .. ", sold by " .. learn.name .. Place(learn)
-        local price = money(learn.price)
-        if price then text = text .. " for " .. price end
-        if learn.limited then text = text .. " (limited stock)" end
+        local where, price = Place(learn), money(learn.price)
+        local text
+        if where and price then
+            text = L.Format("%s, sold by %s in %s for %s", learn.recipe, learn.name, where, price)
+        elseif where then
+            text = L.Format("%s, sold by %s in %s", learn.recipe, learn.name, where)
+        elseif price then
+            text = L.Format("%s, sold by %s for %s", learn.recipe, learn.name, price)
+        else
+            text = L.Format("%s, sold by %s", learn.recipe, learn.name)
+        end
+        if learn.limited then text = L.Format("%s (limited stock)", text) end
         return text
     end
     if learn.how == "drop" then
         local named = learn.named
         if named and #named > 0 and learn.drops <= 3 then
-            return ("%s, dropped by %s"):format(learn.recipe, named[1])
+            return L.Format("%s, dropped by %s", learn.recipe, named[1])
         end
-        return learn.recipe .. ", a world drop"
+        return L.Format("%s, a world drop", learn.recipe)
     end
     return nil
 end
@@ -438,29 +449,36 @@ end
 --- copper into coloured coins (Finder.Money).
 function Crafting:Describe(source, money)
     local text
-    local profession = source.profession or "a profession"
+    local profession = source.profession or L["a profession"]
     if source.state == "known" then
-        text = ("You can make it (%s)"):format(profession)
+        text = L.Format("You can make it (%s)", profession)
     elseif source.state == "learn" then
-        text = ("%s %d: "):format(profession, source.skill) .. (self:LearnText(source.learn, money)
-            or "you can learn it")
+        text = L.Format("%s %d: %s", profession, source.skill, self:LearnText(source.learn, money)
+            or L["you can learn it"])
     elseif source.state == "skill" then
-        text = ("Needs %s %d, you have %d"):format(profession, source.skill, source.have or 0)
         local how = self:LearnText(source.learn, money)
-        if how then text = text .. "; then " .. how end
+        if how then
+            text = L.Format("Needs %s %d, you have %d; then %s", profession, source.skill, source.have or 0, how)
+        else
+            text = L.Format("Needs %s %d, you have %d", profession, source.skill, source.have or 0)
+        end
     elseif source.state == "alt" then
-        text = ("%s can make it (%s)"):format(Who(source.who), profession)
+        text = L.Format("%s can make it (%s)", Who(source.who), profession)
     else
-        text = ("Made with %s %d"):format(profession, source.skill)
+        text = L.Format("Made with %s %d", profession, source.skill)
     end
 
     local cost = money(source.cost)
     if cost then
-        text = text .. ("  materials %s%s"):format(source.partial and "over " or "", cost)
+        if source.partial then
+            text = L.Format("%s  materials over %s", text, cost)
+        else
+            text = L.Format("%s  materials %s", text, cost)
+        end
     end
     local auction = money(source.auction)
     if auction and source.state ~= "known" then
-        text = text .. "  or " .. auction .. " at the auction house"
+        text = L.Format("%s  or %s at the auction house", text, auction)
     end
     return text
 end
@@ -477,16 +495,16 @@ function Crafting:TooltipLine(itemID)
     plan.level = 60
     local source = self:SourceFor(itemID, plan, ns.Finder.Band)
     if not source then return nil end
-    local profession = source.profession or "a profession"
-    if source.state == "known" then return "You can make this", "upgrade" end
-    if source.state == "alt" then return ("%s can make this"):format(Who(source.who)), "upgrade" end
+    local profession = source.profession or L["a profession"]
+    if source.state == "known" then return L["You can make this"], "upgrade" end
+    if source.state == "alt" then return L.Format("%s can make this", Who(source.who)), "upgrade" end
     if source.state == "learn" then
-        return ("You can learn to make this (%s %d)"):format(profession, source.skill), "accent"
+        return L.Format("You can learn to make this (%s %d)", profession, source.skill), "accent"
     end
     if source.state == "skill" then
-        return ("Made with %s %d, you have %d"):format(profession, source.skill, source.have or 0), "muted"
+        return L.Format("Made with %s %d, you have %d", profession, source.skill, source.have or 0), "muted"
     end
-    return ("Made with %s %d"):format(profession, source.skill), "muted"
+    return L.Format("Made with %s %d", profession, source.skill), "muted"
 end
 
 --------------------------------------------------------------------------------
