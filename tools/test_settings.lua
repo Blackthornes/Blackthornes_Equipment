@@ -208,7 +208,7 @@ suite.check("the command buttons run their commands",
     table.concat(ran, ",") == "window,bags,find,tracked,arrow next,probe,help", table.concat(ran, ","))
 
 -- And every command registered has a control (house rule).
-local covered = { sisters = true,
+local covered = { sisters = true, whatsnew = true,
     window = true, bags = true, find = true, tracked = true, quest = true, arrow = true,
     probe = true, help = true, perf = true, spec = true, weights = true, minimap = true,
     settings = true, weapons = true,
