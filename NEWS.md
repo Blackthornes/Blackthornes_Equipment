@@ -15,6 +15,12 @@ the thanks line: `python tools/make_whatsnew.py` writes them into
 Core/WhatsNewText.lua for the in-game What's New window. Run it after
 writing a section; the release check refuses a tag while it is behind.
 
+## 0.26.0
+
+- A new What's New window shows what changed after each update.
+- Gear that Forever changed now uses Forever's own levels and prices.
+- More lists got the new dark look.
+
 ## 0.25.0
 
 - Equipment speaks Deutsch now if your game is in German.

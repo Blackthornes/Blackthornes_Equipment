@@ -4,6 +4,25 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.26.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **What's New window:** the first time the game loads after an update,
+  one window shows what changed in every Blackthornes addon that was
+  updated, with dark glass cards and a little motion. "Motion" in Settings
+  turns the movement off, "Show after updates" turns the window off (off
+  in one addon is off in all of them), and the `whatsnew` command or a
+  Settings button opens it any time.
+- **Forever's own gear numbers:** the upgrade finder uses the Forever
+  client's own data for the 263 items whose required level, item level,
+  classes, races or vendor price changed on Forever, so it no longer skips
+  gear you can wear now or shows the old price.
+- **Dark glass rows:** the character sheet's upgrade list, the upgrade
+  hunts panel and the Ignored upgrades window use the house dark glass
+  rows, and the row under the mouse lights with a gold edge.
+
 ## 0.25.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game
