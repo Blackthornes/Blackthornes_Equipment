@@ -44,7 +44,7 @@ suite.check("staves: Orgrimmar once, then Thunder Bluff",
 
 ns = Load("Alliance")
 suite.check("Alliance daggers: three cities",
-    ns.WeaponSkills:Describe("item:1") == "Learn Daggers from the weapon master in Stormwind, Ironforge or Darnassus",
+    ns.WeaponSkills:Describe("item:1") == "Learn Daggers from the weapon master in Stormwind City, Ironforge or Darnassus",
     ns.WeaponSkills:Describe("item:1"))
 
 ns = Load(nil)
@@ -75,11 +75,11 @@ _G.UnitLevel = function() return 12 end
 _G.IsPlayerSpell = function(id) return id == 227 end   -- staves
 local polearm = ns.WeaponSkills:Describe("item:7")
 suite.check("polearms below 20 say the level",
-    polearm == "Learn Polearms at level 20 from the weapon master in Stormwind", polearm)
+    polearm == "Learn Polearms at level 20 from the weapon master in Stormwind City", polearm)
 _G.UnitLevel = function() return 20 end
 polearm = ns.WeaponSkills:Describe("item:7")
 suite.check("and at 20 just where",
-    polearm == "Learn Polearms from the weapon master in Stormwind", polearm)
+    polearm == "Learn Polearms from the weapon master in Stormwind City", polearm)
 
 -- On the tooltip, under the verdict and wrapped.
 ns = Load("Horde")
@@ -98,5 +98,14 @@ suite.check("two lines on the tooltip", #lines == 2, #lines)
 suite.check("the trainer line second",
     lines[2] == "|cffe8c15aLearn Two-Handed Swords from the weapon master in Undercity|r", lines[2])
 suite.check("and only it wraps", wraps[2] == true and not wraps[1])
+
+-- Every city is a zone the map knows by that name, or the arrow and the
+-- map pin for Show the trainer have nowhere to point.
+for faction, trainers in pairs(ns.WeaponTrainers.TRAINERS) do
+    for _, trainer in ipairs(trainers) do
+        suite.check(faction .. ": " .. trainer.name .. "'s city is a known zone",
+            ns.Waypoints.ZONE_MAPS[trainer.city] ~= nil, trainer.city)
+    end
+end
 
 suite.done()

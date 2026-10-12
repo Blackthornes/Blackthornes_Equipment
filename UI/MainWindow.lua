@@ -74,7 +74,7 @@ local function CreateItemCell(parent, width)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         pcall(GameTooltip.SetHyperlink, GameTooltip, self.link)
         if self.elsewhere then GameTooltip:AddLine(self.elsewhere, Theme.Unpack("accent")) end
-        if self.wears and not self.elsewhere then GameTooltip:AddLine("Click to put it on", Theme.Unpack("good")) end
+        if self.wears and not self.elsewhere then GameTooltip:AddLine(L["Click to put it on"], Theme.Unpack("good")) end
         GameTooltip:Show()
     end)
     cell:SetScript("OnLeave", function(self)

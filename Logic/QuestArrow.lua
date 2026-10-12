@@ -274,7 +274,7 @@ end
 
 --- A quest left the log (handed in or abandoned): stop pointing at it.
 function QuestArrow:ForgetQuest(questID)
-    if self.free and self.free.questID == questID then
+    if questID ~= nil and self.free and self.free.questID == questID then
         self.free = nil
         self:Changed(true)
     end
