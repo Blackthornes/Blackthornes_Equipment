@@ -149,8 +149,17 @@ function IgnoredUI:BuildRow(index)
     row:SetPoint("TOPLEFT", 1, -(1 + (index - 1) * ROW_HEIGHT))
     row:SetPoint("TOPRIGHT", -1, -(1 + (index - 1) * ROW_HEIGHT))
     row:SetHeight(ROW_HEIGHT)
-    if index % 2 == 0 then Theme.Fill(row, "rowAlt", 0.5) end
-    row.hover = Theme.Fill(row, "rowHover", 0)
+    -- Dark glass, a shade apart row by row, with a fine line under each.
+    Theme.Fill(row, index % 2 == 0 and "glassAlt" or "glass")
+    row.rule = row:CreateTexture(nil, "BACKGROUND", nil, 1)
+    row.rule:SetPoint("BOTTOMLEFT")
+    row.rule:SetPoint("BOTTOMRIGHT")
+    row.rule:SetHeight(1)
+    row.rule:SetColorTexture(Theme.Unpack("border", 0.6))
+    -- Filled whole and hidden with SetAlpha: filled clear, as it was, no
+    -- alpha could ever show it.
+    row.hover = Theme.Fill(row, "glassHover")
+    row.hover:SetAlpha(0)
 
     row.icon = Theme.CreateItemIcon(row, ICON)
     row.icon:SetPoint("LEFT", 8, 0)
