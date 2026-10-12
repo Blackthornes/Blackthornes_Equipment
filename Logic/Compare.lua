@@ -196,7 +196,7 @@ function Compare:Judge(link)
             fromLevel = math.max(fromLevel or 0, learns)
             -- Old enough and still the client says no: it has to be
             -- trained first, so it is not an upgrade that can be worn now.
-            if (Items:PlayerLevel() or 0) >= learns then result.train = "Dual Wield" end
+            if (Items:PlayerLevel() or 0) >= learns then result.train = L["Dual Wield"] end
         else
             usable = false
         end
@@ -342,8 +342,15 @@ function Compare:BestInBags()
             if ok and Compare.WearableUpgrade(result) and result.slot then
                 local gain = (result.score or 0) - (result.against or 0)
                 local entry = { link = link, result = result, gain = gain, where = bag * 100 + bagSlot }
+                -- A weapon the character can wear now beats one that waits
+                -- on training, whatever the gain: the gear window offers it
+                -- to put on.
                 local held = best[result.slot]
-                if not held or gain > held.gain then best[result.slot] = entry end
+                local trained, heldTrained = not result.skill, held and not held.result.skill
+                if not held or (trained and not heldTrained)
+                    or (trained == heldTrained and gain > held.gain) then
+                    best[result.slot] = entry
+                end
                 if PAIRED[result.slot] then paired[#paired + 1] = entry end
             end
         end

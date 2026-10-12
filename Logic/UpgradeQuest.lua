@@ -1105,11 +1105,21 @@ end
 --- The next step with a spot to put on the map, from the current one on.
 function UpgradeQuest:NextPlace()
     local steps, current = self:Steps()
+    local first
     for index = math.max(current, 1), #steps do
-        local place = steps[index].place
-        if place and place.zone then return place end
+        local step = steps[index]
+        local place = not step.done and step.place
+        if place and place.zone then
+            -- A spot beats a zone-only step for the same zone ("Travel to
+            -- Westfall", then the vendor there), as the arrow has it.
+            if place.x and place.y then
+                if not first or first.zone == place.zone then return place end
+                return first
+            end
+            first = first or place
+        end
     end
-    return nil
+    return first
 end
 
 --------------------------------------------------------------------------------
@@ -1139,17 +1149,22 @@ end
 function UpgradeQuest:HandedInWithout(quest)
     local source = quest.source
     if not (source and source.kind == "quest" and source.questID and ns.Finder) then return false end
+    -- Kept per quest: each tab's quest is checked in turn, so one shared
+    -- clock was reset by the others, or carried from one to the next.
+    self.missingSince = self.missingSince or {}
+    local key = source.questID
     if not ns.Finder:QuestDone(source.questID) or self.Count(quest.itemID) > 0 then
-        self.missingSince = nil
+        self.missingSince[key] = nil
         return false
     end
     local now = ns.Finder.Now()
-    if not self.missingSince then
-        self.missingSince = now
+    local since = self.missingSince[key]
+    if not since then
+        self.missingSince[key] = now
         self.recheck = true
         return false
     end
-    return now - self.missingSince >= 5
+    return now - since >= 5
 end
 
 --------------------------------------------------------------------------------

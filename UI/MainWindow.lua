@@ -280,10 +280,24 @@ function UI:BuildRows()
         hoverWash:Hide()
         row.hoverWash = hoverWash
 
+        -- The house hover's gold edge down the left, over the green one.
+        local hoverEdge = row:CreateTexture(nil, "OVERLAY")
+        hoverEdge:SetPoint("TOPLEFT")
+        hoverEdge:SetPoint("BOTTOMLEFT")
+        hoverEdge:SetWidth(2)
+        hoverEdge:SetColorTexture(Theme.Unpack("accentHi"))
+        hoverEdge:SetAlpha(0)
+
         function row.Light(p)
             row.background:SetColorTexture(Motion.Mix(restKey, "glassHover", p))
             Theme.LightGradient(hoverWash, "HORIZONTAL", "accent", 0.10, 0, p)
+            hoverEdge:SetAlpha(p)
         end
+
+        -- The whole row lights under the mouse, the slot name too.
+        row:EnableMouse(true)
+        row:SetScript("OnEnter", function() Motion:Blend(row, "hover", 1, 0.12, row.Light) end)
+        row:SetScript("OnLeave", function() Motion:Blend(row, "hover", 0, 0.18, row.Light) end)
 
         self.rows[index] = {
             slot = entry[1], frame = row, worn = worn, best = best, gain = gain, name = name,
@@ -367,8 +381,16 @@ function UI:Refresh()
         if pick then
             upgrades = upgrades + 1
             SetCell(row.best, pick.link)
-            row.gain:SetText(Compare:HowMuch(pick.result))
-            row.gain:SetTextColor(Theme.Unpack("good"))
+            -- An untrained weapon is shown, never offered to put on.
+            local skill = pick.result.skill
+            row.best.wears = not skill
+            if skill then
+                row.gain:SetText(L.Format("Train: %s", Compare:HowMuch(pick.result)))
+                row.gain:SetTextColor(Theme.Unpack("loss"))
+            else
+                row.gain:SetText(Compare:HowMuch(pick.result))
+                row.gain:SetTextColor(Theme.Unpack("good"))
+            end
         elseif other then
             owned = owned + 1
             SetCell(row.best, other.link)

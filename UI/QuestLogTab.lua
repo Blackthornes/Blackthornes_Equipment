@@ -712,8 +712,11 @@ function QuestLogUI:Act(what, quest)
         local arrow = ns.QuestArrow
         local free = arrow and arrow.IsOn() and arrow:FreeQuest()
         -- Pointing at this one already: back to the upgrade quest.
+        -- Only the log quest is let go: moving on to another tab would take
+        -- the panel off the Quest log tab.
         if free and free.questID == quest.questID and free.title == quest.title then
-            arrow:NextTab()
+            arrow.free = nil
+            arrow:Changed(true)
             self:Changed()
             return true
         end

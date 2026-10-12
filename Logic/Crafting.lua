@@ -150,10 +150,21 @@ function Crafting:Known()
         local selfKey = ts.Config and ts.Config.GetCharacterKey and ts.Config:GetCharacterKey()
         local myFaction = Plain(Read(_G.UnitFactionGroup, "player"))
         local characters = ts.db and ts.db.characters or {}
+        -- Tradeskills' own test of "the one playing": an old name-realm
+        -- record of this character beside its GUID one is still this
+        -- character, never an alt that can make it.
+        local chars = ts.Characters
+        local function IsMe(key)
+            if key == selfKey then return true end
+            if not (chars and chars.IsPlaying) then return false end
+            local okMe, me = pcall(chars.IsPlaying, chars, key)
+            return okMe and me == true
+        end
         for recipeID, recipe in pairs(recipes:GetAccountWide(true)) do
             local entry = { alts = {} }
+            local named = {}
             for _, key in ipairs(recipe.knownBy or {}) do
-                if key == selfKey then
+                if IsMe(key) then
                     entry.mine = true
                 else
                     -- Gear is mailed, so only a character of the same side
@@ -170,7 +181,13 @@ function Crafting:Known()
                         if not name or name == "?" then
                             name = Plain(recipes.GetShortCharacterName and recipes:GetShortCharacterName(key))
                         end
-                        entry.alts[#entry.alts + 1] = name or L["an alt"]
+                        -- An alt under two records is named once.
+                        if not name then
+                            entry.alts[#entry.alts + 1] = L["an alt"]
+                        elseif not named[name] then
+                            named[name] = true
+                            entry.alts[#entry.alts + 1] = name
+                        end
                     end
                 end
             end

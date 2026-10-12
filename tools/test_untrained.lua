@@ -35,6 +35,18 @@ suite.check("the tooltip says once you train it",
     line and line:find("Upgrade for Arms once you train Staves", 1, true), line)
 suite.check("a trained sword needs nothing", Compare:JudgeCarried("item:3").skill == nil)
 
+-- The gear window's best in bags: a staff at +100% would hide the sword at
+-- +100% the character can wear, so the trained one wins whatever the gain.
+env.bags[0][1], env.bags[0][2] = "item:2", "item:3"
+local best = Compare:BestInBags()[16]
+suite.check("the trained sword is the one offered", best and best.link == "item:3",
+    best and best.link)
+env.bags[0][2] = nil
+best = Compare:BestInBags()[16]
+suite.check("alone, the staff is still listed", best and best.link == "item:2"
+    and best.result.skill == "Staves", best and best.link)
+env.bags[0][1] = nil
+
 env.bags[0][1] = "item:2"
 _G.C_Item.EquipItemByName = function() end
 _G.InCombatLockdown = function() return false end
