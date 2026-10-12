@@ -369,6 +369,20 @@ leaving out any that match the Classic data. Only NPC IDs, NPC names, map
 names and numbers are copied. A spot read off the map by hand can be added
 with `--spot <NPC ID> "<Map>" <x> <y>`.
 
+Gear Forever changed (a required level, item level, the classes or races
+that can use it, a vendor price) is read from the Forever client's game
+tables, exported as CSV, one file per table:
+
+```bash
+python tools/forever_items.py <tables folder> --build <client build>
+```
+
+It reads only `ItemSparse.csv` and writes `Data/ForeverItems.lua`: just the
+items whose numbers differ from `Data/Sources.lua` or `Data/Crafts.lua`,
+which the finder lays over the Classic rows as the addon loads. Rerun it
+after `make_sources.py` or `make_crafts.py`, and when the client changes.
+The tables themselves never go in the repository.
+
 The tests load the addon against a stub client (`tools/testenv.lua`), reading
 the file list straight from the TOC. A new test is a new `tools/test_*.lua`
 file and nothing else.

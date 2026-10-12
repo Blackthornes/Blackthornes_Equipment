@@ -287,6 +287,24 @@ harvest up to date from his saved data first (he attaches it; see Farmer's
 `tools/harvest_import.py`), then rerun this. Stats always come from the
 game, never from data, so a Forever stat change needs nothing.
 
+Gear Forever changed (the owner said "do it all", 2026-10-12, to using
+the Forever client's game tables in every addon): `tools/forever_items.py
+<tables folder> --build <build>` reads only the client's `ItemSparse.csv`
+(required level, item level, classes, races, vendor price) and writes
+`Data/ForeverItems.lua` (`ns.ForeverItems[itemID] = { req, ilvl, classes,
+races, price }`), only items that differ from `Sources.ITEMS` or
+`Crafts.ITEMS`. `Finder.LayForeverItems` lays them over the Classic rows
+once at load, so the finder's level, class and race checks and its vendor
+price read Forever's; the price only for gear a vendor sells.
+Reputations are left alone (the vendor asks for the standing, not the
+item), and so are items the client's table lacks. Stats still come from
+the game. Never commit the tables, and never name where they were
+downloaded: say "the Forever client's game tables". Rerun it after
+`make_sources.py` or `make_crafts.py` and when the client tables are
+pulled again; it touches no other data file, so the weekly drops refresh
+(`forever_drops.py`) is unaffected. Tested in `tools/test_foreveritems.lua`
+and `tools/test_forever_items.py`.
+
 Vendor and trainer spots on Forever (the owner asked 2026-10-07, after Varg
 Windwhisper turned out to stand elsewhere): `Logic/NPCSpots.lua` keeps,
 whenever a merchant or trainer window opens, the NPC ID from
