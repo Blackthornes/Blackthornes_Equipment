@@ -15,6 +15,12 @@ the thanks line: `python tools/make_whatsnew.py` writes them into
 Core/WhatsNewText.lua for the in-game What's New window. Run it after
 writing a section; the release check refuses a tag while it is behind.
 
+## 0.26.1
+
+- Weapons you haven't trained no longer get picked as the one to wear.
+- The trainer arrow stays on until you get there.
+- The upgrade quest's map pin goes right to the vendor.
+
 ## 0.26.0
 
 - A new What's New window shows what changed after each update.

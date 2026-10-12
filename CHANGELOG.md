@@ -4,6 +4,30 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.26.1
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is
+enough after updating.
+
+- **Untrained weapons:** a weapon you haven't trained is never offered as
+  the one to put on, and no longer hides a trained upgrade for the same
+  slot; it shows a red "Train" with its gain instead. Learning a skill
+  makes the finder judge again. After **Show the trainer**, the arrow
+  stays on the weapon master until you get there, and Alliance skills
+  taught in Stormwind City point there again.
+- **Upgrade quest:** its map pin and Show on map go to the vendor's spot
+  and skip steps already done. A second Arrow click on the Quest log tab
+  no longer jumps the panel to another tab.
+- **Gear window:** rows light with the gold edge under the mouse, from the
+  slot name too, and the Take reward button lights like every other
+  button.
+- **Crafted gear:** the character you're playing is "you", and each alt is
+  named once.
+- **Deutsch (German) clients:** "Click to put it on", "+2 more" and "Dual
+  Wield" are in German.
+- **What's New:** closing the window while holding its scroll bar lets go
+  of it.
+
 ## 0.26.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game
