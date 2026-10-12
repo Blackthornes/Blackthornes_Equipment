@@ -11,6 +11,7 @@
 -- here names it from the stats it adds.
 
 local _, ns = ...
+local L = ns.L
 
 local Rolls = ns.NewModule("Rolls")
 
@@ -32,13 +33,13 @@ local NAMES = {
 
 -- What a stat reads as, where the client gives no name for it.
 local LABELS = {
-    ITEM_MOD_STRENGTH_SHORT = "Strength", ITEM_MOD_AGILITY_SHORT = "Agility",
-    ITEM_MOD_STAMINA_SHORT = "Stamina", ITEM_MOD_INTELLECT_SHORT = "Intellect",
-    ITEM_MOD_SPIRIT_SHORT = "Spirit", ITEM_MOD_ATTACK_POWER_SHORT = "Attack Power",
-    ITEM_MOD_RANGED_ATTACK_POWER_SHORT = "Ranged Attack Power",
-    ITEM_MOD_DEFENSE_SKILL_RATING_SHORT = "Defense", ITEM_MOD_SPELL_HEALING_DONE_SHORT = "Healing",
-    ITEM_MOD_SPELL_DAMAGE_DONE_SHORT = "Spell Damage", ITEM_MOD_SPELL_POWER_SHORT = "Spell Power",
-    ITEM_MOD_MANA_REGENERATION_SHORT = "Mana every 5 sec", RESISTANCE0_NAME = "Armor",
+    ITEM_MOD_STRENGTH_SHORT = L["Strength"], ITEM_MOD_AGILITY_SHORT = L["Agility"],
+    ITEM_MOD_STAMINA_SHORT = L["Stamina"], ITEM_MOD_INTELLECT_SHORT = L["Intellect"],
+    ITEM_MOD_SPIRIT_SHORT = L["Spirit"], ITEM_MOD_ATTACK_POWER_SHORT = L["Attack Power"],
+    ITEM_MOD_RANGED_ATTACK_POWER_SHORT = L["Ranged Attack Power"],
+    ITEM_MOD_DEFENSE_SKILL_RATING_SHORT = L["Defense"], ITEM_MOD_SPELL_HEALING_DONE_SHORT = L["Healing"],
+    ITEM_MOD_SPELL_DAMAGE_DONE_SHORT = L["Spell Damage"], ITEM_MOD_SPELL_POWER_SHORT = L["Spell Power"],
+    ITEM_MOD_MANA_REGENERATION_SHORT = L["Mana every 5 sec"], RESISTANCE0_NAME = L["Armor"],
 }
 
 --- The roll an item link carries (its suffix ID), or nil for none.

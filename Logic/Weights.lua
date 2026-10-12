@@ -19,6 +19,7 @@
 -- has been checked on Forever; see CLASSIC_COLUMNS.
 
 local _, ns = ...
+local L = ns.L
 
 local Weights = ns.NewModule("Weights")
 
@@ -497,6 +498,53 @@ local WEAPON_TYPES = {
 
 -- The most a kind of weapon can be multiplied by. 0 leaves it out.
 local MAX_TYPE = 3
+
+-- The words a player reads for the English names above. The English stays
+-- the name everywhere else (saved weights, typed spec names, tests), so only
+-- what is shown goes through here: Weights.Label(name), or SpecName.
+local LABELS = {
+    -- Specs
+    ["Beast Mastery"] = L["Beast Mastery"], ["Marksmanship"] = L["Marksmanship"],
+    ["Survival"] = L["Survival"], ["Arms"] = L["Arms"], ["Fury"] = L["Fury"],
+    ["Protection"] = L["Protection"], ["Holy"] = L["Holy"], ["Retribution"] = L["Retribution"],
+    ["Assassination"] = L["Assassination"], ["Combat"] = L["Combat"], ["Subtlety"] = L["Subtlety"],
+    ["Discipline"] = L["Discipline"], ["Shadow"] = L["Shadow"], ["Elemental"] = L["Elemental"],
+    ["Enhancement"] = L["Enhancement"], ["Restoration"] = L["Restoration"], ["Arcane"] = L["Arcane"],
+    ["Fire"] = L["Fire"], ["Frost"] = L["Frost"], ["Affliction"] = L["Affliction"],
+    ["Demonology"] = L["Demonology"], ["Destruction"] = L["Destruction"], ["Balance"] = L["Balance"],
+    ["Feral Combat"] = L["Feral Combat"],
+    -- Stats
+    ["Strength"] = L["Strength"], ["Agility"] = L["Agility"], ["Stamina"] = L["Stamina"],
+    ["Intellect"] = L["Intellect"], ["Spirit"] = L["Spirit"], ["Armor"] = L["Armor"],
+    ["Attack power"] = L["Attack power"], ["Ranged attack power"] = L["Ranged attack power"],
+    ["Crit"] = L["Crit"], ["Hit"] = L["Hit"], ["Melee weapon dps"] = L["Melee weapon dps"],
+    ["Ranged weapon dps"] = L["Ranged weapon dps"], ["Spell power"] = L["Spell power"],
+    ["Arcane spell damage"] = L["Arcane spell damage"], ["Fire spell damage"] = L["Fire spell damage"],
+    ["Frost spell damage"] = L["Frost spell damage"], ["Nature spell damage"] = L["Nature spell damage"],
+    ["Shadow spell damage"] = L["Shadow spell damage"], ["Holy spell damage"] = L["Holy spell damage"],
+    ["Healing"] = L["Healing"], ["Spell crit"] = L["Spell crit"], ["Spell hit"] = L["Spell hit"],
+    ["Mana every 5 sec"] = L["Mana every 5 sec"], ["Defense"] = L["Defense"], ["Dodge"] = L["Dodge"],
+    ["Parry"] = L["Parry"], ["Block"] = L["Block"], ["Block value"] = L["Block value"],
+    -- Kinds of weapon
+    ["Daggers"] = L["Daggers"], ["Fist weapons"] = L["Fist weapons"],
+    ["One-handed axes"] = L["One-handed axes"], ["One-handed maces"] = L["One-handed maces"],
+    ["One-handed swords"] = L["One-handed swords"], ["Two-handed axes"] = L["Two-handed axes"],
+    ["Two-handed maces"] = L["Two-handed maces"], ["Two-handed swords"] = L["Two-handed swords"],
+    ["Polearms"] = L["Polearms"], ["Staves"] = L["Staves"], ["Bows"] = L["Bows"],
+    ["Crossbows"] = L["Crossbows"], ["Guns"] = L["Guns"], ["Thrown"] = L["Thrown"], ["Wands"] = L["Wands"],
+}
+
+--- What a player reads for a spec, stat or weapon kind's English name.
+function Weights.Label(name)
+    return name and LABELS[name] or name
+end
+
+--- The shown name of a class's spec ("Beast Mastery", or the client's
+--- language's), or nil when there is no such spec.
+function Weights:SpecName(class, spec)
+    local entry = class and SPECS[class] and spec and SPECS[class][spec]
+    return entry and Weights.Label(entry.name) or nil
+end
 
 Weights.SPECS = SPECS
 Weights.STAT_KEYS = STAT_KEYS
@@ -1120,22 +1168,22 @@ end
 --------------------------------------------------------------------------------
 
 local WHY = {
-    picked = "you picked it",
-    talents = "from your talent points",
-    default = "the default until you spend talent points",
+    picked = L["you picked it"],
+    talents = L["from your talent points"],
+    default = L["the default until you spend talent points"],
 }
 
 local function ShowSpec()
     local spec, why, class = Weights:CurrentSpec()
     if not spec then
-        ns.Print(("no stat weights for %s yet"):format(class or "this class"))
+        ns.Print(L.Format("no stat weights for %s yet", class or L["this class"]))
         return
     end
-    ns.Print(("judging gear as |c%s%s|r (%s)"):format(
-        ns.COLORS.accent, SPECS[class][spec].name, WHY[why]))
+    ns.Print(L.Format("judging gear as |c%s%s|r (%s)",
+        ns.COLORS.accent, Weights:SpecName(class, spec), WHY[why]))
 end
 
-ns.RegisterCommand("spec", "show the spec gear is judged for, or pick one by name (or auto)",
+ns.RegisterCommand("spec", L["show the spec gear is judged for, or pick one by name (or auto)"],
     function(rest)
         rest = (rest or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
         if rest == "" then
@@ -1158,7 +1206,7 @@ ns.RegisterCommand("spec", "show the spec gear is judged for, or pick one by nam
                 names[#names + 1] = key
             end
             names[#names + 1] = "auto"
-            ns.Warn(("not a spec: %s (try %s)"):format(rest, table.concat(names, ", ")))
+            ns.Warn(L.Format("not a spec: %s (try %s)", rest, table.concat(names, ", ")))
             return
         end
 

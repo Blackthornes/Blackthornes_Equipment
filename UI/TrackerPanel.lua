@@ -10,6 +10,7 @@
 -- the spot is kept with the other window positions.
 
 local _, ns = ...
+local L = ns.L
 
 local TrackerPanel = ns.NewModule("TrackerPanel")
 
@@ -45,15 +46,15 @@ local function ShowTooltip(row)
     pcall(GameTooltip.SetHyperlink, GameTooltip, hunt.link)
     GameTooltip:AddLine(" ")
     if hunt.done then
-        GameTooltip:AddLine("Hunt done", Theme.Unpack("good"))
+        GameTooltip:AddLine(L["Hunt done"], Theme.Unpack("good"))
     else
         if hunt.place and hunt.place.text then
             GameTooltip:AddLine(hunt.place.text, Theme.Unpack("text"))
         end
         if hunt.place and hunt.place.x then
-            GameTooltip:AddLine("Click to pin it on your map", Theme.Unpack("muted"))
+            GameTooltip:AddLine(L["Click to pin it on your map"], Theme.Unpack("muted"))
         end
-        GameTooltip:AddLine("Right-click to stop tracking", Theme.Unpack("muted"))
+        GameTooltip:AddLine(L["Right-click to stop tracking"], Theme.Unpack("muted"))
     end
     GameTooltip:Show()
 end
@@ -141,7 +142,7 @@ function TrackerPanel:Build()
     fold:SetPoint("RIGHT", -5, 0)
     self.foldButton = fold
 
-    local done = Widgets.CreateButton(header, "Done", function() TrackerPanel:ToggleDone() end,
+    local done = Widgets.CreateButton(header, L["Done"], function() TrackerPanel:ToggleDone() end,
         { width = 40, height = 16 })
     done:SetPoint("RIGHT", fold, "LEFT", -4, 0)
     self.doneButton = done
@@ -176,10 +177,10 @@ end
 
 --- What a row shows under the item: where to get it, or that it is got.
 function TrackerPanel.WhereText(hunt)
-    if hunt.done then return Colored("good", "Done") end
-    if hunt.got then return Colored("good", "In your bags: put it on") end
+    if hunt.done then return Colored("good", L["Done"]) end
+    if hunt.got then return Colored("good", L["In your bags: put it on"]) end
     if hunt.place and hunt.place.text then return hunt.place.text end
-    return "Open Where to get upgrades for the details"
+    return L["Open Where to get upgrades for the details"]
 end
 
 function TrackerPanel:Lines()
@@ -204,11 +205,11 @@ function TrackerPanel:Refresh()
 
     local lines = self:Lines()
     if self.showingDone then
-        self.title:SetText(("Finished hunts (%d)"):format(#lines))
+        self.title:SetText(L.Format("Finished hunts (%d)", #lines))
     else
-        self.title:SetText(("Upgrade hunts (%d)"):format(count))
+        self.title:SetText(L.Format("Upgrade hunts (%d)", count))
     end
-    self.doneButton:SetText(self.showingDone and "Hunts" or "Done")
+    self.doneButton:SetText(self.showingDone and L["Hunts"] or L["Done"])
     self.foldButton:SetText(self.folded and "+" or "-")
 
     local shown = 0
@@ -228,7 +229,7 @@ function TrackerPanel:Refresh()
 
     local empty = not self.folded and shown == 0
     self.empty:SetShown(empty)
-    self.empty:SetText(self.showingDone and "No hunts finished yet." or "")
+    self.empty:SetText(self.showingDone and L["No hunts finished yet."] or "")
     local height = HEADER
     if not self.folded then height = HEADER + 8 + math.max(shown, empty and 1 or 0) * ROW_HEIGHT end
     self.frame:SetHeight(height)

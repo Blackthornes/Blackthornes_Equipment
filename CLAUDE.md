@@ -555,6 +555,35 @@ setting with `pages:Row(page, column, label, description)` and
 words change (the spec row, the panel size row) calls
 `row:SetDescription(text)`. Every `/beq` command has a button there.
 
+## German translation
+
+The owner said yes (2026-10-12) to German in Equipment, after Pets' pilot
+and Farmer. Players are told the language as "Deutsch"; the code names
+stay `deDE` and `Locale/deDE.lua`.
+
+- **English is the key and the fallback.** `Locale/Locale.lua` (first in
+  the TOC, Pets' file) makes `ns.L`, whose missing keys answer the key
+  itself; `L.Format(key, ...)` is `string.format` on the translation and
+  puts values named by place (`%2$s ... %1$d`) in order.
+- **Adding a string:** `L["English text"]` or `L.Format("English %s",
+  value)`, a literal where it is written, one whole sentence a key (never
+  pieces joined with `..`), both forms for a plural; add its line to
+  `Locale/deDE.lua` (informal "du" and the game's words: Verbesserung,
+  Ausrüstung, Händler, Quest, Dungeon, Schlachtzug, Ruf, Stufe, Gebiet)
+  and run `python tools/check_locale.py` (warns only; keep it at 0
+  missing). `tools/test_locale.lua` loads Equipment as a German client.
+- **Spec and stat names stay English inside** (`SPECS`, saved weights,
+  `customWeights`); only `Weights.Label(name)` and `Weights:SpecName(class,
+  spec)` show them. `result.specName` is for showing only.
+- **Left in English on purpose:** slash command words, saved and internal
+  keys (verdicts, kinds, `Finder.NEEDS`), anything compared against data or
+  the client, data names (items, zones, NPCs, professions, trainers),
+  random-roll suffixes ("of the Monkey", from the data), "[Forever]",
+  debug lines and the checks players run for a report (`/beq probe`,
+  `/beq arrow check`).
+- German runs about 30% longer: buttons grow to fit, settings rows wrap,
+  and a new fixed width must wrap or grow, never end in "...".
+
 ## The house frame (Titanforged)
 
 The owner picked this look for all four addons on 2026-10-04 from two mockups

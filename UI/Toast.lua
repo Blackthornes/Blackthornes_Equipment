@@ -12,6 +12,7 @@
 -- setting (`upgradeToast`); the chat line has its own switch.
 
 local _, ns = ...
+local L = ns.L
 
 local Toast = ns.NewModule("Toast")
 
@@ -67,7 +68,7 @@ function Toast:Build()
     close:SetPoint("TOPRIGHT", -6, -6)
 
     -- An upgrade in the bags can be put on from here, out of combat.
-    local wear = Widgets.CreateButton(frame, "Put it on", function()
+    local wear = Widgets.CreateButton(frame, L["Put it on"], function()
         local link = rawget(Toast, "link")
         if link and ns.Wear:PutOn(link) then Toast:Dismiss() end
     end, { width = 76, height = 18, primary = true })
@@ -102,7 +103,7 @@ function Toast:Build()
         if link and GameTooltip then
             GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
             pcall(GameTooltip.SetHyperlink, GameTooltip, link)
-            GameTooltip:AddLine("Click to open Where to get upgrades", Theme.Unpack("muted"))
+            GameTooltip:AddLine(L["Click to open Where to get upgrades"], Theme.Unpack("muted"))
             GameTooltip:Show()
         end
     end)

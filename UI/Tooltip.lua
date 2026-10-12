@@ -13,6 +13,7 @@
 -- tooltips beside them show what is worn, which needs no verdict.
 
 local _, ns = ...
+local L = ns.L
 
 local Tooltip = ns.NewModule("Tooltip")
 
@@ -118,7 +119,7 @@ function Tooltip:MoreLines(link)
     if not (ns.db and ns.db.suffixLine == false) and ns.Rolls and ns.Rolls.RollOf(link) then
         local name, stats = ns.Rolls:Describe(link)
         if stats then
-            lines[#lines + 1] = { name and (name .. ": " .. stats) or ("Random roll: " .. stats), "accent" }
+            lines[#lines + 1] = { name and (name .. ": " .. stats) or L.Format("Random roll: %s", stats), "accent" }
         end
     end
     local itemID = tonumber(link:match("item:(%d+)"))
@@ -157,10 +158,10 @@ function Tooltip:AltLine(link, result)
         or result.verdict == "equipped" then return nil end
     local alt = ns.Alts:BestFor(link)
     if not alt then return nil end
-    local name = ns.Alts:NameOf(alt.key) or "another of your characters"
-    local how = alt.gain and ("%+d%%"):format(alt.gain) or "fills an empty slot"
-    if alt.level then return ("Upgrade for %s at level %d: %s"):format(name, alt.level, how) end
-    return ("Upgrade for %s: %s"):format(name, how)
+    local name = ns.Alts:NameOf(alt.key) or L["another of your characters"]
+    local how = alt.gain and ("%+d%%"):format(alt.gain) or L["fills an empty slot"]
+    if alt.level then return L.Format("Upgrade for %s at level %d: %s", name, alt.level, how) end
+    return L.Format("Upgrade for %s: %s", name, how)
 end
 
 --- The lines for one item, worked out afresh.

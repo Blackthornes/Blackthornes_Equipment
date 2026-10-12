@@ -41,6 +41,7 @@
 -- update.
 
 local _, ns = ...
+local L = ns.L
 
 local UpgradeQuest = ns.NewModule("UpgradeQuest")
 
@@ -51,10 +52,10 @@ UpgradeQuest.declined = {}
 -- The tabs, in the panel's order: the finder's source kind each holds (a
 -- raid is a dungeon), its name and its colour, as in the upgrade finder.
 UpgradeQuest.TABS = {
-    { key = "vendor", name = "Vendor", color = "accent" },
-    { key = "quest", name = "Quest", color = "quest" },
-    { key = "dungeon", name = "Dungeons and Raids", color = "dungeon" },
-    { key = "craft", name = "Crafted", color = "craft" },
+    { key = "vendor", name = L["Vendor"], color = "accent" },
+    { key = "quest", name = L["Quest"], color = "quest" },
+    { key = "dungeon", name = L["Dungeons and Raids"], color = "dungeon" },
+    { key = "craft", name = L["Crafted"], color = "craft" },
 }
 local TABS = UpgradeQuest.TABS
 local IS_TAB = {}
@@ -62,10 +63,10 @@ for _, tab in ipairs(TABS) do IS_TAB[tab.key] = tab end
 
 -- How each tab says it has nothing to chase.
 local NONE = {
-    vendor = "No upgrade a vendor sells right now.",
-    quest = "No quest reward that is an upgrade right now.",
-    dungeon = "No dungeon or raid drop that is an upgrade right now.",
-    craft = "No crafted upgrade right now.",
+    vendor = L["No upgrade a vendor sells right now."],
+    quest = L["No quest reward that is an upgrade right now."],
+    dungeon = L["No dungeon or raid drop that is an upgrade right now."],
+    craft = L["No crafted upgrade right now."],
 }
 UpgradeQuest.NONE = NONE
 
@@ -129,10 +130,10 @@ local CLEARLY_BETTER = 1.5
 
 -- The note on a quest step that needs more than the player.
 local NEED_NOTES = {
-    group = "Needs a group.",
-    dungeon = "Done in a dungeon, so bring a group.",
-    raid = "Needs a raid.",
-    battleground = "Done in a battleground.",
+    group = L["Needs a group."],
+    dungeon = L["Done in a dungeon, so bring a group."],
+    raid = L["Needs a raid."],
+    battleground = L["Done in a battleground."],
 }
 
 local function Read(fn, ...)
@@ -266,7 +267,7 @@ function UpgradeQuest:IgnoredList()
                     pcall(C.RequestLoadItemDataByID, id)
                 end
             end
-            list[#list + 1] = { itemID = id, name = name or ("Item %d"):format(id), link = link }
+            list[#list + 1] = { itemID = id, name = name or L.Format("Item %d", id), link = link }
         end
     end
     table.sort(list, function(a, b)
@@ -483,19 +484,19 @@ end
 --- cannot be yet.
 -- @return the source to follow, or nil and why not
 function UpgradeQuest.CanFollow(pick)
-    if type(pick) ~= "table" or not tonumber(pick.itemID) then return nil, "nothing to follow" end
+    if type(pick) ~= "table" or not tonumber(pick.itemID) then return nil, L["nothing to follow"] end
     if pick.needs then
-        return nil, ("it needs %s with %s first"):format(tostring(pick.needs.standing),
+        return nil, L.Format("it needs %s with %s first", tostring(pick.needs.standing),
             tostring(pick.needs.faction))
     end
-    if pick.at then return nil, ("you can wear it from level %d"):format(pick.at) end
+    if pick.at then return nil, L.Format("you can wear it from level %d", pick.at) end
     local usable = {}
     for _, source in ipairs(pick.sources or {}) do
         if not (source.kind == "craft" and source.state == "other") then usable[#usable + 1] = source end
     end
     local source = UpgradeQuest.BestSource(usable, UpgradeQuest.Zone())
     if not (source and UpgradeQuest.TabOf(source)) then
-        return nil, "only another player can make it"
+        return nil, L["only another player can make it"]
     end
     return source
 end
@@ -505,13 +506,13 @@ end
 --- turned on. The quest it replaces is not skipped, so it can come back.
 -- @return the quest, or nil and why not
 function UpgradeQuest:Follow(pick)
-    if not (ns.db and ns.charDB) then return nil, "not loaded yet" end
+    if not (ns.db and ns.charDB) then return nil, L["not loaded yet"] end
     local source, why = self.CanFollow(pick)
     if not source then return nil, why end
     self:Skipped()[pick.itemID] = nil
     self.declined[pick.itemID] = nil
     local quest = self:Start(pick, source)
-    if not quest then return nil, "nothing to follow" end
+    if not quest then return nil, L["nothing to follow"] end
     -- Picked by hand: "This zone only" never lets it go.
     quest.followed = true
     ns.charDB.upgradeQuestTab = self.TabOf(source)
@@ -766,20 +767,24 @@ end
 
 --- "to Morin Cloudstalker in Mulgore (51.9, 59.6)", "at" for an object.
 local function HandText(hand, withZone)
-    local where = withZone and (" in %s"):format(hand.zone) or ""
-    return ("%s %s%s%s"):format(hand.kind == "object" and "at" or "to", hand.name, where, At(hand))
+    if hand.kind == "object" then
+        if withZone then return L.Format("at %s in %s%s", hand.name, hand.zone, At(hand)) end
+        return L.Format("at %s%s", hand.name, At(hand))
+    end
+    if withZone then return L.Format("to %s in %s%s", hand.name, hand.zone, At(hand)) end
+    return L.Format("to %s%s", hand.name, At(hand))
 end
 
 --- What to do for a quest's objective: "collect Fizsprocket's Clipboard
 --- from Supervisor Fizsprocket in Mulgore (64.9, 43.3)".
 local function GoalText(goal)
-    local where = goal.dungeon and (" in %s"):format(goal.dungeon)
-        or (" in %s%s"):format(goal.zone, At(goal))
+    local where = goal.dungeon and L.Format(" in %s", goal.dungeon)
+        or L.Format(" in %s", goal.zone) .. At(goal)
     if goal.item then
-        local verb = goal.kind == "vendor" and "buy" or "collect"
-        return ("%s %s from %s%s"):format(verb, goal.item, goal.name, where)
+        if goal.kind == "vendor" then return L.Format("buy %s from %s%s", goal.item, goal.name, where) end
+        return L.Format("collect %s from %s%s", goal.item, goal.name, where)
     end
-    return ("find %s%s"):format(goal.name, where)
+    return L.Format("find %s%s", goal.name, where)
 end
 
 --- A place for the map and the arrow, as the other steps carry it.
@@ -793,16 +798,23 @@ local function LevelText(place)
     local parts = {}
     if (place.low or 0) > 0 then
         parts[#parts + 1] = place.high and place.high > place.low
-            and ("levels %d to %d"):format(place.low, place.high) or ("level %d"):format(place.low)
+            and L.Format("levels %d to %d", place.low, place.high) or L.Format("level %d", place.low)
     end
-    if place.rank then parts[#parts + 1] = place.rank end
+    -- The rank is the data's word; only how it is shown is translated.
+    if place.rank == "rare" then
+        parts[#parts + 1] = L["rare"]
+    elseif place.rank == "rare elite" then
+        parts[#parts + 1] = L["rare elite"]
+    elseif place.rank then
+        parts[#parts + 1] = place.rank
+    end
     return #parts > 0 and (" (%s)"):format(table.concat(parts, ", ")) or ""
 end
 
 local function Who(names)
-    if type(names) ~= "table" or #names == 0 then return "An alt" end
+    if type(names) ~= "table" or #names == 0 then return L["An alt"] end
     if #names == 1 then return names[1] end
-    return names[1] .. " or " .. names[2]
+    return L.Format("%s or %s", names[1], names[2])
 end
 
 --- The steps to get the quest's upgrade, worked out from where it comes
@@ -827,7 +839,7 @@ function UpgradeQuest:Steps(quest)
 
     local function Travel(where)
         if where and where.zone then
-            Add(("Travel to %s"):format(where.zone), zone == where.zone, { zone = where.zone, name = where.zone })
+            Add(L.Format("Travel to %s", where.zone), zone == where.zone, { zone = where.zone, name = where.zone })
             -- Standing in the zone says nothing about the steps before it.
             steps[#steps].soft = true
         end
@@ -837,14 +849,14 @@ function UpgradeQuest:Steps(quest)
     -- place the data gives, Forever's before Classic's), then using it.
     -- With the item in the bags, only the using is left.
     local function StartFromItem(questID, title, itemName, started, travel, lead)
-        title = title or "the quest"
+        title = title or L["the quest"]
         local starter = questID and UpgradeQuest.Starter(questID)
-        itemName = (starter and starter.item) or itemName or "an item"
+        itemName = (starter and starter.item) or itemName or L["an item"]
         local held = starter and UpgradeQuest.Count(starter.itemID) > 0
         local first = starter and starter.places[1]
         if not first and not held then
-            Add(("Find %s, the item that starts %s"):format(itemName, title), started, nil,
-                (lead and lead .. " " or "") .. "Where it drops is not known. Right-click it in your bags to start the quest.")
+            Add(L.Format("Find %s, the item that starts %s", itemName, title), started, nil,
+                (lead and lead .. " " or "") .. L["Where it drops is not known. Right-click it in your bags to start the quest."])
             return
         end
         if first and not held and not started then
@@ -855,38 +867,40 @@ function UpgradeQuest:Steps(quest)
                 place = { zone = first.zone, x = first.x, y = first.y, name = first.name }
             end
             if travel then Travel(place) end
-            local verb = first.kind == "vendor" and "Buy" or "Get"
-            local where = first.kind == "boss" and (" in %s"):format(first.zone)
-                or (" in %s%s"):format(first.zone, At(first))
+            local where = first.kind == "boss" and L.Format(" in %s", first.zone)
+                or L.Format(" in %s", first.zone) .. At(first)
             local notes = { lead }
             if first.kind == "boss" then
-                notes[#notes + 1] = first.zone == first.door and "Bring a group." or "A dungeon boss: bring a group."
+                notes[#notes + 1] = first.zone == first.door and L["Bring a group."] or L["A dungeon boss: bring a group."]
             elseif first.rank == "rare" or first.rank == "rare elite" then
-                notes[#notes + 1] = "A rare: it may not be up when you get there."
+                notes[#notes + 1] = L["A rare: it may not be up when you get there."]
             end
             local chance = tonumber(first.chance)
             if chance and chance < 100 and first.kind ~= "vendor" then
-                notes[#notes + 1] = ("A %s%% drop."):format(tostring(chance))
+                notes[#notes + 1] = L.Format("A %s%% drop.", tostring(chance))
             end
-            if first.forever then notes[#notes + 1] = "Seen dropping on Forever." end
+            if first.forever then notes[#notes + 1] = L["Seen dropping on Forever."] end
             local others = {}
             for index = 2, #starter.places do others[#others + 1] = starter.places[index].name end
             if #others > 0 then
                 local more = starter.total - #starter.places
-                notes[#notes + 1] = ("Also from %s%s."):format(table.concat(others, " and "),
-                    more > 0 and (" and %d more"):format(more) or "")
+                local names = table.concat(others, L[" and "])
+                notes[#notes + 1] = more > 0 and L.Format("Also from %s and %d more.", names, more)
+                    or L.Format("Also from %s.", names)
             end
-            Add(("%s %s from %s%s%s"):format(verb, itemName, first.name or "?", LevelText(first), where),
-                false, place, table.concat(notes, " "))
+            local text = first.kind == "vendor"
+                and L.Format("Buy %s from %s%s%s", itemName, first.name or "?", LevelText(first), where)
+                or L.Format("Get %s from %s%s%s", itemName, first.name or "?", LevelText(first), where)
+            Add(text, false, place, table.concat(notes, " "))
             lead = nil
         end
-        Add(("Right-click %s in your bags to start %s"):format(itemName, title), started, nil, lead)
+        Add(L.Format("Right-click %s in your bags to start %s", itemName, title), started, nil, lead)
     end
 
     if source.kind == "vendor" then
         local place = { zone = source.zone, x = source.x, y = source.y, name = source.name }
         Travel(place)
-        local text = ("Find %s%s"):format(source.name or "the vendor", At(place))
+        local text = L.Format("Find %s%s", source.name or L["the vendor"], At(place))
         Add(text, false, place)
         -- What a merchant window showed on Forever beats the Classic price
         -- saved with the quest.
@@ -895,14 +909,14 @@ function UpgradeQuest:Steps(quest)
         local notes = {}
         local short = not have and ns.Finder and money(ns.Finder.Short(cost))
         if short then
-            local held = money(ns.Finder.MoneyHeld()) or "no money"
-            notes[#notes + 1] = ("|c%sNot enough money:|r you have %s and need %s more.")
-                :format(ns.COLORS.downgrade, held, short)
+            local held = money(ns.Finder.MoneyHeld()) or L["no money"]
+            notes[#notes + 1] = L.Format("|c%sNot enough money:|r you have %s and need %s more.",
+                ns.COLORS.downgrade, held, short)
         end
         if source.limited then
-            notes[#notes + 1] = "Limited stock: if it is sold out, wait for the vendor to restock."
+            notes[#notes + 1] = L["Limited stock: if it is sold out, wait for the vendor to restock."]
         end
-        Add(("Buy %s%s"):format(link, price and (" for " .. price) or ""), have, place,
+        Add(price and L.Format("Buy %s for %s", link, price) or L.Format("Buy %s", link), have, place,
             #notes > 0 and table.concat(notes, " ") or nil)
         steps[#steps].short = short and true or nil
     elseif source.kind == "quest" then
@@ -915,19 +929,20 @@ function UpgradeQuest:Steps(quest)
         local chain, unknown = {}, nil
         if questID and ns.Finder then chain, unknown = ns.Finder:Chain(questID) end
         local count = #chain + (unknown and 1 or 0)
-        local lead = count > 1 and ("%d quests to do before %s."):format(count, source.title or "it") or nil
+        local lead = count > 1 and L.Format("%d quests to do before %s.", count, source.title or L["it"]) or nil
         if unknown then
             local after = chain[1] and chain[1].questID or questID
-            Add(("Do %s"):format(unknown), OnQuest(after), nil,
-                (lead and lead .. " " or "") .. "Skip this one if you have done it.")
+            Add(L.Format("Do %s", unknown), OnQuest(after), nil,
+                (lead and lead .. " " or "") .. L["Skip this one if you have done it."])
             lead = nil
         end
         for index, before in ipairs(chain) do
             if index > CHAIN_SHOWN then
                 local rest = #chain - CHAIN_SHOWN
-                Add(("Then %d more quest%s in the chain, up to %s"):format(rest, rest == 1 and "" or "s",
-                    chain[#chain].title or "it"), false, nil,
-                    ("The quests come one after another; %s opens after them."):format(source.title or "the quest"))
+                local upTo = chain[#chain].title or L["it"]
+                Add(rest == 1 and L.Format("Then %d more quest in the chain, up to %s", rest, upTo)
+                    or L.Format("Then %d more quests in the chain, up to %s", rest, upTo), false, nil,
+                    L.Format("The quests come one after another; %s opens after them.", source.title or L["the quest"]))
                 break
             end
             local spot = before.x and { zone = before.zone, x = before.x, y = before.y, name = before.name } or nil
@@ -940,30 +955,33 @@ function UpgradeQuest:Steps(quest)
                 -- (or when it has nothing else to do).
                 local ender = UpgradeQuest.Ender(before.questID) or {}
                 local hand, goal = ender.hand, ender.goal
-                local title = ("%s (level %d)"):format(before.title, before.questLevel or 0)
+                local title = L.Format("%s (level %d)", before.title, before.questLevel or 0)
                 if hand and QuestReady(before.questID) then
-                    text = ("Hand in %s %s"):format(before.title, HandText(hand, true))
+                    text = L.Format("Hand in %s %s", before.title, HandText(hand, true))
                     spot = Spot(hand)
                     turnIn = true
                 elseif goal then
-                    text = ("Complete %s: %s"):format(title, GoalText(goal))
+                    text = L.Format("Complete %s: %s", title, GoalText(goal))
                     spot = Spot(goal)
                     if hand then
-                        note = (note and note .. " " or "") .. ("Then hand it in %s."):format(HandText(hand))
+                        note = (note and note .. " " or "") .. L.Format("Then hand it in %s.", HandText(hand))
                     end
                 elseif hand then
-                    text = ("Complete %s and hand it in %s"):format(title, HandText(hand, true))
+                    text = L.Format("Complete %s and hand it in %s", title, HandText(hand, true))
                     spot = Spot(hand)
                 else
-                    text = ("Complete %s"):format(title)
+                    text = L.Format("Complete %s", title)
                     spot = nil
                 end
             elseif spot then
                 -- Two quests in a row can share a title (The Ravaged
                 -- Caravan): say this one is the next part.
                 local again = index > 1 and chain[index - 1].title == before.title
-                text = ("%s %s: pick it up from %s in %s%s"):format(again and "Then do the next part of" or "Do",
-                    before.title, before.name or "?", before.zone or "?", At(spot))
+                text = again
+                    and L.Format("Then do the next part of %s: pick it up from %s in %s%s",
+                        before.title, before.name or "?", before.zone or "?", At(spot))
+                    or L.Format("Do %s: pick it up from %s in %s%s",
+                        before.title, before.name or "?", before.zone or "?", At(spot))
             end
             local need = NEED_NOTES[before.group]
             if need then note = (note and note .. " " or "") .. need end
@@ -978,7 +996,7 @@ function UpgradeQuest:Steps(quest)
         local place = source.x and { zone = source.zone, x = source.x, y = source.y, name = source.name } or nil
         if place then Travel(place) end
         if place then
-            Add(("Pick up %s from %s%s"):format(source.title or "the quest", source.name or "?", At(place)),
+            Add(L.Format("Pick up %s from %s%s", source.title or L["the quest"], source.name or "?", At(place)),
                 onQuest, place)
         else
             StartFromItem(questID, source.title, source.name, onQuest, true)
@@ -987,36 +1005,41 @@ function UpgradeQuest:Steps(quest)
         -- Where to work on it and who takes it back (Data/QuestEnds.lua),
         -- so the arrow leaves the giver once the quest is in the log.
         local ender = questID and UpgradeQuest.Ender(questID) or {}
-        local complete = ("Complete %s (level %d)"):format(source.title or "the quest", source.questLevel or 0)
-        if ender.goal then complete = ("%s: %s"):format(complete, GoalText(ender.goal)) end
+        local complete = ender.goal
+            and L.Format("Complete %s (level %d): %s", source.title or L["the quest"], source.questLevel or 0,
+                GoalText(ender.goal))
+            or L.Format("Complete %s (level %d)", source.title or L["the quest"], source.questLevel or 0)
         Add(complete, questID and QuestReady(questID), Spot(ender.goal), note)
         -- A reward given outright comes with the quest; only one of a
         -- choice is picked. Read from the data, so a quest kept from before
         -- this was known reads right too.
         local given = source.given or (ns.Finder and ns.Finder.Given(itemID, questID))
-        local take = given and ("to get %s"):format(link) or ("and choose %s"):format(link)
         if ender.hand then
-            Add(("Hand it in %s %s"):format(HandText(ender.hand, ender.hand.zone ~= source.zone), take),
+            local hand = HandText(ender.hand, ender.hand.zone ~= source.zone)
+            Add(given and L.Format("Hand it in %s to get %s", hand, link)
+                or L.Format("Hand it in %s and choose %s", hand, link),
                 have or turnedIn, Spot(ender.hand))
         else
-            Add(("Hand it in %s"):format(take), have or turnedIn, nil)
+            Add(given and L.Format("Hand it in to get %s", link) or L.Format("Hand it in and choose %s", link),
+                have or turnedIn, nil)
         end
         steps[#steps].turnIn = not (have or turnedIn) and questID ~= nil and QuestReady(questID) or nil
     elseif source.kind == "dungeon" then
         local door = source.zone and { zone = source.zone, name = source.dungeon } or nil
         if door and door.zone ~= source.dungeon then Travel(door) end
-        local group = source.raid and "Gather a raid" or "Gather a group"
         local range = (not source.raid and source.minLevel)
-            and (" (levels %d to %d)"):format(source.minLevel, source.maxLevel or source.minLevel) or ""
-        Add(("%s and enter %s%s"):format(group, source.dungeon or "the dungeon", range),
+            and L.Format(" (levels %d to %d)", source.minLevel, source.maxLevel or source.minLevel) or ""
+        local dungeon = source.dungeon or L["the dungeon"]
+        Add(source.raid and L.Format("Gather a raid and enter %s%s", dungeon, range)
+            or L.Format("Gather a group and enter %s%s", dungeon, range),
             zone == source.dungeon, door)
-        local chance = source.chance and ("%s%% drop"):format(tostring(source.chance)) or nil
-        local note = chance and ("It is a %s, so it can take a few runs."):format(chance) or nil
-        if source.forever then note = (note and note .. " " or "") .. "Seen dropping on Forever." end
-        Add(("Defeat %s and loot %s"):format(source.name or "the boss", link), have, nil, note)
+        local note = source.chance
+            and L.Format("It is a %s%% drop, so it can take a few runs.", tostring(source.chance)) or nil
+        if source.forever then note = (note and note .. " " or "") .. L["Seen dropping on Forever."] end
+        Add(L.Format("Defeat %s and loot %s", source.name or L["the boss"], link), have, nil, note)
     elseif source.kind == "craft" then
         local crafting = ns.Crafting
-        local profession = source.profession or "the profession"
+        local profession = source.profession or L["the profession"]
         local learn = source.learn
         local place = source.zone and { zone = source.zone, x = source.x, y = source.y, name = source.name } or nil
         local craft = ns.Crafts and ns.Crafts.ITEMS[itemID]
@@ -1024,21 +1047,21 @@ function UpgradeQuest:Steps(quest)
         local knows = craft and crafting and crafting:Knows(craft[3])
 
         if source.state == "alt" then
-            Add(("Ask %s to make %s (%s) and mail it to you"):format(Who(source.who), link, profession),
+            Add(L.Format("Ask %s to make %s (%s) and mail it to you", Who(source.who), link, profession),
                 have, nil)
-            Add("Collect it from a mailbox", have, nil)
+            Add(L["Collect it from a mailbox"], have, nil)
         elseif source.state == "other" then
-            Add(("Buy %s at the auction house, or ask a %s crafter"):format(link, profession), have, nil)
+            Add(L.Format("Buy %s at the auction house, or ask a %s crafter", link, profession), have, nil)
         else
             if source.state == "skill" then
-                Add(("Raise %s to %d"):format(profession, source.skill or 0),
+                Add(L.Format("Raise %s to %d", profession, source.skill or 0),
                     (skill or 0) >= (source.skill or 0), nil,
-                    ("You have %d."):format(skill or source.have or 0))
+                    L.Format("You have %d.", skill or source.have or 0))
             end
             if source.state == "skill" or source.state == "learn" then
                 if place then Travel(place) end
                 local how = crafting and learn and crafting:LearnText(learn, money)
-                Add(how and ("Learn the recipe: %s"):format(how) or "Learn the recipe", knows == true, place)
+                Add(how and L.Format("Learn the recipe: %s", how) or L["Learn the recipe"], knows == true, place)
             end
             local materials = crafting and crafting:MaterialsText(itemID) or ""
             if materials ~= "" then
@@ -1048,16 +1071,17 @@ function UpgradeQuest:Steps(quest)
                     if self.Count(list[i]) < list[i + 1] then all = false end
                 end
                 local cost = money(source.cost)
-                Add(("Gather the materials: %s"):format(materials), all, nil,
-                    cost and ("About %s%s to buy."):format(source.partial and "over " or "", cost) or nil)
+                Add(L.Format("Gather the materials: %s", materials), all, nil,
+                    cost and (source.partial and L.Format("About over %s to buy.", cost)
+                        or L.Format("About %s to buy.", cost)) or nil)
             end
-            Add(("Make %s (%s)"):format(link, profession), have, nil)
+            Add(L.Format("Make %s (%s)", link, profession), have, nil)
         end
     else
-        Add(("Get %s"):format(link), have, nil)
+        Add(L.Format("Get %s", link), have, nil)
     end
 
-    Add(("Put on %s"):format(link), worn, nil, quest.howMuch and ("%s over what you wear now."):format(quest.howMuch) or nil)
+    Add(L.Format("Put on %s", link), worn, nil, quest.howMuch and L.Format("%s over what you wear now.", quest.howMuch) or nil)
 
     -- A later step done means the ones before it are too: the vendor was
     -- found once the item is bought, wherever the character is now.
@@ -1180,8 +1204,8 @@ function UpgradeQuest:LookForBetter(quest)
         howMuch = best.pick.result and ns.Compare:HowMuch(best.pick.result) or nil,
     }
     if ns.Toast then
-        ns.Toast:Show({ title = "New upgrade unlocked", link = best.pick.link,
-            text = "Your new level opened a better upgrade. Switch to it on the quest panel." })
+        ns.Toast:Show({ title = L["New upgrade unlocked"], link = best.pick.link,
+            text = L["Your new level opened a better upgrade. Switch to it on the quest panel."] })
     end
 end
 
@@ -1268,8 +1292,8 @@ function UpgradeQuest:Check()
                 completed[quest.itemID] = true
                 ns.charDB.upgradeQuestsDone = self:DoneCount() + 1
                 if ns.Toast then
-                    ns.Toast:Show({ title = "Upgrade quest complete", link = quest.link,
-                        text = ("Upgrade quests done: %d. Picking your next one."):format(self:DoneCount()) })
+                    ns.Toast:Show({ title = L["Upgrade quest complete"], link = quest.link,
+                        text = L.Format("Upgrade quests done: %d. Picking your next one.", self:DoneCount()) })
                 end
             end
             if ns.Finder then ns.Finder:MarkStale() end
@@ -1279,10 +1303,10 @@ function UpgradeQuest:Check()
             -- show says so; the others quietly pick again.
             quests[tab.key] = nil
             if shown then
-                ns.Print(("dropped the upgrade quest for %s: you wear something as good now."):format(quest.link))
+                ns.Print(L.Format("dropped the upgrade quest for %s: you wear something as good now.", quest.link))
                 if ns.Toast then
-                    ns.Toast:Show({ title = "You already beat this one", link = quest.link,
-                        text = "You wear something as good. Picking your next upgrade." })
+                    ns.Toast:Show({ title = L["You already beat this one"], link = quest.link,
+                        text = L["You wear something as good. Picking your next upgrade."] })
                 end
             end
             if ns.Finder then ns.Finder:MarkStale() end
@@ -1291,7 +1315,7 @@ function UpgradeQuest:Check()
             -- done again, so this upgrade is out of reach.
             quests[tab.key] = nil
             self:Skipped()[quest.itemID] = true
-            ns.Print(("dropped the upgrade quest for %s: that quest is already done."):format(quest.link))
+            ns.Print(L.Format("dropped the upgrade quest for %s: that quest is already done.", quest.link))
         end
         if Valid(quests[tab.key]) then self.states[tab.key] = "active" end
     end
@@ -1302,9 +1326,9 @@ function UpgradeQuest:Check()
     if quest and quest.itemID ~= before and (firstPick or beforeTab == self:Tab()) then
         self.lastStep = nil
         if ns.Toast then
-            ns.Toast:Show({ title = "New upgrade quest", link = quest.link,
-                text = quest.howMuch and ("%s over what you wear now."):format(quest.howMuch)
-                    or "Follow the steps on the quest panel." })
+            ns.Toast:Show({ title = L["New upgrade quest"], link = quest.link,
+                text = quest.howMuch and L.Format("%s over what you wear now.", quest.howMuch)
+                    or L["Follow the steps on the quest panel."] })
         end
     end
 
@@ -1617,7 +1641,7 @@ local TAB_WORDS = {
     craft = "craft", crafted = "craft", crafting = "craft",
 }
 
-ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, ignore, ignored, restore, switch, size, or a tab: vendor, quest, dungeon, crafted, log)", function(rest)
+ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ignore, ignored, restore, switch, size, or a tab: vendor, quest, dungeon, crafted, log)"], function(rest)
     local word = (rest or ""):lower():match("^%s*(%a*)") or ""
     -- How big the panel is drawn: small, normal, large or a percent, as its
     -- gold corner grip and the Settings row do (UI/QuestPanel.lua).
@@ -1626,12 +1650,12 @@ ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, igno
         if not panel then return end
         local scale = panel.ParseSize((rest or ""):lower():match("^%s*size%s*(.-)%s*$"))
         if not scale then
-            ns.Print(("the quest panel is at %s. /beq quest size small, normal, large or a percent from 50%% to 150%% changes it, or drag the gold corner below its bottom right."):format(
+            ns.Print(L.Format("the quest panel is at %s. /beq quest size small, normal, large or a percent from 50%% to 150%% changes it, or drag the gold corner below its bottom right.",
                 panel.ScaleText(panel:GetScale())))
             return
         end
         panel:Build()
-        ns.Print(("quest panel size: %s."):format(panel.ScaleText(panel:SetPanelScale(scale))))
+        ns.Print(L.Format("quest panel size: %s.", panel.ScaleText(panel:SetPanelScale(scale))))
         return
     end
     -- The Quest log tab: the character's quests, as the game's tracker
@@ -1642,30 +1666,30 @@ ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, igno
             ns.QuestPanel.folded = false
             ns.QuestPanel:ShowLog(true)
         end
-        ns.Print("upgrade quest: showing the Quest log tab.")
+        ns.Print(L["upgrade quest: showing the Quest log tab."])
         return
     end
     local tab = TAB_WORDS[word]
     if tab then
         if not UpgradeQuest:IsEnabled() then UpgradeQuest:SetEnabled(true) end
         UpgradeQuest:SelectTab(tab)
-        ns.Print(("upgrade quest: showing the %s tab."):format(IS_TAB[tab].name))
+        ns.Print(L.Format("upgrade quest: showing the %s tab.", IS_TAB[tab].name))
         if ns.QuestPanel then ns.QuestPanel:Unfold() end
         return
     end
     if word == "off" then
         UpgradeQuest:SetEnabled(false)
-        ns.Print("upgrade quest off. /beq quest turns it back on.")
+        ns.Print(L["upgrade quest off. /beq quest turns it back on."])
         return
     end
     -- "skip" was the word before Ignore and still works.
     if word == "ignore" or word == "skip" then
         local quest = UpgradeQuest:Current()
         if UpgradeQuest:Skip() then
-            ns.Print(("ignored %s: it will not be offered again. Settings > Upgrade quest > Ignored brings it back."):format(
-                quest and quest.link or "that upgrade"))
+            ns.Print(L.Format("ignored %s: it will not be offered again. Settings > Upgrade quest > Ignored brings it back.",
+                quest and quest.link or L["that upgrade"]))
         else
-            ns.Print("there is no upgrade quest to ignore.")
+            ns.Print(L["there is no upgrade quest to ignore."])
         end
         return
     end
@@ -1675,21 +1699,21 @@ ns.RegisterCommand("quest", "a quest for your next upgrade (/beq quest off, igno
     end
     if word == "switch" then
         if UpgradeQuest:SwitchToOffer() then
-            ns.Print("switched to the upgrade your new level opened.")
+            ns.Print(L["switched to the upgrade your new level opened."])
         else
-            ns.Print("no new upgrade is on offer.")
+            ns.Print(L["no new upgrade is on offer."])
         end
         return
     end
     -- "reset" was the word before Restore all and still works.
     if word == "restore" or word == "reset" then
         UpgradeQuest:RestoreAll()
-        ns.Print("ignored upgrades can come up again.")
+        ns.Print(L["ignored upgrades can come up again."])
         return
     end
     if not UpgradeQuest:IsEnabled() then
         UpgradeQuest:SetEnabled(true)
-        ns.Print("upgrade quest on. Follow the steps on the quest panel.")
+        ns.Print(L["upgrade quest on. Follow the steps on the quest panel."])
     else
         UpgradeQuest.rescan = true
         UpgradeQuest:Update()

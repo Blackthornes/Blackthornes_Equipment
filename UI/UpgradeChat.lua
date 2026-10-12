@@ -20,6 +20,7 @@
 --     instances), nothing is said and the next good scan starts afresh.
 
 local _, ns = ...
+local L = ns.L
 
 local UpgradeChat = ns.NewModule("UpgradeChat")
 
@@ -41,6 +42,13 @@ local function Field(object, key)
     local ok, value = pcall(function() return object[key] end)
     if ok then return value end
     return nil
+end
+
+--- A banner's last line: how much better, and for which spec.
+local function ForWhom(result)
+    local how = Compare:HowMuch(result)
+    if result.specName then return L.Format("%s for %s", how, result.specName) end
+    return L.Format("%s for you", how)
 end
 
 function UpgradeChat:IsEnabled()
@@ -128,14 +136,14 @@ function UpgradeChat:Consider(link)
     if Compare.WearableUpgrade(result) and result.skill then
         self:Untrained(link, result)
     elseif Compare.WearableUpgrade(result) then
-        ns.Print(("upgrade in your bags: %s |c%s%s|r"):format(
+        ns.Print(L.Format("upgrade in your bags: %s |c%s%s|r",
             link, ns.COLORS.upgrade, Compare:HowMuch(result)))
         -- The banner too (UI/Toast.lua), unless it is a tracked upgrade,
         -- which gets its own.
         local itemID = tonumber(link:match("item:(%d+)"))
         if ns.Toast and not (ns.Tracking and itemID and ns.Tracking:IsTracked(itemID)) then
-            ns.Toast:Show({ title = "Upgrade in your bags", link = link, wear = true,
-                text = ("%s for %s"):format(Compare:HowMuch(result), result.specName or "you") })
+            ns.Toast:Show({ title = L["Upgrade in your bags"], link = link, wear = true,
+                text = ForWhom(result) })
         end
     end
     return true
@@ -146,7 +154,7 @@ end
 --- learning the skill brings the usual banner (SkillsChanged).
 function UpgradeChat:Untrained(link, result)
     local skill = result.skill
-    ns.Print(("upgrade in your bags once you train %s: %s |c%s%s|r"):format(
+    ns.Print(L.Format("upgrade in your bags once you train %s: %s |c%s%s|r",
         skill, link, ns.COLORS.upgrade, Compare:HowMuch(result)))
     self.untrained = self.untrained or {}
     self.untrained[link] = true
@@ -158,13 +166,13 @@ function UpgradeChat:Untrained(link, result)
     if skills then subclassID = select(2, skills:Untrained(link)) end
     local actions = {}
     if skills and skills:Master(link) then
-        actions[#actions + 1] = { text = "Show the trainer", fn = function() skills:ShowMaster(link) end }
+        actions[#actions + 1] = { text = L["Show the trainer"], fn = function() skills:ShowMaster(link) end }
     end
     if skills and subclassID then
-        actions[#actions + 1] = { text = ("Ignore %s"):format(skill), fn = function() skills:Ignore(subclassID) end }
+        actions[#actions + 1] = { text = L.Format("Ignore %s", skill), fn = function() skills:Ignore(subclassID) end }
     end
-    ns.Toast:Show({ title = ("Upgrade once you train %s"):format(skill), link = link, actions = actions,
-        text = ("%s for %s"):format(Compare:HowMuch(result), result.specName or "you") })
+    ns.Toast:Show({ title = L.Format("Upgrade once you train %s", skill), link = link, actions = actions,
+        text = ForWhom(result) })
 end
 
 --- A weapon skill may have been learned: an upgrade that was waiting on one
@@ -188,10 +196,10 @@ function UpgradeChat:Recheck()
         if not carried[link] or not ok or not (result and result.verdict == "upgrade" and result.skill) then
             self.untrained[link] = nil
             if carried[link] and ok and Compare.WearableUpgrade(result) and not result.skill then
-                ns.Print(("you can wear %s now: |c%s%s|r"):format(link, ns.COLORS.upgrade, Compare:HowMuch(result)))
+                ns.Print(L.Format("you can wear %s now: |c%s%s|r", link, ns.COLORS.upgrade, Compare:HowMuch(result)))
                 if ns.Toast then
-                    ns.Toast:Show({ title = "Ready to wear", link = link, wear = true,
-                        text = ("%s for %s"):format(Compare:HowMuch(result), result.specName or "you") })
+                    ns.Toast:Show({ title = L["Ready to wear"], link = link, wear = true,
+                        text = ForWhom(result) })
                 end
             end
         end

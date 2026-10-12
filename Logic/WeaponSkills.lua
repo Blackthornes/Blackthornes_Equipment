@@ -19,6 +19,7 @@
 -- learning the skill brings it back by itself.
 
 local _, ns = ...
+local L = ns.L
 
 local WeaponSkills = ns.NewModule("WeaponSkills")
 
@@ -205,7 +206,7 @@ function WeaponSkills:Ignore(subclassID)
     local list = IgnoredList()
     if not (skill and list) then return false end
     list[subclassID] = true
-    ns.Print(("ignoring %s until you train them. Settings or /beq weapons show brings them back."):format(skill.name))
+    ns.Print(L.Format("ignoring %s until you train them. Settings or /beq weapons show brings them back.", skill.name))
     Changed()
     return true
 end
@@ -214,11 +215,11 @@ end
 function WeaponSkills:ShowAll()
     local list = IgnoredList()
     if not list or next(list) == nil then
-        ns.Print("no weapon types are ignored.")
+        ns.Print(L["no weapon types are ignored."])
         return false
     end
     for key in pairs(list) do list[key] = nil end
-    ns.Print("untrained weapons show as upgrades again.")
+    ns.Print(L["untrained weapons show as upgrades again."])
     Changed()
     return true
 end
@@ -267,14 +268,14 @@ end
 function WeaponSkills:ShowMaster(link)
     local place = self:Master(link)
     if not place then
-        ns.Print("no weapon master to show for that.")
+        ns.Print(L["no weapon master to show for that."])
         return false
     end
     local where = place.x and ("%s (%.0f, %.0f)"):format(place.zone, place.x, place.y) or place.zone
-    ns.Print(("%s teaches %s, in %s."):format(place.name, place.skill, where))
+    ns.Print(L.Format("%s teaches %s, in %s.", place.name, place.skill, where))
     local arrow = ns.QuestArrow
     if arrow and arrow.AimAtQuest then
-        pcall(arrow.AimAtQuest, arrow, nil, ("Learn %s"):format(place.skill),
+        pcall(arrow.AimAtQuest, arrow, nil, L.Format("Learn %s", place.skill),
             { zone = place.zone, x = place.x, y = place.y, name = place.name })
     end
     return true
@@ -289,7 +290,7 @@ function WeaponSkills:OnEnable()
     end
 end
 
-ns.RegisterCommand("weapons", "weapon types you haven't trained (show: call ignored ones upgrades again)", function(rest)
+ns.RegisterCommand("weapons", L["weapon types you haven't trained (show: call ignored ones upgrades again)"], function(rest)
     rest = (rest or ""):lower()
     if rest:match("^show") then
         WeaponSkills:ShowAll()
@@ -297,16 +298,16 @@ ns.RegisterCommand("weapons", "weapon types you haven't trained (show: call igno
     end
     local names = WeaponSkills:IgnoredNames()
     if #names == 0 then
-        ns.Print("untrained weapons show as upgrades, with where to learn them. Ignore a type from the upgrade banner.")
+        ns.Print(L["untrained weapons show as upgrades, with where to learn them. Ignore a type from the upgrade banner."])
     else
-        ns.Print(("ignored until trained: %s. /beq weapons show brings them back."):format(table.concat(names, ", ")))
+        ns.Print(L.Format("ignored until trained: %s. /beq weapons show brings them back.", table.concat(names, ", ")))
     end
 end)
 
 --- "A", "A or B", "A, B or C".
 local function List(cities)
     if #cities == 1 then return cities[1] end
-    return table.concat(cities, ", ", 1, #cities - 1) .. " or " .. cities[#cities]
+    return L.Format("%s or %s", table.concat(cities, ", ", 1, #cities - 1), cities[#cities])
 end
 
 --- The tooltip line for an item, and its colour, or nil.
@@ -314,7 +315,7 @@ function WeaponSkills:Describe(link)
     local name, cities, from = self:TrainerFor(link)
     if not name then return nil end
     if from then
-        return ("Learn %s at level %d from the weapon master in %s"):format(name, from, List(cities)), "warn"
+        return L.Format("Learn %s at level %d from the weapon master in %s", name, from, List(cities)), "warn"
     end
-    return ("Learn %s from the weapon master in %s"):format(name, List(cities)), "warn"
+    return L.Format("Learn %s from the weapon master in %s", name, List(cities)), "warn"
 end

@@ -30,6 +30,7 @@
 -- player's position to itself, the arrow hides.
 
 local _, ns = ...
+local L = ns.L
 
 local QuestArrow = ns.NewModule("QuestArrow")
 
@@ -232,7 +233,7 @@ function QuestArrow:Aim(index)
     -- On first: turning it on forgets any earlier pick.
     if not QuestArrow.IsOn() then
         self:SetOn(true)
-        ns.Print("quest arrow on. Its red gem, /beq arrow off or Settings hides it.")
+        ns.Print(L["quest arrow on. Its red gem, /beq arrow off or Settings hides it."])
     end
     self.pinned = { stamp = Stamp(quest), key = QuestArrow.Key({ zone = place.zone,
         x = tonumber(place.x), y = tonumber(place.y) }), place = {
@@ -250,12 +251,12 @@ end
 --- quest leaves the log. Turns the arrow on.
 function QuestArrow:AimAtQuest(questID, title, place)
     if not (type(place) == "table" and type(place.zone) == "string") then return false end
-    self.free = { free = true, questID = questID, title = title or "Quest",
+    self.free = { free = true, questID = questID, title = title or L["Quest"],
         place = { zone = place.zone, x = tonumber(place.x), y = tonumber(place.y), name = place.name } }
     self.pinned, self.choice = nil, nil
     if not QuestArrow.IsOn() then
         ns.db.questArrow = true
-        ns.Print("quest arrow on. Its red gem, /beq arrow off or Settings hides it.")
+        ns.Print(L["quest arrow on. Its red gem, /beq arrow off or Settings hides it."])
         for _, name in ipairs({ "QuestPanel", "SettingsUI" }) do
             local module = ns[name]
             if module and module.OnQuestArrowChanged then pcall(module.OnQuestArrowChanged, module) end
@@ -495,10 +496,10 @@ end
 function QuestArrow.Yards(yards)
     local whole = math.floor(yards + 0.5)
     if whole >= 1000 then
-        return ("%d,%03d yd"):format(math.floor(whole / 1000), whole % 1000)
+        return L.Format("%d,%03d yd", math.floor(whole / 1000), whole % 1000)
     end
     if whole >= 100 then whole = math.floor(whole / 10 + 0.5) * 10 end
-    return ("%d yd"):format(whole)
+    return L.Format("%d yd", whole)
 end
 
 --------------------------------------------------------------------------------
@@ -570,18 +571,18 @@ function QuestArrow.Place(target, here)
     local name = target.name
     if not name or name == target.zone then return target.zone or "?" end
     if target.zone and not (here and here.zone == target.zone) then
-        return name .. ", " .. target.zone
+        return L.Format("%s, %s", name, target.zone)
     end
     return name
 end
 
 --- The note under a place: what the step is, or why there is no spot.
 function QuestArrow.Note(target)
-    if target.far then return "Far from here: head for " .. (target.zone or "it"), "muted" end
-    if target.here then return "No exact spot known in this zone", "accent" end
-    if target.area then return "The middle of the zone: no exact spot known", "accent" end
+    if target.far then return L.Format("Far from here: head for %s", target.zone or L["it"]), "muted" end
+    if target.here then return L["No exact spot known in this zone"], "accent" end
+    if target.area then return L["The middle of the zone: no exact spot known"], "accent" end
     if target.forQuest then return target.forQuest, "good" end
-    return ("Step %d"):format(target.step or 1), "good"
+    return L.Format("Step %d", target.step or 1), "good"
 end
 
 --- Everything the dial needs for this moment:
@@ -660,12 +661,12 @@ function QuestArrow:State(clock)
 
     if target.far then
         state.mode = "far"
-        state.distance = target.zone or "Far away"
+        state.distance = target.zone or L["Far away"]
         return state
     end
     if target.here then
         state.mode = "here"
-        state.distance = "In " .. (target.zone or "this zone")
+        state.distance = L.Format("In %s", target.zone or L["this zone"])
         return state
     end
 
@@ -673,7 +674,7 @@ function QuestArrow:State(clock)
     local north, west = QuestArrow.Offset(here, target.map, target.mx, target.my, target)
     if not north then
         state.mode = "far"
-        state.distance = target.zone or "Far away"
+        state.distance = target.zone or L["Far away"]
         return state
     end
 
@@ -685,13 +686,13 @@ function QuestArrow:State(clock)
 
     if not target.area and yards <= ARRIVED then
         state.mode = "arrived"
-        state.distance = "You're there"
+        state.distance = L["You're there"]
         return state
     end
 
     state.mode = "point"
     if target.area then
-        state.distance = ("%s, %s"):format(target.zone or "?", QuestArrow.Yards(yards))
+        state.distance = L.Format("%s, %s", target.zone or "?", QuestArrow.Yards(yards))
     else
         state.distance = QuestArrow.Yards(yards)
     end
@@ -752,16 +753,16 @@ end
 local function Status()
     if QuestArrow.IsOn() then
         if QuestArrow:Quest() then
-            ns.Print("quest arrow on. Click it for the next tab's quest, right-click for the next place.")
+            ns.Print(L["quest arrow on. Click it for the next tab's quest, right-click for the next place."])
         else
-            ns.Print("quest arrow on. It shows while the upgrade quest has a quest: /beq quest.")
+            ns.Print(L["quest arrow on. It shows while the upgrade quest has a quest: /beq quest."])
         end
     else
-        ns.Print("quest arrow off. /beq arrow on shows it.")
+        ns.Print(L["quest arrow off. /beq arrow on shows it."])
     end
 end
 
-ns.RegisterCommand("arrow", "an arrow to the upgrade quest's next place (on, off, next, check, tomtom, reset)", function(rest)
+ns.RegisterCommand("arrow", L["an arrow to the upgrade quest's next place (on, off, next, check, tomtom, reset)"], function(rest)
     local word = (rest or ""):lower():match("^%s*(%a*)") or ""
     if word == "" then
         QuestArrow:SetOn(not QuestArrow.IsOn())
@@ -772,9 +773,9 @@ ns.RegisterCommand("arrow", "an arrow to the upgrade quest's next place (on, off
     elseif word == "next" then
         local target = QuestArrow:NextPlace()
         if target then
-            ns.Print(("pointing at %s."):format(QuestArrow.Place(target)))
+            ns.Print(L.Format("pointing at %s.", QuestArrow.Place(target)))
         else
-            ns.Print("no other place in this quest's steps.")
+            ns.Print(L["no other place in this quest's steps."])
         end
     elseif word == "check" then
         ns.KeepCheck("arrow check", QuestArrow.Check, QuestArrow)
@@ -782,8 +783,8 @@ ns.RegisterCommand("arrow", "an arrow to the upgrade quest's next place (on, off
         ns.TomTom:Command((rest or ""):lower():match("^%s*%a+%s+(%a+)"))
     elseif word == "reset" then
         if ns.QuestArrowUI and ns.QuestArrowUI.ResetPosition then ns.QuestArrowUI:ResetPosition() end
-        ns.Print("quest arrow put back where it started.")
+        ns.Print(L["quest arrow put back where it started."])
     else
-        ns.Print("/beq arrow on, off, next, check, tomtom or reset.")
+        ns.Print(L["/beq arrow on, off, next, check, tomtom or reset."])
     end
 end)

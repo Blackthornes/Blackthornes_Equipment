@@ -11,6 +11,7 @@
 -- Ignore. Ten rows show at a time; the mouse wheel scrolls the rest.
 
 local _, ns = ...
+local L = ns.L
 
 local IgnoredUI = ns.NewModule("IgnoredUI")
 
@@ -94,7 +95,7 @@ function IgnoredUI:Build()
     header:SetHeight(HEADER)
     local subtitle = Theme.CreateLabel(header, "normal", "muted")
     subtitle:SetPoint("LEFT", PADDING - RIM, -4)
-    subtitle:SetText("Ignored upgrades")
+    subtitle:SetText(L["Ignored upgrades"])
     self.count = Theme.CreateLabel(header, "small", "dim", "RIGHT")
     self.count:SetPoint("RIGHT", -(PADDING - RIM), -4)
     local rule = header:CreateTexture(nil, "ARTWORK")
@@ -115,7 +116,7 @@ function IgnoredUI:Build()
     empty:SetPoint("TOPLEFT", 10, -10)
     empty:SetPoint("TOPRIGHT", -10, -10)
     empty:SetWordWrap(true)
-    empty:SetText("Nothing ignored. Ignore an upgrade on the quest panel and it is listed here, to bring back whenever you like.")
+    empty:SetText(L["Nothing ignored. Ignore an upgrade on the quest panel and it is listed here, to bring back whenever you like."])
     self.empty = empty
 
     self.rows = {}
@@ -127,16 +128,15 @@ function IgnoredUI:Build()
     hint:SetWordWrap(true)
     hint:SetHeight(26)
     hint:SetJustifyV("BOTTOM")
-    hint:SetText("Ignored upgrades are never picked for the upgrade quest on this character. "
-        .. "Restore one and it can be picked again.")
+    hint:SetText(L["Ignored upgrades are never picked for the upgrade quest on this character. Restore one and it can be picked again."])
     self.hint = hint
 
-    self.restoreAll = Widgets.CreateButton(frame, "Restore all", function()
+    self.restoreAll = Widgets.CreateButton(frame, L["Restore all"], function()
         ns.HandleSlash("quest restore")
     end, { width = 96, height = 22, primary = true })
     self.restoreAll:SetPoint("BOTTOMLEFT", PADDING, 14)
-    Explain(self.restoreAll, "Restore all",
-        "Every ignored upgrade can be picked again. Same as /beq quest restore.")
+    Explain(self.restoreAll, L["Restore all"],
+        L["Every ignored upgrade can be picked again. Same as /beq quest restore."])
 
     frame:Hide()
     return frame
@@ -155,16 +155,16 @@ function IgnoredUI:BuildRow(index)
     row.icon = Theme.CreateItemIcon(row, ICON)
     row.icon:SetPoint("LEFT", 8, 0)
 
-    row.restore = Widgets.CreateButton(row, "Restore", function()
+    row.restore = Widgets.CreateButton(row, L["Restore"], function()
         if row.entry and ns.UpgradeQuest then
             local entry = row.entry
             if ns.UpgradeQuest:Restore(entry.itemID) then
-                ns.Print(("%s can be picked for the upgrade quest again."):format(entry.link or entry.name))
+                ns.Print(L.Format("%s can be picked for the upgrade quest again.", entry.link or entry.name))
             end
         end
     end, { width = 70, height = 20 })
     row.restore:SetPoint("RIGHT", -6, 0)
-    Explain(row.restore, "Restore this upgrade", "Let the upgrade quest pick it again on this character.")
+    Explain(row.restore, L["Restore this upgrade"], L["Let the upgrade quest pick it again on this character."])
 
     row.name = Theme.CreateLabel(row, "small", "text")
     row.name:SetPoint("LEFT", row.icon, "RIGHT", 8, 0)
@@ -221,9 +221,9 @@ function IgnoredUI:Fill()
     if total == 0 then
         self.count:SetText("")
     elseif total <= ROWS then
-        self.count:SetText(total == 1 and "1 item" or ("%d items"):format(total))
+        self.count:SetText(total == 1 and L["1 item"] or L.Format("%d items", total))
     else
-        self.count:SetText(("%d-%d of %d, scroll for more"):format(
+        self.count:SetText(L.Format("%d-%d of %d, scroll for more",
             self.offset + 1, math.min(total, self.offset + ROWS), total))
     end
     for index, row in ipairs(self.rows) do

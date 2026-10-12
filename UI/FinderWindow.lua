@@ -13,6 +13,7 @@
 -- about items the client had not seen yet.
 
 local _, ns = ...
+local L = ns.L
 
 local FinderUI = ns.NewModule("FinderUI")
 
@@ -58,8 +59,8 @@ local HEIGHT = HEADER + 10 + FILTERS + QUEST_ROW + 8 + VISIBLE * ROW_HEIGHT + FO
 local KIND_COLORS = { vendor = "accent", quest = "quest", dungeon = "dungeon", craft = "craft" }
 
 local FILTER_BUTTONS = {
-    { nil, "Everything" }, { "vendor", "Vendors" }, { "quest", "Quests" },
-    { "dungeon", "Dungeons and raids" }, { "craft", "Crafted" },
+    { nil, L["Everything"] }, { "vendor", L["Vendors"] }, { "quest", L["Quests"] },
+    { "dungeon", L["Dungeons and raids"] }, { "craft", L["Crafted"] },
 }
 
 -- How many levels ahead the stepper can look.
@@ -173,28 +174,28 @@ local function ShowTooltip(row)
         GameTooltip:AddLine(Finder.NeedsText(pick.needs), Theme.Unpack("warn"))
     end
     if pick.at then
-        GameTooltip:AddLine(("You can wear it from level %d"):format(pick.at), Theme.Unpack("warn"))
+        GameTooltip:AddLine(L.Format("You can wear it from level %d", pick.at), Theme.Unpack("warn"))
     end
     local roll = Finder.RollText(pick)
     if roll then
         local r, g, b = Theme.Unpack("good")
         GameTooltip:AddLine(roll, r, g, b, true)
     end
-    GameTooltip:AddLine("Where to get it", Theme.Unpack("accent"))
+    GameTooltip:AddLine(L["Where to get it"], Theme.Unpack("accent"))
     for index, source in ipairs(pick.sources) do
         if index > TOOLTIP_SOURCES then
-            GameTooltip:AddLine(("and %d more"):format(#pick.sources - TOOLTIP_SOURCES),
+            GameTooltip:AddLine(L.Format("and %d more", #pick.sources - TOOLTIP_SOURCES),
                 Theme.Unpack("muted"))
             break
         end
         GameTooltip:AddLine(FinderUI.SourceLine(source), Theme.Unpack("text"))
         if source.after then
-            GameTooltip:AddLine("    after " .. source.after, Theme.Unpack("muted"))
+            GameTooltip:AddLine(L.Format("    after %s", source.after), Theme.Unpack("muted"))
         end
         if source.kind == "craft" and ns.Crafting then
             -- Light, so it reads on the tooltip's dark background.
             local r, g, b = Theme.Unpack("text")
-            GameTooltip:AddLine("    Materials: " .. ns.Crafting:MaterialsText(pick.itemID), r, g, b, true)
+            GameTooltip:AddLine(L.Format("    Materials: %s", ns.Crafting:MaterialsText(pick.itemID)), r, g, b, true)
         end
     end
     GameTooltip:AddLine(" ")
@@ -205,23 +206,21 @@ local function ShowTooltip(row)
         -- tag it leaves for a mistake (2026-10-09).
         local r, g, b = Theme.Unpack("text")
         if quest:IsFollowing(pick.itemID) then
-            GameTooltip:AddLine("Your upgrade quest: click to show it on the quest panel", Theme.Unpack("good"))
-            GameTooltip:AddLine("The green Quest tag marks it. To drop it, click Ignore on the quest panel, "
-                .. "or click another upgrade here to follow that one instead.", r, g, b, true)
+            GameTooltip:AddLine(L["Your upgrade quest: click to show it on the quest panel"], Theme.Unpack("good"))
+            GameTooltip:AddLine(L["The green Quest tag marks it. To drop it, click Ignore on the quest panel, or click another upgrade here to follow that one instead."], r, g, b, true)
         elseif why then
             local wr, wg, wb = Theme.Unpack("warn")
-            GameTooltip:AddLine("Not a quest yet: " .. why, wr, wg, wb, true)
+            GameTooltip:AddLine(L.Format("Not a quest yet: %s", why), wr, wg, wb, true)
         else
-            GameTooltip:AddLine("Click to follow it on the quest panel", Theme.Unpack("good"))
-            GameTooltip:AddLine("It becomes your upgrade quest, with steps to get it, and gets a green Quest tag "
-                .. "here. The quest it replaces on that tab can come back later.", r, g, b, true)
+            GameTooltip:AddLine(L["Click to follow it on the quest panel"], Theme.Unpack("good"))
+            GameTooltip:AddLine(L["It becomes your upgrade quest, with steps to get it, and gets a green Quest tag here. The quest it replaces on that tab can come back later."], r, g, b, true)
         end
     end
     local tracked = ns.Tracking and ns.Tracking:IsTracked(pick.itemID)
-    GameTooltip:AddLine(tracked and "Right-click to stop tracking it" or "Right-click to track it",
+    GameTooltip:AddLine(tracked and L["Right-click to stop tracking it"] or L["Right-click to track it"],
         Theme.Unpack("muted"))
     if FinderUI.Place(pick) then
-        GameTooltip:AddLine("Alt-click to pin it on your map", Theme.Unpack("muted"))
+        GameTooltip:AddLine(L["Alt-click to pin it on your map"], Theme.Unpack("muted"))
     end
     GameTooltip:Show()
 end
@@ -289,7 +288,7 @@ function FinderUI:BuildRow(index)
 
     -- Queue it, on crafted gear while Tradeskills is loaded: sends the craft,
     -- or what to buy, to Tradeskills' queue (Logic/TradeskillsQueue.lua).
-    local queueIt = Widgets.CreateButton(row, "Queue it", function(self)
+    local queueIt = Widgets.CreateButton(row, L["Queue it"], function(self)
         local craft = rawget(self, "source")
         if craft and ns.TradeskillsQueue then
             ns.TradeskillsQueue:Queue(craft)
@@ -373,7 +372,7 @@ function FinderUI:Build()
     -- The house frame, as the gear window wears it (UI/Titanforged.lua).
     if ns.Titanforged then
         local trim = ns.Titanforged:Dress(frame, {
-            title = "Where to get upgrades",
+            title = L["Where to get upgrades"],
             portrait = true,
             close = function() FinderUI:Hide() end,
         })
@@ -448,7 +447,7 @@ function FinderUI:Build()
     local hint = Theme.CreateLabel(frame, "tiny", "dim")
     hint:SetPoint("BOTTOMLEFT", PADDING, 10)
     hint:SetWidth(WIDTH - PADDING * 2)
-    hint:SetText("Places and prices are from Classic. Click to follow as a quest, right-click to track, Alt-click for the map.")
+    hint:SetText(L["Places and prices are from Classic. Click to follow as a quest, right-click to track, Alt-click for the map."])
     self.hint = hint
 
     frame:Hide()
@@ -527,7 +526,7 @@ function FinderUI:BuildFilters()
     local rowY = -(HEADER + 13 + FILTERS + 1)
     local levelLabel = Theme.CreateLabel(self.frame, "small", "muted")
     levelLabel:SetPoint("TOPLEFT", PADDING, rowY - 4)
-    levelLabel:SetText("Quest level")
+    levelLabel:SetText(L["Quest level"])
     self.levelLabel = levelLabel
 
     local questLevels = Widgets.CreateStepper(self.frame, {
@@ -539,9 +538,8 @@ function FinderUI:BuildFilters()
     questLevels:SetPoint("LEFT", levelLabel, "RIGHT", 10, 0)
     questLevels:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-        GameTooltip:AddLine("Quest level", Theme.Unpack("accent"))
-        GameTooltip:AddLine("How far above your level a quest may be and still be offered. "
-            .. "Quests 5 or more levels up show in red in your quest log.", 1, 1, 1, true)
+        GameTooltip:AddLine(L["Quest level"], Theme.Unpack("accent"))
+        GameTooltip:AddLine(L["How far above your level a quest may be and still be offered. Quests 5 or more levels up show in red in your quest log."], 1, 1, 1, true)
         GameTooltip:Show()
     end)
     questLevels:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -549,15 +547,14 @@ function FinderUI:BuildFilters()
 
     -- Hide quests that need a group, a dungeon, a raid or a battleground.
     -- The same switch as in Settings.
-    local solo = Widgets.CreateCheckbox(self.frame, "Solo quests only", function(checked)
+    local solo = Widgets.CreateCheckbox(self.frame, L["Solo quests only"], function(checked)
         Finder:SetSoloOnly(checked)
     end, Finder:SoloOnly())
     solo:SetPoint("LEFT", questLevels, "RIGHT", 24, 0)
     solo:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-        GameTooltip:AddLine("Solo quests only", Theme.Unpack("accent"))
-        GameTooltip:AddLine("Hides quests that need a group, a dungeon, a raid or a battleground, "
-            .. "and quests that come after one. Quests to kill an elite count as group quests.",
+        GameTooltip:AddLine(L["Solo quests only"], Theme.Unpack("accent"))
+        GameTooltip:AddLine(L["Hides quests that need a group, a dungeon, a raid or a battleground, and quests that come after one. Quests to kill an elite count as group quests."],
             1, 1, 1, true)
         GameTooltip:Show()
     end)
@@ -566,16 +563,14 @@ function FinderUI:BuildFilters()
 
     -- Only gear from the zone the character is in, as the upgrade quest
     -- panel's box of the same name does (each keeps its own setting).
-    local zone = Widgets.CreateCheckbox(self.frame, "This zone only", function(checked)
+    local zone = Widgets.CreateCheckbox(self.frame, L["This zone only"], function(checked)
         FinderUI:SetZoneOnly(checked)
     end, self:ZoneOnly())
     zone:SetPoint("LEFT", solo, "RIGHT", 24, 0)
     zone:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-        GameTooltip:AddLine("This zone only", Theme.Unpack("accent"))
-        GameTooltip:AddLine("Lists only upgrades from the zone you are in: a vendor, a quest giver or a "
-            .. "dungeon's entrance here, and gear you can make anywhere. The list changes as you travel. "
-            .. "Untick it to look anywhere.", 1, 1, 1, true)
+        GameTooltip:AddLine(L["This zone only"], Theme.Unpack("accent"))
+        GameTooltip:AddLine(L["Lists only upgrades from the zone you are in: a vendor, a quest giver or a dungeon's entrance here, and gear you can make anywhere. The list changes as you travel. Untick it to look anywhere."], 1, 1, 1, true)
         GameTooltip:Show()
     end)
     zone:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -618,9 +613,9 @@ end
 
 --- Its words: "Up to my level", "Up to +4" or "Any".
 function FinderUI.QuestLevelsText(value)
-    if (value or 0) >= Finder.QUEST_LEVELS_ANY then return "Any" end
-    if (value or 0) <= 0 then return "Up to my level" end
-    return ("Up to +%d"):format(value)
+    if (value or 0) >= Finder.QUEST_LEVELS_ANY then return L["Any"] end
+    if (value or 0) <= 0 then return L["Up to my level"] end
+    return L.Format("Up to +%d", value)
 end
 
 --- How many levels ahead the window looks (0 for now).
@@ -631,10 +626,10 @@ end
 
 --- The stepper's words: "Now", or "Level 27".
 function FinderUI.AheadText(value)
-    if (value or 0) <= 0 then return "Now" end
+    if (value or 0) <= 0 then return L["Now"] end
     local level = ns.Items and ns.Items:PlayerLevel()
-    if not level then return ("+%d levels"):format(value) end
-    return ("Level %d"):format(math.min(60, level + value))
+    if not level then return L.Format("+%d levels", value) end
+    return L.Format("Level %d", math.min(60, level + value))
 end
 
 --- Where a pick's first source with an exact spot is, for the map.
@@ -701,9 +696,9 @@ function FinderUI:Lines(found)
 end
 
 local function Gain(result)
-    if result.empty then return "empty slot" end
+    if result.empty then return L["empty slot"] end
     if result.percent then return ("%+d%%"):format(math.floor(result.percent + 0.5)) end
-    return "better"
+    return L["better"]
 end
 
 function FinderUI:FillRow(row, line)
@@ -726,11 +721,11 @@ function FinderUI:FillRow(row, line)
     -- weapon master comes first (a player asked, 2026-10-10).
     local train = ns.WeaponSkills and ns.WeaponSkills:NeedsTraining(line.pick.link)
     if train and line.pick.at then
-        gain = ("at %d, Train: %s"):format(line.pick.at, gain)
+        gain = L.Format("at %d, Train: %s", line.pick.at, gain)
     elseif train then
-        gain = ("Train: %s"):format(gain)
+        gain = L.Format("Train: %s", gain)
     elseif line.pick.at then
-        gain = ("at %d: %s"):format(line.pick.at, gain)
+        gain = L.Format("at %d: %s", line.pick.at, gain)
     end
     row.gain:SetText(gain)
     -- A long gain ("at 23, Train: empty slot") grows leftward rather than
@@ -745,13 +740,13 @@ function FinderUI:FillRow(row, line)
 
     local text = FinderUI.SourceLine(line.sources[1])
     if ns.Tracking and ns.Tracking:IsTracked(line.pick.itemID) then
-        text = Colored("accent", "Tracking") .. "  " .. text
+        text = Colored("accent", L["Tracking"]) .. "  " .. text
     end
     if ns.UpgradeQuest and ns.UpgradeQuest:IsFollowing(line.pick.itemID) then
-        text = Colored("good", "Quest") .. "  " .. text
+        text = Colored("good", L["Quest"]) .. "  " .. text
     end
     if line.pick.needs then
-        text = Colored("warn", ("Needs %s with %s"):format(line.pick.needs.standing,
+        text = Colored("warn", L.Format("Needs %s with %s", line.pick.needs.standing,
             line.pick.needs.faction)) .. "  " .. text
     end
     -- Queue it on crafted gear, with the line under the name kept clear of it.
@@ -761,7 +756,8 @@ function FinderUI:FillRow(row, line)
     if craft then
         row.queueIt:SetText(ns.TradeskillsQueue:Label(craft.itemID))
         row.queueIt:Show()
-        row.sourceWidth = row.fullSourceWidth - QUEUE_WIDTH - 8
+        -- The button grows to fit its words (German runs longer).
+        row.sourceWidth = row.fullSourceWidth - math.max(QUEUE_WIDTH, row.queueIt:GetWidth() or 0) - 8
     else
         row.queueIt:Hide()
         row.sourceWidth = row.fullSourceWidth
@@ -809,11 +805,11 @@ function FinderUI:Draw()
 end
 
 local NO_UPGRADES = {
-    [false] = "Nothing on offer beats what you wear right now.",
-    vendor = "No vendor sells anything better than what you wear.",
-    quest = "No quest open to you gives anything better than what you wear.",
-    dungeon = "No dungeon or raid open to you drops anything better than what you wear.",
-    craft = "No crafted gear beats what you wear.",
+    [false] = L["Nothing on offer beats what you wear right now."],
+    vendor = L["No vendor sells anything better than what you wear."],
+    quest = L["No quest open to you gives anything better than what you wear."],
+    dungeon = L["No dungeon or raid open to you drops anything better than what you wear."],
+    craft = L["No crafted gear beats what you wear."],
 }
 
 --- Look again and redraw, at once: for opening the window and for clicks.
@@ -850,10 +846,10 @@ function FinderUI:Present(found, why)
         self.lines = {}
         self:Draw()
         if why == "noweights" then
-            self.empty:SetText(("There are no stat weights for %s yet.")
-                :format(Weights:PlayerClass() or "this class"))
+            self.empty:SetText(L.Format("There are no stat weights for %s yet.",
+                Weights:PlayerClass() or L["this class"]))
         else
-            self.empty:SetText("Your level and faction aren't known yet. Try again in a moment.")
+            self.empty:SetText(L["Your level and faction aren't known yet. Try again in a moment."])
         end
         self.empty:Show()
         self.footer:SetText("")
@@ -862,9 +858,12 @@ function FinderUI:Present(found, why)
     end
 
     local spec, _, class = Weights:CurrentSpec()
-    local specName = spec and Weights.SPECS[class][spec].name or ""
-    local planning = found.reach > found.player.level and (", planning for %d"):format(found.reach) or ""
-    self.specLabel:SetText(("%s, level %d%s"):format(specName, found.player.level, planning))
+    local specName = spec and Weights:SpecName(class, spec) or ""
+    if found.reach > found.player.level then
+        self.specLabel:SetText(L.Format("%s, level %d, planning for %d", specName, found.player.level, found.reach))
+    else
+        self.specLabel:SetText(L.Format("%s, level %d", specName, found.player.level))
+    end
     if self.ahead then self.ahead:SetValue(self:Ahead(), true) end
 
     self.lines = self:Lines(found)
@@ -875,10 +874,10 @@ function FinderUI:Present(found, why)
     local shown = #self.lines
     if shown == 0 then
         if found.waiting > 0 then
-            self.empty:SetText("Asking the server about the gear on offer...")
+            self.empty:SetText(L["Asking the server about the gear on offer..."])
         elseif self:Here(found) then
-            self.empty:SetText(("Nothing in %s beats what you wear. Untick This zone only to look anywhere.")
-                :format(self:Here(found)))
+            self.empty:SetText(L.Format("Nothing in %s beats what you wear. Untick This zone only to look anywhere.",
+                self:Here(found)))
         else
             self.empty:SetText(NO_UPGRADES[self:Filter() or false])
         end
@@ -888,16 +887,16 @@ function FinderUI:Present(found, why)
     end
 
     local text
-    local when = found.reach > found.player.level and ("by level %d"):format(found.reach) or "now"
+    local when = found.reach > found.player.level and L.Format("by level %d", found.reach) or L["now"]
     local here = self:Here(found)
-    if here then when = ("in %s %s"):format(here, when) end
+    if here then when = L.Format("in %s %s", here, when) end
     if shown == 1 then
-        text = ("1 upgrade you can go and get %s."):format(when)
+        text = L.Format("1 upgrade you can go and get %s.", when)
     else
-        text = ("%d upgrades you can go and get %s."):format(shown, when)
+        text = L.Format("%d upgrades you can go and get %s.", shown, when)
     end
     if found.waiting > 0 then
-        text = text .. Colored("muted", ("  Still asking the server about %d items."):format(found.waiting))
+        text = text .. Colored("muted", L.Format("  Still asking the server about %d items.", found.waiting))
     end
     self.footer:SetText(text)
 
@@ -987,9 +986,9 @@ function FinderUI:Follow(pick)
     if not logic then return nil end
     local quest, why = logic:Follow(pick)
     if quest then
-        ns.Print(("following %s on the upgrade quest panel."):format(pick.link or quest.link))
+        ns.Print(L.Format("following %s on the upgrade quest panel.", pick.link or quest.link))
     else
-        ns.Print(("%s can't be an upgrade quest yet: %s."):format(pick.link or "that", why or "unknown"))
+        ns.Print(L.Format("%s can't be an upgrade quest yet: %s.", pick.link or L["that"], why or L["unknown"]))
     end
     return quest
 end

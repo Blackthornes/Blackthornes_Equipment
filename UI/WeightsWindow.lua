@@ -17,6 +17,7 @@
 -- the settings window or with /beq weights.
 
 local _, ns = ...
+local L = ns.L
 
 local WeightsUI = ns.NewModule("WeightsUI")
 
@@ -45,9 +46,9 @@ local TYPE_STEP = 0.1       -- one press of - or + on a kind of weapon
 
 -- The nine classic classes, in the order the character screen lists them.
 local CLASSES = {
-    { "WARRIOR", "Warrior" }, { "PALADIN", "Paladin" }, { "HUNTER", "Hunter" },
-    { "ROGUE", "Rogue" }, { "PRIEST", "Priest" }, { "SHAMAN", "Shaman" },
-    { "MAGE", "Mage" }, { "WARLOCK", "Warlock" }, { "DRUID", "Druid" },
+    { "WARRIOR", L["Warrior"] }, { "PALADIN", L["Paladin"] }, { "HUNTER", L["Hunter"] },
+    { "ROGUE", L["Rogue"] }, { "PRIEST", L["Priest"] }, { "SHAMAN", L["Shaman"] },
+    { "MAGE", L["Mage"] }, { "WARLOCK", L["Warlock"] }, { "DRUID", L["Druid"] },
 }
 
 WeightsUI.CLASSES = CLASSES
@@ -137,10 +138,11 @@ end
 
 --- The label a stat's row reads, with "per 1%" in grey where it applies.
 local function LabelText(entry)
+    local name = Weights.Label(entry.name)
     if entry.per then
-        return ("%s  |c%sper 1%%|r"):format(entry.name, "ff545963")
+        return L.Format("%s  |c%sper 1%%|r", name, "ff545963")
     end
-    return entry.name
+    return name
 end
 
 --- The spec keys for the class being edited, and the class's table.
@@ -154,7 +156,7 @@ function WeightsUI:StatusText()
     local specs = Weights.SPECS[self.class]
     if not (specs and specs[self.spec]) then return "" end
 
-    local name = specs[self.spec].name
+    local name = Weights.Label(specs[self.spec].name)
     local changed, weapons = 0, 0
     for _, entry in ipairs(Weights.STAT_ORDER) do
         if Weights:IsCustom(self.class, self.spec, entry.key) then changed = changed + 1 end
@@ -165,26 +167,26 @@ function WeightsUI:StatusText()
 
     local parts = {}
     if changed == 1 then
-        parts[#parts + 1] = "1 stat changed"
+        parts[#parts + 1] = L["1 stat changed"]
     elseif changed > 1 then
-        parts[#parts + 1] = ("%d stats changed"):format(changed)
+        parts[#parts + 1] = L.Format("%d stats changed", changed)
     end
     if weapons == 1 then
-        parts[#parts + 1] = "1 weapon type changed"
+        parts[#parts + 1] = L["1 weapon type changed"]
     elseif weapons > 1 then
-        parts[#parts + 1] = ("%d weapon types changed"):format(weapons)
+        parts[#parts + 1] = L.Format("%d weapon types changed", weapons)
     end
 
     local text
     if #parts == 0 then
-        text = ("%s uses the built-in weights."):format(name)
+        text = L.Format("%s uses the built-in weights.", name)
     else
-        text = ("%s uses your weights: %s."):format(name, table.concat(parts, ", "))
+        text = L.Format("%s uses your weights: %s.", name, table.concat(parts, ", "))
     end
 
     local playing, _, playerClass = Weights:CurrentSpec()
     if playerClass == self.class and playing == self.spec then
-        text = text .. " Your gear is judged by this spec."
+        text = text .. " " .. L["Your gear is judged by this spec."]
     end
     return text
 end
@@ -200,7 +202,7 @@ local function LabelWidth()
         widest = math.max(widest, Theme.TextWidth("small", LabelText(entry)))
     end
     for _, entry in ipairs(Weights.WEAPON_TYPES) do
-        widest = math.max(widest, Theme.TextWidth("small", entry.name))
+        widest = math.max(widest, Theme.TextWidth("small", Weights.Label(entry.name)))
     end
     return widest
 end
@@ -276,7 +278,7 @@ function WeightsUI:BuildHeader()
 
     local subtitle = Theme.CreateLabel(header, "normal", "muted")
     subtitle:SetPoint("LEFT", PADDING - RIM, -4)
-    subtitle:SetText("Stat weights")
+    subtitle:SetText(L["Stat weights"])
 
     -- The plate and the corner gems either side of it must fit; the window
     -- widens for them rather than letting the plate run over a corner.
@@ -286,7 +288,7 @@ function WeightsUI:BuildHeader()
         plateWidth = Theme.TextWidth("title", "Blackthornes Equipment") + 58
     end
     local needed = math.max(plateWidth + 2 * 40,
-        PADDING + Theme.TextWidth("normal", "Stat weights") + PADDING)
+        PADDING + Theme.TextWidth("normal", L["Stat weights"]) + PADDING)
     if needed > self.width then
         self.width = needed
         frame:SetWidth(needed)
@@ -306,25 +308,30 @@ function WeightsUI:BuildPickers()
 
     local classLabel = Theme.CreateLabel(frame, "small", "text")
     classLabel:SetPoint("TOPLEFT", PADDING, top - 3)
-    classLabel:SetText("Class")
+    classLabel:SetText(L["Class"])
 
     self.classPicker = Widgets.CreateStepper(frame, {
         min = 1, max = #CLASSES, step = 1, value = 1,
         format = function(index) return CLASSES[index] and CLASSES[index][2] or "" end,
         onChange = function(index) WeightsUI:PickClass(CLASSES[index][1]) end,
     })
-    self.classPicker:SetWidth(BUTTON * 2 + 8 + math.max(BOX, Theme.TextWidth("small", "Warlock") + 12))
-    self.classPicker:SetPoint("TOPLEFT", PADDING + Theme.TextWidth("small", "Class") + 10, top)
+    -- Wide enough for the longest class name, in the client's language.
+    local widestClass = 0
+    for _, entry in ipairs(CLASSES) do
+        widestClass = math.max(widestClass, Theme.TextWidth("small", entry[2]))
+    end
+    self.classPicker:SetWidth(BUTTON * 2 + 8 + math.max(BOX, widestClass + 12))
+    self.classPicker:SetPoint("TOPLEFT", PADDING + Theme.TextWidth("small", L["Class"]) + 10, top)
 
     local specLabel = Theme.CreateLabel(frame, "small", "text")
     specLabel:SetPoint("LEFT", self.classPicker, "RIGHT", 22, 0)
-    specLabel:SetText("Spec")
+    specLabel:SetText(L["Spec"])
 
     -- Wide enough for the longest spec name of any class.
     local widest = 0
     for _, specs in pairs(Weights.SPECS) do
         for _, key in ipairs(specs.order) do
-            widest = math.max(widest, Theme.TextWidth("small", specs[key].name))
+            widest = math.max(widest, Theme.TextWidth("small", Weights.Label(specs[key].name)))
         end
     end
 
@@ -333,7 +340,7 @@ function WeightsUI:BuildPickers()
         format = function(index)
             local order, specs = WeightsUI:Specs()
             local key = order[index]
-            return key and specs[key].name or ""
+            return key and Weights.Label(specs[key].name) or ""
         end,
         onChange = function(index)
             local order = WeightsUI:Specs()
@@ -343,14 +350,14 @@ function WeightsUI:BuildPickers()
     self.specPicker:SetWidth(BUTTON * 2 + 8 + widest + 16)
     self.specPicker:SetPoint("LEFT", specLabel, "RIGHT", 10, 0)
 
-    self.allStats = Widgets.CreateCheckbox(frame, "Every stat", function()
+    self.allStats = Widgets.CreateCheckbox(frame, L["Every stat"], function()
         WeightsUI:Refresh()
     end, false)
     self.allStats:SetPoint("TOPRIGHT", -PADDING, top - 1)
 
     -- Everything on this line must fit side by side; the window widens for it.
-    local needed = PADDING + Theme.TextWidth("small", "Class") + 10 + self.classPicker:GetWidth()
-        + 22 + Theme.TextWidth("small", "Spec") + 10 + self.specPicker:GetWidth()
+    local needed = PADDING + Theme.TextWidth("small", L["Class"]) + 10 + self.classPicker:GetWidth()
+        + 22 + Theme.TextWidth("small", L["Spec"]) + 10 + self.specPicker:GetWidth()
         + 24 + self.allStats:GetWidth() + PADDING
     if needed > self.width then
         self.width = needed
@@ -372,7 +379,7 @@ end
 --- shows the ones the class being edited can hold.
 function WeightsUI:BuildTypes()
     local heading = Theme.CreateLabel(self.frame, "small", "accent")
-    heading:SetText("Weapon types")
+    heading:SetText(L["Weapon types"])
     self.typeHeading = heading
 
 
@@ -492,19 +499,17 @@ function WeightsUI:BuildFooter()
     hint:SetWordWrap(true)
     hint:SetHeight(30)
     hint:SetJustifyV("BOTTOM")
-    hint:SetText("A weight is what one point of a stat is worth. 0 ignores the stat. "
-        .. "A weapon type multiplies that kind of weapon's whole score: 1 is no change. "
-        .. "Changes count at once, for every character of that class.")
+    hint:SetText(L["A weight is what one point of a stat is worth. 0 ignores the stat. A weapon type multiplies that kind of weapon's whole score: 1 is no change. Changes count at once, for every character of that class."])
     self.hint = hint
 
-    self.reset = Widgets.CreateButton(frame, "Use the built-in weights", function()
+    self.reset = Widgets.CreateButton(frame, L["Use the built-in weights"], function()
         WeightsUI:ResetSpec()
     end, { width = 160, height = 22 })
     self.reset:SetPoint("BOTTOMLEFT", PADDING, 14)
 
     self.saved = Theme.CreateLabel(frame, "tiny", "dim")
     self.saved:SetPoint("LEFT", self.reset, "RIGHT", 12, 0)
-    self.saved:SetText("Changes save as you make them.")
+    self.saved:SetText(L["Changes save as you make them."])
 end
 
 --------------------------------------------------------------------------------
@@ -567,22 +572,22 @@ function WeightsUI:ShowRowTooltip(row)
 
     local value, default = self:RowValue(row)
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
-    GameTooltip:AddLine(row.entry.name, Theme.Unpack("accent"))
+    GameTooltip:AddLine(Weights.Label(row.entry.name), Theme.Unpack("accent"))
     if self:RowCustom(row) then
-        GameTooltip:AddLine(("Yours: %s"):format(WeightsUI.Format(value)), Theme.Unpack("text"))
-        GameTooltip:AddLine(("Built in: %s"):format(WeightsUI.Format(default)), Theme.Unpack("muted"))
+        GameTooltip:AddLine(L.Format("Yours: %s", WeightsUI.Format(value)), Theme.Unpack("text"))
+        GameTooltip:AddLine(L.Format("Built in: %s", WeightsUI.Format(default)), Theme.Unpack("muted"))
     else
-        GameTooltip:AddLine(("Built in: %s"):format(WeightsUI.Format(default)), Theme.Unpack("text"))
+        GameTooltip:AddLine(L.Format("Built in: %s", WeightsUI.Format(default)), Theme.Unpack("text"))
     end
     if row.entry.per then
-        GameTooltip:AddLine("Counted per 1%, the way items print it.", Theme.Unpack("muted"))
+        GameTooltip:AddLine(L["Counted per 1%, the way items print it."], Theme.Unpack("muted"))
     end
     if row.entry.weapon then
-        GameTooltip:AddLine("Multiplies these weapons' whole score. 1.2 counts them a fifth",
+        -- One sentence, wrapped by the tooltip rather than split in two.
+        GameTooltip:AddLine(L["Multiplies these weapons' whole score. 1.2 counts them a fifth higher, 0.8 a fifth lower, and 0 leaves them out."],
             Theme.Unpack("muted"))
-        GameTooltip:AddLine("higher, 0.8 a fifth lower, and 0 leaves them out.", Theme.Unpack("muted"))
     end
-    GameTooltip:AddLine("Type a number or use - and +.", Theme.Unpack("dim"))
+    GameTooltip:AddLine(L["Type a number or use - and +."], Theme.Unpack("dim"))
     GameTooltip:Show()
 end
 
@@ -745,6 +750,6 @@ function WeightsUI:Toggle()
     end
 end
 
-ns.RegisterCommand("weights", "change how much each stat counts for your class and spec", function()
+ns.RegisterCommand("weights", L["change how much each stat counts for your class and spec"], function()
     WeightsUI:Toggle()
 end)
