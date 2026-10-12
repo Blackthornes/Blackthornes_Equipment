@@ -637,6 +637,27 @@ function SettingsUI:BuildGeneral()
     end, true)
     controls.sisters:SetPoint("TOPLEFT", CONTROL_X, -2)
 
+    -- UI/WhatsNew.lua: one window after an update for every Blackthornes
+    -- addon. Off here is off in all of them, as the sister note is.
+    local _, whatsNewButton = CommandRow(pages, "general", 2, L["What's New"],
+        L["Opens the What's New window: what changed in each of your Blackthornes addons. Same as /beq whatsnew."],
+        L["Show it"], "whatsnew")
+    controls.whatsnew = whatsNewButton
+
+    local whatsNewRow = pages:Row("general", 2, L["After an update"],
+        L["Brings up the What's New window the first time you play after a Blackthornes addon updates. Turning it off here turns it off in all of them."])
+    controls.whatsNewPopup = Widgets.CreateCheckbox(whatsNewRow, L["Show What's New"], function(checked)
+        ns.WhatsNew:SetOn(checked)
+    end, true)
+    controls.whatsNewPopup:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    local whatsNewMotionRow = pages:Row("general", 2, L["What's New motion"],
+        L["The What's New window rises in, and its news slides up and glows. Turning it off here turns it off in all of them."])
+    controls.whatsNewMotion = Widgets.CreateCheckbox(whatsNewMotionRow, L["Motion"], function(checked)
+        ns.WhatsNew:SetMotionOn(checked)
+    end, true)
+    controls.whatsNewMotion:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- /beq perf and /beq perf clear as buttons.
     local speedRow = pages:Row("general", 2, L["Speed check"],
         L["If the game hitches, Show lists in chat what Equipment spent longest on. Clear starts the count again."])
@@ -727,6 +748,8 @@ function SettingsUI:Refresh()
     controls.minimap:SetChecked(not ns.db.minimapHidden)
     controls.debug:SetChecked(ns.db.debug == true)
     controls.sisters:SetChecked(ns.SisterNote:IsOn())
+    controls.whatsNewPopup:SetChecked(ns.WhatsNew:IsOn())
+    controls.whatsNewMotion:SetChecked(ns.WhatsNew:IsMotionOn())
     controls.tooltip:SetChecked(ns.db.tooltipLine ~= false)
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
     controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)
