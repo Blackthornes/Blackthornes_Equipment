@@ -12,6 +12,10 @@ is the only report that names players. A version with no section here posts
 nothing in #general.
 This file does not ship in the addon.
 
+## 0.25.0
+
+- Equipment speaks Deutsch now if your game is in German.
+
 ## 0.24.0
 
 - Works on German game clients too.

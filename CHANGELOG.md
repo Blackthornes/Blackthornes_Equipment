@@ -4,6 +4,18 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.25.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **Deutsch:** on a Deutsch (German) client, Equipment's own words are in
+  German: the gear window, Where to get upgrades, the upgrade quest and its
+  Quest log tab, banners, tooltips, the stat weights and every Settings
+  page. English clients see exactly what they saw before.
+- **Fixes:** a copy played from a checkout shows its real version instead
+  of "dev build".
+
 ## 0.24.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game
