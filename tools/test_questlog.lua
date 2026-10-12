@@ -98,6 +98,20 @@ suite.check("a finished quest says so", kabobs.complete == true and not watch.co
 suite.check("a group quest is tagged", data.zones[2].quests[1].tag == "Group (5)", data.zones[2].quests[1].tag)
 suite.check("the place to go: the hand-in once done", Log.Place(kabobs).name == "Chef Grual")
 suite.check("who to hand it to", Log.HandIn(kabobs) == "Chef Grual")
+
+-- An arrow aimed at a place with no quest (Show the trainer's weapon master)
+-- did not come from the log, so reading the log never puts it away.
+do
+    local arrow = ns.QuestArrow
+    local forgot = false
+    local free, forget, savedData = arrow.free, arrow.ForgetQuest, Tab.data
+    arrow.free = { free = true, title = "Learn Staves", place = { zone = "Orgrimmar" } }
+    arrow.ForgetQuest = function() forgot = true end
+    Tab.data = data
+    Tab:ForgetGone()
+    suite.check("an aim with no quest stays when the log is read", not forgot)
+    arrow.free, arrow.ForgetQuest, Tab.data = free, forget, savedData
+end
 suite.check("quests 5 levels up are red, a level under is yellow",
     Log.Difficulty(29) == "red" and Log.Difficulty(23) == "yellow" and Log.Difficulty(14) == "grey"
     and Log.Difficulty(18) == "green", Log.Difficulty(18))

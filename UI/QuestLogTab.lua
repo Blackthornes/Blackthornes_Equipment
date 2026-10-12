@@ -1093,7 +1093,8 @@ end
 function QuestLogUI:ForgetGone()
     local arrow = ns.QuestArrow
     local free = arrow and arrow:FreeQuest()
-    if not (free and self.data and self.data.how) then return end
+    -- An aim with no quest (the weapon master) never came from the log.
+    if not (free and free.questID ~= nil and self.data and self.data.how) then return end
     for _, zone in ipairs(self.data.zones) do
         for _, quest in ipairs(zone.quests) do
             if quest.questID == free.questID and quest.title == free.title then return end

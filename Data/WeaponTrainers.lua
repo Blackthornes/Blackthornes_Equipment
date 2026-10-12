@@ -3,9 +3,9 @@
 -- they teach, so a tooltip can say where to learn a weapon the character
 -- can use but has not trained yet.
 --
--- Classic 1.12's trainers, as Wowpedia's "Weapon master" page lists them
+-- Classic 1.12's trainers, as the classic weapon master lists give them
 -- (Sayoc and Hanashi in Orgrimmar, Archibald in Undercity, Ansekhwa in
--- Thunder Bluff; Woo Ping in Stormwind, Buliwyf Stonehand and Bixi
+-- Thunder Bluff; Woo Ping in Stormwind City, Buliwyf Stonehand and Bixi
 -- Wobblebonk in Ironforge, Ilyenia Moonfire in Darnassus). The Burning
 -- Crusade's Silvermoon and Exodar trainers are left out. Not yet checked on
 -- Forever; if a trainer there teaches something else, change it here.
@@ -35,7 +35,7 @@ WeaponTrainers.TRAINERS = {
           skills = { GUN, MACE, MACE2H, STAFF } },
     },
     Alliance = {
-        { name = "Woo Ping", city = "Stormwind", npc = 11867, x = 57.1, y = 57.7,
+        { name = "Woo Ping", city = "Stormwind City", npc = 11867, x = 57.1, y = 57.7,
           skills = { CROSSBOW, DAGGER, SWORD, SWORD2H, POLEARM, STAFF } },
         { name = "Buliwyf Stonehand", city = "Ironforge", npc = 11865, x = 61.2, y = 89.5,
           skills = { GUN, AXE, AXE2H, MACE, MACE2H, FIST } },
