@@ -27,7 +27,7 @@ ADDON = "Blackthornes_Equipment"
 
 # What a player's install is made of. Anything else is refused.
 ALLOWED_TOP = {"Blackthornes_Equipment.toc", "Core", "Data", "Logic", "UI",
-               "Media", "Probe", "LICENSE", "CHANGELOG.md"}
+               "Media", "Probe", "Locale", "LICENSE", "CHANGELOG.md"}
 ALLOWED_EXT = {".lua", ".toc", ".xml", ".tga", ".blp", ".ogg", ".md", ""}
 
 # Never shipped, wherever it turns up.
