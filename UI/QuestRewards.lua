@@ -306,7 +306,7 @@ function QuestRewards:BuildTake()
         frame:Hide()
     end, { width = 220, height = 24, primary = true })
     button:SetFrameStrata("DIALOG")
-    button:SetScript("OnEnter", function(frame)
+    button:HookScript("OnEnter", function(frame)
         local link = rawget(frame, "link")
         if not link or not GameTooltip then return end
         GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
@@ -314,7 +314,7 @@ function QuestRewards:BuildTake()
         GameTooltip:AddLine(L["Click to hand in the quest and take this"], ns.Theme.Unpack("good"))
         GameTooltip:Show()
     end)
-    button:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    button:HookScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
     button:Hide()
     self.take = button
     return button

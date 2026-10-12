@@ -765,7 +765,7 @@ function FinderUI:FillRow(row, line)
     row.source:SetWidth(row.sourceWidth)
 
     local more = #line.sources - 1
-    local tail = more > 0 and ("  +%d more"):format(more) or ""
+    local tail = more > 0 and L.Format("  +%d more", more) or ""
     local room = row.sourceWidth * SOURCE_LINES - WRAP_SLACK - Theme.TextWidth("tiny", tail)
     row.source:SetText(FinderUI.Fit("tiny", text, room) .. Colored("dim", tail))
     row:Show()

@@ -930,3 +930,5 @@ L["Brings up the What's New window the first time you play after a Blackthornes 
 L["Show What's New"] = "Neuigkeiten zeigen"
 L["What's New motion"] = "Bewegung der Neuigkeiten"
 L["The What's New window rises in, and its news slides up and glows. Turning it off here turns it off in all of them."] = "Das Neuigkeiten-Fenster gleitet herein, und seine Neuigkeiten schieben sich hoch und leuchten. Hier ausgeschaltet ist es in allen aus."
+L["  +%d more"] = "  +%d weitere"
+L["Dual Wield"] = "Beidhändigkeit"

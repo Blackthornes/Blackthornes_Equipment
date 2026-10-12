@@ -66,12 +66,15 @@ end
 --- Forget the kept answer: a skill may have been learned.
 function WeaponSkills:Forget()
     self.kept = nil
+    -- The finder keeps its verdicts, and a weapon's "Train" mark or an
+    -- ignored type's "cantuse" is one of them: judge again.
+    if ns.Finder and ns.Finder.ForgetVerdicts then pcall(ns.Finder.ForgetVerdicts, ns.Finder) end
 end
 
 --- A skill was learned (the skill list or the spellbook changed): forget,
 --- and let the banner look again at weapons waiting on one.
 function WeaponSkills:Learned()
-    self.kept = nil
+    self:Forget()
     if ns.UpgradeChat and ns.UpgradeChat.SkillsChanged then
         pcall(ns.UpgradeChat.SkillsChanged, ns.UpgradeChat)
     end
