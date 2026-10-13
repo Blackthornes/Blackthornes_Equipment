@@ -1756,3 +1756,23 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
     end
     if ns.QuestPanel then ns.QuestPanel:Unfold() end
 end)
+
+-- A one-time card in the What's New window (the owner asked 2026-10-13, as
+-- many players miss the quest): shown once per account, and only while the
+-- quest is off. Its button turns the quest on and opens the panel.
+ns.WHATS_NEW_TIPS = ns.WHATS_NEW_TIPS or {}
+table.insert(ns.WHATS_NEW_TIPS, {
+    key = "upgradeQuest",
+    title = L["Upgrade quest"],
+    icon = [[Interface\GossipFrame\AvailableQuestIcon]],
+    paragraphs = {
+        L["Equipment can pick your next gear upgrade and walk you to it step by step, like a quest, with an arrow showing the way. It's off until you turn it on."],
+    },
+    hint = L["You can also find it in Equipment's Settings or type /beq quest."],
+    button = L["Turn it on"],
+    due = function() return not UpgradeQuest:IsEnabled() end,
+    run = function()
+        if not UpgradeQuest:IsEnabled() then UpgradeQuest:SetEnabled(true) end
+        if ns.QuestPanel then ns.QuestPanel:Unfold() end
+    end,
+})
