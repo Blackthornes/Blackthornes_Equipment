@@ -4,6 +4,44 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.27.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **Class training:** a Training button on the gear window (it reads
+  "Training (4)" while spells wait) opens a drawer beside it. It lists the
+  class spells you can train now and at each coming level, with what they
+  cost, the weapon skills your bags' untrained weapons need, and what your
+  other characters can train. Show the way points the quest arrow at your
+  class trainer. Prices start from Classic's and are replaced by the real
+  ones the first time you open a class trainer. "Class training" in
+  Settings and `/beq training` turn it off.
+- **Upgrade quest, easy to close and bring back:** the panel's close gem
+  says how to bring it back, the gear window's header has an Upgrade quest
+  button, and Shift-click on the minimap button turns it on or off. Your
+  quests are kept either way.
+- **Upgrade quest, progress on the current step:** a step that is a quest
+  in your log shows its title and objectives with their counts, like the
+  game's tracker, with a box to track it. A click opens it in the quest
+  log.
+- **Upgrade quest, current step only:** a tick box on the panel and "Steps
+  shown" in Settings show just the step to do now, so the panel takes less
+  room. Off by default.
+- **More quests offered:** the upgrade quest and the finder pick up quests
+  and the gear they give as you meet them, so more quest rewards turn up
+  as options.
+- **The goal arrow lies back like a compass:** the quest arrow's dial is
+  drawn as a compass resting on the ground, with a blade that turns to
+  point the way, and is a little smaller. It moves below Farmer's XP bar
+  when they would overlap.
+- **Armor for your alts:** an alt is only offered armor of the heaviest
+  kind it wears, so no cloth for a leather wearer.
+- **About page:** Settings has an About page with the version, the
+  Discord invite, how to report a bug and the other Blackthornes addons.
+  The What's New window opens with a short note on how the addons are
+  made, and the upgrade quest has a one-time card in it.
+
 ## 0.26.1
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is

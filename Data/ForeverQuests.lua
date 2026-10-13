@@ -11,4 +11,5 @@
 local _, ns = ...
 
 ns.ForeverQuests = {
+    [883] = { title = "Lakota'mani", level = 22, min = 22, rewards = {} },
 }
