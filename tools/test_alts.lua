@@ -7,7 +7,7 @@ local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("alts")
 
 local ARMOR = 4
-local LEATHER, MAIL = 2, 3
+local CLOTH, LEATHER, MAIL = 1, 2, 3
 
 local function Agi(n) return { ITEM_MOD_AGILITY_SHORT = n } end
 
@@ -24,6 +24,10 @@ local ITEMS = {
     ["item:6"] = { loc = "INVTYPE_CHEST", class = ARMOR, subclass = LEATHER, stats = Agi(20) },
     -- For the rogue from level 30.
     ["item:7"] = { loc = "INVTYPE_CHEST", class = ARMOR, subclass = LEATHER, stats = Agi(8), minLevel = 30 },
+    -- Cloth: better stats than the rogue's leather, but lighter than it wears.
+    ["item:8"] = { loc = "INVTYPE_CHEST", class = ARMOR, subclass = CLOTH, stats = Agi(30) },
+    -- A cloak is cloth for everyone.
+    ["item:9"] = { loc = "INVTYPE_CLOAK", class = ARMOR, subclass = CLOTH, stats = Agi(30) },
 }
 
 local ns = env.Load()
@@ -91,6 +95,23 @@ suite.check("an upgrade for the character playing names no alt", advice.upgrade 
 
 advice = Butler:Advise("item:7", 0, 7)
 suite.check("one that waits on the alt's level says the level", advice.alt and advice.alt.level == 30)
+
+-- Armor goes only to a character whose heaviest kind it is.
+suite.check("cloth is never offered to a leather wearer", Alts:BestFor("item:8") == nil)
+local cloak = Alts:BestFor("item:9")
+suite.check("a cloak still is", cloak and cloak.key == "Player-2")
+ns.db.characterGear["Player-8"] = { class = "WARRIOR", level = 20, realm = "Here", faction = "Horde",
+    worn = { [5] = "item:11" } }
+suite.check("leather is never offered to a mail wearer",
+    Alts:Judge(ns.db.characterGear["Player-8"], "item:6") == nil)
+suite.check("mail is", Alts:Judge(ns.db.characterGear["Player-8"], "item:5") ~= nil)
+ns.db.characterGear["Player-8"] = nil
+local W = ns.Weights
+suite.check("a warrior below 40 wears mail at most, so plate waits",
+    W:IsBestArmor("WARRIOR", 20, ARMOR, MAIL, "INVTYPE_CHEST") and W:IsBestArmor("WARRIOR", 20, ARMOR, 4, "INVTYPE_CHEST"))
+suite.check("from 40 mail is no longer its heaviest", not W:IsBestArmor("WARRIOR", 40, ARMOR, MAIL, "INVTYPE_CHEST"))
+suite.check("rings and shields are not armor kinds",
+    W:IsBestArmor("ROGUE", 20, ARMOR, 0, "INVTYPE_FINGER") and W:IsBestArmor("WARRIOR", 20, ARMOR, 6, "INVTYPE_SHIELD"))
 
 -- The other side and another realm are never picked, even for an empty slot.
 ns.db.characterGear["Player-2"] = nil

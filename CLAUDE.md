@@ -92,6 +92,10 @@ otherwise a table:
   2026-10-11): `key` that character's GUID (Butler names it from
   Tradeskills' record), `gain` a whole percent (nil for an empty slot),
   `level` when it waits on that character's level. Butler mails it there.
+  Armor goes only to a character whose heaviest kind it is
+  (`Weights:IsBestArmor`, the owner asked 2026-10-13: no cloth for a
+  leather wearer); cloaks, rings, necks, trinkets and shields are not
+  asked.
 
 Each character keeps a note of itself when it plays (`Logic/Alts.lua`,
 account wide in `BlackthornesEquipmentDB.characterGear[guid]` = `{ class,

@@ -1071,6 +1071,30 @@ function Weights:CanUse(class, classID, subclassID, equipLoc)
     return true, level > 0 and level or nil
 end
 
+-- Body armor kinds, lightest to heaviest: cloth, leather, mail, plate.
+local BODY_ARMOR = { [1] = 1, [2] = 2, [3] = 3, [4] = 4 }
+
+--- Is this armor of the heaviest kind the class wears at this level? Only
+--- cloth, leather, mail and plate are asked; a cloak (cloth for everyone),
+--- rings, necks, trinkets, shields and weapons always pass, and so does a
+--- class with no armor list. A heavier kind the class learns later (a
+--- warrior's plate before 40) passes too, to be worn then.
+function Weights:IsBestArmor(class, level, classID, subclassID, equipLoc)
+    if classID ~= CLASS_ARMOR or equipLoc == "INVTYPE_CLOAK" then return true end
+    local rank = BODY_ARMOR[subclassID]
+    if not rank then return true end
+    local list = class and SPECS[class] and SPECS[class].armor
+    if not list then return true end
+    level = tonumber(level) or 0
+    local best = 0
+    for kind, opens in pairs(list) do
+        if BODY_ARMOR[kind] and opens <= level and BODY_ARMOR[kind] > best then
+            best = BODY_ARMOR[kind]
+        end
+    end
+    return rank >= best
+end
+
 --- Can this character hold a weapon in the off hand now? The client's
 --- CanDualWield answers when it has one; otherwise classic's rule.
 function Weights:CanDualWield(class, level)
