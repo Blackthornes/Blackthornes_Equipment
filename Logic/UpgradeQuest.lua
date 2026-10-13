@@ -989,6 +989,8 @@ function UpgradeQuest:Steps(quest)
                 Add(text, false, spot, note)
                 -- Ready to hand in: the panel shows the game's ? for it.
                 steps[#steps].turnIn = turnIn
+                -- In the log: the panel shows its objectives and counts.
+                if OnQuest(before.questID) then steps[#steps].questID = before.questID end
             else
                 StartFromItem(before.questID, before.title, before.name, false, false, note)
             end
@@ -1010,6 +1012,7 @@ function UpgradeQuest:Steps(quest)
                 GoalText(ender.goal))
             or L.Format("Complete %s (level %d)", source.title or L["the quest"], source.questLevel or 0)
         Add(complete, questID and QuestReady(questID), Spot(ender.goal), note)
+        if onQuest then steps[#steps].questID = questID end
         -- A reward given outright comes with the quest; only one of a
         -- choice is picked. Read from the data, so a quest kept from before
         -- this was known reads right too.
@@ -1024,6 +1027,7 @@ function UpgradeQuest:Steps(quest)
                 have or turnedIn, nil)
         end
         steps[#steps].turnIn = not (have or turnedIn) and questID ~= nil and QuestReady(questID) or nil
+        if onQuest and not (have or turnedIn) then steps[#steps].questID = questID end
     elseif source.kind == "dungeon" then
         local door = source.zone and { zone = source.zone, name = source.dungeon } or nil
         if door and door.zone ~= source.dungeon then Travel(door) end
@@ -1098,6 +1102,14 @@ function UpgradeQuest:Steps(quest)
             current = index
             break
         end
+    end
+    -- The step to do now on a quest in the log carries the quest as the log
+    -- shows it (objectives with their counts, tracked or not), read for
+    -- that one quest only.
+    local now = steps[current]
+    if now and not now.done and now.questID and ns.QuestLog then
+        local ok, found = pcall(ns.QuestLog.Find, ns.QuestLog, now.questID)
+        now.progress = ok and found or nil
     end
     return steps, current
 end
@@ -1399,6 +1411,15 @@ function UpgradeQuest:Shows(steps)
         parts[#parts + 1] = table.concat({ tostring(index), tostring(step.text), tostring(step.done),
             tostring(step.note), tostring(step.turnIn), tostring(step.soft), tostring(step.short),
             tostring(place.zone), tostring(place.x), tostring(place.y), tostring(place.name) }, "~")
+        local progress = type(step.progress) == "table" and step.progress
+        if progress then
+            local lines = { tostring(progress.title), tostring(progress.level), tostring(progress.tracked),
+                tostring(progress.complete), tostring(progress.failed) }
+            for _, objective in ipairs(progress.objectives or {}) do
+                lines[#lines + 1] = tostring(objective.text) .. "=" .. tostring(objective.done)
+            end
+            parts[#parts + 1] = table.concat(lines, "~")
+        end
     end
     return table.concat(parts, "|")
 end
@@ -1636,7 +1657,7 @@ end
 
 function UpgradeQuest:OnEnable()
     for _, event in ipairs({ "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
-        "ZONE_CHANGED_NEW_AREA", "QUEST_ACCEPTED", "QUEST_LOG_UPDATE", "QUEST_TURNED_IN",
+        "ZONE_CHANGED_NEW_AREA", "QUEST_ACCEPTED", "QUEST_LOG_UPDATE", "QUEST_TURNED_IN", "QUEST_WATCH_LIST_CHANGED",
         "GET_ITEM_INFO_RECEIVED", "SKILL_LINES_CHANGED", "NEW_RECIPE_LEARNED", "TRAIT_CONFIG_UPDATED",
         "PLAYER_CONTROL_GAINED", "PLAYER_ENTERING_WORLD" }) do
         ns.RegisterEvent(self, event, self.OnEvent)

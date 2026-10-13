@@ -56,8 +56,6 @@ local WHEEL = 40
 local MOST_OBJECTIVES = 10
 local MOST_ITEMS = 8
 
-local DONE_MARK = "|TInterface\\RaidFrame\\ReadyCheck-Ready:11|t "
-
 local function InCombat()
     local fn = _G.InCombatLockdown
     if type(fn) ~= "function" then return false end
@@ -418,18 +416,7 @@ local function Words(quest, upgrades)
     local title = Colored(color, level .. quest.title)
     if quest.tag then title = title .. "  " .. Colored(Theme.colors.quest, quest.tag) end
 
-    local lines = {}
-    if quest.failed then
-        lines[#lines + 1] = { text = L["- Failed"], color = "loss" }
-    elseif quest.complete then
-        local who = ns.QuestLog.HandIn(quest)
-        lines[#lines + 1] = { text = who and L.Format("- Ready to hand in to %s", who) or L["- Ready to hand in"], color = "accent" }
-    else
-        for _, objective in ipairs(quest.objectives or {}) do
-            lines[#lines + 1] = objective.done and { text = DONE_MARK .. objective.text, color = "good" }
-                or { text = "- " .. objective.text, color = "text" }
-        end
-    end
+    local lines = ns.QuestLog.ObjectiveLines(quest)
     local note
     local link = quest.questID and upgrades[quest.questID]
     if link then

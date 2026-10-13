@@ -492,6 +492,18 @@ The probe (2026-10-10) found the C_QuestLog calls on Forever and none of
 the classic globals, so the tab reads the retail way (see
 `docs/FOREVER_API_FINDINGS.md`); the tab itself not yet seen in game.
 
+The step to do now (the owner asked 2026-10-13): when it is a quest in the
+log (a chain quest's or the reward quest's Complete or Hand in step,
+`step.questID`), `UpgradeQuest:Steps` reads that one quest
+(`QuestLog:Find`, by `GetLogIndexForQuestID`, else by reading the log)
+into `step.progress`, and the panel shows it as the tracker does
+(`QuestPanel:FillProgress`): a tick box that tracks it, its title (a click
+opens it in the quest log, shift-click links it) and its objectives with
+their counts (`QuestLog.ObjectiveLines`, shared with the tab). The counts
+are in `UpgradeQuest:Shows`, so the debounced quest log update draws the
+panel again only when one moves. Tested in `tools/test_questprogress.lua`.
+Not yet seen in game.
+
 ## Put it on, and Take the reward
 
 The owner's goal (2026-10-11): the addons should do the work for the
