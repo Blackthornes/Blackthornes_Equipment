@@ -1,0 +1,109 @@
+-- Class spells to train in the gear window's Training drawer (the owner
+-- said build it 2026-10-13). Logic/ClassTraining.lua is Butler's file;
+-- Butler's test covers the plan, the trainer read and Train all in depth.
+--
+-- What must hold here:
+--   1. The Training button counts the spells waiting, and opens the drawer.
+--   2. The drawer lists ready spells with their cost, the next level's,
+--      untrained weapon upgrades and the other characters'.
+--   3. A class trainer's window keeps the prices and the trainer's spot,
+--      and Show the way aims the quest arrow there.
+--   4. Turned off, the button goes and nothing is listed.
+
+local env = dofile(lfs_cwd .. "/tools/testenv.lua")
+local suite = env.NewSuite("classtraining")
+
+local ns = env.Load()
+env.InstallItems({}, {}, {})
+
+ns.CLASS_SPELLS = { MAGE = {
+    { 1, 4, 1, "Frostbolt" },
+    { 2, 8, 2, "Frostbolt", nil, 1 },
+    { 3, 10, 1, "Frost Nova" },
+    { 4, 14, 1, "Arcane Explosion" },
+} }
+
+local known = { [1] = true }
+_G.UnitClass = function() return "Mage", "MAGE" end
+_G.UnitLevel = function() return 12 end
+_G.UnitRace = function() return "Human", "Human", 1 end
+_G.UnitFactionGroup = function() return "Alliance" end
+_G.UnitName = function(unit) return unit == "npc" and "Jennea Cannon" or "Me Here" end
+_G.UnitGUID = function(unit)
+    if unit == "npc" then return "Creature-0-1-2-3-5498-0000" end
+    return "Player-1-AAA"
+end
+_G.IsPlayerSpell = function(id) return known[id] == true end
+_G.GetRealZoneText = function() return "Stormwind City" end
+_G.GetSubZoneText = function() return "Wizard's Sanctum" end
+_G.C_Map = {
+    GetBestMapForUnit = function() return 1453 end,
+    GetPlayerMapPosition = function() return { GetXY = function() return 0.38, 0.79 end } end,
+}
+
+for _, module in ipairs(ns.moduleOrder) do
+    if module.OnEnable then module:OnEnable() end
+end
+
+local UI, Drawer, CT = ns.UI, ns.TrainingDrawer, ns.ClassTraining
+
+-- 1. The button.
+UI:Show()
+suite.check("the Training button counts what waits", UI.trainingButton.label:GetText() == "Training (2)",
+    UI.trainingButton.label:GetText())
+suite.check("the drawer starts closed", not Drawer:IsShown())
+UI.trainingButton:GetScript("OnClick")(UI.trainingButton)
+suite.check("a click opens it", Drawer:IsShown() and ns.db.trainingDrawer == true)
+
+-- 2. What it lists.
+local function Texts()
+    local list = {}
+    for _, row in ipairs(Drawer.lines) do
+        if row:IsShown() then list[#list + 1] = row.text:GetText() .. "|" .. (row.right:GetText() or "") end
+    end
+    return table.concat(list, "\n")
+end
+local text = Texts()
+suite.check("ready now, not priced yet", text:find("READY NOW|price after a trainer visit", 1, true) ~= nil, text)
+suite.check("the ranked spell", text:find("Frostbolt (Rank 2)|not priced yet", 1, true) ~= nil, text)
+suite.check("the next level", text:find("AT LEVEL 14", 1, true) ~= nil, text)
+suite.check("no trainer seen yet", Drawer.hint:GetText():find("Open a class trainer once", 1, true) ~= nil)
+
+-- 3. At a trainer.
+local services = {
+    { "Frostbolt", "Rank 2", "available", 100 },
+    { "Frost Nova", "", "available", 200 },
+}
+_G.GetNumTrainerServices = function() return #services end
+_G.GetTrainerServiceInfo = function(i) return services[i][1], services[i][2], services[i][3] end
+_G.GetTrainerServiceCost = function(i) return services[i][4] end
+local handler = _G.BlackthornesEquipmentEventFrame:GetScript("OnEvent")
+handler(_G.BlackthornesEquipmentEventFrame, "TRAINER_SHOW")
+text = Texts()
+suite.check("prices show once a trainer is read", text:find("READY NOW|3s", 1, true) ~= nil
+    or text:find("READY NOW|", 1, true) ~= nil and CT:Plan().cost == 300, text)
+suite.check("the drawer names the trainer", Drawer.hint:GetText():find("Jennea Cannon", 1, true) ~= nil,
+    Drawer.hint:GetText())
+
+local aimed
+ns.QuestArrow.AimAtQuest = function(_, questID, title, place) aimed = { title = title, place = place } return true end
+Drawer.wayButton:GetScript("OnClick")(Drawer.wayButton)
+suite.check("Show the way aims the quest arrow at the trainer", aimed and aimed.place.name == "Jennea Cannon"
+    and aimed.place.zone == "Stormwind City" and math.abs(aimed.place.x - 38) < 0.01)
+
+-- Another character's spells.
+CT:Data().characters["Player-1-BBB"] = { name = "Bob Stone", class = "MAGE", level = 10, ready = { 2, 3 }, at = 1 }
+CT:Changed()
+text = Texts()
+suite.check("the other characters", text:find("Bob Stone: 2 spells at level 10", 1, true) ~= nil, text)
+
+-- 4. Turned off.
+ns.HandleSlash("training off")
+suite.check("off is saved", ns.db.classTraining == false)
+suite.check("the button goes", not UI.trainingButton:IsShown())
+
+_G.UnitGUID, _G.UnitName, _G.C_Map = nil, nil, nil
+_G.GetNumTrainerServices, _G.GetTrainerServiceInfo, _G.GetTrainerServiceCost = nil, nil, nil
+_G.GetSubZoneText = nil
+
+suite.done()

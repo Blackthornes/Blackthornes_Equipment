@@ -512,6 +512,30 @@ are in `UpgradeQuest:Shows`, so the debounced quest log update draws the
 panel again only when one moves. Tested in `tools/test_questprogress.lua`.
 Not yet seen in game.
 
+## Class training
+
+The owner said build it (2026-10-13), in Equipment and Butler: which class
+spells the character (and the other characters) can train now and soon,
+and what they cost. `Logic/ClassTraining.lua`, `Data/ClassSpells.lua` and
+`tools/make_class_spells.py` are the same files in both addons (a fix to
+one belongs in both); neither calls the other for it. The data is
+generated from the Forever client's game tables (`make_class_spells.py
+<tables folder> --build <build>`; never edit it by hand, never commit the
+tables). Prices, which spells no trainer teaches and where the trainer
+stands are kept the first time a class trainer's window opens, account
+wide, in `classTrainingData` (never rename it). "Class training" on the
+Gear page (`classTraining`, on unless unticked, never rename it) and `/beq
+training [on|off]`.
+
+Here it is the gear window's Training button ("Training (4)" while spells
+wait) and `UI/TrainingDrawer.lua`, a drawer against the window's right
+edge (left open in `trainingDrawer`): READY NOW and AT LEVEL N with each
+spell's cost, WEAPON SKILLS for untrained weapon upgrades in the bags
+(`UI.untrained`, a click shows the weapon master), and the other
+characters'. Show the way aims the quest arrow at the class trainer
+(`ClassTraining.Guide` = `TrainingDrawer.Guide`). Tested in
+`tools/test_classtraining.lua`. Not yet seen in game.
+
 ## Put it on, and Take the reward
 
 The owner's goal (2026-10-11): the addons should do the work for the

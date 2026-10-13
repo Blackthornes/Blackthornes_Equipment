@@ -212,11 +212,27 @@ function UI:BuildHeader()
     self.questButton = quest
     self:OnUpgradeQuestToggled()
 
+    -- Opens the Training drawer beside the window (UI/TrainingDrawer.lua):
+    -- class spells to train and what they cost. It says how many wait.
+    local training = Widgets.CreateButton(header, L["Training"], function()
+        if ns.TrainingDrawer then ns.TrainingDrawer:Toggle() end
+    end, { width = 80, height = 20 })
+    training:SetPoint("RIGHT", quest, "LEFT", -6, 0)
+    training:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(L["Class training"], Theme.Unpack("accent"))
+        GameTooltip:AddLine(L["The class spells you can train now, what they cost, and where your trainer is."], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    training:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    self.trainingButton = training
+    self:OnTrainingToggled()
+
     -- Stops short of the buttons, so a long spec name never runs under
     -- them.
     local spec = Theme.CreateLabel(header, "small", "muted")
     spec:SetPoint("LEFT", 58 - RIM, -4)
-    spec:SetPoint("RIGHT", quest, "LEFT", -10, 0)
+    spec:SetPoint("RIGHT", training, "LEFT", -10, 0)
     self.specLabel = spec
 
     -- A gold rule under it, bright at the left and fading out to the right.
@@ -233,6 +249,21 @@ function UI:OnUpgradeQuestToggled()
     if not (button and button.SetLabelColor) then return end
     local on = ns.UpgradeQuest ~= nil and ns.UpgradeQuest:IsEnabled()
     button:SetLabelColor(on and "good" or "gilt")
+end
+
+--- The Training button: how many spells wait, gold while there are some,
+--- green while the drawer is open. Hidden while class training is off.
+function UI:OnTrainingToggled()
+    local button = self.trainingButton
+    if not (button and button.SetText) then return end
+    local training = ns.ClassTraining
+    local on = training ~= nil and training:IsOn()
+    button:SetShown(on)
+    if not on then return end
+    local count = #training:Plan().ready
+    button:SetText(count > 0 and L.Format("Training (%d)", count) or L["Training"])
+    local open = ns.TrainingDrawer ~= nil and ns.TrainingDrawer:IsShown()
+    button:SetLabelColor(open and "good" or (count > 0 and "accentHi" or "gilt"))
 end
 
 function UI:BuildRows()
@@ -399,6 +430,8 @@ function UI:Refresh()
     end
 
     local upgrades, owned = 0, 0
+    -- Untrained weapons waiting as upgrades, for the Training drawer.
+    local untrained, keys = {}, {}
     for _, row in ipairs(self.rows) do
         SetCell(row.worn, Items:Equipped(row.slot), "empty")
 
@@ -412,6 +445,8 @@ function UI:Refresh()
             local skill = pick.result.skill
             row.best.wears = not skill
             if skill then
+                untrained[#untrained + 1] = { link = pick.link, skill = skill }
+                keys[#keys + 1] = pick.link
                 row.gain:SetText(L.Format("Train: %s", Compare:HowMuch(pick.result)))
                 row.gain:SetTextColor(Theme.Unpack("loss"))
             else
@@ -460,6 +495,10 @@ function UI:Refresh()
         self.footer:SetText(L.Format("%d upgrades in your bags.", upgrades))
     end
     self.upgrades = upgrades
+    self.untrained = untrained
+    self.untrainedKey = table.concat(keys, ",")
+    self:OnTrainingToggled()
+    if ns.TrainingDrawer then ns.TrainingDrawer:Refresh() end
     return upgrades
 end
 
@@ -521,6 +560,7 @@ function UI:Show()
         if ns.Titanforged then ns.Titanforged:Opened(self.frame) end
     end
     self:Refresh()
+    if ns.TrainingDrawer then ns.TrainingDrawer:WindowShown() end
 end
 
 function UI:Hide()

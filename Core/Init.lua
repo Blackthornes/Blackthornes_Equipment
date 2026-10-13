@@ -462,6 +462,13 @@ local DEFAULTS = {
     -- A line in chat when an upgrade you can wear now lands in the bags.
     upgradeChat = true,
 
+    -- Class spells to train (Logic/ClassTraining.lua): the gear window's
+    -- Training button and drawer, and a line in chat at a level up. On
+    -- unless unticked; never rename it. trainingDrawer: the drawer was
+    -- left open.
+    classTraining = true,
+    trainingDrawer = false,
+
     -- The "Where to get upgrades" window: where it sits, and which sources
     -- it shows ("all", "vendor", "quest" or "dungeon").
     finderPoint = "CENTER",

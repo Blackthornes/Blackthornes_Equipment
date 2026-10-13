@@ -426,6 +426,10 @@ function Probe:Upgrades()
         Line("vendor spots learned", spots:Count())
         Line("vendor prices learned", spots:PriceCount())
     end
+    if ns.ClassTraining then
+        local ok, text = pcall(ns.ClassTraining.ProbeText, ns.ClassTraining)
+        Line("class training", ok and text or "error")
+    end
 end
 
 ns.RegisterCommand("probe", "check what this client supports (reads only)", function()
