@@ -89,8 +89,15 @@ local function CreateLine(parent, index)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             local ok = Drawer.SpellTooltip(self.spell)
             if not ok then GameTooltip:AddLine(self.text:GetText() or "", 1, 1, 1) end
-            GameTooltip:AddLine(self.spell.cost and L.Format("Costs %s at the trainer", ns.ClassTraining.Money(self.spell.cost))
-                or L["Not priced yet: open a class trainer once and it's kept."], Theme.Unpack("muted"))
+            local line
+            if not self.spell.cost then
+                line = L["Not priced yet: open a class trainer once and it's kept."]
+            elseif self.spell.guess then
+                line = L.Format("Usually %s. Open your trainer once for the real price.", ns.ClassTraining.Money(self.spell.cost))
+            else
+                line = L.Format("Costs %s at the trainer", ns.ClassTraining.Money(self.spell.cost))
+            end
+            GameTooltip:AddLine(line, Theme.Unpack("muted"))
             GameTooltip:Show()
         elseif self.link then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")

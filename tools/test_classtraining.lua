@@ -16,6 +16,7 @@ local suite = env.NewSuite("classtraining")
 local ns = env.Load()
 env.InstallItems({}, {}, {})
 
+ns.CLASS_SPELL_PRICES = {}
 ns.CLASS_SPELLS = { MAGE = {
     { 1, 4, 1, "Frostbolt" },
     { 2, 8, 2, "Frostbolt", nil, 1 },

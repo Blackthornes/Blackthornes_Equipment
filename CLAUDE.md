@@ -521,7 +521,12 @@ and what they cost. `Logic/ClassTraining.lua`, `Data/ClassSpells.lua` and
 one belongs in both); neither calls the other for it. The data is
 generated from the Forever client's game tables (`make_class_spells.py
 <tables folder> --build <build>`; never edit it by hand, never commit the
-tables). Prices, which spells no trainer teaches and where the trainer
+tables): each class's trainable spells with level, rank, races and the rank
+before. With `--prices <Classic world database dump> --learn <a Classic
+client's SpellEffect table>` it also writes `CLASS_SPELL_PRICES`,
+Classic's trainer prices (the full price where Classic had a discount),
+which stand in until a trainer shows its own (`ClassTraining.PriceOf`,
+`spell.guess`); never name where either came from. Real prices, which spells no trainer teaches and where the trainer
 stands are kept the first time a class trainer's window opens, account
 wide, in `classTrainingData` (never rename it). "Class training" on the
 Gear page (`classTraining`, on unless unticked, never rename it) and `/beq
