@@ -369,6 +369,20 @@ function SettingsUI:BuildGear()
         function() return SettingsUI:WeaponsHint() end, L["Show them"], "weapons show")
     controls.weapons = weaponsButton
     self.weaponsRow = weaponsRow
+
+    pages:Section("gear", 2, L["CLASS TRAINING"])
+
+    local trainingRow = pages:Row("gear", 2, L["Class training"],
+        L["The gear window's Training button lists the class spells you can train now and what they cost, and a level up says in chat what's new. Prices and the trainer's place are kept the first time you open a class trainer. Also /beq training on or off."])
+    controls.classTraining = Widgets.CreateCheckbox(trainingRow, L["Show it"], function(checked)
+        ns.ClassTraining:SetOn(checked)
+        if not checked and ns.TrainingDrawer then ns.TrainingDrawer:Hide() end
+    end, ns.ClassTraining:IsOn())
+    controls.classTraining:SetPoint("TOPLEFT", CONTROL_X, -2)
+    local _, trainingButton = CommandRow(pages, "gear", 2, L["Spells to train"],
+        L["Lists in chat the spells you can train now, what each costs, the next level's and your other characters'. Same as /beq training."],
+        L["List them"], "training")
+    controls.trainingReport = trainingButton
 end
 
 --- What the Untrained weapons row says: which types this character
@@ -771,6 +785,7 @@ function SettingsUI:Refresh()
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:SetChecked(ns.db.suffixLine ~= false)
     controls.altTooltipLine:SetChecked(ns.db.altTooltipLine ~= false)
+    controls.classTraining:SetChecked(ns.ClassTraining:IsOn())
     for _, entry in ipairs(HUNTING) do
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
     end

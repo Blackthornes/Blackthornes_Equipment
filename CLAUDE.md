@@ -512,6 +512,49 @@ are in `UpgradeQuest:Shows`, so the debounced quest log update draws the
 panel again only when one moves. Tested in `tools/test_questprogress.lua`.
 Not yet seen in game.
 
+## Class training
+
+The owner said build it (2026-10-13), in Equipment and Butler: which class
+spells the character (and the other characters) can train now and soon,
+and what they cost. `Logic/ClassTraining.lua`, `Data/ClassSpells.lua` and
+`tools/make_class_spells.py` are the same files in both addons (a fix to
+one belongs in both); neither calls the other for it. The data is
+generated from the Forever client's game tables (`make_class_spells.py
+<tables folder> --build <build>`; never edit it by hand, never commit the
+tables): each class's trainable spells with level, rank, races and the rank
+before. With `--prices <Classic world database dump> --learn <a Classic
+client's SpellEffect table>` it also writes `CLASS_SPELL_PRICES`,
+Classic's trainer prices (the full price where Classic had a discount),
+which stand in until a trainer shows its own (`ClassTraining.PriceOf`,
+`spell.guess`); never name where either came from. Real prices, which spells no trainer teaches and where the trainer
+stands are kept the first time a class trainer's window opens, account
+wide, in `classTrainingData` (never rename it). "Class training" on the
+Gear page (`classTraining`, on unless unticked, never rename it) and `/beq
+training [on|off]`.
+
+Here it is the gear window's Training button ("Training (4)" while spells
+wait) and `UI/TrainingDrawer.lua`, a drawer against the window's right
+edge (left open in `trainingDrawer`): READY NOW and AT LEVEL N with each
+spell's cost, WEAPON SKILLS for untrained weapon upgrades in the bags
+(`UI.untrained`, a click shows the weapon master), and the other
+characters'. Show the way aims the quest arrow at the class trainer
+(`ClassTraining.Guide` = `TrainingDrawer.Guide`). Tested in
+`tools/test_classtraining.lua`. Not yet seen in game.
+
+## What Farmer calls here
+
+Farmer's XP bar (2026-10-13) reads class training for its level-up cheer,
+inside a pcall, read only, after Butler's copy when Butler is loaded:
+
+```lua
+_G.BlackthornesEquipment.ClassTraining:IsOn()
+_G.BlackthornesEquipment.ClassTraining:Plan()   -- ready, cost, unknown
+```
+
+Keep these names and fields stable (they are the shared
+`Logic/ClassTraining.lua`'s, so Butler's too); if one has to change,
+change Farmer's XP bar in the same breath.
+
 ## Put it on, and Take the reward
 
 The owner's goal (2026-10-11): the addons should do the work for the

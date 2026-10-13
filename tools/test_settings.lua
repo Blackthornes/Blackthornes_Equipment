@@ -205,18 +205,18 @@ suite.check("sizes read through the step", ns.Theme.sizes.small == ns.Theme.BASE
 local ran = {}
 local realSlash = ns.HandleSlash
 ns.HandleSlash = function(text) ran[#ran + 1] = text end
-for _, key in ipairs({ "openWindow", "bags", "find", "tracked", "questArrowNext", "probe", "help" }) do
+for _, key in ipairs({ "openWindow", "bags", "find", "tracked", "questArrowNext", "probe", "help", "trainingReport" }) do
     controls[key]:GetScript("OnClick")(controls[key])
 end
 ns.HandleSlash = realSlash
 suite.check("the command buttons run their commands",
-    table.concat(ran, ",") == "window,bags,find,tracked,arrow next,probe,help", table.concat(ran, ","))
+    table.concat(ran, ",") == "window,bags,find,tracked,arrow next,probe,help,training", table.concat(ran, ","))
 
 -- And every command registered has a control (house rule).
 local covered = { sisters = true, whatsnew = true,
     window = true, bags = true, find = true, tracked = true, quest = true, arrow = true,
     probe = true, help = true, perf = true, spec = true, weights = true, minimap = true,
-    settings = true, weapons = true,
+    settings = true, weapons = true, training = true,
 }
 for _, name in ipairs(ns.commandOrder) do
     suite.check("/beq " .. name .. " has a button in Settings", covered[name] == true)
