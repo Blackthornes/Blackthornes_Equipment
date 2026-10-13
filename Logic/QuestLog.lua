@@ -221,6 +221,40 @@ function QuestLog:Read()
     return { zones = zones, count = count, tracked = tracked, how = how }
 end
 
+--- One quest of the log by its ID, read the way QuestLog:Read reads each:
+--- { questID, index, title, level, complete, failed, objectives, tracked },
+--- or nil when it is not in the log (or sits under a heading folded in the
+--- game's log, which hides it from addons). For the upgrade quest's step to
+--- do now (UpgradeQuest:Steps), so only that one quest is read.
+function QuestLog:Find(questID)
+    questID = Number(questID)
+    if not questID then return nil end
+    local size, how = QuestLog.Size()
+    if not how then return nil end
+    self.how = how
+    local log = Log()
+    local line
+    if how == "new" and type(log.GetLogIndexForQuestID) == "function" then
+        local index = Number(Read(log.GetLogIndexForQuestID, questID))
+        local found = index and index > 0 and Line(index, how)
+        if found and not found.header and found.questID == questID then line = found end
+    end
+    if not line then
+        for index = 1, math.min(size, 80) do
+            local found = Line(index, how)
+            if found and not found.header and found.questID == questID then
+                line = found
+                break
+            end
+        end
+    end
+    if not line then return nil end
+    State(line)
+    line.objectives = QuestLog.Objectives(line, how)
+    line.tracked = QuestLog.Tracked(line)
+    return line
+end
+
 --------------------------------------------------------------------------------
 -- What a quest's row says
 --------------------------------------------------------------------------------
@@ -238,6 +272,37 @@ function QuestLog.Difficulty(level)
     local green = Number(Read(_G.GetQuestGreenRange)) or (player <= 30 and 8 or 9)
     if -gap <= green then return "green" end
     return "grey"
+end
+
+-- The tick the log's done objectives wear.
+QuestLog.DONE_MARK = "|TInterface\\RaidFrame\\ReadyCheck-Ready:11|t "
+
+--- A quest's lines under its title, as the game's tracker words them:
+--- "Failed", "Ready to hand in" once done, else each objective with its
+--- count, ticked green when done. A list of { text, color }.
+function QuestLog.ObjectiveLines(quest)
+    local lines = {}
+    if quest.failed then
+        lines[1] = { text = L["- Failed"], color = "loss" }
+    elseif quest.complete then
+        local who = QuestLog.HandIn(quest)
+        lines[1] = { text = who and L.Format("- Ready to hand in to %s", who) or L["- Ready to hand in"], color = "accent" }
+    else
+        for _, objective in ipairs(quest.objectives or {}) do
+            lines[#lines + 1] = objective.done and { text = QuestLog.DONE_MARK .. objective.text, color = "good" }
+                or { text = "- " .. objective.text, color = "text" }
+        end
+    end
+    return lines
+end
+
+--- The quest's title line: "[23] Seasoned Wolf Kabobs" in the game's
+--- colour for its level.
+function QuestLog.TitleText(quest)
+    local level = quest.level and quest.level > 0 and ("[%d] "):format(quest.level) or ""
+    local rgb = QuestLog.DIFFICULTY[QuestLog.Difficulty(quest.level)]
+    return ("|cff%02x%02x%02x%s|r"):format(math.floor(rgb[1] * 255 + 0.5), math.floor(rgb[2] * 255 + 0.5),
+        math.floor(rgb[3] * 255 + 0.5), level .. (quest.title or ""))
 end
 
 QuestLog.DIFFICULTY = {
@@ -432,7 +497,7 @@ end
 --------------------------------------------------------------------------------
 
 QuestLog.CALLS = {
-    "C_QuestLog.GetNumQuestLogEntries", "C_QuestLog.GetInfo", "C_QuestLog.GetQuestObjectives",
+    "C_QuestLog.GetNumQuestLogEntries", "C_QuestLog.GetInfo", "C_QuestLog.GetLogIndexForQuestID", "C_QuestLog.GetQuestObjectives",
     "C_QuestLog.GetQuestWatchType", "C_QuestLog.AddQuestWatch", "C_QuestLog.RemoveQuestWatch",
     "C_QuestLog.GetQuestTagInfo", "C_QuestLog.SetSelectedQuest", "C_QuestLog.IsPushableQuest",
     "C_QuestLog.SetAbandonQuest", "GetNumQuestLogEntries", "GetQuestLogTitle",

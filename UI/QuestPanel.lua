@@ -12,7 +12,10 @@
 -- and a Settings button. Then, like a
 -- quest in the quest tracker: the item
 -- with how much better it is, a progress bar, and the steps to get it, the
--- one to do now lit gold and the ones done ticked green.
+-- one to do now lit gold and the ones done ticked green. When the step to
+-- do now is a quest in the log, it shows that quest as the game's tracker
+-- does: a tick box to track it, its title (click to open it in the quest
+-- log) and its objectives with their counts.
 --
 -- Show on map pins the next place to go; Arrow shows the quest arrow
 -- (UI/QuestArrow.lua), which points the way there, and a click on a step
@@ -55,6 +58,8 @@ local ICON = 36
 local MARK = 14
 local STEP_GAP = 6
 local MOST_STEPS = 10
+-- Objectives shown under the step to do now, as in the Quest log tab.
+local MOST_OBJECTIVES = 10
 local FOOTER = 34
 local BAR = 4
 -- Queue it, beside a crafted upgrade's name.
@@ -200,6 +205,66 @@ function QuestPanel:BuildStep(index)
     note:SetWordWrap(true)
     row.note = note
     row.textWidth = WIDTH - PAD * 2 - MARK - 16
+
+    -- The step to do now on a quest in the log: the quest as the game's
+    -- tracker shows it (the owner asked 2026-10-13). A tick box tracks it,
+    -- a click on its title opens it in the quest log, and its objectives
+    -- follow with their counts.
+    row.track = Widgets.CreateCheckbox(row, "", function(checked)
+        local quest = row.quest
+        if quest and ns.QuestLog then
+            ns.QuestLog:SetTracked(quest, checked)
+            if ns.UpgradeQuest then ns.UpgradeQuest:UpdateSoon(0.2) end
+        end
+    end, false)
+    row.track:SetWidth(MARK)
+    Explain(row.track, L["Track"], L["Tick to track this quest, as the game's tracker does."])
+    row.track:Hide()
+
+    local title = CreateFrame("Button", nil, row)
+    title:RegisterForClicks("LeftButtonUp")
+    title.label = Theme.CreateLabel(title, "small", "text")
+    title.label:SetPoint("TOPLEFT")
+    title.label:SetWordWrap(true)
+    title:SetScript("OnEnter", function(self)
+        self.label:SetAlpha(0.8)
+        local quest = row.quest
+        if not quest then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(quest.title, Theme.Unpack("accent"))
+        GameTooltip:AddLine(L["Click to open it in your quest log."], 1, 1, 1, true)
+        GameTooltip:AddLine(L["Shift-click to link it in chat."], 0.9, 0.9, 0.9, true)
+        GameTooltip:Show()
+    end)
+    title:SetScript("OnLeave", function(self)
+        self.label:SetAlpha(1)
+        GameTooltip:Hide()
+    end)
+    title:SetScript("OnClick", function()
+        local quest = row.quest
+        if not (quest and ns.QuestLog) then return end
+        if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
+            local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
+            if ok and chatLink then
+                local link = quest.questID and type(GetQuestLink) == "function" and select(2, pcall(GetQuestLink, quest.questID))
+                if type(link) == "string" then
+                    pcall(ChatEdit_InsertLink, link)
+                    return
+                end
+            end
+        end
+        ns.QuestLog:Open(quest)
+    end)
+    title:Hide()
+    row.questTitle = title
+
+    row.objectives = {}
+    for which = 1, MOST_OBJECTIVES do
+        local label = Theme.CreateLabel(row, "small", "text")
+        label:SetWordWrap(true)
+        label:Hide()
+        row.objectives[which] = label
+    end
 
     -- A step with a place: a click points the quest arrow there.
     row:SetScript("OnEnter", function(self)
@@ -801,6 +866,8 @@ function QuestPanel:FillStep(row, index, step, current)
         row.note:Hide()
     end
 
+    height = height + self:FillProgress(row, now and step.progress or nil, height)
+
     if step.done then
         row.mark:SetTexture(DONE_ICON)
         row.mark:Show()
@@ -829,6 +896,54 @@ function QuestPanel:FillStep(row, index, step, current)
     row:SetHeight(height)
     row:Show()
     return height
+end
+
+--- The quest a step is on, as the log shows it, under the step's words:
+--- the track box and its title, then its objectives with their counts.
+--- Hidden with no quest. Returns how much taller the row grew.
+function QuestPanel:FillProgress(row, quest, top)
+    row.quest = quest
+    if not quest then
+        row.track:Hide()
+        row.questTitle:Hide()
+        for _, label in ipairs(row.objectives) do label:Hide() end
+        return 0
+    end
+    local indent = MARK + 10
+    local width = row.textWidth - MARK - 4
+    local y = top + 2
+    row.track:ClearAllPoints()
+    row.track:SetPoint("TOPLEFT", indent, -(y - 2))
+    row.track:SetChecked(quest.tracked == true)
+    row.track:Show()
+
+    local title = ns.QuestLog.TitleText(quest)
+    local titleLines = QuestPanel.Lines("small", title, width)
+    local button = row.questTitle
+    button:ClearAllPoints()
+    button:SetPoint("TOPLEFT", indent + MARK + 4, -y)
+    button:SetSize(width, titleLines * LINE_HEIGHT.small)
+    button.label:SetWidth(width)
+    button.label:SetText(title)
+    button:Show()
+    y = y + titleLines * LINE_HEIGHT.small + 2
+
+    local lines = ns.QuestLog.ObjectiveLines(quest)
+    for which, label in ipairs(row.objectives) do
+        local line = lines[which]
+        if line then
+            label:ClearAllPoints()
+            label:SetPoint("TOPLEFT", indent + MARK + 10, -y)
+            label:SetWidth(width - 6)
+            label:SetText(line.text)
+            label:SetTextColor(Theme.Unpack(line.color))
+            label:Show()
+            y = y + QuestPanel.Lines("small", line.text, width - 6) * LINE_HEIGHT.small + 1
+        else
+            label:Hide()
+        end
+    end
+    return y - top + 2
 end
 
 function QuestPanel:Refresh()
