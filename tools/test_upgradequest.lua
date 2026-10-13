@@ -554,7 +554,7 @@ suite.check("an older quest is kept, on its tab", Quest:QuestOn("quest") and Que
 Panel:Refresh()
 Panel.trim.closeButton:GetScript("OnClick")(Panel.trim.closeButton)
 suite.check("the close gem turns it off", ns.db.upgradeQuest == false and not Panel.frame:IsShown())
-suite.check("and says how to bring it back", env.ChatText():find("brings it back", 1, true) ~= nil)
+suite.check("and says how to bring it back", env.ChatText():find("Bring it back", 1, true) ~= nil)
 suite.check("keeping its quests", Quest:QuestOn("quest") ~= nil)
 ns.HandleSlash("quest")
 

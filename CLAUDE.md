@@ -416,6 +416,14 @@ A hand-in step whose quest is ready (`QuestReady`) carries `turnIn`, and
 the panel then shows the game's yellow ? (`ActiveQuestIcon`) on that step
 and in its header instead of the ! (the owner asked 2026-10-10), read on
 the same debounced quest log refresh as the steps.
+Closing and bringing it back (the owner asked 2026-10-13: "an easy way
+for someone to close upgrade quest but also bring it back"):
+`UpgradeQuest:TurnOn`, `:TurnOff` and `:Toggle` are the one way to do
+either, its quests always kept. The panel's close gem says how to bring it
+back (`QuestPanel:ExplainClose`, a hook, so the shared Titanforged file is
+untouched), the gear window's header has an Upgrade quest button (green
+while it is up, `UI:OnUpgradeQuestToggled`), and Shift-click on the
+minimap button toggles it. Tested in `tools/test_questtoggle.lua`.
 Ignore (the owner asked 2026-10-08) is the old Skip renamed: the same
 `.upgradeQuestSkipped` list, never offered again until restored.
 `UI/IgnoredWindow.lua` (Settings > Upgrade quest > Ignored, `/beq quest

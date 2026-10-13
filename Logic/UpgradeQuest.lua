@@ -1469,6 +1469,34 @@ function UpgradeQuest:SetEnabled(on)
         self.state = nil
         self:Changed()
     end
+    if ns.UI and ns.UI.OnUpgradeQuestToggled then pcall(ns.UI.OnUpgradeQuestToggled, ns.UI) end
+end
+
+--- Bring the upgrade quest back: on, and its panel shown unfolded. Its
+--- quests were kept while it was closed, so it picks up where it was.
+--- For every way back (the gear window's Upgrade quest button, the minimap
+--- button's Shift-click, Settings, /beq quest, What's New).
+function UpgradeQuest:TurnOn()
+    if not self:IsEnabled() then
+        self:SetEnabled(true)
+        ns.Print(L["upgrade quest on. Follow the steps on the quest panel."])
+    else
+        self.rescan = true
+        self:Update()
+    end
+    if ns.QuestPanel then ns.QuestPanel:Unfold() end
+end
+
+--- Close the upgrade quest: its panel goes, its quests are kept, and chat
+--- says how to bring it back.
+function UpgradeQuest:TurnOff()
+    if self:IsEnabled() then self:SetEnabled(false) end
+    ns.Print(L["upgrade quest closed. Your quests are kept. Bring it back with the Upgrade quest button in the gear window, Shift-click on the minimap button, or /beq quest."])
+end
+
+--- Close it when it is up, bring it back when it is not.
+function UpgradeQuest:Toggle()
+    if self:IsEnabled() then self:TurnOff() else self:TurnOn() end
 end
 
 --- A quest filter changed ("Solo quests only", or how far above the
@@ -1714,8 +1742,7 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
         return
     end
     if word == "off" then
-        UpgradeQuest:SetEnabled(false)
-        ns.Print(L["upgrade quest off. /beq quest turns it back on."])
+        UpgradeQuest:TurnOff()
         return
     end
     -- "skip" was the word before Ignore and still works.
@@ -1747,14 +1774,7 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
         ns.Print(L["ignored upgrades can come up again."])
         return
     end
-    if not UpgradeQuest:IsEnabled() then
-        UpgradeQuest:SetEnabled(true)
-        ns.Print(L["upgrade quest on. Follow the steps on the quest panel."])
-    else
-        UpgradeQuest.rescan = true
-        UpgradeQuest:Update()
-    end
-    if ns.QuestPanel then ns.QuestPanel:Unfold() end
+    UpgradeQuest:TurnOn()
 end)
 
 -- A one-time card in the What's New window (the owner asked 2026-10-13, as
