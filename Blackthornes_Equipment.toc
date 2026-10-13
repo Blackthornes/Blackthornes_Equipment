@@ -28,6 +28,7 @@ Data\QuestStarts.lua
 Data\QuestEnds.lua
 Data\ForeverDrops.lua
 Data\ForeverNPCs.lua
+Data\ForeverQuests.lua
 Data\Crafts.lua
 Data\ForeverItems.lua
 Data\Rolls.lua
@@ -40,6 +41,7 @@ Logic\WeaponSkills.lua
 Logic\ClassTraining.lua
 Logic\Alts.lua
 Logic\NPCSpots.lua
+Logic\QuestLearn.lua
 Logic\Crafting.lua
 Logic\TradeskillsQueue.lua
 Logic\Rolls.lua

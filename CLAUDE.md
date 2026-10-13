@@ -356,6 +356,26 @@ every "zone you are in" check),
 loot arrows). None of it has been seen in game yet; `/beq probe` reports the
 calls they need.
 
+## Quests learned in game
+
+The owner asked (2026-10-13) for the upgrade quest to learn quests and
+their rewards as they are met, and for what the client shows to be rolled
+into the updates. `Logic/QuestLearn.lua`: at `QUEST_DETAIL` and
+`QUEST_COMPLETE` it reads the quest window (ID, title, level, the gear
+offered or given, and for an offer who stands in front of the player and
+where) and keeps what Classic's data lacks, account wide, in
+`BlackthornesEquipmentDB.learnedQuests[questID]` (never rename it). Only
+gear is kept; a quest and rewards the data already has are not saved. The
+records are laid over `Sources.QUESTS` and `Sources.ITEMS` at login and as
+each is learned, so the finder and the upgrade quest offer them; nothing
+Classic says is replaced. Nothing is shared with other players.
+Before a release, `tools/forever_quests.py <save>` reads only
+`learnedQuests` from the owner's account save and rewrites
+`Data/ForeverQuests.lua` (never by hand; no names, IDs of players or
+characters), keeping what is there and dropping what Classic already has.
+Tested in `tools/test_questlearn.lua` and `tools/test_forever_quests.py`.
+Not yet seen in game.
+
 ## The upgrade quest
 
 `Logic/UpgradeQuest.lua` and `UI/QuestPanel.lua` (`/beq quest`, a setting
