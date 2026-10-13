@@ -962,3 +962,7 @@ L["A note from Blackthornes."] = "Ein Hinweis von Blackthornes."
 L["ABOUT"] = "ÜBER"
 L["HOW THESE ADDONS ARE MADE"] = "WIE DIESE ADDONS ENTSTEHEN"
 L["How these addons are made, the version, the Discord and the other Blackthornes addons"] = "Wie diese Addons entstehen, die Version, der Discord und die anderen Blackthornes-Addons"
+
+-- The one-time Upgrade quest card in What's New (Logic/UpgradeQuest.lua).
+L["Equipment can pick your next gear upgrade and walk you to it step by step, like a quest, with an arrow showing the way. It's off until you turn it on."] = "Equipment kann deine nächste Verbesserung aussuchen und dich Schritt für Schritt hinführen, wie bei einer Quest, mit einem Pfeil, der dir den Weg zeigt. Sie ist aus, bis du sie einschaltest."
+L["You can also find it in Equipment's Settings or type /beq quest."] = "Du findest sie auch in den Einstellungen von Equipment oder mit /beq quest."
