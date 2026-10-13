@@ -75,7 +75,7 @@ function Wear:PutOn(link)
     local equip = Global("C_Item.EquipItemByName") or Global("EquipItemByName")
     local ok = pcall(equip, Items.PlainLink(link), result and result.slot or nil)
     if not ok then
-        ns.Print(L["the game wouldn't put that on just now."])
+        ns.Print(L["the game didn't put that on."])
         return false, "refused"
     end
     return true

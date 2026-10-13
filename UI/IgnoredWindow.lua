@@ -116,7 +116,7 @@ function IgnoredUI:Build()
     empty:SetPoint("TOPLEFT", 10, -10)
     empty:SetPoint("TOPRIGHT", -10, -10)
     empty:SetWordWrap(true)
-    empty:SetText(L["Nothing ignored. Ignore an upgrade on the quest panel and it is listed here, to bring back whenever you like."])
+    empty:SetText(L["Nothing ignored. Upgrades you ignore on the quest panel are listed here, where you can restore them."])
     self.empty = empty
 
     self.rows = {}

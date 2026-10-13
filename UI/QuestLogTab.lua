@@ -177,7 +177,7 @@ function QuestLogUI:Build(frame, top)
     end, self:HidesTracker())
     hide:SetPoint("TOPLEFT", pad, -26)
     Explain(hide, L["Hide the game's quest tracker"],
-        L["Hides the game's own quest tracker while this panel is up, so your quests show in one place. Untick it and the game's tracker comes back. Off unless you tick it."], "ANCHOR_BOTTOM")
+        L["Hides the game's quest tracker while this panel is up, so your quests show in one place. Off by default."], "ANCHOR_BOTTOM")
     self.hideBox = hide
 
     local settings = Widgets.CreateButton(view, L["Settings"], function()
@@ -262,7 +262,7 @@ function QuestLogUI:Build(frame, top)
 
     local fold = Widgets.CreateButton(view, L["Fold all"], function() QuestLogUI:FoldAll() end,
         { width = 64, height = 22 })
-    Explain(fold, L["Fold all"], L["Folds every zone to its heading, or opens them all again. Click a heading to fold just that zone."])
+    Explain(fold, L["Fold all"], L["Folds every zone to its heading, or opens them all again. Click a heading to fold only that zone."])
     self.foldButton = fold
 
     self.rows, self.heads = {}, {}

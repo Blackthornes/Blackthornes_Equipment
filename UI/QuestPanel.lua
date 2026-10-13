@@ -421,7 +421,7 @@ function QuestPanel:BuildFilters(frame)
     end, not ns.UpgradeQuest or ns.UpgradeQuest:ZoneSwap())
     swap:SetPoint("TOPLEFT", PAD, -(FILTER_ROW + FILTER_GAP) - 2)
     ExplainBelow(swap, L["Change on a new zone"],
-        L["With This zone only ticked, entering a new zone drops the quests from elsewhere and each tab picks one here. Untick it to keep your quests as you travel. Only does something while This zone only is ticked."])
+        L["With This zone only ticked, entering a new zone drops the quests from elsewhere and each tab picks one here. Untick it to keep your quests as you travel."])
     self.swapBox = swap
 
     local rowY = -(FILTER_ROW + FILTER_GAP) * 2
