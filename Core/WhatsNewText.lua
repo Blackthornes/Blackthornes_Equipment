@@ -5,17 +5,13 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
-    { version = "0.26.1", lines = {
-        "Weapons you haven't trained no longer get picked as the one to wear.",
-        "The trainer arrow stays on until you get there.",
-        "The upgrade quest's map pin goes right to the vendor.",
-    } },
     { version = "0.26.0", lines = {
-        "A new What's New window shows what changed after each update.",
-        "Gear that Forever changed now uses Forever's own levels and prices.",
-        "More lists got the new dark look.",
+        "The upgrade finder uses Forever's own levels and prices for gear Forever changed.",
     } },
     { version = "0.25.0", lines = {
-        "Equipment speaks Deutsch now if your game is in German.",
+        "Equipment is in Deutsch on a German client.",
+    } },
+    { version = "0.24.0", lines = {
+        "One line at login names the Blackthornes addons you don't have yet. It says it once.",
     } },
 }

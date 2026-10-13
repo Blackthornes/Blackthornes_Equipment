@@ -15,26 +15,41 @@ the thanks line: `python tools/make_whatsnew.py` writes them into
 Core/WhatsNewText.lua for the in-game What's New window. Run it after
 writing a section; the release check refuses a tag while it is behind.
 
+The window shows new features only. Write a section's features first, then
+a "Fixes and changes:" line with the fixes and other changes under it: those
+go to Discord but stay out of the window, and a section of only fixes puts
+nothing in it. Say what each feature does in a few plain words, the way you'd
+tell a friend: no hype, no questions to the reader, no exclamation marks
+outside the thanks line, no dashes as punctuation, no "now you can". The
+tool prints a note for a shipped line that reads like an advert.
+
 ## 0.26.1
 
-- Weapons you haven't trained no longer get picked as the one to wear.
+Fixes and changes:
+
+- Weapons you haven't trained are never picked as the one to wear.
 - The trainer arrow stays on until you get there.
 - The upgrade quest's map pin goes right to the vendor.
 
 ## 0.26.0
 
-- A new What's New window shows what changed after each update.
-- Gear that Forever changed now uses Forever's own levels and prices.
-- More lists got the new dark look.
+- The upgrade finder uses Forever's own levels and prices for gear Forever changed.
+
+Fixes and changes:
+
+- More lists use the dark list look.
 
 ## 0.25.0
 
-- Equipment speaks Deutsch now if your game is in German.
+- Equipment is in Deutsch on a German client.
 
 ## 0.24.0
 
-- Works on German game clients too.
-- A short note at login tells you about our other addons, just once.
+- One line at login names the Blackthornes addons you don't have yet. It says it once.
+
+Fixes and changes:
+
+- Fixes for German game clients.
 
 ## 0.23.0
 
