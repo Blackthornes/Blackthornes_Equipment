@@ -541,6 +541,20 @@ characters'. Show the way aims the quest arrow at the class trainer
 (`ClassTraining.Guide` = `TrainingDrawer.Guide`). Tested in
 `tools/test_classtraining.lua`. Not yet seen in game.
 
+## What Farmer calls here
+
+Farmer's XP bar (2026-10-13) reads class training for its level-up cheer,
+inside a pcall, read only, after Butler's copy when Butler is loaded:
+
+```lua
+_G.BlackthornesEquipment.ClassTraining:IsOn()
+_G.BlackthornesEquipment.ClassTraining:Plan()   -- ready, cost, unknown
+```
+
+Keep these names and fields stable (they are the shared
+`Logic/ClassTraining.lua`'s, so Butler's too); if one has to change,
+change Farmer's XP bar in the same breath.
+
 ## Put it on, and Take the reward
 
 The owner's goal (2026-10-11): the addons should do the work for the
