@@ -542,8 +542,19 @@ end
 
 --- The close gem: the upgrade quest goes off, its quests kept.
 function QuestPanel:Close()
-    if ns.UpgradeQuest then ns.UpgradeQuest:SetEnabled(false) end
-    ns.Print(L["upgrade quest off; its quests are kept. Settings or /beq quest brings it back."])
+    if ns.UpgradeQuest then ns.UpgradeQuest:TurnOff() end
+end
+
+--- The close gem says what closing does and how to bring it back.
+function QuestPanel:ExplainClose(trim)
+    local close = trim and rawget(trim, "closeButton")
+    if not close then return end
+    close:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(L["Close the upgrade quest"], Theme.Unpack("accent"))
+        GameTooltip:AddLine(L["Your quests are kept. To bring it back, click Upgrade quest in the gear window, Shift-click the minimap button, or type /beq quest."], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
 end
 
 function QuestPanel:Build()
@@ -567,6 +578,7 @@ function QuestPanel:Build()
             close = function() QuestPanel:Close() end,
         })
         self.trim = trim
+        self:ExplainClose(trim)
         local left, right, top, bottom = ns.Titanforged.Reach(trim)
         if frame.SetClampRectInsets then frame:SetClampRectInsets(-left, right, top, -bottom) end
     else

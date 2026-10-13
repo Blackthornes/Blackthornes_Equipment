@@ -151,6 +151,9 @@ function MinimapButton:Build()
     button:SetScript("OnClick", function(_, mouseButton)
         if mouseButton == "RightButton" and ns.SettingsUI then
             ns.SettingsUI:Toggle()
+        elseif type(IsShiftKeyDown) == "function" and IsShiftKeyDown() and ns.UpgradeQuest then
+            -- Shift-click closes the upgrade quest or brings it back.
+            ns.UpgradeQuest:Toggle()
         else
             MinimapButton:Open()
         end
@@ -172,6 +175,8 @@ function MinimapButton:Build()
         if ns.UI and ns.UI.Toggle then
             GameTooltip:AddLine(L["Click to open"], 0.7, 0.7, 0.7)
             GameTooltip:AddLine(L["Right-click for settings"], 0.7, 0.7, 0.7)
+            GameTooltip:AddLine(ns.UpgradeQuest and ns.UpgradeQuest:IsEnabled()
+                and L["Shift-click to close the upgrade quest"] or L["Shift-click to bring back the upgrade quest"], 0.7, 0.7, 0.7)
         else
             GameTooltip:AddLine(L["Click for settings"], 0.7, 0.7, 0.7)
         end

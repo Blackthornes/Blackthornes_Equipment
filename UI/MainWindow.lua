@@ -193,11 +193,30 @@ function UI:BuildHeader()
     end, { width = 70, height = 20 })
     settings:SetPoint("RIGHT", -(PADDING + 6 - RIM), -4)
 
-    -- Stops short of the Settings button, so a long spec name never runs
-    -- under it.
+    -- Closes the upgrade quest, or brings it back with its quests as they
+    -- were (the owner asked 2026-10-13 for an easy way to do both). Its
+    -- label is green while the quest is up.
+    local quest = Widgets.CreateButton(header, L["Upgrade quest"], function()
+        if ns.UpgradeQuest then ns.UpgradeQuest:Toggle() end
+    end, { width = 104, height = 20 })
+    quest:SetPoint("RIGHT", settings, "LEFT", -6, 0)
+    quest:HookScript("OnEnter", function(self)
+        local on = ns.UpgradeQuest and ns.UpgradeQuest:IsEnabled()
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(L["Upgrade quest"], Theme.Unpack("accent"))
+        GameTooltip:AddLine(on and L["Click to close the upgrade quest. Your quests are kept for when you bring it back."]
+            or L["Click to bring back the upgrade quest: a quest for your best next upgrade, with the steps to get it."], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    quest:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    self.questButton = quest
+    self:OnUpgradeQuestToggled()
+
+    -- Stops short of the buttons, so a long spec name never runs under
+    -- them.
     local spec = Theme.CreateLabel(header, "small", "muted")
     spec:SetPoint("LEFT", 58 - RIM, -4)
-    spec:SetPoint("RIGHT", settings, "LEFT", -10, 0)
+    spec:SetPoint("RIGHT", quest, "LEFT", -10, 0)
     self.specLabel = spec
 
     -- A gold rule under it, bright at the left and fading out to the right.
@@ -206,6 +225,14 @@ function UI:BuildHeader()
     rule:SetPoint("BOTTOMRIGHT")
     rule:SetHeight(1)
     Theme.SetGradientAlpha(rule, "HORIZONTAL", "accent", 0.6, 0.05)
+end
+
+--- The Upgrade quest button's label: green while the quest is up.
+function UI:OnUpgradeQuestToggled()
+    local button = self.questButton
+    if not (button and button.SetLabelColor) then return end
+    local on = ns.UpgradeQuest ~= nil and ns.UpgradeQuest:IsEnabled()
+    button:SetLabelColor(on and "good" or "gilt")
 end
 
 function UI:BuildRows()
