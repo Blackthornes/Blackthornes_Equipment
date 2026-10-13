@@ -489,6 +489,16 @@ function QuestPanel:BuildFilters(frame)
         L["With This zone only ticked, entering a new zone drops the quests from elsewhere and each tab picks one here. Untick it to keep your quests as you travel."])
     self.swapBox = swap
 
+    -- Only the step to do now, so the panel takes less room (the owner
+    -- asked 2026-10-13).
+    local stepOnly = Widgets.CreateCheckbox(strip, L["Current step only"], function(checked)
+        if ns.UpgradeQuest then ns.UpgradeQuest:SetStepOnly(checked) end
+    end, ns.UpgradeQuest and ns.UpgradeQuest:StepOnly())
+    stepOnly:SetPoint("LEFT", swap, "RIGHT", 16, 0)
+    ExplainBelow(stepOnly, L["Current step only"],
+        L["Shows only the step to do now and hides the rest, so the panel takes less room. Untick it to see every step."])
+    self.stepOnlyBox = stepOnly
+
     local rowY = -(FILTER_ROW + FILTER_GAP) * 2
     local levelLabel = Theme.CreateLabel(strip, "small", "muted")
     levelLabel:SetPoint("TOPLEFT", PAD, rowY - 4)
@@ -537,6 +547,7 @@ function QuestPanel:FillFilters()
         self.swapBox:SetAlpha(ns.UpgradeQuest:ZoneOnly() and 1 or 0.45)
     end
     if self.soloBox and ns.Finder then self.soloBox:SetChecked(ns.Finder:SoloOnly()) end
+    if self.stepOnlyBox then self.stepOnlyBox:SetChecked(ns.UpgradeQuest:StepOnly()) end
     if self.levelStepper then self.levelStepper:SetValue(QuestPanel.QuestLevelsValue(), true) end
 end
 
@@ -862,8 +873,10 @@ function QuestPanel.GainText(quest)
 end
 
 --- Lay out one step, and say how tall it came out.
-function QuestPanel:FillStep(row, index, step, current)
+function QuestPanel:FillStep(row, index, step, current, place)
     row:ClearAllPoints()
+    -- Dark glass by place in the list, so one step shown alone still reads right.
+    row.band:SetColorTexture(Theme.Unpack((place or index) % 2 == 0 and "glassAlt" or "glass"))
     row.text:SetText(step.text)
     local lines = QuestPanel.Lines("small", step.text, row.textWidth)
     local height = 6 + lines * LINE_HEIGHT.small
@@ -1109,12 +1122,19 @@ function QuestPanel:FillBody(quest, steps, current, done)
     self.fill:SetWidth(math.max(1, (WIDTH - PAD * 2) * share))
 
     local y = top + itemHeight + 8 + BAR + 10
+    -- "Current step only": just the step to do now, the panel shrinking to
+    -- fit. With none left to do, the last step stands in.
+    local only = ns.UpgradeQuest:StepOnly() and (steps[current] and current or #steps) or nil
+    local place = 0
     for index, step in ipairs(steps) do
         local row = self.steps[index]
         if not row then break end
-        local stepHeight = self:FillStep(row, index, step, current)
-        row:SetPoint("TOPLEFT", PAD, -y)
-        y = y + stepHeight + STEP_GAP
+        if not only or index == only then
+            place = place + 1
+            local stepHeight = self:FillStep(row, index, step, current, place)
+            row:SetPoint("TOPLEFT", PAD, -y)
+            y = y + stepHeight + STEP_GAP
+        end
     end
 
     -- Buttons along the bottom, under the well: Show on map only when there

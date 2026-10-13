@@ -541,6 +541,14 @@ are in `UpgradeQuest:Shows`, so the debounced quest log update draws the
 panel again only when one moves. Tested in `tools/test_questprogress.lua`.
 Not yet seen in game.
 
+"Current step only" (the owner asked 2026-10-13): a tick box on the panel
+beside "Change on a new zone", and "Steps shown" on the Upgrade quest page
+of Settings (`upgradeQuestStepOnly`, account wide, off unless ticked, never
+rename it; `UpgradeQuest:StepOnly`/`SetStepOnly`). Ticked, `FillBody` lays
+out only the step to do now (the last when none is left), the item row and
+buttons stay, and the panel shrinks to fit. It only redraws the panel and
+Settings, never scans. Tested in `tools/test_queststeponly.lua`.
+
 ## Class training
 
 The owner said build it (2026-10-13), in Equipment and Butler: which class

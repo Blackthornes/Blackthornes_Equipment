@@ -557,6 +557,16 @@ function SettingsUI:BuildQuest()
     Explain(controls.questZoneSwap, L["Change on a new zone"],
         L["With This zone only ticked on the quest panel, entering a new zone swaps your quests for ones there. Untick it to keep them as you travel. The same switch as Change on a new zone on the panel."])
 
+    -- The panel's "Current step only" (the owner asked 2026-10-13).
+    local stepsRow = pages:Row("quest", 1, L["Steps shown"],
+        L["Current step only shows just the step to do now, so the quest panel takes less room."])
+    controls.questStepOnly = Widgets.CreateCheckbox(stepsRow, L["Current step only"], function(checked)
+        if ns.UpgradeQuest then ns.UpgradeQuest:SetStepOnly(checked) end
+    end, false)
+    controls.questStepOnly:SetPoint("TOPLEFT", CONTROL_X, -2)
+    Explain(controls.questStepOnly, L["Current step only"],
+        L["Shows only the step to do now and hides the rest, so the panel takes less room. Untick it to see every step."])
+
     -- The quest arrow, as the Arrow button on the quest panel and /beq
     -- arrow switch it, and /beq arrow check and next as buttons.
     pages:Section("quest", 2, L["QUEST ARROW"])
@@ -798,6 +808,7 @@ function SettingsUI:Refresh()
     if self.weaponsRow then self.weaponsRow:SetDescription(self:WeaponsHint()) end
     controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
     controls.questZoneSwap:SetChecked(ns.db.upgradeQuestZoneSwap ~= false)
+    controls.questStepOnly:SetChecked(ns.db.upgradeQuestStepOnly == true)
     -- Dimmed while there is nothing for them to do; still clickable, so a
     -- click says why.
     local quest = ns.UpgradeQuest
