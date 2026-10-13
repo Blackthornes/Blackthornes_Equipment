@@ -23,6 +23,15 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.27.0
+
+- This is the largest AddOn update so far across the whole suite of Blackthornes addons.
+- Equipment can show which class spells you can train, what they cost, and what your other characters can train too.
+- The upgrade quest is easy to close and bring back, and it can show just the step you're on.
+- The step you're on shows your quest's goals and counts, like the game's tracker.
+- The arrow is a compass that lies on the ground now, and it stays out of the way of the XP bar.
+- Your alts only get armor of the kind they actually wear.
+
 ## 0.26.1
 
 Fixes and changes:
