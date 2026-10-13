@@ -357,6 +357,22 @@ function UpgradeQuest:SetZoneSwap(on)
     self:Changed()
 end
 
+--- "Current step only" on the quest panel: show only the step to do now.
+function UpgradeQuest:StepOnly()
+    return ns.db ~= nil and ns.db.upgradeQuestStepOnly == true
+end
+
+--- Tick or untick it. Only the panel and Settings draw again; nothing is
+--- looked for again.
+function UpgradeQuest:SetStepOnly(on)
+    if not ns.db then return end
+    ns.db.upgradeQuestStepOnly = on and true or false
+    for _, name in ipairs({ "QuestPanel", "SettingsUI" }) do
+        local module = ns[name]
+        if module and module.OnUpgradeQuestChanged then pcall(module.OnUpgradeQuestChanged, module) end
+    end
+end
+
 --- Is a source in the zone `here`? A dungeon counts from its entrance's
 --- zone and from inside. Gear made from what you know has no place, so it
 --- is in every zone, and so is anything when the zone is not known.

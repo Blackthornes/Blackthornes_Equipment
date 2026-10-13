@@ -487,6 +487,10 @@ local DEFAULTS = {
     -- The upgrade quest panel's "This zone only": each tab picks only from
     -- the zone the character is in (UpgradeQuest:ZoneOnly). Off: anywhere.
     upgradeQuestZoneOnly = false,
+    -- The upgrade quest panel's "Current step only": the panel shows the
+    -- step to do now and hides the rest, so it takes less room
+    -- (UpgradeQuest:StepOnly). Off: every step.
+    upgradeQuestStepOnly = false,
     -- Where to get upgrades' own "This zone only": list only upgrades from
     -- the zone the character is in (FinderUI:ZoneOnly). Off: anywhere.
     finderZoneOnly = false,
