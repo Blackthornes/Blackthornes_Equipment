@@ -133,8 +133,13 @@ SettingsUI:Show()
 suite.check("it opens again on the page left", pages.shown == "general")
 
 -- Every page has rows, and the window is at least two columns wide.
+-- About (UI/About.lua) has its note and its facts instead.
 for _, page in pairs(pages.pages) do
-    suite.check(page.key .. " has rows", #page.rows > 0)
+    if page.key == "about" then
+        suite.check("about has the note and the facts", #page.items[1] == 2 and #page.items[2] == 2)
+    else
+        suite.check(page.key .. " has rows", #page.rows > 0)
+    end
 end
 suite.check("the window is two columns wide or more",
     SettingsUI.frame:GetWidth() >= 330 * 2 + 18 + 18 * 2, SettingsUI.frame:GetWidth())

@@ -43,6 +43,8 @@ local PAGES = {
       tip = L["The upgrade quest, its panel and the arrow that points the way"] },
     { key = "general", text = L["GENERAL"],
       tip = L["The minimap button, window positions, text size and help"] },
+    { key = "about", text = L["ABOUT"],
+      tip = L["How these addons are made, the version, the Discord and the other Blackthornes addons"] },
 }
 
 --------------------------------------------------------------------------------
@@ -205,6 +207,17 @@ function SettingsUI:Build()
     self:BuildHunts()
     self:BuildQuest()
     self:BuildGeneral()
+    -- About (UI/About.lua): the note on how the addons are made, then the
+    -- version, the Discord and the other Blackthornes addons.
+    if ns.About then
+        local pages = self.pages
+        pages:Section("about", 1, L["HOW THESE ADDONS ARE MADE"])
+        local note = pages:Place("about", 1, ns.About:Note(pages.pages.about.content, COLUMN_WIDTH))
+        pages:Searchable("about", note, note.words)
+        pages:Section("about", 2, L["ABOUT"])
+        local info = pages:Place("about", 2, ns.About:Info(pages.pages.about.content, COLUMN_WIDTH))
+        pages:Searchable("about", info, info.words)
+    end
     self.pages:Fit()
 
     local footer = Theme.CreateLabel(frame, "tiny", "dim")
