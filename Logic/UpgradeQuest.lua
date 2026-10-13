@@ -1791,8 +1791,5 @@ table.insert(ns.WHATS_NEW_TIPS, {
     hint = L["You can also find it in Equipment's Settings or type /beq quest."],
     button = L["Turn it on"],
     due = function() return not UpgradeQuest:IsEnabled() end,
-    run = function()
-        if not UpgradeQuest:IsEnabled() then UpgradeQuest:SetEnabled(true) end
-        if ns.QuestPanel then ns.QuestPanel:Unfold() end
-    end,
+    run = function() UpgradeQuest:TurnOn() end,
 })
