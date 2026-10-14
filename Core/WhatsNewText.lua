@@ -5,6 +5,10 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "0.28.0", lines = {
+        "You can mark a character, such as a crafting alt, to skip upgrades, so it never gets gear offered or arrows.",
+        "Upgrade quests and vendor gear are learned as you play, which helps most in zones the data doesn't cover.",
+    } },
     { version = "0.27.0", lines = {
         "This is the largest AddOn update so far across the whole suite of Blackthornes addons.",
         "Equipment can show which class spells you can train, what they cost, and what your other characters can train too.",
@@ -15,8 +19,5 @@ ns.WHATS_NEW = {
     } },
     { version = "0.26.0", lines = {
         "The upgrade finder uses Forever's own levels and prices for gear Forever changed.",
-    } },
-    { version = "0.25.0", lines = {
-        "Equipment is in Deutsch on a German client.",
     } },
 }

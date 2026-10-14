@@ -4,6 +4,33 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.28.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game
+fully after updating (`/reload` is not enough).
+
+- **Skip upgrades for chosen characters:** a crafting alt can be marked so
+  its own gear is never called an upgrade and no other character offers it
+  gear. Gear another character would wear gets no sell coin while it sits on
+  the skipped one. Settings > Gear > YOUR CHARACTERS picks a character by
+  whole name; `/beq skip [on|off|list]` does the same for the character you
+  are playing.
+- **Quests and vendors learned in game:** quests already in your log are
+  learned with the gear they reward, and gear a vendor sells that the data
+  does not list is learned when you open the merchant window. Both show in
+  the finder and on the upgrade quest's tabs.
+- **Skyborne:** a Skyborne character only gets their own side's quests and
+  gear (High Order is Alliance, Windshapers are Horde).
+- **Learned gear:** only gear is learned from quests and vendors; potions
+  and other goods are skipped. Quests from the log open at your level.
+- **Training drawer:** its last row no longer covers Show the way, and each
+  other character's whole name has its own line.
+- **Gear window:** the best-in-bags cell says "(on an alt)" when the whole
+  name will not fit, with the name in its tooltip. The Upgrade quest button
+  turns green when you follow a pick, and a long quest chain shows every
+  step.
+- **Quest arrow:** it returns to its spot when Farmer's XP bar hides.
+
 ## 0.27.1
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is
