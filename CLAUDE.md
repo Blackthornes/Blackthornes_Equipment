@@ -369,6 +369,14 @@ gear is kept; a quest and rewards the data already has are not saved. The
 records are laid over `Sources.QUESTS` and `Sources.ITEMS` at login and as
 each is learned, so the finder and the upgrade quest offer them; nothing
 Classic says is replaced. Nothing is shared with other players.
+Each record notes the side it was offered to (`side`: "A", "H" or "AH";
+an older record without it is offered to both), and a quest seen by one
+side only is laid with that side's Classic race bits (2026-10-14).
+Forever's Skyborne (High Order, race ID 95, Alliance; Windshapers, 96,
+Horde) share the race name "Skyborne", which Classic's race bits lack:
+`Finder.Side` reads the side from `UnitFactionGroup`, else the race ID,
+and gives a race Classic never had every race bit of its side, so
+race-limited quests and gear stay on that side.
 Before a release, `tools/forever_quests.py <save>` reads only
 `learnedQuests` from the owner's account save and rewrites
 `Data/ForeverQuests.lua` (never by hand; no names, IDs of players or
