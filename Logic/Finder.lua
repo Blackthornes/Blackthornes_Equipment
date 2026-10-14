@@ -52,6 +52,13 @@ local RACE_BITS = {
     Tauren = 32, Gnome = 64, Troll = 128,
 }
 local ALLIANCE_RACES = 1 + 4 + 8 + 64
+local HORDE_RACES = 2 + 16 + 32 + 128
+Finder.ALLIANCE_RACES, Finder.HORDE_RACES = ALLIANCE_RACES, HORDE_RACES
+
+-- Forever's own races, by the game's race ID. Both Skyborne races share the
+-- race name "Skyborne", so only the ID tells the High Order (Alliance) from
+-- the Windshapers (Horde).
+local RACE_SIDES = { [95] = "Alliance", [96] = "Horde" }
 
 --- a AND b, bit by bit. The game has bit.band; written out for a Lua without
 --- it (the test runner).
@@ -110,18 +117,33 @@ local function Read(fn, ...)
     return unpack(result, 2)
 end
 
+--- The character's side, "Alliance" or "Horde", and its Classic race bit.
+--- A race Classic never had (Forever's Skyborne) gets every race of its
+--- side, so quests and gear are still kept to that side; without it, every
+--- race-limited quest of both sides was offered.
+-- @return the side and the race bit, or nil when the side cannot be read
+function Finder.Side()
+    local faction = Plain(Read(_G.UnitFactionGroup, "player"))
+    local _, raceFile, raceID = Read(_G.UnitRace, "player")
+    local raceBit = RACE_BITS[Plain(raceFile) or ""]
+    if faction ~= "Alliance" and faction ~= "Horde" then
+        local ok, id = pcall(function() return tonumber(raceID) end)
+        faction = ok and id and RACE_SIDES[id] or nil
+        if not faction and raceBit then
+            faction = Band(raceBit, ALLIANCE_RACES) ~= 0 and "Alliance" or "Horde"
+        end
+    end
+    if faction ~= "Alliance" and faction ~= "Horde" then return nil end
+    return faction, raceBit or (faction == "Alliance" and ALLIANCE_RACES or HORDE_RACES)
+end
+
 --- Who is looking: level, faction ("A" or "H"), class and race bits.
 -- @return a table, or nil when the level or faction cannot be read
 function Finder:Player()
     local level = Items:PlayerLevel()
 
-    local faction = Plain(Read(_G.UnitFactionGroup, "player"))
-    local _, raceFile = Read(_G.UnitRace, "player")
-    local raceBit = RACE_BITS[Plain(raceFile) or ""]
-    if faction ~= "Alliance" and faction ~= "Horde" and raceBit then
-        faction = Band(raceBit, ALLIANCE_RACES) ~= 0 and "Alliance" or "Horde"
-    end
-    if not level or (faction ~= "Alliance" and faction ~= "Horde") then return nil end
+    local faction, raceBit = Finder.Side()
+    if not level or not faction then return nil end
 
     local class = Weights:PlayerClass()
     local zone = Plain(Read(_G.GetRealZoneText))
@@ -133,7 +155,7 @@ function Finder:Player()
         faction = faction == "Alliance" and "A" or "H",
         class = class,
         classBit = CLASS_BITS[class] or 0,
-        raceBit = raceBit or 0,
+        raceBit = raceBit,
     }
 end
 

@@ -7,8 +7,12 @@
 -- and where, and the gear it rewards are kept, account wide, in
 -- `BlackthornesEquipmentDB.learnedQuests[questID]` (never rename it):
 --
---   { title =, level =, min =, giver =, zone =, x =, y =,
+--   { title =, level =, min =, giver =, zone =, x =, y =, side =,
 --     rewards = { { itemID, req, ilvl, given }, ... }, at = }
+--
+-- `side` is who was offered it: "A" (Alliance), "H" (Horde) or "AH" once
+-- both have been. A quest seen by one side only is offered to that side
+-- only; an older record without it is offered to both.
 --
 -- `given` is true for a reward handed over outright, false for one of the
 -- choices. Only gear is kept, and only when it says something new: a quest
@@ -76,6 +80,24 @@ local function Has(list, value)
     return false
 end
 
+--- Classic's race bits for the side that was offered a quest, or 0 for both.
+local function SideRaces(side)
+    local F = ns.Finder
+    local alliance = F and F.ALLIANCE_RACES or (1 + 4 + 8 + 64)
+    local horde = F and F.HORDE_RACES or (2 + 16 + 32 + 128)
+    if side == "A" then return alliance end
+    if side == "H" then return horde end
+    return 0
+end
+QuestLearn.SideRaces = SideRaces
+
+--- Both sides' letters together, once each: "A" and "H" make "AH".
+function QuestLearn.JoinSides(a, b)
+    if a == nil or a == b then return b end
+    if b == nil then return a end
+    return "AH"
+end
+
 --- Lay one quest record over the data. Returns true when it added anything.
 function QuestLearn:Lay(questID, rec)
     local S = ns.Sources
@@ -92,6 +114,12 @@ function QuestLearn:Lay(questID, rec)
             learned = true,
         }
         added = true
+    end
+    -- A learned quest is kept to the side that was offered it.
+    local row = S.QUESTS[questID]
+    if row.learned and rec.side then
+        local races = SideRaces(rec.side)
+        if row[4] ~= races then row[4] = races; added = true end
     end
 
     for _, reward in ipairs(type(rec.rewards) == "table" and rec.rewards or {}) do
@@ -198,6 +226,8 @@ function QuestLearn:Read(offer)
     end
     if level and level > 0 then rec.level = level end
     rec.playerLevel = Number(Read(_G.UnitLevel, "player"))
+    local side = ns.Finder and ns.Finder.Side and ns.Finder.Side()
+    if side == "Alliance" or side == "Horde" then rec.side = side == "Alliance" and "A" or "H" end
     if offer then
         -- The one who offers it stands in front of the player.
         local name = Plain(Read(_G.UnitName, "npc"))
@@ -227,13 +257,18 @@ function QuestLearn:Learn(questID, seen)
         end
     end
     if known and not known.learned and #fresh == 0 then return false end
-    if known and known.learned and rec and #fresh == 0 and not (seen.giver and not rec.giver) then return false end
+    -- A record kept before sides were noted stays offered to both.
+    local side = seen.side
+    if rec then side = rec.side and QuestLearn.JoinSides(rec.side, seen.side) end
+    if known and known.learned and rec and #fresh == 0 and not (seen.giver and not rec.giver)
+        and side == rec.side then return false end
 
     if not rec then
         rec = { title = seen.title, rewards = {}, at = Number(Read(_G.time)) or 0 }
         db.learnedQuests[questID] = rec
     end
     rec.level = seen.level or rec.level
+    rec.side = side
     -- Offered to the player at this level, so it opens at or below it.
     local at = seen.playerLevel
     if at and (not rec.min or at < rec.min) then rec.min = at end
