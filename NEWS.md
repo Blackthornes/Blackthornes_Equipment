@@ -31,7 +31,7 @@ tool prints a note for a shipped line that reads like an advert.
 Fixes and changes:
 
 - Skyborne characters only see their own side's quests and gear.
-- The training drawer and the gear window show whole names without cutting them.
+- Several bug fixes for the training drawer and the gear window.
 
 ## 0.27.1
 

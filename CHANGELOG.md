@@ -21,14 +21,8 @@ fully after updating (`/reload` is not enough).
   the finder and on the upgrade quest's tabs.
 - **Skyborne:** a Skyborne character only gets their own side's quests and
   gear (High Order is Alliance, Windshapers are Horde).
-- **Learned gear:** only gear is learned from quests and vendors; potions
-  and other goods are skipped. Quests from the log open at your level.
-- **Training drawer:** its last row no longer covers Show the way, and each
-  other character's whole name has its own line.
-- **Gear window:** the best-in-bags cell says "(on an alt)" when the whole
-  name will not fit, with the name in its tooltip. The Upgrade quest button
-  turns green when you follow a pick, and a long quest chain shows every
-  step.
+- **Bug fixes:** several fixes for learned gear, the training drawer, the gear
+  window, the Upgrade quest button and long quest chains.
 
 ## 0.27.1
 
