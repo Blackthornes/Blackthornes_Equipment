@@ -29,7 +29,6 @@ fully after updating (`/reload` is not enough).
   name will not fit, with the name in its tooltip. The Upgrade quest button
   turns green when you follow a pick, and a long quest chain shows every
   step.
-- **Quest arrow:** it returns to its spot when Farmer's XP bar hides.
 
 ## 0.27.1
 

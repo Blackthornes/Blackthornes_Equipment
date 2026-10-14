@@ -32,7 +32,6 @@ Fixes and changes:
 
 - Skyborne characters only see their own side's quests and gear.
 - The training drawer and the gear window show whole names without cutting them.
-- The quest arrow goes back to its spot when the XP bar hides.
 
 ## 0.27.1
 
