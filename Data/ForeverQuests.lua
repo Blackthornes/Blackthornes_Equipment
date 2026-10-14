@@ -12,4 +12,12 @@ local _, ns = ...
 
 ns.ForeverQuests = {
     [883] = { title = "Lakota'mani", level = 22, min = 22, rewards = {} },
+    [92464] = { title = "Elemental Unrest", level = 3, min = 3, rewards = {} },
+    [92465] = { title = "Agitators", level = 3, min = 3, giver = "Yala Windwatcher", zone = "Zephras Isle", x = 47.3, y = 21.8, rewards = {} },
+    [92469] = { title = "Return to Rorian", min = 4, giver = "Yala Windwatcher", zone = "Zephras Isle", x = 47.2, y = 21.9, rewards = { { 257277, 0, 5, false }, { 257272, 0, 5, false } } },
+    [92470] = { title = "Foul Matriarch", min = 4, giver = "Aetheen of the Gales", zone = "Zephras Isle", x = 42.7, y = 23.6, rewards = { { 258882, 1, 5, false }, { 257282, 0, 5, false }, { 257283, 0, 5, false }, { 257276, 0, 5, false }, { 273879, 0, 5, false } } },
+    [92471] = { title = "Aetheen of the Gales", level = 4, min = 4, giver = "Rorian the Dayseeker", zone = "Zephras Isle", x = 42.1, y = 23.5, rewards = {} },
+    [92473] = { title = "Aggressive Encroachment", min = 4, giver = "Valreaa Valewind", zone = "Zephras Isle", x = 42.5, y = 25.1, rewards = { { 257257, 0, 5, false }, { 257264, 0, 5, false }, { 257263, 0, 5, false } } },
+    [92598] = { title = "The Gift of Skysight", level = 4, min = 4, rewards = {} },
+    [93552] = { title = "Harvesting Windstones", level = 4, min = 4, rewards = { { 247840, 0, 1, false }, { 247841, 0, 1, false }, { 247846, 0, 1, false } } },
 }

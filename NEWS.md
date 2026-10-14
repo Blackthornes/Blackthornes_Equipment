@@ -23,6 +23,12 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.27.1
+
+Fixes and changes:
+
+- A few more starting-area quests and their gear rewards show up in upgrade searches.
+
 ## 0.27.0
 
 - This is the largest AddOn update so far across the whole suite of Blackthornes addons.
