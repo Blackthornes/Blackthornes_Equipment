@@ -155,6 +155,11 @@ suite.check("at the spot", waypoint.id == 1429 and math.abs(waypoint.x - 0.421) 
 suite.check("with the game's arrow on it", tracked == true and opened == 1429)
 suite.check("and says so", env.ChatText():find("pinned it on your map: Elwynn Forest (42.1, 65.9)", 1, true) ~= nil,
     env.ChatText())
+opened, waypoint = nil, nil
+_G.InCombatLockdown = function() return true end
+suite.check("in a fight it still pins", ns.Waypoints:Show(place, "it") == true and waypoint ~= nil)
+suite.check("but leaves the map closed", opened == nil)
+_G.InCombatLockdown = nil
 
 local canvas = env.Stub({ _width = 1000, _height = 600 })
 function canvas:GetHeight() return 600 end
