@@ -29,6 +29,7 @@
 local _, ns = ...
 
 local Alts = ns.NewModule("Alts")
+local L = ns.L
 
 local Items = ns.Items
 local Weights = ns.Weights
@@ -80,10 +81,92 @@ function Alts:Notes()
     return db.characterGear
 end
 
+--------------------------------------------------------------------------------
+-- Characters skipped for upgrades
+--
+-- A player asked, the owner agreed (2026-10-14): crafting alts should never
+-- be told gear is an upgrade. A skipped character gets no upgrade verdict
+-- of its own (Compare:Judge says "skipped" where it would say "upgrade"),
+-- and no other character names it as the one an item helps (BestFor).
+-- Kept account wide by GUID in BlackthornesEquipmentDB.skipUpgrades[guid] =
+-- true (never rename it), so Settings can tick any character. The character
+-- playing also keeps BlackthornesEquipmentCharDB.skipUpgrades, so it still
+-- knows inside a dungeon, where the client can keep its GUID back.
+--------------------------------------------------------------------------------
+
+function Alts:Skipped()
+    local db = ns.db
+    if type(db) ~= "table" then return {} end
+    if type(db.skipUpgrades) ~= "table" then db.skipUpgrades = {} end
+    return db.skipUpgrades
+end
+
+function Alts:IsSkipped(key)
+    return key ~= nil and self:Skipped()[key] == true
+end
+
+--- Is the character playing skipped? Read for every judged item, so it is
+--- a GUID read and a lookup.
+function Alts:PlayerSkipped()
+    local guid = self.PlayerGUID()
+    if guid then return self:IsSkipped(guid) end
+    return type(ns.charDB) == "table" and ns.charDB.skipUpgrades == true
+end
+
+--- Skip a character (by GUID) or bring it back, then judge everything again.
+function Alts:SetSkipped(key, on)
+    if type(key) ~= "string" then return false end
+    self:Skipped()[key] = on and true or nil
+    if key == self.PlayerGUID() and type(ns.charDB) == "table" then
+        ns.charDB.skipUpgrades = on and true or nil
+    end
+    self.version = (self.version or 0) + 1
+    -- Every kept verdict (bag arrows, the finder, Tradeskills' arrows) was
+    -- judged with the old answer; this is what a weights change does too.
+    if Weights.Changed then pcall(Weights.Changed, Weights) end
+    if ns.SettingsUI and ns.SettingsUI.Refresh then pcall(ns.SettingsUI.Refresh, ns.SettingsUI) end
+    return true
+end
+
+--- Every character with a note, the one playing first, then by name:
+--- { key, name } with the whole name (or nil when none is known).
+function Alts:Characters()
+    local me = self.PlayerGUID()
+    local list = {}
+    for key, note in pairs(self:Notes()) do
+        if type(key) == "string" and type(note) == "table" then
+            list[#list + 1] = { key = key, name = self:NameOf(key), me = key == me }
+        end
+    end
+    table.sort(list, function(a, b)
+        if a.me ~= b.me then return a.me end
+        local an, bn = (a.name or "~"):lower(), (b.name or "~"):lower()
+        if an ~= bn then return an < bn end
+        return a.key < b.key
+    end)
+    return list
+end
+
+--- The whole names of the skipped characters, sorted.
+function Alts:SkippedNames()
+    local names = {}
+    for _, entry in ipairs(self:Characters()) do
+        if self:IsSkipped(entry.key) then
+            names[#names + 1] = entry.name or L["A character not seen yet"]
+        end
+    end
+    return names
+end
+
 --- Write the character playing's note now.
 function Alts:Record()
     self.settling = false
     local guid = self.PlayerGUID()
+    -- The per-character copy follows the account's answer while the GUID
+    -- can be read, for the times it can't.
+    if guid and type(ns.charDB) == "table" then
+        ns.charDB.skipUpgrades = self:IsSkipped(guid) or nil
+    end
     local class = Weights:PlayerClass()
     local level = Items:PlayerLevel()
     if not (guid and class and level) then return false end
@@ -345,7 +428,7 @@ function Alts:BestFor(link)
     local realm, faction = self.Realm(), self.Faction()
     local best, bestKey
     for key, note in pairs(self:Notes()) do
-        if key ~= me and type(note) == "table"
+        if key ~= me and type(note) == "table" and not self:IsSkipped(key)
             and (not realm or not note.realm or note.realm == realm)
             and (not faction or not note.faction or note.faction == faction) then
             local result = self:Judge(note, link)
@@ -377,3 +460,31 @@ function Alts:OnEnable()
         C_Timer.After(0.5, function() pcall(Alts.ReadBank, Alts) end)
     end)
 end
+
+-- /beq skip [on|off|list]: the character playing, or who is skipped.
+ns.RegisterCommand("skip", L["skip upgrades for this character, such as a crafting alt (on, off, list)"], function(rest)
+    local word = (rest or ""):lower():match("^%s*(%S*)")
+    if word == "list" then
+        local names = Alts:SkippedNames()
+        if #names == 0 then
+            ns.Print(L["No characters are skipped for upgrades."])
+        else
+            ns.Print(L.Format("Skipped for upgrades: %s.", table.concat(names, ", ")))
+        end
+        return
+    end
+    local guid = Alts.PlayerGUID()
+    if not guid then
+        ns.Print(L["Can't tell which character this is right now. Try again outside the dungeon."])
+        return
+    end
+    local on
+    if word == "on" then on = true elseif word == "off" then on = false else on = not Alts:IsSkipped(guid) end
+    Alts:SetSkipped(guid, on)
+    if on then
+        ns.Print(L["Upgrades are skipped for this character. Your other characters' gear won't be offered to it either."])
+    else
+        ns.Print(L["Upgrades are back on for this character."])
+    end
+end)
+

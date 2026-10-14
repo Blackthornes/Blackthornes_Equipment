@@ -126,6 +126,21 @@ the answer Butler mails by) on gear that is no upgrade here; "Upgrades for
 your alts" in Settings (`altTooltipLine`, account wide, on unless unticked,
 never rename it). Tested in `tools/test_alts.lua`. Not yet seen in game.
 
+Characters skipped for upgrades (a player asked, the owner agreed
+2026-10-14, for crafting alts): `Alts:SetSkipped(guid, on)`, kept account
+wide in `BlackthornesEquipmentDB.skipUpgrades[guid] = true` and, for the
+character playing, `BlackthornesEquipmentCharDB.skipUpgrades` (read when a
+dungeon keeps the GUID back; copied from the account's answer at each
+note). Never rename either. On a skipped character `Compare:Judge` and
+`JudgeCarried` say `verdict = "skipped"` (with `skipped = true`) where
+they would say "upgrade", so no bag arrow, banner, finder row, upgrade
+quest pick, Butler "now" or Tradeskills arrow; the tooltip then shows the
+alt line instead, and `BagIcons:Sells` puts no coin on gear another
+character wants. `Alts:BestFor` never names a skipped character. Settings,
+Gear page, YOUR CHARACTERS (a picker by whole name and a tick), and `/beq
+skip [on|off|list]`. Tested in `tools/test_skipupgrades.lua`. Not yet seen
+in game.
+
 Advise never raises, scans no bags and, past the notes above, keeps nothing new: scores, sell prices
 and tools are the per-link caches the bag icons already keep, since Butler
 asks a hundred times in a burst. Keep the global, `Butler:Advise` and these

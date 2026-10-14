@@ -157,6 +157,18 @@ function Compare:Against(link, equipLoc, weights)
     return weakest or 0, empty, false, weakestSlot
 end
 
+--- The character playing is skipped for upgrades (Alts:SetSkipped, a
+--- crafting alt): what would be an upgrade is "skipped" instead, so no
+--- arrow, banner, finder row or Tradeskills arrow calls it one, and the
+--- tooltip names the other character it helps. The scores stay.
+local function Skip(result)
+    if result and result.verdict == "upgrade" and ns.Alts and ns.Alts:PlayerSkipped() then
+        result.verdict = "skipped"
+        result.skipped = true
+    end
+    return result
+end
+
 --- The verdict on one item for this character.
 --
 -- @return nil when the item is not gear this addon judges, or its details are
@@ -260,7 +272,7 @@ function Compare:Judge(link)
         result.verdict = "same"
     end
 
-    return result
+    return Skip(result)
 end
 
 -- Rings and trinkets come in pairs: the slot that is not the weaker one.
@@ -324,7 +336,7 @@ function Compare:JudgeCarried(link)
     else
         judged.verdict = score > against and "upgrade" or "same"
     end
-    return judged
+    return Skip(judged)
 end
 
 --- The biggest upgrade in the bags for each slot, that can be worn now.
@@ -469,7 +481,7 @@ function Compare:Describe(result)
         return L.Format("Ignored until you train %s", result.ignoredSkill), "muted"
     elseif verdict == "cantuse" then
         return L.Format("%s can't use this", CLASS_NAMES[result.className] or L["Your class"]), "muted"
-    elseif verdict == "equipped" then
+    elseif verdict == "equipped" or verdict == "skipped" then
         return nil
     elseif verdict == "upgrade" then
         local how = result.empty and L["fills an empty slot"] or percent or L["better stats"]

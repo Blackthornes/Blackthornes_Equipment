@@ -873,7 +873,9 @@ function FinderUI:Present(found, why)
 
     local shown = #self.lines
     if shown == 0 then
-        if found.waiting > 0 then
+        if ns.Alts and ns.Alts:PlayerSkipped() then
+            self.empty:SetText(L["Upgrades are skipped for this character. Untick it in Settings, or type /beq skip off."])
+        elseif found.waiting > 0 then
             self.empty:SetText(L["Asking the server about the gear on offer..."])
         elseif self:Here(found) then
             self.empty:SetText(L.Format("Nothing in %s beats what you wear. Untick This zone only to look anywhere.",
