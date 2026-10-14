@@ -34,7 +34,7 @@ SAVE = """
 BlackthornesEquipmentDB = {
     ["learnedQuests"] = {
         [90001] = { title = "A New Errand", level = 12, min = 10, giver = "Bob", zone = "Elwynn Forest",
-            x = 40.5, y = 60,
+            x = 40.5, y = 60, side = "H",
             rewards = { { 1001, 8, 14, false }, { 1002, 8, 14, true } }, at = 5 },
         [90002] = { level = 3 },
     },
@@ -57,7 +57,14 @@ merged = merge(found[90001], {"title": "A New Errand", "min": 8, "rewards": [(10
 expect("a newer reading lowers the level it opens at", merged["min"] == 8)
 expect("and adds that a reward is given outright", (1001, 8, 14, True) in merged["rewards"])
 
+expect("the side it was offered to is read", found[90001]["side"] == "H")
+expect("a reading from the other side makes it both sides'",
+       merge(found[90001], {"title": "x", "side": "A", "rewards": []})["side"] == "AH")
+expect("an older reading without a side takes the newer one's",
+       merge({"title": "x", "rewards": []}, {"title": "x", "side": "A", "rewards": []})["side"] == "A")
+
 text = render({90001: found[90001]})
+expect("the file keeps the side", 'side = "H"' in text)
 expect("the file names the quest", "[90001] = { title = \"A New Errand\"" in text)
 expect("and leaves out anything private", "Private" not in text and "Player-1-2" not in text)
 

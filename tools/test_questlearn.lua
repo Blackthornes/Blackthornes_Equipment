@@ -111,4 +111,49 @@ suite.check("and so are the ones this account learned", S.QUESTS[90001] ~= nil)
 suite.check("a zone the data lacks is added", S.ZONES[S.QUESTS[90100][7]] == "Dun Morogh")
 suite.check("laying twice adds nothing twice", (Learn:LayAll() == false) and #S.ITEMS[2001].q == 1)
 
+-- Sides: a learned quest is kept to the side that was offered it
+suite.check("the side that was offered it is kept", rec.side == "H")
+suite.check("so the data keeps it to the Horde", S.QUESTS[90001][4] == ns.Finder.HORDE_RACES)
+
+-- Forever's Skyborne: both races are named "Skyborne", told apart by race ID
+_G.UnitRace = function() return "High Order Skyborne", "Skyborne", 95 end
+_G.UnitFactionGroup = function() return nil end
+local side, races = ns.Finder.Side()
+suite.check("a High Order Skyborne is Alliance by race ID", side == "Alliance")
+suite.check("and gets every Alliance race's quests", races == ns.Finder.ALLIANCE_RACES)
+_G.UnitRace = function() return "Windshaper Skyborne", "Skyborne", 96 end
+suite.check("a Windshaper Skyborne is Horde", (ns.Finder.Side()) == "Horde")
+_G.UnitFactionGroup = function() return "Alliance", "Alliance" end
+_G.UnitRace = function() return "Windshaper Skyborne", "Skyborne", 96 end
+suite.check("the game's own side wins over the race ID", (ns.Finder.Side()) == "Alliance")
+
+_G.UnitRace = function() return "High Order Skyborne", "Skyborne", 95 end
+local alliance = ns.Finder:Player()
+local offered
+for _, source in ipairs(ns.Finder:SourcesFor(1001, alliance)) do
+    if source.kind == "quest" and source.questID == 90001 then offered = true end
+end
+suite.check("an Alliance Skyborne is not offered a quest only the Horde saw", not offered)
+S.QUESTS[90200] = { "Horde Only", 1, 5, 2 + 16 + 32 + 128, 0, "Zed", 215, 1, 1, "" }
+S.ITEMS[1001].q[#S.ITEMS[1001].q + 1] = 90200
+offered = false
+for _, source in ipairs(ns.Finder:SourcesFor(1001, alliance)) do
+    if source.kind == "quest" and source.questID == 90200 then offered = true end
+end
+suite.check("nor a Classic Horde quest", not offered)
+
+-- Once the Alliance is offered it too, it is both sides'
+window.id, window.title, window.npc = 90001, "A New Errand", "Bob"
+_G.GetQuestID = function() return window.id end
+window.choices, window.rewards = { "item:1001" }, { "item:1002" }
+_G.C_Item.GetItemInfoInstant = function(id) return id, "Armor", "Mail", "INVTYPE_CHEST" end
+Learn:OnQuestWindow(true)
+suite.check("seen by both sides, it is both sides'", ns.db.learnedQuests[90001].side == "AH"
+    and S.QUESTS[90001][4] == 0)
+
+-- A record kept before sides were noted stays both sides'
+ns.db.learnedQuests[90001].side = nil
+Learn:OnQuestWindow(true)
+suite.check("an older record is not given a side", ns.db.learnedQuests[90001].side == nil)
+
 suite.done()
