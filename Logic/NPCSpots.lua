@@ -21,6 +21,9 @@
 -- one seen wins, so a reputation discount or a Forever price change is
 -- followed. Items that cost tokens or honor are not kept.
 --
+-- Gear a vendor sells that the data does not list for it is learned too
+-- (see "What vendors sell" below).
+--
 -- Every client value is read inside a pcall and copied: in an instance the
 -- game hands out secret values that raise when touched. One merchant window
 -- is one read, so nothing here runs on bag events.
@@ -161,20 +164,22 @@ local function ItemIDFromLink(link)
     return ok and id or nil
 end
 
---- One merchant slot as item ID, gold price in copper and stack size, or
---- nil when it is unreadable or costs something besides gold. Asks the
---- newer C_MerchantFrame.GetItemInfo first, then GetMerchantItemInfo.
+--- One merchant slot as item ID, gold price in copper, stack size and
+--- whether the vendor has only a few (true or false), or nil when it is
+--- unreadable or costs something besides gold. Asks the newer
+--- C_MerchantFrame.GetItemInfo first, then GetMerchantItemInfo.
 function NPCSpots.MerchantItem(index)
     local itemID = Number(Read(_G.GetMerchantItemID, index))
         or ItemIDFromLink(Plain(Read(_G.GetMerchantItemLink, index)))
     if not itemID then return nil end
-    local price, stack, extended
+    local price, stack, extended, available
     local frame = type(_G.C_MerchantFrame) == "table" and _G.C_MerchantFrame or nil
     local info = frame and Read(frame.GetItemInfo, index)
     if type(info) == "table" then
         local ok = pcall(function()
             price, stack = Number(info.price), Number(info.stackCount)
             extended = info.hasExtendedCost and true or false
+            available = Number(info.numAvailable)
         end)
         if not ok then return nil end
     else
@@ -183,11 +188,12 @@ function NPCSpots.MerchantItem(index)
         local ok = pcall(function()
             price, stack = Number(result[4]), Number(result[5])
             extended = result[9] and true or false
+            available = Number(result[6])
         end)
         if not ok then return nil end
     end
     if extended or not price or price <= 0 then return nil end
-    return itemID, price, stack or 1
+    return itemID, price, stack or 1, available ~= nil and available >= 0
 end
 
 --- Keep what the open merchant charges for the gear the finder knows a
@@ -231,12 +237,170 @@ function NPCSpots:PriceCount()
     return n
 end
 
+--------------------------------------------------------------------------------
+-- What vendors sell that the data does not know
+--------------------------------------------------------------------------------
+
+-- Gear a vendor sells that Classic's data does not list for that vendor
+-- (a vendor Forever added, on Zephras Isle say) is kept, account wide, in
+-- `BlackthornesEquipmentDB.learnedVendors[npcID]` (never rename it):
+--
+--   { name =, zone =, x =, y =, side =,
+--     items = { [itemID] = { price, req, ilvl, limited } }, at = }
+--
+-- `side` is who the vendor serves: "A", "H", or "AH" for a vendor of
+-- neither side. `ilvl` is 0 until the client has loaded the item. What is
+-- learned (and what ships in Data/ForeverVendors.lua, folded in from the
+-- owner's save by tools/forever_vendors.py) is laid over Sources.NPCS and
+-- Sources.ITEMS, so the finder and the upgrade quest's Vendor tab offer it.
+-- Nothing Classic says is replaced.
+
+--- The side a vendor serves: "A", "H" or "AH".
+function NPCSpots.VendorSide(unit)
+    local faction = Plain(Read(_G.UnitFactionGroup, unit or "npc"))
+    if faction == "Alliance" then return "A" end
+    if faction == "Horde" then return "H" end
+    return "AH"
+end
+
+local function JoinSides(a, b)
+    if a == nil or a == b then return b end
+    if b == nil then return a end
+    return "AH"
+end
+
+--- Does the data already list this vendor for this item?
+local function Listed(item, npcID)
+    local v = item and item.v
+    for i = 1, #(v or {}), 2 do
+        if v[i] == npcID then return true end
+    end
+    return false
+end
+
+--- Lay one learned vendor over the data. Returns true when it added anything.
+function NPCSpots:LayVendor(npcID, rec)
+    local S = ns.Sources
+    if type(S) ~= "table" or type(S.NPCS) ~= "table" or type(S.ITEMS) ~= "table" then return false end
+    if type(npcID) ~= "number" or type(rec) ~= "table" or type(rec.items) ~= "table" then return false end
+    local added = false
+    local npc = S.NPCS[npcID]
+    if not npc then
+        local zone = ns.QuestLearn and ns.QuestLearn.ZoneID and ns.QuestLearn.ZoneID(rec.zone) or 0
+        npc = { type(rec.name) == "string" and rec.name or "", zone, tonumber(rec.x) or 0, tonumber(rec.y) or 0,
+            type(rec.side) == "string" and rec.side or "AH", learned = true }
+        S.NPCS[npcID] = npc
+        added = true
+    elseif npc.learned and type(rec.side) == "string" and npc[5] ~= rec.side then
+        npc[5] = rec.side
+        added = true
+    end
+    for itemID, row in pairs(rec.items) do
+        if type(itemID) == "number" and type(row) == "table" then
+            local item = S.ITEMS[itemID]
+            if not item then
+                local ilvl = tonumber(row[3]) or 0
+                -- An item level not known yet keeps it in every scan; the
+                -- game's stats judge it anyway.
+                item = { tonumber(row[2]) or 0, ilvl > 0 and ilvl or 999, 0, 0, tonumber(row[1]) or 0, learned = true }
+                S.ITEMS[itemID] = item
+            elseif item.learned and (tonumber(row[3]) or 0) > 0 and item[2] == 999 then
+                item[2] = tonumber(row[3])
+            end
+            if not Listed(item, npcID) then
+                item.v = item.v or {}
+                item.v[#item.v + 1] = npcID
+                item.v[#item.v + 1] = row[4] and 1 or 0
+                added = true
+            end
+        end
+    end
+    return added
+end
+
+--- Lay every shipped and learned vendor. Done at login, once.
+function NPCSpots:LayAllVendors()
+    local added = false
+    for _, source in ipairs({ ns.ForeverVendors, type(ns.db) == "table" and ns.db.learnedVendors or nil }) do
+        if type(source) == "table" then
+            for npcID, rec in pairs(source) do
+                if self:LayVendor(npcID, rec) then added = true end
+            end
+        end
+    end
+    if added and ns.Finder and ns.Finder.MarkStale then pcall(ns.Finder.MarkStale, ns.Finder) end
+    return added
+end
+
+--- Keep the gear the open merchant sells that the data does not list for
+--- it. Returns how many items were new.
+function NPCSpots:LearnStock()
+    local db = ns.db
+    local S = ns.Sources
+    local QL = ns.QuestLearn
+    if type(db) ~= "table" or type(S) ~= "table" or type(S.ITEMS) ~= "table" or not (QL and QL.Gear) then return 0 end
+    local count = Number(Read(_G.GetMerchantNumItems)) or 0
+    if count <= 0 then return 0 end
+    local npcID
+    local fresh = {}
+    for index = 1, math.min(count, 200) do
+        local itemID, price, stack, limited = self.MerchantItem(index)
+        if itemID and stack == 1 then
+            local req, ilvl = QL.Gear(itemID)
+            if req then
+                npcID = npcID or self.IDFromGUID(Plain(Read(_G.UnitGUID, "npc")))
+                if not npcID then return 0 end
+                local rec = type(db.learnedVendors) == "table" and db.learnedVendors[npcID]
+                local have = rec and rec.items and rec.items[itemID]
+                if not Listed(S.ITEMS[itemID], npcID) or (have and have[3] == 0 and ilvl > 0) then
+                    fresh[itemID] = { price, req, ilvl, limited and true or false }
+                end
+            end
+        end
+    end
+    if not next(fresh) then return 0 end
+    local seen = self:Read("npc")
+    if not seen then return 0 end
+    if type(db.learnedVendors) ~= "table" then db.learnedVendors = {} end
+    local rec = db.learnedVendors[npcID]
+    if not rec then
+        rec = { items = {}, at = Number(Read(_G.time)) or 0 }
+        db.learnedVendors[npcID] = rec
+    end
+    rec.name = seen.name or rec.name
+    rec.zone, rec.x, rec.y = seen.zone, seen.x, seen.y
+    rec.side = JoinSides(rec.side, self.VendorSide("npc"))
+    local n = 0
+    for itemID, row in pairs(fresh) do
+        rec.items[itemID] = row
+        n = n + 1
+    end
+    if self:LayVendor(npcID, rec) and ns.Finder and ns.Finder.MarkStale then
+        pcall(ns.Finder.MarkStale, ns.Finder)
+    end
+    return n
+end
+
+--- How many vendors this account has learned gear from.
+function NPCSpots:VendorCount()
+    local n = 0
+    for _ in pairs(type(ns.db) == "table" and type(ns.db.learnedVendors) == "table" and ns.db.learnedVendors or {}) do
+        n = n + 1
+    end
+    return n
+end
+
 function NPCSpots:OnEnable()
+    pcall(self.LayAllVendors, self)
     ns.RegisterEvent(self, "MERCHANT_SHOW", function()
         NPCSpots:Learn("npc")
+        NPCSpots:LearnStock()
         NPCSpots:LearnPrices()
     end)
     -- Item details can arrive after the window opens.
-    ns.RegisterEvent(self, "MERCHANT_UPDATE", function() NPCSpots:LearnPrices() end)
+    ns.RegisterEvent(self, "MERCHANT_UPDATE", function()
+        NPCSpots:LearnStock()
+        NPCSpots:LearnPrices()
+    end)
     ns.RegisterEvent(self, "TRAINER_SHOW", function() NPCSpots:Learn("npc") end)
 end

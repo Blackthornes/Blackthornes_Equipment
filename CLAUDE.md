@@ -382,7 +382,23 @@ Before a release, `tools/forever_quests.py <save>` reads only
 `Data/ForeverQuests.lua` (never by hand; no names, IDs of players or
 characters), keeping what is there and dropping what Classic already has.
 Tested in `tools/test_questlearn.lua` and `tools/test_forever_quests.py`.
-Not yet seen in game.
+
+Learning more (the owner said build it, 2026-10-14, for Zephras Isle,
+where Classic's data has nothing): `QuestLearn:LearnLog` reads every quest
+in the log the same way, a few a frame, 6 and 30 seconds after login and
+one second after `QUEST_ACCEPTED` (`ReadLogQuest` picks the quest through
+`QuestLog.Pick` and puts the old pick back; no giver). And when a merchant
+window opens, `NPCSpots:LearnStock` keeps gear the data does not list for
+that vendor, account wide, in `BlackthornesEquipmentDB.learnedVendors[npcID]
+= { name, zone, x, y, side, items = { [itemID] = { price, req, ilvl,
+limited } }, at }` (never rename it; `side` from `UnitFactionGroup("npc")`,
+"AH" for a vendor of neither side; `ilvl` 0 until the item loads, laid as
+999 so it is judged at any level). `NPCSpots:LayVendor` lays it, and
+`Data/ForeverVendors.lua`, over `Sources.NPCS` and `Sources.ITEMS` at
+login and as each is learned. Before a release, `tools/forever_vendors.py
+<save>` reads only `learnedVendors` and rewrites `Data/ForeverVendors.lua`
+(never by hand), the same way as the quests. Tested in
+`tools/test_learnmore.lua` and `tools/test_forever_vendors.py`.
 
 ## The upgrade quest
 
