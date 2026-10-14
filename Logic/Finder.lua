@@ -1155,7 +1155,7 @@ function Finder.RollText(pick)
     local text = name and L.Format("Best roll %s: %s of drops", name, ns.Rolls.Percent(roll.chance))
         or L.Format("Best roll: %s of drops", ns.Rolls.Percent(roll.chance))
     if roll.upgradeChance and roll.upgradeChance > roll.chance then
-        text = L.Format("%s; %s of drops are an upgrade", text, ns.Rolls.Percent(roll.upgradeChance))
+        text = L.Format("%s, and %s of drops are an upgrade", text, ns.Rolls.Percent(roll.upgradeChance))
     end
     return text
 end

@@ -303,11 +303,11 @@ function SettingsUI:BuildGear()
     self.weightsRow = weightsRow
 
     local tooltipRow = pages:Row("gear", 1, L["Tooltip line"],
-        L["Whether gear beats what you wear, and where to learn a weapon skill."])
+        L["Says whether gear beats what you wear, and where to learn a weapon skill."])
     controls.tooltip = Tick(tooltipRow, L["Show it"], "tooltipLine", true)
 
     local arrowRow = pages:Row("gear", 1, L["Upgrade arrows"],
-        L["A green arrow on upgrades you can wear now: in your bags, on the best quest reward and on loot up for a roll."])
+        L["A green arrow on upgrades you can wear now, in your bags, on the best quest reward and on loot up for a roll."])
     controls.arrows = Tick(arrowRow, L["Show them"], "bagArrows", true, function()
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
         if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
@@ -319,13 +319,13 @@ function SettingsUI:BuildGear()
     end)
 
     local coinRow = pages:Row("gear", 1, L["Sell coins"],
-        L["A gold coin on gear in your bags that is not an upgrade and is worth selling to a vendor: white gear, and soulbound green or better gear when you can't disenchant it. Never on gathering tools."])
+        L["A gold coin on gear in your bags that isn't an upgrade and is worth selling to a vendor. That's white gear, plus soulbound green or better gear when you can't disenchant it. Never on gathering tools."])
     controls.sellCoins = Tick(coinRow, L["Show them"], "bagSellCoins", true, function()
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
     end)
 
     local takeRow = pages:Row("gear", 1, L["Take reward button"],
-        L["When you hand in a quest with rewards to choose from, a button under the quest window takes the best one in a click: the biggest upgrade, or the one that sells for the most."])
+        L["When you hand in a quest with rewards to choose from, a button under the quest window takes the best one in one click. That's the biggest upgrade, or the one that sells for the most."])
     controls.rewardButton = Tick(takeRow, L["Show it"], "rewardButton", true, function()
         if ns.QuestRewards then pcall(ns.QuestRewards.UpdateTake, ns.QuestRewards) end
     end)
@@ -361,7 +361,7 @@ function SettingsUI:BuildGear()
     controls.openWindow:SetPoint("TOPLEFT", CONTROL_X, 0)
 
     local _, bagsButton = CommandRow(pages, "gear", 2, L["Gear in your bags"],
-        L["Judges every piece of gear in your bags against what you wear, in chat. Same as /beq bags."],
+        L["Checks every piece of gear in your bags against what you wear and lists it in chat. Same as /beq bags."],
         L["Judge it"], "bags")
     controls.bags = bagsButton
 
@@ -374,7 +374,7 @@ function SettingsUI:BuildGear()
     end)
 
     local suffixRow = pages:Row("gear", 2, L["Random roll names"],
-        L["Names a green's random roll on its tooltip (of the Monkey), which Forever leaves off."])
+        L["Shows a green's random roll on its tooltip (such as of the Monkey), which Forever leaves off."])
     controls.suffixLine = Tick(suffixRow, L["Show them"], "suffixLine", true)
 
     local altRow = pages:Row("gear", 2, L["Upgrades for your alts"],
@@ -389,14 +389,14 @@ function SettingsUI:BuildGear()
     pages:Section("gear", 2, L["CLASS TRAINING"])
 
     local trainingRow = pages:Row("gear", 2, L["Class training"],
-        L["The gear window's Training button lists the class spells you can train now and what they cost, and a level up says in chat what's new. Prices and the trainer's place are kept the first time you open a class trainer. Also /beq training on or off."])
+        L["The gear window's Training button lists the class spells you can train now and what they cost, and when you level up, chat says what's new. Open a class trainer once and its prices and location are remembered. Also /beq training on or off."])
     controls.classTraining = Widgets.CreateCheckbox(trainingRow, L["Show it"], function(checked)
         ns.ClassTraining:SetOn(checked)
         if not checked and ns.TrainingDrawer then ns.TrainingDrawer:Hide() end
     end, ns.ClassTraining:IsOn())
     controls.classTraining:SetPoint("TOPLEFT", CONTROL_X, -2)
     local _, trainingButton = CommandRow(pages, "gear", 2, L["Spells to train"],
-        L["Lists in chat the spells you can train now, what each costs, the next level's and your other characters'. Same as /beq training."],
+        L["Lists in chat the spells you can train now and what each costs, plus the next level's spells and your other characters'. Same as /beq training."],
         L["List them"], "training")
     controls.trainingReport = trainingButton
 end
@@ -492,9 +492,9 @@ end
 -- the tick box's words, and the module to tell when it changes.
 local HUNTING = {
     { "slotUpgrades", 1, L["Character sheet"],
-        L["Hover a gear slot for the upgrades on offer for it; Alt-click it to track one."], L["Show them"] },
+        L["Hover a gear slot to see the upgrades on offer for it. Alt-click it to track one."], L["Show them"] },
     { "upgradeToast", 1, L["Upgrade banner"],
-        L["A glowing banner when an upgrade lands in your bags, or a tracked one is got."], L["Show it"] },
+        L["A glowing banner when an upgrade lands in your bags, or when you get one you're tracking."], L["Show it"] },
     { "showTracker", 2, L["Upgrade tracker"],
         L["The panel of upgrades you are tracking. Right-click a row in Where to get upgrades to track it."],
         L["Show it"], "TrackerPanel" },
@@ -555,7 +555,7 @@ function SettingsUI:BuildQuest()
     -- The /beq quest commands as buttons, each doing just what its command
     -- does, chat line included.
     local thisRow = pages:Row("quest", 1, L["This upgrade"],
-        L["Ignore never offers it again and moves on to the next best. Switch takes the upgrade a level up opened."])
+        L["Ignore drops it for good and moves on to the next best. Switch picks up the upgrade your new level opened."])
     controls.questSkip = Widgets.CreateButton(thisRow, L["Ignore"], function()
         ns.HandleSlash("quest ignore")
     end, { width = 64, height = 20 })
@@ -567,10 +567,10 @@ function SettingsUI:BuildQuest()
     end, { width = 72, height = 20, primary = true })
     controls.questSwitch:SetPoint("LEFT", controls.questSkip, "RIGHT", 12, 0)
     Explain(controls.questSwitch, L["Switch to the new upgrade"],
-        L["Follow the upgrade your new level opened instead. Lit when one is on offer. Same as /beq quest switch."])
+        L["Follow the upgrade your new level opened instead. The button lights up when there's one. Same as /beq quest switch."])
 
     local panelRow = pages:Row("quest", 1, L["Quest panel"],
-        L["Open shows the panel (and turns the quest on). Ignored lists the upgrades you ignored, to restore them."])
+        L["Open shows the panel and turns the quest on. Ignored lists the upgrades you ignored, so you can restore them."])
     self.questPanelRow = panelRow
     controls.questOpen = Widgets.CreateButton(panelRow, L["Open"], function()
         ns.HandleSlash("quest")
@@ -585,7 +585,7 @@ function SettingsUI:BuildQuest()
     end, { width = 84, height = 20 })
     controls.questReset:SetPoint("LEFT", controls.questOpen, "RIGHT", 12, 0)
     Explain(controls.questReset, L["Ignored upgrades"],
-        L["Lists the upgrades you ignored on this character, to restore one or all of them. Same as /beq quest ignored."])
+        L["Lists the upgrades you ignored on this character, so you can restore one or all of them. Same as /beq quest ignored."])
 
     -- The upgrade quest panel's size, as its gold corner grip and /beq quest
     -- size set it (the owner asked 2026-10-07). The size in use is lit green
@@ -614,7 +614,7 @@ function SettingsUI:BuildQuest()
     -- Which tab the panel shows, as clicking a tab or /beq quest vendor
     -- (quest, dungeon, crafted) does.
     local tabRow = pages:Row("quest", 1, L["Quest tab"],
-        L["Each kind of source keeps its own upgrade. Pick the one the panel shows."])
+        L["Each kind of source has its own upgrade. Pick which one the panel shows."])
     controls.questTab = Widgets.CreateStepper(tabRow, {
         min = 1, max = 4, step = 1, value = 1,
         format = function(index)
@@ -633,7 +633,7 @@ function SettingsUI:BuildQuest()
     -- (the same as in Where to get upgrades) and Zone swap, the panel's
     -- "Change on a new zone" (the owner asked 2026-10-08), side by side.
     local soloRow = pages:Row("quest", 1, L["Quest filters"],
-        L["Solo only leaves out group, dungeon, raid and battleground quests. Zone swap lets This zone only change quests in a new zone."])
+        L["Solo only leaves out group, dungeon, raid and battleground quests. Zone swap lets This zone only pick new quests when you enter a new zone."])
     controls.soloQuests = Widgets.CreateCheckbox(soloRow, L["Solo only"], function(checked)
         if ns.Finder then ns.Finder:SetSoloOnly(checked) end
     end, false)
@@ -650,7 +650,7 @@ function SettingsUI:BuildQuest()
 
     -- The panel's "Current step only" (the owner asked 2026-10-13).
     local stepsRow = pages:Row("quest", 1, L["Steps shown"],
-        L["Current step only shows just the step to do now, so the quest panel takes less room."])
+        L["With Current step only, the quest panel shows just the step to do now and takes less room."])
     controls.questStepOnly = Widgets.CreateCheckbox(stepsRow, L["Current step only"], function(checked)
         if ns.UpgradeQuest then ns.UpgradeQuest:SetStepOnly(checked) end
     end, false)
@@ -759,7 +759,7 @@ function SettingsUI:BuildGeneral()
     -- Core/SisterNote.lua: one chat line, once, naming the Blackthornes
     -- addons the player does not have. Off here is off in all of them.
     local sistersRow = pages:Row("general", 2, L["Sister addons"],
-        L["Once, a few seconds after login, says in chat which Blackthornes addons you don't have and what each adds. Turning it off here turns it off in all of them. Same as /beq sisters."])
+        L["A few seconds after login, says once in chat which Blackthornes addons you don't have and what each one adds. Turning it off here turns it off in all of them. Same as /beq sisters."])
     controls.sisters = Widgets.CreateCheckbox(sistersRow, L["Mention them"], function(checked)
         ns.SisterNote:SetOn(checked)
     end, true)
@@ -940,7 +940,7 @@ function SettingsUI:RefreshQuestSize()
     for _, button in ipairs(self.controls.questSizes) do
         button:SetLabelColor(math.abs(button.scale - scale) < 0.005 and "good" or "gilt")
     end
-    self.questSizeRow:SetDescription(L.Format("Now %s. Or drag the gold corner below the panel; right-click it for Normal.",
+    self.questSizeRow:SetDescription(L.Format("Now %s. You can also drag the gold corner below the panel, and right-click it for Normal.",
         panel.ScaleText(scale)))
 end
 

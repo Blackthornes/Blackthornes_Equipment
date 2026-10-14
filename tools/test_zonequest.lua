@@ -73,7 +73,7 @@ suite.check("the panel has the zone box", Panel.zoneBox ~= nil and not Panel.zon
 suite.check("named plainly", Panel.zoneBox.label:GetText() == "This zone only")
 Panel.zoneBox:GetScript("OnEnter")(Panel.zoneBox)
 local tip = table.concat(GameTooltip._lines, "\n")
-suite.check("hovering says what it does", tip:find("zone you are in", 1, true) ~= nil, tip)
+suite.check("hovering says what it does", tip:find("zone you're in", 1, true) ~= nil, tip)
 Panel.zoneBox:GetScript("OnLeave")(Panel.zoneBox)
 
 suite.check("the panel has the solo box", Panel.soloBox ~= nil and Panel.soloBox.label:GetText() == "Solo quests only")

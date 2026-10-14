@@ -176,7 +176,7 @@ function Tracking:Check()
             for i = #done, DONE_KEPT + 1, -1 do done[i] = nil end
             changed = true
             if ns.Toast then
-                ns.Toast:Show({ title = L["Hunt done"], link = hunt.link, text = L["Wearing it now. Nice."] })
+                ns.Toast:Show({ title = L["Hunt done"], link = hunt.link, text = L["You're wearing it now."] })
             end
         elseif carried[itemID] and not hunt.got then
             hunt.got = Now()

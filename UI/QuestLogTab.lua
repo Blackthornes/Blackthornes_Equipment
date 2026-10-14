@@ -244,7 +244,7 @@ function QuestLogUI:Build(frame, top)
     local map = Widgets.CreateButton(view, L["Show on map"], function() QuestLogUI:Act("map") end,
         { width = 96, height = 22, primary = true })
     Explain(map, L["Show on map"],
-        L["Puts the game's map pin on where to go for the quest you picked (or the first one in this zone): its objective, or who to hand it in to once it's done."])
+        L["Puts the game's map pin where you need to go for the quest you picked, or the first one in this zone. That's its objective, or who to hand it in to once it's done."])
     self.mapButton = map
 
     local arrow = Widgets.CreateButton(view, L["Arrow"], function() QuestLogUI:Act("arrow") end,
@@ -335,7 +335,7 @@ function QuestLogUI:BuildRow(index)
     end, false)
     row.track:SetPoint("TOPLEFT", 5, -3)
     row.track:SetWidth(MARK)
-    Explain(row.track, L["Track"], L["Tick to track this quest, as the game's tracker does."])
+    Explain(row.track, L["Track"], L["Tick to track this quest, same as in the game's tracker."])
 
     row.title = Theme.CreateLabel(row, "small", "text")
     row.title:SetPoint("TOPLEFT", MARK + 10, -4)

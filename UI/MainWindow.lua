@@ -204,8 +204,8 @@ function UI:BuildHeader()
         local on = ns.UpgradeQuest and ns.UpgradeQuest:IsEnabled()
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:AddLine(L["Upgrade quest"], Theme.Unpack("accent"))
-        GameTooltip:AddLine(on and L["Click to close the upgrade quest. Your quests are kept for when you bring it back."]
-            or L["Click to bring back the upgrade quest: a quest for your best next upgrade, with the steps to get it."], 1, 1, 1, true)
+        GameTooltip:AddLine(on and L["Click to close the upgrade quest. Your quests stay saved for when you bring it back."]
+            or L["Click to bring back the upgrade quest, a quest for your best next upgrade with the steps to get it."], 1, 1, 1, true)
         GameTooltip:Show()
     end)
     quest:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -507,9 +507,9 @@ end
 --- Where better gear is, for its tooltip: "In your bank" or "On Ana
 --- Smith: mail it over".
 function UI.WhereText(where)
-    if where == "bank" then return L["In your bank: take it out to wear it"] end
+    if where == "bank" then return L["In your bank. Take it out to wear it"] end
     local name = ns.Alts and ns.Alts:NameOf(where) or nil
-    return L.Format("On %s: mail it over to wear it", name or L["another of your characters"])
+    return L.Format("On %s. Mail it over to wear it", name or L["another of your characters"])
 end
 
 --- The same, short, beside the item: "bank" or the character's name.

@@ -416,7 +416,7 @@ function QuestRewards:Announce(final)
         local _, richLink, copper = self:MostValuable()
         local money = copper and ns.Finder and ns.Finder.Money(copper)
         if richLink and money then
-            ns.Print(L.Format("|c%s%s;|r take %s, it sells for the most (%s)",
+            ns.Print(L.Format("|c%s%s,|r so take %s. It sells for the most (%s)",
                 ns.COLORS.muted, none, richLink, money))
         else
             ns.Print(("|c%s%s|r"):format(ns.COLORS.muted, none))

@@ -209,7 +209,7 @@ function WeaponSkills:Ignore(subclassID)
     local list = IgnoredList()
     if not (skill and list) then return false end
     list[subclassID] = true
-    ns.Print(L.Format("ignoring %s until you train them. Settings or /beq weapons show brings them back.", skill.name))
+    ns.Print(L.Format("ignoring %s until you train them. To bring them back, use Settings or /beq weapons show.", skill.name))
     Changed()
     return true
 end
@@ -293,7 +293,7 @@ function WeaponSkills:OnEnable()
     end
 end
 
-ns.RegisterCommand("weapons", L["weapon types you haven't trained (show: call ignored ones upgrades again)"], function(rest)
+ns.RegisterCommand("weapons", L["weapon types you haven't trained (show: count ignored ones as upgrades again)"], function(rest)
     rest = (rest or ""):lower()
     if rest:match("^show") then
         WeaponSkills:ShowAll()
@@ -301,9 +301,9 @@ ns.RegisterCommand("weapons", L["weapon types you haven't trained (show: call ig
     end
     local names = WeaponSkills:IgnoredNames()
     if #names == 0 then
-        ns.Print(L["untrained weapons show as upgrades, with where to learn them. Ignore a type from the upgrade banner."])
+        ns.Print(L["untrained weapons show as upgrades, with where to learn them. To ignore a type, use the upgrade banner."])
     else
-        ns.Print(L.Format("ignored until trained: %s. /beq weapons show brings them back.", table.concat(names, ", ")))
+        ns.Print(L.Format("ignored until you train them: %s. /beq weapons show brings them back.", table.concat(names, ", ")))
     end
 end)
 

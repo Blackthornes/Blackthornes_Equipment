@@ -63,9 +63,9 @@ for _, tab in ipairs(TABS) do IS_TAB[tab.key] = tab end
 
 -- How each tab says it has nothing to chase.
 local NONE = {
-    vendor = L["No upgrade a vendor sells right now."],
-    quest = L["No quest reward that is an upgrade right now."],
-    dungeon = L["No dungeon or raid drop that is an upgrade right now."],
+    vendor = L["No vendor sells an upgrade right now."],
+    quest = L["No quest reward is an upgrade right now."],
+    dungeon = L["No dungeon or raid drop is an upgrade right now."],
     craft = L["No crafted upgrade right now."],
 }
 UpgradeQuest.NONE = NONE
@@ -874,7 +874,7 @@ function UpgradeQuest:Steps(quest)
         local first = starter and starter.places[1]
         if not first and not held then
             Add(L.Format("Find %s, the item that starts %s", itemName, title), started, nil,
-                (lead and lead .. " " or "") .. L["Where it drops is not known. Right-click it in your bags to start the quest."])
+                (lead and lead .. " " or "") .. L["Where it drops isn't known yet. Once you have it, right-click it in your bags to start the quest."])
             return
         end
         if first and not held and not started then
@@ -889,9 +889,9 @@ function UpgradeQuest:Steps(quest)
                 or L.Format(" in %s", first.zone) .. At(first)
             local notes = { lead }
             if first.kind == "boss" then
-                notes[#notes + 1] = first.zone == first.door and L["Bring a group."] or L["A dungeon boss: bring a group."]
+                notes[#notes + 1] = first.zone == first.door and L["Bring a group."] or L["A dungeon boss, so bring a group."]
             elseif first.rank == "rare" or first.rank == "rare elite" then
-                notes[#notes + 1] = L["A rare: it may not be up when you get there."]
+                notes[#notes + 1] = L["A rare, so it may not be up when you get there."]
             end
             local chance = tonumber(first.chance)
             if chance and chance < 100 and first.kind ~= "vendor" then
@@ -932,7 +932,7 @@ function UpgradeQuest:Steps(quest)
                 ns.COLORS.downgrade, held, short)
         end
         if source.limited then
-            notes[#notes + 1] = L["Limited stock: if it is sold out, wait for the vendor to restock."]
+            notes[#notes + 1] = L["Limited stock. If it's sold out, wait for the vendor to restock."]
         end
         Add(price and L.Format("Buy %s for %s", link, price) or L.Format("Buy %s", link), have, place,
             #notes > 0 and table.concat(notes, " ") or nil)
@@ -960,7 +960,7 @@ function UpgradeQuest:Steps(quest)
                 local upTo = chain[#chain].title or L["it"]
                 Add(rest == 1 and L.Format("Then %d more quest in the chain, up to %s", rest, upTo)
                     or L.Format("Then %d more quests in the chain, up to %s", rest, upTo), false, nil,
-                    L.Format("The quests come one after another; %s opens after them.", source.title or L["the quest"]))
+                    L.Format("The quests come one after another, and %s opens once they're done.", source.title or L["the quest"]))
                 break
             end
             local spot = before.x and { zone = before.zone, x = before.x, y = before.y, name = before.name } or nil
@@ -1056,7 +1056,7 @@ function UpgradeQuest:Steps(quest)
             or L.Format("Gather a group and enter %s%s", dungeon, range),
             zone == source.dungeon, door)
         local note = source.chance
-            and L.Format("It is a %s%% drop, so it can take a few runs.", tostring(source.chance)) or nil
+            and L.Format("It's a %s%% drop, so it can take a few runs.", tostring(source.chance)) or nil
         if source.forever then note = (note and note .. " " or "") .. L["Seen dropping on Forever."] end
         Add(L.Format("Defeat %s and loot %s", source.name or L["the boss"], link), have, nil, note)
     elseif source.kind == "craft" then
@@ -1249,7 +1249,7 @@ function UpgradeQuest:LookForBetter(quest)
         howMuch = best.pick.result and ns.Compare:HowMuch(best.pick.result) or nil,
     }
     if ns.Toast then
-        ns.Toast:Show({ title = L["New upgrade unlocked"], link = best.pick.link,
+        ns.Toast:Show({ title = L["New upgrade on offer"], link = best.pick.link,
             text = L["Your new level opened a better upgrade. Switch to it on the quest panel."] })
     end
 end
@@ -1338,7 +1338,7 @@ function UpgradeQuest:Check()
                 ns.charDB.upgradeQuestsDone = self:DoneCount() + 1
                 if ns.Toast then
                     ns.Toast:Show({ title = L["Upgrade quest complete"], link = quest.link,
-                        text = L.Format("Upgrade quests done: %d. Picking your next one.", self:DoneCount()) })
+                        text = L.Format("That's %d upgrade quests done. Picking your next one.", self:DoneCount()) })
                 end
             end
             if ns.Finder then ns.Finder:MarkStale() end
@@ -1348,10 +1348,10 @@ function UpgradeQuest:Check()
             -- show says so; the others quietly pick again.
             quests[tab.key] = nil
             if shown then
-                ns.Print(L.Format("dropped the upgrade quest for %s: you wear something as good now.", quest.link))
+                ns.Print(L.Format("dropped the upgrade quest for %s, since you're already wearing something as good.", quest.link))
                 if ns.Toast then
                     ns.Toast:Show({ title = L["You already beat this one"], link = quest.link,
-                        text = L["You wear something as good. Picking your next upgrade."] })
+                        text = L["You're already wearing something as good. Picking your next upgrade."] })
                 end
             end
             if ns.Finder then ns.Finder:MarkStale() end
@@ -1360,7 +1360,7 @@ function UpgradeQuest:Check()
             -- done again, so this upgrade is out of reach.
             quests[tab.key] = nil
             self:Skipped()[quest.itemID] = true
-            ns.Print(L.Format("dropped the upgrade quest for %s: that quest is already done.", quest.link))
+            ns.Print(L.Format("dropped the upgrade quest for %s, since that quest is already done.", quest.link))
         end
         if Valid(quests[tab.key]) then self.states[tab.key] = "active" end
     end
@@ -1509,7 +1509,7 @@ end
 --- says how to bring it back.
 function UpgradeQuest:TurnOff()
     if self:IsEnabled() then self:SetEnabled(false) end
-    ns.Print(L["upgrade quest closed. Your quests are kept. Bring it back with the Upgrade quest button in the gear window, Shift-click on the minimap button, or /beq quest."])
+    ns.Print(L["upgrade quest closed. Your quests are saved. Bring it back with the Upgrade quest button in the gear window, Shift-click on the minimap button, or /beq quest."])
 end
 
 --- Close it when it is up, bring it back when it is not.
@@ -1732,7 +1732,7 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
         if not panel then return end
         local scale = panel.ParseSize((rest or ""):lower():match("^%s*size%s*(.-)%s*$"))
         if not scale then
-            ns.Print(L.Format("the quest panel is at %s. /beq quest size small, normal, large or a percent from 50%% to 150%% changes it, or drag the gold corner below its bottom right.",
+            ns.Print(L.Format("the quest panel is at %s. To change it, type /beq quest size small, normal, large or a percent from 50%% to 150%%, or drag the gold corner below its bottom right.",
                 panel.ScaleText(panel:GetScale())))
             return
         end
@@ -1767,7 +1767,7 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
     if word == "ignore" or word == "skip" then
         local quest = UpgradeQuest:Current()
         if UpgradeQuest:Skip() then
-            ns.Print(L.Format("ignored %s: it will not be offered again. Settings > Upgrade quest > Ignored brings it back.",
+            ns.Print(L.Format("ignored %s. It won't be offered again. To bring it back, go to Settings > Upgrade quest > Ignored.",
                 quest and quest.link or L["that upgrade"]))
         else
             ns.Print(L["there is no upgrade quest to ignore."])

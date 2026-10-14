@@ -80,7 +80,7 @@ suite.check("the finder offers it at its best roll", pick and pick.roll and pick
     pick and pick.link)
 suite.check("shown by the client's link, or the plain item's when it has none", pick.link == "item:4000",
     pick.link)
-suite.check("and says so", ns.Finder.RollText(pick) == "Best roll of Agility: 10% of drops; 40% of drops are an upgrade",
+suite.check("and says so", ns.Finder.RollText(pick) == "Best roll of Agility: 10% of drops, and 40% of drops are an upgrade",
     ns.Finder.RollText(pick))
 suite.check("gear without rolls has no roll text", ns.Finder.RollText({}) == nil)
 

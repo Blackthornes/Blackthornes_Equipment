@@ -93,7 +93,7 @@ local function CreateLine(parent, index)
             if not ok then GameTooltip:AddLine(self.text:GetText() or "", 1, 1, 1) end
             local line
             if not self.spell.cost then
-                line = L["Not priced yet: open a class trainer once and it's kept."]
+                line = L["No price yet. Open a class trainer once and it's remembered."]
             elseif self.spell.guess then
                 line = L.Format("Usually %s. Open your trainer once for the real price.", ns.ClassTraining.Money(self.spell.cost))
             else
@@ -290,7 +290,7 @@ function Drawer:Refresh()
     if where then
         self.hint:SetText(L.Format("Your trainer: %s, %s.", spot.name or "?", where))
     else
-        self.hint:SetText(L["Open a class trainer once and its prices and place are kept."])
+        self.hint:SetText(L["Open a class trainer once and its prices and location are remembered."])
     end
     if not training:IsOn() then
         self.hint:SetText(L["Class training is turned off in Settings."])

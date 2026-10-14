@@ -1230,7 +1230,7 @@ ns.RegisterCommand("spec", L["show the spec gear is judged for, or pick one by n
                 names[#names + 1] = key
             end
             names[#names + 1] = "auto"
-            ns.Warn(L.Format("not a spec: %s (try %s)", rest, table.concat(names, ", ")))
+            ns.Warn(L.Format("%s isn't a spec (try %s)", rest, table.concat(names, ", ")))
             return
         end
 

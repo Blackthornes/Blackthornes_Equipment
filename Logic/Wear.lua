@@ -51,7 +51,7 @@ end
 
 --- Can `link` be put on with a click now? True, or false and why.
 function Wear:Can(link)
-    if InCombat() then return false, L["in combat: put it on after the fight"] end
+    if InCombat() then return false, L["you're in combat, so put it on after the fight"] end
     if not (Global("C_Item.EquipItemByName") or Global("EquipItemByName")) then
         return false, L["this game client can't equip from an addon"]
     end

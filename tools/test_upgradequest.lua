@@ -147,7 +147,7 @@ end)())
 -- Nothing on offer beats what is worn now.
 suite.check("and nothing left to chase", Quest:Current() == nil and Quest.state == "none", Quest.state)
 suite.check("the panel says so", Panel.empty:IsShown()
-    and Panel.empty:GetText():find("No quest reward that is an upgrade", 1, true) ~= nil, Panel.empty:GetText())
+    and Panel.empty:GetText():find("No quest reward is an upgrade", 1, true) ~= nil, Panel.empty:GetText())
 suite.check("with Pick one still there", Panel.otherButton:IsShown() and not Panel.skipButton:IsShown()
     and Panel.otherButton.label:GetText() == "Pick one", Panel.otherButton.label:GetText())
 
@@ -207,7 +207,7 @@ suite.check("/beq quest reset brings skipped ones back", next(ns.charDB.upgradeQ
 env.worn[5] = "item:9000"
 Quest:Update()
 suite.check("an upgrade no longer wanted is dropped", Quest:Current() == nil)
-suite.check("and chat says why", env.ChatText():find("wear something as good now", 1, true) ~= nil)
+suite.check("and chat says why", env.ChatText():find("already wearing something as good", 1, true) ~= nil)
 suite.check("with a banner", (function()
     for _, banner in ipairs(toasts) do
         if banner.title == "You already beat this one" then return true end
@@ -440,9 +440,9 @@ local offer = Quest:Offer()
 suite.check("a far better one is offered", offer and offer.pick.itemID == 3001, offer and offer.pick.itemID)
 suite.check("but not swapped in", Quest:Current().itemID == 1001)
 suite.check("with the level it opened at", offer and offer.level == 23, offer and offer.level)
-suite.check("and a banner", #toasts > shown and toasts[#toasts].title == "New upgrade unlocked")
+suite.check("and a banner", #toasts > shown and toasts[#toasts].title == "New upgrade on offer")
 suite.check("the panel shows the offer", Panel.offerBox:IsShown()
-    and Panel.offerTitle:GetText() == "New upgrade unlocked at level 23", Panel.offerTitle:GetText())
+    and Panel.offerTitle:GetText() == "New upgrade on offer at level 23", Panel.offerTitle:GetText())
 suite.check("naming it", Panel.offerName:GetText() == "item:3001", Panel.offerName:GetText())
 suite.check("with Switch and Keep current", Panel.switchButton:IsShown() and Panel.keepButton:IsShown())
 Quest:Update()

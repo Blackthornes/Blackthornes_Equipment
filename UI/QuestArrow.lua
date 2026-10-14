@@ -230,7 +230,7 @@ end
 --- The close gem: the arrow off until turned on again.
 function ArrowUI:Close()
     ns.QuestArrow:SetOn(false)
-    ns.Print(L["quest arrow off. The Arrow button on the quest panel, /beq arrow or Settings brings it back."])
+    ns.Print(L["quest arrow off. To bring it back, use the Arrow button on the quest panel, /beq arrow or Settings."])
 end
 
 function ArrowUI:ShowTooltip(owner)
@@ -307,7 +307,7 @@ function ArrowUI.Words(state)
         return L["Can't see you here"], L["The game won't say where you are"], "/beq arrow check", "muted"
     end
     if mode == "nowhere" then
-        return L["Nowhere to go"], state.step or L["No step left has a place"], "", "muted"
+        return L["Nowhere to go"], state.step or L["None of the steps left has a place to go"], "", "muted"
     end
     return state.distance or "", state.place or "", state.note or "", state.noteColor or "muted"
 end

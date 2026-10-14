@@ -66,7 +66,7 @@ suite.check("/beq spec auto goes back to talents", spec == "survival" and why ==
 env.chat = {}
 ns.HandleSlash("spec tank")
 suite.check("a spec that is not one is refused",
-    env.ChatText():find("not a spec: tank", 1, true), env.ChatText())
+    env.ChatText():find("tank isn't a spec", 1, true), env.ChatText())
 suite.check("and nothing is saved", ns.charDB.spec == nil)
 
 ns = LoadAs("DEATHKNIGHT", nil)

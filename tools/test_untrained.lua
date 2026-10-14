@@ -153,7 +153,7 @@ suite.check("said once", next(UpgradeChat.untrained) == nil)
 -- /beq weapons.
 ns.charDB.ignoredWeaponTypes = { [10] = true }
 ns.HandleSlash("weapons")
-suite.check("/beq weapons lists them", env.chat[#env.chat]:find("ignored until trained: Staves", 1, true),
+suite.check("/beq weapons lists them", env.chat[#env.chat]:find("ignored until you train them: Staves", 1, true),
     env.chat[#env.chat])
 ns.HandleSlash("weapons show")
 suite.check("/beq weapons show clears them", next(ns.charDB.ignoredWeaponTypes) == nil)
