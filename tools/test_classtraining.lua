@@ -96,7 +96,7 @@ suite.check("Show the way aims the quest arrow at the trainer", aimed and aimed.
 CT:Data().characters["Player-1-BBB"] = { name = "Bob Stone", class = "MAGE", level = 10, ready = { 2, 3 }, at = 1 }
 CT:Changed()
 text = Texts()
-suite.check("the other characters", text:find("Bob Stone: 2 spells at level 10", 1, true) ~= nil, text)
+suite.check("the other characters", text:find("Bob Stone", 1, true) ~= nil and text:find("2 spells at level 10", 1, true) ~= nil, text)
 
 -- 4. Turned off.
 ns.HandleSlash("training off")

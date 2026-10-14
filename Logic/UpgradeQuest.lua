@@ -541,6 +541,8 @@ function UpgradeQuest:Follow(pick)
     self:Mirror()
     ns.db.upgradeQuest = true
     self:Update()
+    -- The gear window's Upgrade quest button shows it is up.
+    if ns.UI and ns.UI.OnUpgradeQuestToggled then pcall(ns.UI.OnUpgradeQuestToggled, ns.UI) end
     if ns.QuestPanel and ns.QuestPanel.Unfold then pcall(ns.QuestPanel.Unfold, ns.QuestPanel) end
     return quest
 end

@@ -268,9 +268,16 @@ function Waypoints:Show(place, what)
     if ok then
         ns.Print(L.Format("pinned %s on your map: %s (%s, %s)", what or place.name or L["it"],
             place.zone, place.x, place.y))
-        -- Open the map on it, where the game lets an addon.
+        -- Open the map on it, where the game lets an addon. Never in a
+        -- fight: the game blocks an addon opening the map then. The pin
+        -- stays, so the map shows it when opened after the fight.
+        local inFight = false
+        if type(_G.InCombatLockdown) == "function" then
+            local okFight, fighting = pcall(_G.InCombatLockdown)
+            inFight = okFight and fighting == true
+        end
         local mapID = self:MapFor(place.zone)
-        if type(_G.OpenWorldMap) == "function" then pcall(_G.OpenWorldMap, mapID) end
+        if not inFight and type(_G.OpenWorldMap) == "function" then pcall(_G.OpenWorldMap, mapID) end
     else
         local reason = WHY[why] or why
         if place and place.zone then
