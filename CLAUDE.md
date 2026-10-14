@@ -306,6 +306,19 @@ harvest up to date from his saved data first (he attaches it; see Farmer's
 `tools/harvest_import.py`), then rerun this. Stats always come from the
 game, never from data, so a Forever stat change needs nothing.
 
+Forever's own dungeons and raids (the owner asked 2026-10-14, after
+"can equipment learn drops inside a new dungeon?"): Classic's list in
+`Sources.DUNGEONS` lacks them, so their drops used to be thrown away.
+`FOREVER_DUNGEONS` in `tools/forever_drops.py` names them by the
+instance's map ID from the Forever client's game tables (what
+`GetInstanceInfo` gives inside, as Classic's are keyed), with the zone the
+door is in when known (else the dungeon's own name, so nobody is sent
+anywhere) and a raid flag. One Farmer saw drops in is written into
+`Data/ForeverDrops.lua` as a `Sources.DUNGEONS` row, its levels from the
+mobs looted there (1 to 60 when none were read). Still only at each
+release's fold-in; a new Forever dungeon needs one line there. Tested in
+`tools/test_forever_drops.py`.
+
 Gear Forever changed (the owner said "do it all", 2026-10-12, to using
 the Forever client's game tables in every addon): `tools/forever_items.py
 <tables folder> --build <build>` reads only the client's `ItemSparse.csv`

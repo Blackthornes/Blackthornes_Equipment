@@ -53,6 +53,9 @@ jobs:
       - name: The Forever item tool keeps only what changed
         run: python tools/test_forever_items.py
 
+      - name: The Forever drops tool keeps Forever's own dungeons
+        run: python tools/test_forever_drops.py
+
       - name: The Forever vendor tool reads a save as data only
         run: python tools/test_forever_vendors.py
 
