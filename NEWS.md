@@ -23,6 +23,16 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.28.0
+
+- You can mark a character, such as a crafting alt, to skip upgrades, so it never gets gear offered or arrows.
+- Upgrade quests and vendor gear are learned as you play, which helps most in zones the data doesn't cover.
+
+Fixes and changes:
+
+- Skyborne characters only see their own side's quests and gear.
+- Several bug fixes for the training drawer and the gear window.
+
 ## 0.27.1
 
 Fixes and changes:
