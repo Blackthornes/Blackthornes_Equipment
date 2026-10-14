@@ -142,10 +142,10 @@ end
 function TomTomLink:Command(word)
     if word == "on" or word == "off" then self:SetOn(word == "on") else self:SetOn(not TomTomLink.IsOn()) end
     if not TomTomLink.IsOn() then
-        ns.Print(L["TomTom not used: the quest arrow shows its own dial."])
+        ns.Print(L["TomTom is off. The quest arrow shows its own dial."])
     elseif TomTomLink.Installed() then
-        ns.Print(L["TomTom used: its arrow shows the quest arrow's place."])
+        ns.Print(L["TomTom is on. Its arrow points where the quest arrow would."])
     else
-        ns.Print(L["TomTom will be used once it is installed."])
+        ns.Print(L["TomTom takes over once it's installed."])
     end
 end

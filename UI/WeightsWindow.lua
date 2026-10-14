@@ -499,7 +499,7 @@ function WeightsUI:BuildFooter()
     hint:SetWordWrap(true)
     hint:SetHeight(30)
     hint:SetJustifyV("BOTTOM")
-    hint:SetText(L["A weight is what one point of a stat is worth. 0 ignores the stat. A weapon type multiplies that kind of weapon's whole score: 1 is no change. Changes count at once, for every character of that class."])
+    hint:SetText(L["A weight is what one point of a stat is worth, and 0 ignores the stat. A weapon type multiplies that kind of weapon's whole score, so 1 means no change. Changes apply right away, for every character of that class."])
     self.hint = hint
 
     self.reset = Widgets.CreateButton(frame, L["Use the built-in weights"], function()

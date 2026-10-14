@@ -234,7 +234,7 @@ suite.check("/beq spec tank makes a warrior Protection", spec == "prot" and why 
 env.chat = {}
 ns.HandleSlash("spec holy")
 suite.check("a warrior cannot be Holy",
-    env.ChatText():find("not a spec: holy (try arms, fury, prot, auto)", 1, true), env.ChatText())
+    env.ChatText():find("holy isn't a spec (try arms, fury, prot, auto)", 1, true), env.ChatText())
 
 ns = As("PALADIN", {})
 ns.HandleSlash("spec holy")

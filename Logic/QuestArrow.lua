@@ -233,7 +233,7 @@ function QuestArrow:Aim(index)
     -- On first: turning it on forgets any earlier pick.
     if not QuestArrow.IsOn() then
         self:SetOn(true)
-        ns.Print(L["quest arrow on. Its red gem, /beq arrow off or Settings hides it."])
+        ns.Print(L["quest arrow on. To hide it, click its red gem, type /beq arrow off or use Settings."])
     end
     self.pinned = { stamp = Stamp(quest), key = QuestArrow.Key({ zone = place.zone,
         x = tonumber(place.x), y = tonumber(place.y) }), place = {
@@ -256,7 +256,7 @@ function QuestArrow:AimAtQuest(questID, title, place)
     self.pinned, self.choice = nil, nil
     if not QuestArrow.IsOn() then
         ns.db.questArrow = true
-        ns.Print(L["quest arrow on. Its red gem, /beq arrow off or Settings hides it."])
+        ns.Print(L["quest arrow on. To hide it, click its red gem, type /beq arrow off or use Settings."])
         for _, name in ipairs({ "QuestPanel", "SettingsUI" }) do
             local module = ns[name]
             if module and module.OnQuestArrowChanged then pcall(module.OnQuestArrowChanged, module) end
@@ -580,7 +580,7 @@ end
 function QuestArrow.Note(target)
     if target.far then return L.Format("Far from here: head for %s", target.zone or L["it"]), "muted" end
     if target.here then return L["No exact spot known in this zone"], "accent" end
-    if target.area then return L["The middle of the zone: no exact spot known"], "accent" end
+    if target.area then return L["The middle of the zone, since no exact spot is known"], "accent" end
     if target.forQuest then return target.forQuest, "good" end
     return L.Format("Step %d", target.step or 1), "good"
 end
@@ -755,10 +755,10 @@ local function Status()
         if QuestArrow:Quest() then
             ns.Print(L["quest arrow on. Click it for the next tab's quest, right-click for the next place."])
         else
-            ns.Print(L["quest arrow on. It shows while the upgrade quest has a quest: /beq quest."])
+            ns.Print(L["quest arrow on. It shows whenever the upgrade quest has a quest (/beq quest)."])
         end
     else
-        ns.Print(L["quest arrow off. /beq arrow on shows it."])
+        ns.Print(L["quest arrow off. /beq arrow on brings it back."])
     end
 end
 

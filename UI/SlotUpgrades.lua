@@ -118,9 +118,9 @@ function SlotUpgrades:AddLines(tooltip, slot, picks)
     if #picks == 0 then
         local latest = ns.Finder and ns.Finder.latest
         if not latest and ns.Finder and ns.Finder:Scanning() then
-            tooltip:AddLine(L["Looking for upgrades, hover again in a moment"], Theme.Unpack("muted"))
+            tooltip:AddLine(L["Looking for upgrades. Hover again in a moment"], Theme.Unpack("muted"))
         elseif latest and (latest.waiting or 0) > 0 then
-            tooltip:AddLine(L["Still reading gear from the server, hover again in a moment"],
+            tooltip:AddLine(L["Still loading gear from the server. Hover again in a moment"],
                 Theme.Unpack("muted"))
         else
             tooltip:AddLine(L["Nothing on offer beats this yet"], Theme.Unpack("muted"))

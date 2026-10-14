@@ -218,7 +218,7 @@ function QuestPanel:BuildStep(index)
         end
     end, false)
     row.track:SetWidth(MARK)
-    Explain(row.track, L["Track"], L["Tick to track this quest, as the game's tracker does."])
+    Explain(row.track, L["Track"], L["Tick to track this quest, same as in the game's tracker."])
     row.track:Hide()
 
     local title = CreateFrame("Button", nil, row)
@@ -467,7 +467,7 @@ function QuestPanel:BuildFilters(frame)
     end, ns.UpgradeQuest and ns.UpgradeQuest:ZoneOnly())
     zone:SetPoint("TOPLEFT", PAD, -2)
     ExplainBelow(zone, L["This zone only"],
-        L["Only upgrades from the zone you are in: a vendor, a quest giver or a dungeon's entrance here. Each tab picks again as you travel, unless Change on a new zone is unticked. Untick it to look anywhere. An upgrade you chose in Where to get upgrades stays either way."])
+        L["Only upgrades from the zone you're in, from a vendor, a quest giver or a dungeon entrance here. Each tab picks again as you travel, unless Change on a new zone is unticked. Untick it to look everywhere. An upgrade you picked in Where to get upgrades stays either way."])
     self.zoneBox = zone
 
     -- The same switch as in Where to get upgrades and Settings.
@@ -522,7 +522,7 @@ function QuestPanel:BuildFilters(frame)
     levels:SetWidth(math.max(118, widest + 22 * 2 + 4 * 2 + 16))
     levels:SetPoint("LEFT", levelLabel, "RIGHT", 8, 0)
     ExplainBelow(levels, L["Quest level"],
-        L["How far above your level a quest may be and still be picked. Quests 5 or more levels up show in red in your quest log. The same limit as in Where to get upgrades."])
+        L["How many levels above you a quest can be and still be picked. Quests 5 or more levels up show in red in your quest log. The same limit as in Where to get upgrades."])
     self.levelStepper = levels
 
     local settingsText = L["Settings"]
@@ -563,7 +563,7 @@ function QuestPanel:ExplainClose(trim)
     close:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText(L["Close the upgrade quest"], Theme.Unpack("accent"))
-        GameTooltip:AddLine(L["Your quests are kept. To bring it back, click Upgrade quest in the gear window, Shift-click the minimap button, or type /beq quest."], 1, 1, 1, true)
+        GameTooltip:AddLine(L["Your quests are saved. To bring it back, click Upgrade quest in the gear window, Shift-click the minimap button, or type /beq quest."], 1, 1, 1, true)
         GameTooltip:Show()
     end)
 end
@@ -730,7 +730,7 @@ function QuestPanel:Build()
         if ns.UpgradeQuest then ns.UpgradeQuest:KeepCurrent() end
     end, { width = 96, height = 22 })
     keep:SetPoint("LEFT", switch, "RIGHT", 10, 0)
-    Explain(keep, L["Keep current"], L["Stay on the upgrade you are following. This one is not offered again until you log in again."])
+    Explain(keep, L["Keep current"], L["Stay on the upgrade you're following. This one won't be offered again until you next log in."])
     self.keepButton = keep
 
     -- The item: hover for its tooltip, shift-click to link it.
@@ -843,7 +843,7 @@ function QuestPanel:Build()
     local skip = Widgets.CreateButton(body, L["Ignore"], function()
         if ns.UpgradeQuest then ns.HandleSlash("quest ignore") end
     end, { width = 60, height = 22 })
-    Explain(skip, L["Ignore this upgrade"], L["Never offer it again on this character, and get a quest for the next best one. Settings > Upgrade quest > Ignored brings it back."])
+    Explain(skip, L["Ignore this upgrade"], L["Never offer it again on this character, and get a quest for the next best one. To bring it back, go to Settings > Upgrade quest > Ignored."])
     self.skipButton = skip
 
     self.frame = frame
@@ -1069,10 +1069,10 @@ function QuestPanel:FillBody(quest, steps, current, done)
         if state == "waiting" then
             text = L["Looking for your next upgrade..."]
         elseif ns.UpgradeQuest:ZoneOnly() then
-            text = L.Format("%s Only this zone is searched: untick This zone only to look anywhere, or try another tab.",
+            text = L.Format("%s Only this zone is searched. Untick This zone only to look everywhere, or try another tab.",
                 ns.UpgradeQuest.NONE[ns.UpgradeQuest:Tab()] or L["No upgrade to chase right now."])
         else
-            text = L.Format("%s A new one comes up as you level. Try another tab, or click Pick one to choose from every upgrade on offer, gear tied to a reputation you have reached included.",
+            text = L.Format("%s A new one comes up as you level. Try another tab, or click Pick one to choose from every upgrade on offer, including gear from a reputation you've already reached.",
                 ns.UpgradeQuest.NONE[ns.UpgradeQuest:Tab()] or L["No upgrade to chase right now."])
         end
         self.empty:SetText(text)
@@ -1178,8 +1178,8 @@ function QuestPanel:FillOffer(offer)
         self.offerBox:Hide()
         return 0
     end
-    local title = offer.level and L.Format("New upgrade unlocked at level %d", offer.level)
-        or L["New upgrade unlocked"]
+    local title = offer.level and L.Format("New upgrade on offer at level %d", offer.level)
+        or L["New upgrade on offer"]
     self.offerTitle:SetText(title)
     local titleLines = QuestPanel.Lines("small", title, WIDTH - PAD * 2 - OFFER_PAD * 2)
 
@@ -1521,8 +1521,8 @@ function QuestPanel:BuildSizeGrip()
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText(QuestPanel.ScaleText(QuestPanel.ScaleOf(frame)), Theme.Unpack("accentHi"))
         GameTooltip:AddLine(L["Drag to make the panel bigger or smaller."], 1, 1, 1, true)
-        GameTooltip:AddLine(L["Right-click: back to the normal size."], 1, 1, 1, true)
-        GameTooltip:AddLine(L["Also in Settings, and /beq quest size."], Theme.Unpack("accent"))
+        GameTooltip:AddLine(L["Right-click to go back to normal size."], 1, 1, 1, true)
+        GameTooltip:AddLine(L["You can also set it in Settings or with /beq quest size."], Theme.Unpack("accent"))
         GameTooltip:Show()
     end)
     grip:SetScript("OnLeave", function()

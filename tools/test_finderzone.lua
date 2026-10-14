@@ -63,7 +63,7 @@ suite.check("the window has the tick box", UI.zone ~= nil and not UI.zone:GetChe
 suite.check("named as on the quest panel", UI.zone.label:GetText() == "This zone only")
 UI.zone:GetScript("OnEnter")(UI.zone)
 local tip = table.concat(GameTooltip._lines, "\n")
-suite.check("hovering says what it does", tip:find("zone you are in", 1, true) ~= nil, tip)
+suite.check("hovering says what it does", tip:find("zone you're in", 1, true) ~= nil, tip)
 UI.zone:GetScript("OnLeave")(UI.zone)
 
 UI.zone:GetScript("OnClick")(UI.zone)

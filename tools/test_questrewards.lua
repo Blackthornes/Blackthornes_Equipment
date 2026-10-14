@@ -157,7 +157,7 @@ suite.check("and not on the others", not Coin(buttons[1]):IsShown() and not Coin
 suite.check("with no arrow", not ns.BagIcons:ExistingArrow(buttons[2]))
 ns.QuestRewards:QUEST_COMPLETE()
 said = env.ChatText()
-suite.check("chat says which to take", said:find("take item:4, it sells for the most", 1, true), said)
+suite.check("chat says which to take", said:find("so take item:4. It sells for the most", 1, true), said)
 suite.check("and for how much", said:find("5s", 1, true), said)
 
 -- An upgrade among the choices takes the coin off.
