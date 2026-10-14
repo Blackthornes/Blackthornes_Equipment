@@ -26,8 +26,10 @@ local ROW = 20
 local ICON = 16
 local FOOT = 44
 
--- How many lines the drawer holds; past that, one says how many more.
-Drawer.MAX_LINES = 20
+-- How many lines the drawer holds; past that, one says how many more. Its
+-- well is 384 pixels tall, so 19 rows of 20 fit and a 20th spilled over the
+-- footer and the Show the way button.
+Drawer.MAX_LINES = 19
 
 --------------------------------------------------------------------------------
 -- Construction
@@ -230,10 +232,16 @@ function Drawer:Lines()
     if #others > 0 then
         lines[#lines + 1] = { heading = true, text = L["YOUR OTHER CHARACTERS"] }
         for _, other in ipairs(others) do
+            -- The whole name on a line of its own, with the cost beside it,
+            -- so a long first and last name is never cut short.
             lines[#lines + 1] = {
-                text = other.count == 1 and L.Format("%s: 1 spell at level %d", other.name or "?", other.level or 0)
-                    or L.Format("%s: %d spells at level %d", other.name or "?", other.count, other.level or 0),
-                right = training.CostText(other.cost, other.unknown, other.count), color = "muted",
+                text = other.name or "?",
+                right = training.CostText(other.cost, other.unknown, other.count), color = "text",
+            }
+            lines[#lines + 1] = {
+                text = other.count == 1 and L.Format("1 spell at level %d", other.level or 0)
+                    or L.Format("%d spells at level %d", other.count, other.level or 0),
+                color = "muted", indent = true,
             }
         end
     end
@@ -269,7 +277,7 @@ function Drawer:Refresh()
             row.right:SetTextColor(Theme.Unpack(line.heading and "accent" or "muted"))
             row.icon:SetShown(line.icon ~= nil)
             if line.icon then row.icon:SetTexture(line.icon) end
-            row.text:SetPoint("LEFT", line.icon and (6 + ICON + 6) or 6, 0)
+            row.text:SetPoint("LEFT", (line.icon or line.indent) and (6 + ICON + 6) or 6, 0)
             row:Show()
         else
             row:Hide()

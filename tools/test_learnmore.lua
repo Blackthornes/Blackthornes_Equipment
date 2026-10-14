@@ -22,6 +22,8 @@ env.InstallItems(ITEMS, { [5] = "item:900" }, { [0] = {} }, 6)
 -- Items by ID, as the learning code asks: gear except 1009, a potion.
 _G.C_Item.GetItemInfoInstant = function(id)
     if id == 1009 then return id, "Consumable", "Potion", "" end
+    -- What this client gives every item that cannot be worn.
+    if id == 1011 then return id, "Consumable", "Potion", "INVTYPE_NON_EQUIP_IGNORE" end
     return id, "Armor", "Mail", "INVTYPE_CHEST"
 end
 local loaded = true
@@ -79,6 +81,7 @@ suite.check("with the gear it rewards, not the potion", rec and #rec.rewards == 
     and rec.rewards[1][1] == 1001 and rec.rewards[1][4] == false
     and rec.rewards[2][1] == 1002 and rec.rewards[2][4] == true)
 suite.check("and the side it was seen by", rec and rec.side == "A")
+suite.check("and opens at the level it was in the log", rec and rec.min == 6)
 suite.check("a quest with no gear is kept as a quest", ns.db.learnedQuests[92465] ~= nil
     and #ns.db.learnedQuests[92465].rewards == 0)
 suite.check("the log's own pick is put back", selected == 7)
@@ -176,5 +179,16 @@ Spots:LayAllVendors()
 suite.check("shipped vendors are laid over the data", S.NPCS[250010] and S.ITEMS[1001].v[1] == 250010)
 suite.check("and so are the ones this account learned", S.NPCS[250001] ~= nil and S.ITEMS[1002] ~= nil)
 suite.check("laying twice adds nothing twice", Spots:LayAllVendors() == false and #S.ITEMS[1001].v == 4)
+
+-- Goods that cannot be worn are not gear
+_G.UnitGUID = function(unit) return unit == "npc" and "Creature-0-1-2-3-250004-0000A4" or nil end
+stock = { { id = 1011, price = 20, stack = 1, avail = -1 } }
+suite.check("a potion sold one at a time is not learned", Spots:LearnStock() == 0
+    and ns.db.learnedVendors[250004] == nil)
+suite.check("nor laid when an older save kept one", Spots:LayVendor(250005, { name = "Old", side = "A",
+    items = { [1011] = { 20, 0, 0, false } } }) == true and S.ITEMS[1011] == nil)
+Learn:Lay(92999, { title = "Old record", level = 5, rewards = { { 1011, 0, 1, true } } })
+suite.check("or as a quest reward", S.QUESTS[92999] ~= nil and S.ITEMS[1011] == nil)
+suite.check("and the old records stay saved", true)
 
 suite.done()

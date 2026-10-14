@@ -296,7 +296,8 @@ function NPCSpots:LayVendor(npcID, rec)
         added = true
     end
     for itemID, row in pairs(rec.items) do
-        if type(itemID) == "number" and type(row) == "table" then
+        local notWorn = ns.QuestLearn and ns.QuestLearn.NotWorn
+        if type(itemID) == "number" and type(row) == "table" and not (notWorn and notWorn(itemID)) then
             local item = S.ITEMS[itemID]
             if not item then
                 local ilvl = tonumber(row[3]) or 0

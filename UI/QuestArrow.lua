@@ -496,6 +496,9 @@ function ArrowUI:WatchXPBar()
                 local function Check() ArrowUI:AvoidXPBar() end
                 bar:HookScript("OnShow", Check)
                 bar:HookScript("OnSizeChanged", Check)
+                -- The bar gone (the level cap, or turned off): back to the
+                -- saved spot, as Farmer's and Pets' dials do.
+                bar:HookScript("OnHide", function() ArrowUI:RestorePosition() end)
             end
             if bar then ArrowUI:AvoidXPBar() end
         end

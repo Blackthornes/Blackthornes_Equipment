@@ -1127,8 +1127,12 @@ function QuestPanel:FillBody(quest, steps, current, done)
     local only = ns.UpgradeQuest:StepOnly() and (steps[current] and current or #steps) or nil
     local place = 0
     for index, step in ipairs(steps) do
+        -- A long chain can have more steps than were built up front.
         local row = self.steps[index]
-        if not row then break end
+        if not row then
+            row = self:BuildStep(index)
+            self.steps[index] = row
+        end
         if not only or index == only then
             place = place + 1
             local stepHeight = self:FillStep(row, index, step, current, place)

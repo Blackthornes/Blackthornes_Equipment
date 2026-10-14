@@ -130,7 +130,9 @@ function QuestLearn:Lay(questID, rec)
 
     for _, reward in ipairs(type(rec.rewards) == "table" and rec.rewards or {}) do
         local itemID = type(reward) == "table" and tonumber(reward[1])
-        if itemID then
+        -- A reward kept before non-gear was turned away stays saved, but is
+        -- not laid over the data.
+        if itemID and not QuestLearn.NotWorn(itemID) then
             local item = S.ITEMS[itemID]
             if not item then
                 local level = tonumber(rec.level) or tonumber(rec.min) or 1
@@ -190,19 +192,38 @@ end
 
 QuestLearn.ItemIDFromLink = ItemIDFromLink
 
+-- Equip slots that are not something to wear. This client gives every
+-- item that cannot be worn INVTYPE_NON_EQUIP_IGNORE, so potions and other
+-- goods a vendor or quest hands out are not taken for gear.
+local NOT_WORN = { [""] = true, INVTYPE_BAG = true, INVTYPE_NON_EQUIP = true,
+    INVTYPE_NON_EQUIP_IGNORE = true }
+
+--- The item's equip slot from GetItemInfoInstant, or nil when unknown.
+local function EquipLoc(itemID)
+    local C = _G.C_Item
+    local instant = (type(C) == "table" and C.GetItemInfoInstant) or _G.GetItemInfoInstant
+    if type(instant) ~= "function" then return nil end
+    local result = { pcall(instant, itemID) }
+    if not result[1] then return nil end
+    local ok, loc = pcall(function()
+        if type(result[5]) == "string" then return result[5] .. "" end
+    end)
+    return ok and loc or nil
+end
+
+--- True only when the client says the item cannot be worn. Unknown items
+--- are not turned away, so nothing learned is dropped on a guess.
+function QuestLearn.NotWorn(itemID)
+    local equipLoc = EquipLoc(itemID)
+    return equipLoc ~= nil and NOT_WORN[equipLoc] == true
+end
+
 --- Is an item gear, and its required level and item level (0 while the
 --- client has not loaded it). Nil for anything that is not gear.
 function QuestLearn.Gear(itemID)
     local C = _G.C_Item
-    local _, _, _, equipLoc
-    if type(C) == "table" and C.GetItemInfoInstant then
-        local result = { pcall(C.GetItemInfoInstant, itemID) }
-        if result[1] then equipLoc = result[5] end
-    elseif type(_G.GetItemInfoInstant) == "function" then
-        local result = { pcall(_G.GetItemInfoInstant, itemID) }
-        if result[1] then equipLoc = result[5] end
-    end
-    if type(equipLoc) ~= "string" or equipLoc == "" or equipLoc == "INVTYPE_BAG" then return nil end
+    local equipLoc = EquipLoc(itemID)
+    if type(equipLoc) ~= "string" or NOT_WORN[equipLoc] then return nil end
     local getInfo = (type(C) == "table" and C.GetItemInfo) or _G.GetItemInfo
     local info = { pcall(getInfo or error, itemID) }
     local ilvl, req
@@ -338,6 +359,8 @@ function QuestLearn:ReadLogQuest(line)
     end)
     if restore then pcall(restore) end
     local rec = { title = title, rewards = rewards }
+    -- In the log, so it opens at or below the character's level.
+    rec.playerLevel = Number(Read(_G.UnitLevel, "player"))
     local level = Number(line.level)
     if level and level > 0 then rec.level = level end
     local side = ns.Finder and ns.Finder.Side and ns.Finder.Side()
