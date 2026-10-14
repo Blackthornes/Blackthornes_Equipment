@@ -24,6 +24,10 @@
 -- learned: a new quest gets a row, and a reward gets the quest in its `q`
 -- list. Nothing Classic says is replaced.
 --
+-- Quests already in the log are read the same way from the quest log, once
+-- after login and as each is accepted, so a quest picked up before its
+-- window could be read is learned too (with no giver).
+--
 -- Every client value is read inside a pcall and copied: in an instance the
 -- game hands out secret values that raise when touched. A quest window is
 -- one read, so nothing here runs on bag events.
@@ -72,6 +76,8 @@ local function ZoneID(name)
     zones[top + 1] = name
     return top + 1
 end
+
+QuestLearn.ZoneID = ZoneID
 
 local function Has(list, value)
     for _, v in ipairs(list or {}) do
@@ -128,7 +134,8 @@ function QuestLearn:Lay(questID, rec)
             local item = S.ITEMS[itemID]
             if not item then
                 local level = tonumber(rec.level) or tonumber(rec.min) or 1
-                item = { tonumber(reward[2]) or 0, tonumber(reward[3]) or level, 0, 0, 0, learned = true }
+                local ilvl = tonumber(reward[3]) or 0
+                item = { tonumber(reward[2]) or 0, ilvl > 0 and ilvl or level, 0, 0, 0, learned = true }
                 S.ITEMS[itemID] = item
             end
             if not Has(item.q, questID) then
@@ -181,12 +188,11 @@ local function ItemIDFromLink(link)
     return ok and id or nil
 end
 
---- One reward as { itemID, required level, item level, given }, or nil for
---- anything that is not gear. `kind` is "choice" or "reward".
-local function ReadReward(kind, index)
-    local link = Plain(Read(_G.GetQuestItemLink, kind, index))
-    local itemID = ItemIDFromLink(link)
-    if not itemID then return nil end
+QuestLearn.ItemIDFromLink = ItemIDFromLink
+
+--- Is an item gear, and its required level and item level (0 while the
+--- client has not loaded it). Nil for anything that is not gear.
+function QuestLearn.Gear(itemID)
     local C = _G.C_Item
     local _, _, _, equipLoc
     if type(C) == "table" and C.GetItemInfoInstant then
@@ -201,7 +207,18 @@ local function ReadReward(kind, index)
     local info = { pcall(getInfo or error, itemID) }
     local ilvl, req
     if info[1] then ilvl, req = Number(info[5]), Number(info[6]) end
-    return { itemID, req or 0, ilvl or 0, kind == "reward" }
+    return req or 0, ilvl or 0
+end
+
+--- One reward as { itemID, required level, item level, given }, or nil for
+--- anything that is not gear. `kind` is "choice" or "reward"; `linkOf`
+--- gives the reward's link (the quest window's, or the quest log's).
+local function ReadReward(kind, index, linkOf)
+    local itemID = ItemIDFromLink(Plain(Read(linkOf or _G.GetQuestItemLink, kind, index)))
+    if not itemID then return nil end
+    local req, ilvl = QuestLearn.Gear(itemID)
+    if not req then return nil end
+    return { itemID, req, ilvl, kind == "reward" }
 end
 
 --- What the open quest window says, without keeping it: the quest's ID,
@@ -292,6 +309,76 @@ function QuestLearn:Learn(questID, seen)
     return true
 end
 
+--------------------------------------------------------------------------------
+-- Reading the quest log
+--------------------------------------------------------------------------------
+
+--- What the quest log says about one quest in it, without keeping it: the
+--- same as a quest window's reading, with no giver. The quest is picked in
+--- the log for the reward calls and the old pick put back. Nil when the
+--- quest cannot be told.
+function QuestLearn:ReadLogQuest(line)
+    local questID = line and Number(line.questID)
+    local title = line and Plain(line.title)
+    if not questID or questID <= 0 or not title then return nil end
+    local QL = ns.QuestLog
+    local restore = QL and QL.Pick and QL.Pick(line)
+    local rewards = {}
+    pcall(function()
+        for _, kind in ipairs({ "choice", "reward" }) do
+            local counter = kind == "choice" and _G.GetNumQuestLogChoices or _G.GetNumQuestLogRewards
+            local count = Number(Read(counter, questID)) or 0
+            for index = 1, math.min(count, REWARDS_MOST) do
+                local reward = ReadReward(kind, index, function(k, i)
+                    return _G.GetQuestLogItemLink(k, i, questID)
+                end)
+                if reward then rewards[#rewards + 1] = reward end
+            end
+        end
+    end)
+    if restore then pcall(restore) end
+    local rec = { title = title, rewards = rewards }
+    local level = Number(line.level)
+    if level and level > 0 then rec.level = level end
+    local side = ns.Finder and ns.Finder.Side and ns.Finder.Side()
+    if side == "Alliance" or side == "Horde" then rec.side = side == "Alliance" and "A" or "H" end
+    return questID, rec
+end
+
+--- Learn from every quest in the log: quests picked up before this addon
+--- learned, or whose window it missed. Reads a few quests a frame.
+QuestLearn.LOG_PER_STEP = 4
+
+function QuestLearn:LearnLog(only)
+    local QL = ns.QuestLog
+    if not (QL and QL.Size and QL.Line) then return end
+    local size, how = QL.Size()
+    if not how then return end
+    local lines = {}
+    for index = 1, math.min(size, 80) do
+        local line = QL.Line(index, how)
+        if line and not line.header and line.questID and (not only or line.questID == only) then
+            lines[#lines + 1] = line
+        end
+    end
+    local at = 1
+    local function Step()
+        if _G.InCombatLockdown and Read(_G.InCombatLockdown) then
+            if _G.C_Timer then _G.C_Timer.After(2, Step) end
+            return
+        end
+        for _ = 1, QuestLearn.LOG_PER_STEP do
+            local line = lines[at]
+            if not line then return end
+            at = at + 1
+            local questID, seen = QuestLearn:ReadLogQuest(line)
+            if questID then QuestLearn:Learn(questID, seen) end
+        end
+        if lines[at] and _G.C_Timer then _G.C_Timer.After(0, Step) end
+    end
+    Step()
+end
+
 function QuestLearn:OnQuestWindow(offer)
     local questID, seen = self:Read(offer)
     if questID then self:Learn(questID, seen) end
@@ -301,4 +388,17 @@ function QuestLearn:OnEnable()
     pcall(self.LayAll, self)
     ns.RegisterEvent(self, "QUEST_DETAIL", function() QuestLearn:OnQuestWindow(true) end)
     ns.RegisterEvent(self, "QUEST_COMPLETE", function() QuestLearn:OnQuestWindow(false) end)
+    -- The log: once after login (and again, for rewards the client loads
+    -- late), and each quest as it is accepted.
+    if _G.C_Timer then
+        _G.C_Timer.After(6, function() QuestLearn:LearnLog() end)
+        _G.C_Timer.After(30, function() QuestLearn:LearnLog() end)
+    end
+    ns.RegisterEvent(self, "QUEST_ACCEPTED", function(_, _, a, b)
+        -- Retail passes the quest ID first; older clients the log index, then the ID.
+        local questID = Number(b) or Number(a)
+        if questID and _G.C_Timer then
+            _G.C_Timer.After(1, function() QuestLearn:LearnLog(questID) end)
+        end
+    end)
 end

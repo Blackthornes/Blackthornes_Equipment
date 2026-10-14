@@ -187,6 +187,8 @@ local function Tag(quest)
     return nil
 end
 
+QuestLog.Line = Line
+
 --- The whole log, in its order: { zones = { { title, collapsed, quests } },
 --- count, tracked }. A heading folded in the game's own quest log hides its
 --- quests from addons too, so it comes back with `collapsed` and no quests.
@@ -389,6 +391,7 @@ local function Pick(quest)
     end
     return nil
 end
+QuestLog.Pick = Pick
 
 --- Can the quest be shared with the group right now?
 function QuestLog:CanShare(quest)
