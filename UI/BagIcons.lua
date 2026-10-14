@@ -351,6 +351,12 @@ end
 function BagIcons:Sells(bag, slot, link, result)
     if not self:CoinsEnabled() then return false end
     if type(result) ~= "table" or result.verdict == "upgrade" then return false end
+    -- On a character skipped for upgrades, gear one of the others would
+    -- wear is kept for them, not sold (a crafting alt making gear for a main).
+    if result.skipped and ns.Alts then
+        local ok, alt = pcall(ns.Alts.BestFor, ns.Alts, link)
+        if not ok or alt then return false end
+    end
 
     local info = Items:Info(link)
     if not info or KEEP_LOC[info.equipLoc] then return false end

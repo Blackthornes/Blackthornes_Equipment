@@ -335,6 +335,22 @@ function SettingsUI:BuildGear()
     controls.upgradeChat = Tick(chatRow, L["Say so"], "upgradeChat", true)
     self.chatRow = chatRow
 
+    -- Characters skipped for upgrades (a player asked, the owner agreed
+    -- 2026-10-14): pick one by its whole name, then tick it.
+    pages:Section("gear", 1, L["YOUR CHARACTERS"])
+    local pickRow = pages:Row("gear", 1, L["Character"],
+        L["Pick one of your characters. Each one shows up here once it has logged in with this addon."])
+    controls.skipPicker = SettingsUI.CharacterPicker(pickRow, CONTROL_X, function() SettingsUI:RefreshSkip() end)
+
+    local skipRow = pages:Row("gear", 1, L["Skip upgrades"],
+        function() return SettingsUI:SkipHint() end)
+    controls.skipUpgrades = Widgets.CreateCheckbox(skipRow, L["Skip this one"], function(checked)
+        local entry = controls.skipPicker:GetEntry()
+        if entry and ns.Alts then ns.Alts:SetSkipped(entry.key, checked) end
+    end, false)
+    controls.skipUpgrades:SetPoint("TOPLEFT", CONTROL_X, -2)
+    self.skipRow = skipRow
+
     pages:Section("gear", 2, L["GEAR WINDOW"])
 
     local windowRow = pages:Row("gear", 2, L["Gear window"],
@@ -383,6 +399,81 @@ function SettingsUI:BuildGear()
         L["Lists in chat the spells you can train now, what each costs, the next level's and your other characters'. Same as /beq training."],
         L["List them"], "training")
     controls.trainingReport = trainingButton
+end
+
+--- Steps through the player's characters by whole name, wrapped rather
+--- than cut short (Butler's picker). :SetEntries(list of { key, name }),
+--- :GetEntry().
+function SettingsUI.CharacterPicker(row, x, onChange)
+    local picker = CreateFrame("Frame", nil, row)
+    picker:SetSize(180, 24)
+    picker:SetPoint("TOPLEFT", x, 0)
+    picker.entries, picker.index = {}, 1
+
+    local text = Theme.CreateLabel(picker, "small", "text", "CENTER")
+    text:SetPoint("LEFT", 26, 0)
+    text:SetPoint("RIGHT", -26, 0)
+    text:SetWordWrap(true)
+
+    local function Show()
+        local count = #picker.entries
+        picker.index = math.max(1, math.min(picker.index, math.max(1, count)))
+        local entry = picker.entries[picker.index]
+        text:SetText(entry and (entry.name or L["A character not seen yet"]) or L["No characters yet"])
+        picker.prev:SetDimmed(picker.index <= 1)
+        picker.next:SetDimmed(picker.index >= count)
+    end
+
+    local function Step(direction)
+        local wanted = picker.index + direction
+        if wanted < 1 or wanted > #picker.entries then return end
+        picker.index = wanted
+        Show()
+        if onChange then onChange() end
+    end
+
+    picker.prev = Widgets.CreateButton(picker, "<", function() Step(-1) end, { width = 22, height = 20 })
+    picker.prev:SetPoint("LEFT", 0, 0)
+    picker.next = Widgets.CreateButton(picker, ">", function() Step(1) end, { width = 22, height = 20 })
+    picker.next:SetPoint("RIGHT", 0, 0)
+
+    function picker:SetEntries(entries)
+        local current = self.entries[self.index]
+        self.entries = entries
+        self.index = 1
+        for index, entry in ipairs(entries) do
+            if current and entry.key == current.key then self.index = index end
+        end
+        Show()
+    end
+
+    function picker:GetEntry()
+        return self.entries[self.index]
+    end
+
+    Show()
+    return picker
+end
+
+--- What the Skip upgrades row says: what it does, and who is skipped.
+function SettingsUI:SkipHint()
+    local names = ns.Alts and ns.Alts:SkippedNames() or {}
+    if #names == 0 then
+        return L["A skipped character, such as one kept for crafting, is never told gear is an upgrade, and your other characters' gear is never offered to it. Same as /beq skip on the character playing."]
+    end
+    return L.Format("A skipped character, such as one kept for crafting, is never told gear is an upgrade, and your other characters' gear is never offered to it. Skipped now: %s.",
+        table.concat(names, ", "))
+end
+
+--- The picker's characters and the tick for the one shown.
+function SettingsUI:RefreshSkip()
+    local controls = self.controls
+    if not (controls and controls.skipPicker and ns.Alts) then return end
+    controls.skipPicker:SetEntries(ns.Alts:Characters())
+    local entry = controls.skipPicker:GetEntry()
+    controls.skipUpgrades:SetChecked(entry ~= nil and ns.Alts:IsSkipped(entry.key))
+    controls.skipUpgrades:SetAlpha(entry and 1 or 0.45)
+    if self.skipRow then self.skipRow:SetDescription(self:SkipHint()) end
 end
 
 --- What the Untrained weapons row says: which types this character
@@ -795,6 +886,7 @@ function SettingsUI:Refresh()
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:SetChecked(ns.db.suffixLine ~= false)
     controls.altTooltipLine:SetChecked(ns.db.altTooltipLine ~= false)
+    self:RefreshSkip()
     controls.classTraining:SetChecked(ns.ClassTraining:IsOn())
     for _, entry in ipairs(HUNTING) do
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)

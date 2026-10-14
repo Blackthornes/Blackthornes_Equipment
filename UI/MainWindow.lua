@@ -480,6 +480,8 @@ function UI:Refresh()
     self.footer:SetTextColor(Theme.Unpack(upgrades > 0 and "good" or "muted"))
     if not spec then
         self.footer:SetText(L.Format("There are no stat weights for %s yet.", class or L["this class"]))
+    elseif upgrades == 0 and ns.Alts and ns.Alts:PlayerSkipped() then
+        self.footer:SetText(L["Upgrades are skipped for this character. Untick it in Settings, or type /beq skip off."])
     elseif upgrades == 0 and owned > 0 then
         self.footer:SetTextColor(Theme.Unpack("accent"))
         if owned == 1 then

@@ -653,6 +653,8 @@ function Finder:JudgeKey()
     return table.concat({
         tostring(Items:WornSignature()), tostring(WornStatsRead()), tostring(Items:PlayerLevel()),
         tostring(Weights.generation or 0), tostring(self.judgeGeneration or 0),
+        -- A character skipped for upgrades has none (Alts:SetSkipped).
+        tostring(ns.Alts and ns.Alts:PlayerSkipped() or false),
         -- Learning Dual Wield changes what an off-hand weapon is judged
         -- against, and may come with no skill or talent event.
         tostring(Weights:CanDualWield(Weights:PlayerClass(), Items:PlayerLevel())),
