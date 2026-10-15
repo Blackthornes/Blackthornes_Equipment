@@ -584,7 +584,7 @@ function WeightsUI:ShowRowTooltip(row)
     end
     if row.entry.weapon then
         -- One sentence, wrapped by the tooltip rather than split in two.
-        GameTooltip:AddLine(L["Multiplies these weapons' whole score. 1.2 counts them a fifth higher, 0.8 a fifth lower, and 0 leaves them out."],
+        GameTooltip:AddLine(L["1 is no change, 1.2 counts these weapons a fifth more, and 0 leaves them out."],
             Theme.Unpack("muted"))
     end
     GameTooltip:AddLine(L["Type a number or use - and +."], Theme.Unpack("dim"))

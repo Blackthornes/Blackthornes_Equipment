@@ -85,7 +85,7 @@ suite.check("the window has the tick box", UI.solo ~= nil and not UI.solo:GetChe
 suite.check("named plainly", UI.solo.label:GetText() == "Solo quests only")
 UI.solo:GetScript("OnEnter")(UI.solo)
 local tip = table.concat(GameTooltip._lines, "\n")
-suite.check("hovering says what it hides", tip:find("dungeon, a raid or a battleground", 1, true) ~= nil, tip)
+suite.check("hovering says what it hides", tip:find("need a group", 1, true) ~= nil, tip)
 UI.solo:GetScript("OnLeave")(UI.solo)
 
 UI.solo:GetScript("OnClick")(UI.solo)

@@ -272,7 +272,7 @@ Panel.arrowButton:GetScript("OnClick")(Panel.arrowButton)
 suite.check("and on", Arrow.IsOn())
 Panel.arrowButton:GetScript("OnEnter")(Panel.arrowButton)
 tip = table.concat(GameTooltip._lines, "\n")
-suite.check("and says what it does", tip:find("pointing the way", 1, true) ~= nil, tip)
+suite.check("and says what it does", tip:find("Points the way", 1, true) ~= nil, tip)
 Panel.arrowButton:GetScript("OnLeave")(Panel.arrowButton)
 
 -- The footer still fits: Show on map and Arrow on the left, Change and

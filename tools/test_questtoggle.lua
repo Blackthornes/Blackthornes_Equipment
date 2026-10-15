@@ -30,7 +30,7 @@ local button = ns.UI.questButton
 suite.check("the gear window has an Upgrade quest button", button ~= nil and ns.UI.frame:IsShown())
 GameTooltip._lines = nil
 button:GetScript("OnEnter")(button)
-suite.check("off, its tooltip says a click brings it back", Tip():find("bring back", 1, true) ~= nil, Tip())
+suite.check("off, its tooltip says a click brings it back", Tip():find("Brings back", 1, true) ~= nil, Tip())
 button:GetScript("OnClick")(button, "LeftButton")
 suite.check("a click turns it on", Quest:IsEnabled() and Panel.frame and Panel.frame:IsShown())
 suite.check("and says so", env.ChatText():find("upgrade quest on", 1, true) ~= nil)
@@ -44,7 +44,7 @@ local gem = Panel.trim and rawget(Panel.trim, "closeButton")
 suite.check("the panel has a close gem", gem ~= nil)
 GameTooltip._lines = nil
 gem:GetScript("OnEnter")(gem)
-suite.check("its tooltip says how to bring it back", Tip():find("/beq quest", 1, true) ~= nil
+suite.check("its tooltip says how to bring it back", Tip():find("Shift-click the minimap button", 1, true) ~= nil
     and Tip():find("Upgrade quest in the gear window", 1, true) ~= nil, Tip())
 gem:GetScript("OnClick")(gem)
 suite.check("the close gem closes it", not Quest:IsEnabled() and not Panel.frame:IsShown())

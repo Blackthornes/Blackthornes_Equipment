@@ -136,7 +136,7 @@ function IgnoredUI:Build()
     end, { width = 96, height = 22, primary = true })
     self.restoreAll:SetPoint("BOTTOMLEFT", PADDING, 14)
     Explain(self.restoreAll, L["Restore all"],
-        L["Every ignored upgrade can be picked again. Same as /beq quest restore."])
+        L["Lets every ignored upgrade be picked again."])
 
     frame:Hide()
     return frame

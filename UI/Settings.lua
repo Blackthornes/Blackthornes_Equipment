@@ -767,7 +767,7 @@ function SettingsUI:WindowStyleControl(row)
         if ReloadUI then ReloadUI() end
     end, { width = 60, height = 20 })
     ns.SettingsPages.ReloadUnder(row, stepper, reload)
-    Explain(reload, L["Reload"], L["Reload the interface so the new window style shows (/reload)."])
+    Explain(reload, L["Reload"], L["Reload so the new window style shows."])
     reload:Hide()
     stepper.reload = reload
 
