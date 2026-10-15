@@ -4,6 +4,15 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.29.0
+
+For WoW: Forever (interface 16001). `/reload` is enough.
+
+- **Put on upgrades:** an upgrade that lands in your bags goes on by itself.
+  Off until you tick it on the Gear page of Settings, `/beq autoequip`. It
+  skips gear that binds when worn and gear a goal or queued craft needs, and
+  waits out combat.
+
 ## 0.28.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game
