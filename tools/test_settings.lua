@@ -216,7 +216,7 @@ suite.check("the command buttons run their commands",
 local covered = { sisters = true, whatsnew = true,
     window = true, bags = true, find = true, tracked = true, quest = true, arrow = true,
     probe = true, help = true, perf = true, spec = true, weights = true, minimap = true,
-    settings = true, weapons = true, training = true, skip = true,
+    settings = true, weapons = true, training = true, skip = true, autoequip = true,
 }
 for _, name in ipairs(ns.commandOrder) do
     suite.check("/beq " .. name .. " has a button in Settings", covered[name] == true)

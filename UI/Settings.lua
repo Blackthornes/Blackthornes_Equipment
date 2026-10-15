@@ -335,6 +335,10 @@ function SettingsUI:BuildGear()
     controls.upgradeChat = Tick(chatRow, L["Say so"], "upgradeChat", true)
     self.chatRow = chatRow
 
+    local autoRow = pages:Row("gear", 1, L["Put on upgrades"],
+        L["Puts an upgrade on as soon as it lands in your bags. Gear that would bind to you, or that a Farmer goal or a Tradeskills craft still needs, waits for your click. Never in a fight."])
+    controls.autoEquip = Tick(autoRow, L["Do it for me"], "autoEquip", false)
+
     -- Characters skipped for upgrades (a player asked, the owner agreed
     -- 2026-10-14): pick one by its whole name, then tick it.
     pages:Section("gear", 1, L["YOUR CHARACTERS"])
@@ -883,6 +887,7 @@ function SettingsUI:Refresh()
     controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)
     controls.hideGamepadBag:SetChecked(ns.db.hideGamepadBag ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
+    controls.autoEquip:SetChecked(ns.db.autoEquip == true)
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:SetChecked(ns.db.suffixLine ~= false)
     controls.altTooltipLine:SetChecked(ns.db.altTooltipLine ~= false)

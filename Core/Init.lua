@@ -461,6 +461,9 @@ local DEFAULTS = {
 
     -- A line in chat when an upgrade you can wear now lands in the bags.
     upgradeChat = true,
+    -- Put an upgrade on by itself when it lands in the bags
+    -- (Logic/Wear.lua, asked 2026-10-15). Off unless ticked.
+    autoEquip = false,
 
     -- Class spells to train (Logic/ClassTraining.lua): the gear window's
     -- Training button and drawer, and a line in chat at a level up. On

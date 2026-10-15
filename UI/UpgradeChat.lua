@@ -134,19 +134,32 @@ function UpgradeChat:Consider(link)
     if not result then return not MaybeGear(link) end
 
     if Compare.WearableUpgrade(result) and result.skill then
-        self:Untrained(link, result)
+        if self:IsEnabled() then self:Untrained(link, result) end
     elseif Compare.WearableUpgrade(result) then
-        ns.Print(L.Format("upgrade in your bags: %s |c%s%s|r",
-            link, ns.COLORS.upgrade, Compare:HowMuch(result)))
-        -- The banner too (UI/Toast.lua), unless it is a tracked upgrade,
-        -- which gets its own.
-        local itemID = tonumber(link:match("item:(%d+)"))
-        if ns.Toast and not (ns.Tracking and itemID and ns.Tracking:IsTracked(itemID)) then
-            ns.Toast:Show({ title = L["Upgrade in your bags"], link = link, wear = true,
-                text = ForWhom(result) })
-        end
+        -- "Put on upgrades" (Logic/Wear.lua) takes it when it may; the
+        -- usual line and banner come only if it is held back or the game
+        -- would not put it on.
+        local wear = ns.Wear
+        local taken = wear and wear:AutoOn() and wear:Auto(link, function(held, judged)
+            UpgradeChat:Announce(held, judged)
+        end)
+        if not taken then self:Announce(link, result) end
     end
     return true
+end
+
+--- The line in chat and the banner for an upgrade that waits for a click.
+function UpgradeChat:Announce(link, result)
+    if not self:IsEnabled() then return end
+    ns.Print(L.Format("upgrade in your bags: %s |c%s%s|r",
+        link, ns.COLORS.upgrade, Compare:HowMuch(result)))
+    -- The banner too (UI/Toast.lua), unless it is a tracked upgrade,
+    -- which gets its own.
+    local itemID = tonumber(link:match("item:(%d+)"))
+    if ns.Toast and not (ns.Tracking and itemID and ns.Tracking:IsTracked(itemID)) then
+        ns.Toast:Show({ title = L["Upgrade in your bags"], link = link, wear = true,
+            text = ForWhom(result) })
+    end
 end
 
 --- An upgrade whose weapon skill is not trained yet: no Put it on, which
@@ -212,7 +225,8 @@ function UpgradeChat:Scan()
     local wornNow = self:Worn()
     local wornBefore = self.worn or {}
     local before = self.counts
-    local quiet = before == nil or self.baseline or self.settling or not self:IsEnabled()
+    local autoOn = ns.Wear and ns.Wear:AutoOn()
+    local quiet = before == nil or self.baseline or self.settling or not (self:IsEnabled() or autoOn)
 
     -- A slot that could not be read would make everything in it look new on
     -- the next scan, so the next good scan only takes the counts again.

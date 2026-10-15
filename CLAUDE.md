@@ -663,6 +663,20 @@ with none what sells for the most, and calls `GetQuestReward(choice)`.
 unticked; never rename it). `/beq probe` lists the calls. Not yet seen in
 game.
 
+Put on upgrades (the owner asked 2026-10-15): with "Put on upgrades"
+ticked (`autoEquip`, account wide, off unless ticked, never rename it;
+Settings > Gear, `/beq autoequip [on|off]`), an upgrade that
+`UpgradeChat:Consider` finds new in the bags goes on through `Wear:Auto`,
+the same `Wear:Can` as Put it on. Held back to the usual line and banner
+(`Wear:HoldBack`): gear not soulbound that would bind when worn (bind type
+not 0), gear a Farmer goal names (`Goals:Find`) and gear Tradeskills'
+`Butler:Advise` says a queued craft needs (`need` or `mailTo`), all read in
+a pcall. Never in a fight (waits for `PLAYER_REGEN_ENABLED`); one piece at
+a time, each judged again once the one before is worn (`Wear.SETTLE`), and
+a piece the game would not put on falls back to the banner. A What's New
+card (`autoEquip`) offers to turn it on once. Tested in
+`tools/test_autoequip.lua`. Not yet seen in game.
+
 ## Sell coins in the bags
 
 The owner asked (2026-10-10) for a gold coin on bag gear worth selling:
