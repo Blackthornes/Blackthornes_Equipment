@@ -23,6 +23,10 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.29.0
+
+- Equipment can put an upgrade on for you as soon as it lands in your bags. It's off until you turn it on in Settings.
+
 ## 0.28.0
 
 - You can mark a character, such as a crafting alt, to skip upgrades, so it never gets gear offered or arrows.
