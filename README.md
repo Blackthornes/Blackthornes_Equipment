@@ -106,10 +106,10 @@ keeping its quests for when you turn it back on. When you level up, the
 quest you are on stays, but if the new level opens an upgrade clearly more
 worth the trip, a gold **New upgrade unlocked** box offers it: **Switch**
 follows it instead (or `/beq quest switch`), **Keep current** stays put. It
-is off unless you turn it on, and the quest is kept per character. Every
-`/beq quest` command is a button in Settings > Upgrade quest too: Ignore,
-Switch, Open (the panel), Ignored (the list to restore from), the panel's size
-and the tab shown. To make the panel bigger or smaller, text and all, drag
+is off unless you turn it on, and the quest is kept per character.
+Settings > Upgrade quest has Open (the panel), Ignored (the list to restore
+from) and the panel's size; Ignore, Switch and the tab are on the panel, or
+typed. To make the panel bigger or smaller, text and all, drag
 the gold grip below its bottom-right corner, anywhere from 50% to 150%;
 right-click it for the normal size, or type `/beq quest size` with `small`,
 `normal`, `large` or a percent. It never grows past the screen.
@@ -117,7 +117,7 @@ Under the tabs, tick **This zone only** to have each tab pick only from the
 zone you are in (a vendor, a quest giver or a dungeon's entrance there); the
 tabs pick again as you travel, and an upgrade you clicked in Where to get
 upgrades stays wherever you go. Untick **Change on a new zone** (or
-Settings > Upgrade quest > Quest filters > Zone swap) to keep your quests as
+Settings > Upgrade quest > Quest Filters > Zone Swap) to keep your quests as
 you travel instead; a tab with nothing to chase still picks from the zone
 you are in. Untick This zone only to look anywhere again. Beside it
 are the same **Solo quests only** and **Quest level** as in Where to get
@@ -137,13 +137,13 @@ for **Show on map**, **Point the arrow here**, **Track** or **Untrack**,
 quest** (through the game's own "are you sure" box). Click a quest to pick
 it for the buttons under the list, and shift-click it to link it in chat.
 A quest on the way to one of your upgrade quests says so. Tick **Hide the
-game's quest tracker** (on the tab, or Settings > Upgrade quest > Game's
-tracker) to hide the game's own tracker while the panel is up; untick it and
+game's quest tracker** (on the tab, or Settings > Upgrade quest > Hide Game's
+Tracker) to hide the game's own tracker while the panel is up; untick it and
 the game's tracker comes back. It is off unless you tick it, and it never
 hides it in the middle of a fight.
 
 **Quest arrow.** The panel's **Arrow** button (or `/beq arrow`, or
-Settings > Upgrade quest > Quest arrow) brings up a gold dial that turns as
+Settings > Upgrade quest > Quest Arrow) brings up a gold dial that turns as
 you turn and points the way to the next place in the steps: the vendor, the
 quest giver, the trainer, with the distance in yards and a green check once
 you are there. A step with a zone and no spot points at the middle of the
@@ -215,9 +215,8 @@ inside it. If they differ, the client ignores the folder and says nothing.
 /beq arrow      an arrow to the upgrade quest's next place (on, off, next, check, tomtom, reset)
 /beq weights    change how much each stat counts (also in the settings window)
 /beq probe      check what this client supports; it only reads
-/beq perf       what took longest this session, if the game hitches (/beq perf clear starts over; also Settings > Speed check)
+/beq perf       what took longest this session, if the game hitches (/beq perf clear starts over; also Settings > Speed Check)
 /beq settings   open the settings window (so does right-clicking the minimap button)
-/beq minimap    show or hide the minimap button
 ```
 
 The settings window is also under the game's Options > AddOns. Its pages
@@ -256,8 +255,8 @@ a piece you take off are never announced, nor is gear you already had that
 becomes an upgrade later (a level up or a spec change). Only the backpack and
 the four bags beside it count, not the bank.
 
-The built-in weights are a starting guess. **Settings > Stat weights >
-Change weights** (or `/beq weights`) lists each stat's weight for any class
+The built-in weights are a starting guess. **Settings > Stat Weights >
+Change** (or `/beq weights`) lists each stat's weight for any class
 and spec: type a number or use - and +, and every verdict (tooltips, bag
 arrows, the quest reward, the gear window, and Tradeskills' arrows) uses yours
 at once. Changed stats are marked in gold; **Use the built-in weights** puts a

@@ -529,11 +529,12 @@ suite.check("which says when it has nothing", Panel.empty:IsShown()
 ns.HandleSlash("quest dungeons")
 suite.check("/beq quest dungeons", Quest:Tab() == "dungeon")
 
--- Settings has the same choice.
+-- The tab is picked on the panel or typed; Settings has no row for it
+-- (the owner, 2026-10-15).
 ns.SettingsUI:Show()
-suite.check("Settings shows the tab", ns.SettingsUI.controls.questTab.value == 3, ns.SettingsUI.controls.questTab.value)
-ns.SettingsUI.controls.questTab:SetValue(1)
-suite.check("and picks one", Quest:Tab() == "vendor", Quest:Tab())
+suite.check("Settings has no quest tab row", ns.SettingsUI.controls.questTab == nil)
+ns.HandleSlash("quest vendor")
+suite.check("/beq quest vendor picks one", Quest:Tab() == "vendor", Quest:Tab())
 ns.SettingsUI:Hide()
 
 -- Worn, the same upgrade on two tabs is one quest done.
@@ -568,16 +569,19 @@ suite.check("short ones take one line", Panel.Lines("small", "Put it on", 200) =
 suite.check("a link's hidden part takes no room",
     Panel.Lines("small", "|cff1eff00|Hitem:1001::::::::20:::::|h[Vest]|h|r", 60) == 1)
 
--- Every /beq quest command has a button in Settings.
+-- Ignore and Switch are on the panel and typed; Settings keeps Open and
+-- Ignored (the owner, 2026-10-15).
 ns.SettingsUI:Show()
 local controls = ns.SettingsUI.controls
 local function Click(button) button:GetScript("OnClick")(button) end
+suite.check("Settings has no Ignore or Switch button",
+    controls.questSkip == nil and controls.questSwitch == nil)
 local skippedID = Quest:Current() and Quest:Current().itemID
-Click(controls.questSkip)
-suite.check("the Ignore button ignores", skippedID and ns.charDB.upgradeQuestSkipped[skippedID] == true
+ns.HandleSlash("quest ignore")
+suite.check("/beq quest ignore ignores", skippedID and ns.charDB.upgradeQuestSkipped[skippedID] == true
     and (Quest:Current() == nil or Quest:Current().itemID ~= skippedID))
-Click(controls.questSwitch)
-suite.check("the Switch button with nothing on offer says so",
+ns.HandleSlash("quest switch")
+suite.check("/beq quest switch with nothing on offer says so",
     env.ChatText():find("no new upgrade is on offer", 1, true) ~= nil)
 Click(controls.questReset)
 suite.check("the Ignored button lists them", ns.IgnoredUI.frame and ns.IgnoredUI.frame:IsShown())
@@ -588,13 +592,6 @@ ns.HandleSlash("quest off")
 Click(controls.questOpen)
 suite.check("the Open button turns it on and shows the panel", ns.db.upgradeQuest == true
     and Panel.frame:IsShown() and controls.upgradeQuest:GetChecked())
-for _, key in ipairs({ "questSkip", "questSwitch", "questOpen", "questReset" }) do
-    suite.check(key .. " has a tooltip", (function()
-        GameTooltip._lines = nil
-        local ok = pcall(controls[key]:GetScript("OnEnter"), controls[key])
-        return ok
-    end)())
-end
 
 local box = ns.SettingsUI.controls.upgradeQuest
 suite.check("the settings box is ticked while it is on", box:GetChecked())
