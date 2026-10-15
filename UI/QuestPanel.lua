@@ -467,7 +467,7 @@ function QuestPanel:BuildFilters(frame)
     end, ns.UpgradeQuest and ns.UpgradeQuest:ZoneOnly())
     zone:SetPoint("TOPLEFT", PAD, -2)
     ExplainBelow(zone, L["This zone only"],
-        L["Only upgrades from the zone you're in, from a vendor, a quest giver or a dungeon entrance here. Each tab picks again as you travel, unless Change on a new zone is unticked. Untick it to look everywhere. An upgrade you picked in Where to get upgrades stays either way."])
+        L["Only upgrades from the zone you're in: a vendor, a quest giver or a dungeon entrance here. Each tab picks again as you travel, unless Change on a new zone is unticked. An upgrade you picked in Where to get upgrades stays either way. Untick it to look everywhere."])
     self.zoneBox = zone
 
     -- The same switch as in Where to get upgrades and Settings.
@@ -486,7 +486,7 @@ function QuestPanel:BuildFilters(frame)
     end, not ns.UpgradeQuest or ns.UpgradeQuest:ZoneSwap())
     swap:SetPoint("TOPLEFT", PAD, -(FILTER_ROW + FILTER_GAP) - 2)
     ExplainBelow(swap, L["Change on a new zone"],
-        L["With This zone only ticked, entering a new zone drops the quests from elsewhere and each tab picks one here. Untick it to keep your quests as you travel."])
+        L["With This zone only ticked, each new zone you enter gets new quests and the old ones go. Untick it to keep your quests as you travel."])
     self.swapBox = swap
 
     -- Only the step to do now, so the panel takes less room (the owner

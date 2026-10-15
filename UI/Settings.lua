@@ -319,13 +319,13 @@ function SettingsUI:BuildGear()
     end)
 
     local coinRow = pages:Row("gear", 1, L["Sell coins"],
-        L["A gold coin on gear in your bags that isn't an upgrade and is worth selling to a vendor. That's white gear, plus soulbound green or better gear when you can't disenchant it. Never on gathering tools."])
+        L["A gold coin shows on gear in your bags that isn't an upgrade and sells to a vendor. That's white gear, plus bound green or better gear if you can't disenchant. Never on gathering tools."])
     controls.sellCoins = Tick(coinRow, L["Show them"], "bagSellCoins", true, function()
         if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
     end)
 
     local takeRow = pages:Row("gear", 1, L["Take reward button"],
-        L["When you hand in a quest with rewards to choose from, a button under the quest window takes the best one in one click. That's the biggest upgrade, or the one that sells for the most."])
+        L["When a quest lets you pick a reward, a button under the quest window takes the best one. That's your biggest upgrade, or the one that sells for the most."])
     controls.rewardButton = Tick(takeRow, L["Show it"], "rewardButton", true, function()
         if ns.QuestRewards then pcall(ns.QuestRewards.UpdateTake, ns.QuestRewards) end
     end)
@@ -336,14 +336,14 @@ function SettingsUI:BuildGear()
     self.chatRow = chatRow
 
     local autoRow = pages:Row("gear", 1, L["Put on upgrades"],
-        L["Puts an upgrade on as soon as it lands in your bags. Gear that would bind to you, or that a Farmer goal or a Tradeskills craft still needs, waits for your click. Never in a fight."])
+        L["Puts an upgrade on as soon as you get it. It waits for your click if the gear would bind to you, or if a Farmer goal or a Tradeskills craft needs it. Never in a fight."])
     controls.autoEquip = Tick(autoRow, L["Do it for me"], "autoEquip", false)
 
     -- Characters skipped for upgrades (a player asked, the owner agreed
     -- 2026-10-14): pick one by its whole name, then tick it.
     pages:Section("gear", 1, L["YOUR CHARACTERS"])
     local pickRow = pages:Row("gear", 1, L["Character"],
-        L["Pick one of your characters. Each one shows up here once it has logged in with this addon."])
+        L["Pick one of your characters. Each one shows up here after it logs in with Equipment."])
     controls.skipPicker = SettingsUI.CharacterPicker(pickRow, CONTROL_X, function() SettingsUI:RefreshSkip() end)
 
     local skipRow = pages:Row("gear", 1, L["Skip upgrades"],
@@ -372,17 +372,17 @@ function SettingsUI:BuildGear()
     pages:Section("gear", 2, L["BAGS AND TOOLTIPS"])
 
     local gamepadRow = pages:Row("gear", 2, L["Bag sort button"],
-        L["Hide the controller bag button that covers the sort button on the combined backpack."])
+        L["Hides the controller bag button that covers the sort button on your backpack."])
     controls.hideGamepadBag = Tick(gamepadRow, L["Hide it"], "hideGamepadBag", true, function()
         if ns.BagIcons then pcall(ns.BagIcons.ApplyGamepadBag, ns.BagIcons) end
     end)
 
     local suffixRow = pages:Row("gear", 2, L["Random roll names"],
-        L["Shows a green's random roll on its tooltip (such as of the Monkey), which Forever leaves off."])
+        L["Adds a green's random roll (like of the Monkey) to its tooltip. Forever leaves it off."])
     controls.suffixLine = Tick(suffixRow, L["Show them"], "suffixLine", true)
 
     local altRow = pages:Row("gear", 2, L["Upgrades for your alts"],
-        L["On gear that does nothing for you, a tooltip line names the other character it helps most, and by how much."])
+        L["On gear that isn't an upgrade for you, the tooltip names your other character it helps most, and by how much."])
     controls.altTooltipLine = Tick(altRow, L["Show them"], "altTooltipLine", true)
 
     local weaponsRow, weaponsButton = CommandRow(pages, "gear", 2, L["Untrained weapons"],
@@ -463,9 +463,9 @@ end
 function SettingsUI:SkipHint()
     local names = ns.Alts and ns.Alts:SkippedNames() or {}
     if #names == 0 then
-        return L["A skipped character, such as one kept for crafting, is never told gear is an upgrade, and your other characters' gear is never offered to it. Same as /beq skip on the character playing."]
+        return L["Good for a crafting alt. A skipped character never hears about upgrades, and your other characters' gear is never offered to it. Same as /beq skip on the character playing."]
     end
-    return L.Format("A skipped character, such as one kept for crafting, is never told gear is an upgrade, and your other characters' gear is never offered to it. Skipped now: %s.",
+    return L.Format("Good for a crafting alt. A skipped character never hears about upgrades, and your other characters' gear is never offered to it. Skipped now: %s.",
         table.concat(names, ", "))
 end
 
@@ -559,7 +559,7 @@ function SettingsUI:BuildQuest()
     -- The /beq quest commands as buttons, each doing just what its command
     -- does, chat line included.
     local thisRow = pages:Row("quest", 1, L["This upgrade"],
-        L["Ignore drops it for good and moves on to the next best. Switch picks up the upgrade your new level opened."])
+        L["Ignore drops this upgrade for good and moves on to the next best. Switch takes the better one your new level opened up."])
     controls.questSkip = Widgets.CreateButton(thisRow, L["Ignore"], function()
         ns.HandleSlash("quest ignore")
     end, { width = 64, height = 20 })
@@ -637,7 +637,7 @@ function SettingsUI:BuildQuest()
     -- (the same as in Where to get upgrades) and Zone swap, the panel's
     -- "Change on a new zone" (the owner asked 2026-10-08), side by side.
     local soloRow = pages:Row("quest", 1, L["Quest filters"],
-        L["Solo only leaves out group, dungeon, raid and battleground quests. Zone swap lets This zone only pick new quests when you enter a new zone."])
+        L["Solo only skips group, dungeon, raid and battleground quests. Zone swap picks new quests each time you enter a new zone, while This zone only is ticked."])
     controls.soloQuests = Widgets.CreateCheckbox(soloRow, L["Solo only"], function(checked)
         if ns.Finder then ns.Finder:SetSoloOnly(checked) end
     end, false)
@@ -734,7 +734,7 @@ function SettingsUI:BuildGeneral()
     controls.minimap:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     local positionRow = pages:Row("general", 1, L["Window positions"],
-        L["Moves every Equipment window, and the quest arrow, back where it started, if one ends up off screen."])
+        L["Moves every Equipment window and the quest arrow back to where they started. Handy if one ends up off screen."])
     local reset = Widgets.CreateButton(positionRow, L["Put them back"], function()
         SettingsUI:ResetPositions()
     end, { width = 100, height = 20 })
@@ -743,7 +743,7 @@ function SettingsUI:BuildGeneral()
     -- Bigger letters in the same windows, as Tradeskills has. Every size
     -- is read as text is drawn, so it waits for /reload.
     local textRow = pages:Row("general", 1, L["Text size"],
-        L["Large and Larger add a point or two to all of this addon's text. Takes effect after /reload."])
+        L["Large and Larger make all of Equipment's text a bit bigger. Type /reload to see it."])
     controls.textSize = ns.SettingsPages.TextSizeControl(textRow, CONTROL_X, function() return ns.db end)
 
     -- Asked 2026-10-10: the game's own look for players who would rather
@@ -804,10 +804,10 @@ function SettingsUI:BuildGeneral()
     end, { width = 64, height = 20 })
     controls.perfClear:SetPoint("LEFT", controls.perfShow, "RIGHT", 12, 0)
     Explain(controls.perfClear, L["Start the count again"],
-        L["Forgets the times so far, so the next Show covers only what happens from now. Same as /beq perf clear."])
+        L["Forgets the times so far. The next Show starts counting from now. Same as /beq perf clear."])
 
     local _, probeButton = CommandRow(pages, "general", 2, L["Client check"],
-        L["Lists in chat which calls this client has, to help track down a problem. It only reads. Same as /beq probe."],
+        L["Lists in chat what the game lets Equipment read, to help track down a problem. It changes nothing. Same as /beq probe."],
         L["Check"], "probe")
     controls.probe = probeButton
 

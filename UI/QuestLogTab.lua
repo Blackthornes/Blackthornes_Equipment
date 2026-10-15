@@ -244,7 +244,7 @@ function QuestLogUI:Build(frame, top)
     local map = Widgets.CreateButton(view, L["Show on map"], function() QuestLogUI:Act("map") end,
         { width = 96, height = 22, primary = true })
     Explain(map, L["Show on map"],
-        L["Puts the game's map pin where you need to go for the quest you picked, or the first one in this zone. That's its objective, or who to hand it in to once it's done."])
+        L["Puts a map pin where you need to go for the quest you picked, or the first one in this zone. That's where to do it, or who to hand it in to once it's done."])
     self.mapButton = map
 
     local arrow = Widgets.CreateButton(view, L["Arrow"], function() QuestLogUI:Act("arrow") end,
