@@ -166,7 +166,7 @@ function QuestLogUI:Build(frame, top)
         QuestLogUI:SetTrackedOnly(checked)
     end, self:TrackedOnly())
     tracked:SetPoint("TOPLEFT", pad, -2)
-    Explain(tracked, L["Tracked only"], L["List only the quests you track. Untick it to see your whole quest log."],
+    Explain(tracked, L["Tracked only"], L["Lists only the quests you track."],
         "ANCHOR_BOTTOM")
     self.trackedBox = tracked
 
@@ -175,7 +175,7 @@ function QuestLogUI:Build(frame, top)
     end, self:HidesTracker())
     hide:SetPoint("TOPLEFT", pad, -26)
     Explain(hide, L["Hide the game's quest tracker"],
-        L["Hides the game's quest tracker while this panel is up, so your quests show in one place. Off by default."], "ANCHOR_BOTTOM")
+        L["Hides the game's quest tracker while the panel is up."], "ANCHOR_BOTTOM")
     self.hideBox = hide
 
     local settings = Widgets.CreateButton(view, L["Settings"], function()
@@ -183,7 +183,7 @@ function QuestLogUI:Build(frame, top)
         if ns.SettingsUI then ns.SettingsUI:Show() end
     end, { width = Theme.TextWidth("small", L["Settings"]) + 24, height = 20 })
     settings:SetPoint("TOPRIGHT", -pad, -1)
-    Explain(settings, L["Settings"], L["Open Equipment's settings, on its Upgrade quest page."])
+    Explain(settings, L["Settings"], L["Opens the upgrade quest settings."])
 
     -- The list, sunk into the panel and scrolled with the mouse wheel.
     local well = Theme.CreatePanel(view, "panel", "border")
@@ -244,13 +244,13 @@ function QuestLogUI:Build(frame, top)
     local map = Widgets.CreateButton(view, L["Show on map"], function() QuestLogUI:Act("map") end,
         { width = 96, height = 22, primary = true })
     Explain(map, L["Show on map"],
-        L["Puts a map pin where you need to go for the quest you picked, or the first one in this zone. That's where to do it, or who to hand it in to once it's done."])
+        L["Pins the quest you picked on your map: where to do it, or where to hand it in."])
     self.mapButton = map
 
     local arrow = Widgets.CreateButton(view, L["Arrow"], function() QuestLogUI:Act("arrow") end,
         { width = 60, height = 22 })
     Explain(arrow, L["Quest arrow"],
-        L["Points the quest arrow at the quest you picked. Click again to go back to your upgrade quest."])
+        L["Points the arrow at the quest you picked. Click again for your upgrade quest."])
     self.arrowButton = arrow
 
     local open = Widgets.CreateButton(view, L["Open log"], function() QuestLogUI:Act("open") end,
@@ -260,7 +260,7 @@ function QuestLogUI:Build(frame, top)
 
     local fold = Widgets.CreateButton(view, L["Fold all"], function() QuestLogUI:FoldAll() end,
         { width = 64, height = 22 })
-    Explain(fold, L["Fold all"], L["Folds every zone to its heading, or opens them all again. Click a heading to fold only that zone."])
+    Explain(fold, L["Fold all"], L["Folds every zone, or opens them all again."])
     self.foldButton = fold
 
     self.rows, self.heads = {}, {}
@@ -335,7 +335,7 @@ function QuestLogUI:BuildRow(index)
     end, false)
     row.track:SetPoint("TOPLEFT", 5, -3)
     row.track:SetWidth(MARK)
-    Explain(row.track, L["Track"], L["Tick to track this quest, same as in the game's tracker."])
+    Explain(row.track, L["Track"], L["Tracks this quest in the game's quest tracker."])
 
     row.title = Theme.CreateLabel(row, "small", "text")
     row.title:SetPoint("TOPLEFT", MARK + 10, -4)
@@ -483,7 +483,7 @@ function QuestLogUI:FillHead(head, zone, shown, here, folded)
     head.label:SetTextColor(Theme.Unpack(here and "good" or "gilt"))
     if zone.collapsed then
         head.count:SetText(L["folded in your quest log"])
-        head.note = L["Folded in the game's quest log. Open it there to see these quests here."]
+        head.note = L["Folded in your quest log. Open it there to see these quests."]
     else
         head.count:SetText(tostring(shown))
         head.note = nil

@@ -83,14 +83,9 @@ suite.check("and /beq spec auto", asked == 3 and rewards == 3 and ns.charDB.spec
 ns.QuestRewards.Refresh = QuestRefresh
 _G.BlackthornesTS = nil
 
--- The minimap checkbox.
-local minimapBox = controls.minimap
-suite.check("the minimap box starts ticked", minimapBox:GetChecked())
-minimapBox:GetScript("OnClick")(minimapBox)
-suite.check("unticking hides the button",
-    ns.db.minimapHidden == true and not ns.MinimapButton.button:IsShown())
-ns.HandleSlash("minimap")
-suite.check("/beq minimap ticks it again", minimapBox:GetChecked())
+-- The minimap button always shows (the owner, 2026-10-15), so it has no
+-- row here.
+suite.check("there is no minimap box", controls.minimap == nil)
 
 -- Debug.
 controls.debug:GetScript("OnClick")(controls.debug)
@@ -147,7 +142,7 @@ suite.check("the window is two columns wide or more",
 -- What a setting does is a tooltip until Show descriptions is ticked.
 local tooltipRow
 for _, row in ipairs(pages.pages.gear.rows) do
-    if row.labelText == "Tooltip line" then tooltipRow = row end
+    if row.labelText == "Tooltip Line:" then tooltipRow = row end
 end
 suite.check("descriptions start hidden", ns.db.settingsDescriptions == false
     and not tooltipRow.hint:IsShown())
@@ -201,26 +196,46 @@ suite.check("back to Normal needs no reload", ns.db.textSize == "normal"
     and not controls.textSize.reload:IsShown())
 suite.check("sizes read through the step", ns.Theme.sizes.small == ns.Theme.BASE_SIZES.small)
 
--- Every /beq command has a button here.
+-- The command buttons run their commands.
 local ran = {}
 local realSlash = ns.HandleSlash
 ns.HandleSlash = function(text) ran[#ran + 1] = text end
-for _, key in ipairs({ "openWindow", "bags", "find", "tracked", "questArrowNext", "probe", "help", "trainingReport" }) do
+for _, key in ipairs({ "openWindow", "find", "questArrowNext", "probe", "whatsnew" }) do
     controls[key]:GetScript("OnClick")(controls[key])
 end
 ns.HandleSlash = realSlash
 suite.check("the command buttons run their commands",
-    table.concat(ran, ",") == "window,bags,find,tracked,arrow next,probe,help,training", table.concat(ran, ","))
+    table.concat(ran, ",") == "window,find,arrow next,probe,whatsnew", table.concat(ran, ","))
 
--- And every command registered has a control (house rule).
+-- Every command registered has a control here, but for the ones that are
+-- typed only (the owner, 2026-10-15): commands that only list things in
+-- chat, or only do what a panel already has a button for.
 local covered = { sisters = true, whatsnew = true,
-    window = true, bags = true, find = true, tracked = true, quest = true, arrow = true,
-    probe = true, help = true, perf = true, spec = true, weights = true, minimap = true,
+    window = true, find = true, quest = true, arrow = true,
+    probe = true, perf = true, spec = true, weights = true,
     settings = true, weapons = true, training = true, skip = true, autoequip = true,
 }
+local typedOnly = { bags = true, tracked = true, help = true }
 for _, name in ipairs(ns.commandOrder) do
-    suite.check("/beq " .. name .. " has a button in Settings", covered[name] == true)
+    suite.check("/beq " .. name .. " has a button in Settings, or is typed only",
+        covered[name] == true or typedOnly[name] == true)
 end
+suite.check("the chat-only commands still work", ns.commands.bags and ns.commands.tracked
+    and ns.commands.help and ns.commands.training)
+
+-- An empty description shows no tooltip and nothing under the row.
+local textRow
+for _, row in ipairs(pages.pages.general.rows) do
+    if row.labelText == "Text Size:" then textRow = row end
+end
+GameTooltip._lines = {}
+GameTooltip:Hide()
+textRow:GetScript("OnEnter")(textRow)
+suite.check("a row with no description has no tooltip", not (GameTooltip._lines and GameTooltip._lines[1]))
+pages.describe:GetScript("OnClick")(pages.describe)
+suite.check("and nothing under it with Show descriptions on",
+    textRow.description == "" and textRow:GetHeight() == textRow.compactHeight)
+pages.describe:GetScript("OnClick")(pages.describe)
 
 -- Window style (2026-10-10): a stepper, saved flat, waiting for /reload.
 local style = controls.windowStyle
@@ -239,8 +254,9 @@ SettingsUI:Refresh()
 
 -- Position.
 ns.db.settingsX = 400
-SettingsUI:ResetPositions()
-suite.check("putting it back forgets where it was dragged", ns.db.settingsX == nil)
+controls.resetPositions:GetScript("OnClick")(controls.resetPositions)
+suite.check("Set Default forgets where it was dragged", ns.db.settingsX == nil)
+suite.check("and says so", env.chat[#env.chat]:find("UI windows set to defaults.", 1, true) ~= nil, env.chat[#env.chat])
 
 -- A client with neither options API still loads.
 local ns2 = env.Load()

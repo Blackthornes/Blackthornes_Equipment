@@ -77,17 +77,13 @@ MB:Reposition()
 suite.check("a larger minimap pushes it further out", OrbitDistance() > defaultDistance)
 Minimap._width = 140
 
--- Hiding it.
-ns.HandleSlash("minimap")
-suite.check("/beq minimap hides it", not button:IsShown())
-suite.check("and the choice is saved", ns.db.minimapHidden == true)
-ns.HandleSlash("minimap")
-suite.check("/beq minimap brings it back", button:IsShown())
-
--- Hidden has to survive a reload: the button is rebuilt at every login.
+-- It always shows (the owner, 2026-10-15): there is no /beq minimap, and a
+-- minimapHidden saved by an older version is kept but not read.
+suite.check("there is no /beq minimap", ns.commands.minimap == nil)
 ns.db.minimapHidden = true
 MB.button = nil
 MB:Build()
-suite.check("a hidden button stays hidden after a reload", not MB.button:IsShown())
+suite.check("a button saved as hidden shows after a reload", MB.button:IsShown())
+suite.check("and the saved key is left alone", ns.db.minimapHidden == true)
 
 suite.done()

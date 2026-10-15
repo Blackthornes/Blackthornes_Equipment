@@ -218,7 +218,7 @@ function QuestPanel:BuildStep(index)
         end
     end, false)
     row.track:SetWidth(MARK)
-    Explain(row.track, L["Track"], L["Tick to track this quest, same as in the game's tracker."])
+    Explain(row.track, L["Track"], L["Tracks this quest in the game's quest tracker."])
     row.track:Hide()
 
     local title = CreateFrame("Button", nil, row)
@@ -272,7 +272,7 @@ function QuestPanel:BuildStep(index)
         Theme.SetHalo(self, 0.45, "accentHi")
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine(L["Point the quest arrow here"], Theme.Unpack("accent"))
-        GameTooltip:AddLine(L.Format("Click to have the arrow show the way to %s.",
+        GameTooltip:AddLine(L.Format("Click to point the arrow at %s.",
             self.place.name or self.place.zone or L["this place"]), 1, 1, 1, true)
         GameTooltip:Show()
     end)
@@ -349,13 +349,12 @@ function QuestPanel:BuildTab(frame, tab)
         local logic = ns.UpgradeQuest
         local quest = not tab.log and logic and logic:QuestOn(tab.key)
         if tab.log then
-            GameTooltip:AddLine(L["Every quest in your log, as the game's quest tracker shows them."], 1, 1, 1, true)
+            GameTooltip:AddLine(L["Every quest in your log."], 1, 1, 1, true)
         elseif quest then
             GameTooltip:AddLine(quest.link, 1, 1, 1, true)
         else
             GameTooltip:AddLine(logic and logic.NONE[tab.key] or "", 1, 1, 1, true)
         end
-        if not rawget(self, "shown") then GameTooltip:AddLine(L["Click to show this tab."], 1, 1, 1) end
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", function(self)
@@ -467,7 +466,7 @@ function QuestPanel:BuildFilters(frame)
     end, ns.UpgradeQuest and ns.UpgradeQuest:ZoneOnly())
     zone:SetPoint("TOPLEFT", PAD, -2)
     ExplainBelow(zone, L["This zone only"],
-        L["Only upgrades from the zone you're in: a vendor, a quest giver or a dungeon entrance here. Each tab picks again as you travel, unless Change on a new zone is unticked. An upgrade you picked in Where to get upgrades stays either way. Untick it to look everywhere."])
+        L["Only upgrades from the zone you're in. Each tab picks again as you travel. One you picked in Where to get upgrades stays."])
     self.zoneBox = zone
 
     -- The same switch as in Where to get upgrades and Settings.
@@ -476,7 +475,7 @@ function QuestPanel:BuildFilters(frame)
     end, ns.Finder and ns.Finder:SoloOnly())
     solo:SetPoint("LEFT", zone, "RIGHT", 16, 0)
     ExplainBelow(solo, L["Solo quests only"],
-        L["Hides quests that need a group, a dungeon, a raid or a battleground, and quests that come after one. The same switch as in Where to get upgrades."])
+        L["Hides quests that need a group, and the quests after them. Elite kills count as group quests."])
     self.soloBox = solo
 
     -- Whether a new zone changes the quests while This zone only is ticked
@@ -486,7 +485,7 @@ function QuestPanel:BuildFilters(frame)
     end, not ns.UpgradeQuest or ns.UpgradeQuest:ZoneSwap())
     swap:SetPoint("TOPLEFT", PAD, -(FILTER_ROW + FILTER_GAP) - 2)
     ExplainBelow(swap, L["Change on a new zone"],
-        L["With This zone only ticked, each new zone you enter gets new quests and the old ones go. Untick it to keep your quests as you travel."])
+        L["With This zone only ticked, each new zone gets new quests."])
     self.swapBox = swap
 
     -- Only the step to do now, so the panel takes less room (the owner
@@ -496,7 +495,7 @@ function QuestPanel:BuildFilters(frame)
     end, ns.UpgradeQuest and ns.UpgradeQuest:StepOnly())
     stepOnly:SetPoint("LEFT", swap, "RIGHT", 16, 0)
     ExplainBelow(stepOnly, L["Current step only"],
-        L["Shows only the step to do now and hides the rest, so the panel takes less room. Untick it to see every step."])
+        L["The panel shows only the step to do now."])
     self.stepOnlyBox = stepOnly
 
     local rowY = -(FILTER_ROW + FILTER_GAP) * 2
@@ -522,7 +521,7 @@ function QuestPanel:BuildFilters(frame)
     levels:SetWidth(math.max(118, widest + 22 * 2 + 4 * 2 + 16))
     levels:SetPoint("LEFT", levelLabel, "RIGHT", 8, 0)
     ExplainBelow(levels, L["Quest level"],
-        L["How many levels above you a quest can be and still be picked. Quests 5 or more levels up show in red in your quest log. The same limit as in Where to get upgrades."])
+        L["How far above your level a quest can be."])
     self.levelStepper = levels
 
     local settingsText = L["Settings"]
@@ -532,7 +531,7 @@ function QuestPanel:BuildFilters(frame)
         if ns.SettingsUI then ns.SettingsUI:Show() end
     end, { width = Theme.TextWidth("small", settingsText) + 24, height = 20 })
     settings:SetPoint("TOPRIGHT", -PAD, rowY - 1)
-    Explain(settings, L["Settings"], L["Open Equipment's settings, on its Upgrade quest page."])
+    Explain(settings, L["Settings"], L["Opens the upgrade quest settings."])
     self.settingsButton = settings
 end
 
@@ -563,7 +562,7 @@ function QuestPanel:ExplainClose(trim)
     close:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText(L["Close the upgrade quest"], Theme.Unpack("accent"))
-        GameTooltip:AddLine(L["Your quests are saved. To bring it back, click Upgrade quest in the gear window, Shift-click the minimap button, or type /beq quest."], 1, 1, 1, true)
+        GameTooltip:AddLine(L["Your quests stay saved. Bring it back with Upgrade quest in the gear window, or Shift-click the minimap button."], 1, 1, 1, true)
         GameTooltip:Show()
     end)
 end
@@ -639,7 +638,7 @@ function QuestPanel:Build()
     local fold = Widgets.CreateButton(header, "-", function() QuestPanel:ToggleFold() end,
         { width = 22, height = 20 })
     fold:SetPoint("RIGHT", -PAD, 0)
-    Explain(fold, L["Fold"], L["Shrink the panel to its header. Click again to open it."])
+    Explain(fold, L["Fold"], L["Shrinks the panel to its header."])
     self.foldButton = fold
 
     local title = Theme.CreateLabel(header, "small", "gilt")
@@ -723,14 +722,14 @@ function QuestPanel:Build()
         if ns.UpgradeQuest then ns.UpgradeQuest:SwitchToOffer() end
     end, { width = 72, height = 22, primary = true })
     switch:SetPoint("BOTTOMLEFT", OFFER_PAD, OFFER_PAD)
-    Explain(switch, L["Switch to it"], L["Follow this upgrade instead. The one you are on now can come up again later."])
+    Explain(switch, L["Switch to it"], L["Follow this upgrade instead."])
     self.switchButton = switch
 
     local keep = Widgets.CreateButton(offer, L["Keep current"], function()
         if ns.UpgradeQuest then ns.UpgradeQuest:KeepCurrent() end
     end, { width = 96, height = 22 })
     keep:SetPoint("LEFT", switch, "RIGHT", 10, 0)
-    Explain(keep, L["Keep current"], L["Stay on the upgrade you're following. This one won't be offered again until you next log in."])
+    Explain(keep, L["Keep current"], L["Stay on your upgrade. This one won't come up again until you next log in."])
     self.keepButton = keep
 
     -- The item: hover for its tooltip, shift-click to link it.
@@ -821,14 +820,14 @@ function QuestPanel:Build()
 
     local map = Widgets.CreateButton(body, L["Show on map"], function() QuestPanel:ShowOnMap() end,
         { width = 96, height = 22, primary = true })
-    Explain(map, L["Show on map"], L["Put the game's map pin on the next place to go, with its arrow pointing the way."])
+    Explain(map, L["Show on map"], L["Pins the next place to go on your map."])
     self.mapButton = map
 
     -- The quest arrow: lit green while it is up.
     local arrow = Widgets.CreateButton(body, L["Arrow"], function()
         if ns.QuestArrow then ns.HandleSlash(ns.QuestArrow.IsOn() and "arrow off" or "arrow on") end
     end, { width = 60, height = 22 })
-    Explain(arrow, L["Quest arrow"], L["A dial that turns as you turn, pointing the way to the next place. Click a step with a place to aim it there. Click again to hide it."])
+    Explain(arrow, L["Quest arrow"], L["Points the way to the quest's next place. Click a step to aim it."])
     self.arrowButton = arrow
 
     -- Was "Other ways" (renamed 2026-10-08, the owner asked): it opens Where to
@@ -836,14 +835,14 @@ function QuestPanel:Build()
     local other = Widgets.CreateButton(body, L["Change"], function()
         if ns.FinderUI then ns.FinderUI:Show() end
     end, { width = 80, height = 22 })
-    Explain(other, L["Pick a different upgrade"], L["Opens Where to get upgrades with every upgrade on offer. Click one there to follow it instead."])
+    Explain(other, L["Pick a different upgrade"], L["Opens Where to get upgrades. Click one there to follow it."])
     self.otherButton = other
 
     -- Ignore was Skip, and keeps its saved list and its name in the code.
     local skip = Widgets.CreateButton(body, L["Ignore"], function()
         if ns.UpgradeQuest then ns.HandleSlash("quest ignore") end
     end, { width = 60, height = 22 })
-    Explain(skip, L["Ignore this upgrade"], L["Never offer it again on this character, and get a quest for the next best one. To bring it back, go to Settings > Upgrade quest > Ignored."])
+    Explain(skip, L["Ignore this upgrade"], L["Skips it on this character and picks the next best one. Bring it back with Ignored in Settings."])
     self.skipButton = skip
 
     self.frame = frame
@@ -1522,7 +1521,6 @@ function QuestPanel:BuildSizeGrip()
         GameTooltip:SetText(QuestPanel.ScaleText(QuestPanel.ScaleOf(frame)), Theme.Unpack("accentHi"))
         GameTooltip:AddLine(L["Drag to make the panel bigger or smaller."], 1, 1, 1, true)
         GameTooltip:AddLine(L["Right-click to go back to normal size."], 1, 1, 1, true)
-        GameTooltip:AddLine(L["You can also set it in Settings or with /beq quest size."], Theme.Unpack("accent"))
         GameTooltip:Show()
     end)
     grip:SetScript("OnLeave", function()

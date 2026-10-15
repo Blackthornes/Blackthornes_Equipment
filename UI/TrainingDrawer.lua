@@ -93,9 +93,9 @@ local function CreateLine(parent, index)
             if not ok then GameTooltip:AddLine(self.text:GetText() or "", 1, 1, 1) end
             local line
             if not self.spell.cost then
-                line = L["No price yet. Open a class trainer once and it's remembered."]
+                line = L["No price yet. Visit a class trainer once to see it."]
             elseif self.spell.guess then
-                line = L.Format("Usually %s. Open your trainer once for the real price.", ns.ClassTraining.Money(self.spell.cost))
+                line = L.Format("Usually %s. Visit your trainer once for the real price.", ns.ClassTraining.Money(self.spell.cost))
             else
                 line = L.Format("Costs %s at the trainer", ns.ClassTraining.Money(self.spell.cost))
             end

@@ -158,11 +158,8 @@ ns.HandleSlash("settings")
 local SettingsUI = ns.SettingsUI
 local buttons = SettingsUI.controls.questSizes
 suite.check("Settings has Small, Normal and Large", #buttons == 3)
-suite.check("naming a dragged size", SettingsUI.questSizeRow.hint:GetText():find("Now 115%", 1, true),
-    SettingsUI.questSizeRow.hint:GetText())
+suite.check("the row has no description", SettingsUI.questSizeRow.description == "")
 buttons[3]._scripts.OnClick(buttons[3], "LeftButton")
 suite.check("Large draws it at 120%", ns.db.questScale == 1.2 and frame._scale == 1.2)
-suite.check("and the line under it says so",
-    SettingsUI.questSizeRow.hint:GetText():find("Now Large (120%)", 1, true))
 
 suite.done()
