@@ -95,8 +95,8 @@ function TSQueue:Explain(source)
     if plan == "craft" then
         local who = source.state == "alt" and source.who and source.who[1]
         return L["Queue the craft"],
-            who and L.Format("Queues it in Tradeskills, so its materials go on the shopping list. %s makes it, and Tradeskills tells you who when you log in.", who)
-                or L["Queues it in Tradeskills, so its materials go on the shopping list."]
+            who and L.Format("Adds it to Tradeskills' queue and puts its materials on the shopping list. %s makes it, and Tradeskills tells you who when you log in.", who)
+                or L["Adds it to Tradeskills' queue and puts its materials on the shopping list."]
     elseif plan == "materials" then
         return L["Queue the materials"],
             L["Puts its materials on Tradeskills' shopping list, ready for when you can make it."]

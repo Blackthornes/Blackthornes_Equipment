@@ -213,7 +213,7 @@ local function ShowTooltip(row)
             GameTooltip:AddLine(L.Format("Not a quest yet: %s", why), wr, wg, wb, true)
         else
             GameTooltip:AddLine(L["Click to follow it on the quest panel"], Theme.Unpack("good"))
-            GameTooltip:AddLine(L["It becomes your upgrade quest, with steps to get it, and gets a green Quest tag here. The quest it replaces on that tab can come back later."], r, g, b, true)
+            GameTooltip:AddLine(L["It becomes your upgrade quest, with steps to get it, and a green Quest tag shows here. The quest it replaces can come back later."], r, g, b, true)
         end
     end
     local tracked = ns.Tracking and ns.Tracking:IsTracked(pick.itemID)
@@ -570,7 +570,7 @@ function FinderUI:BuildFilters()
     zone:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
         GameTooltip:AddLine(L["This zone only"], Theme.Unpack("accent"))
-        GameTooltip:AddLine(L["Lists only upgrades from the zone you're in, from a vendor, a quest giver or a dungeon entrance here, plus gear you can make anywhere. The list changes as you travel. Untick it to look everywhere."], 1, 1, 1, true)
+        GameTooltip:AddLine(L["Only upgrades from the zone you're in: a vendor, a quest giver or a dungeon entrance here, plus gear you can make anywhere. The list changes as you travel. Untick it to look everywhere."], 1, 1, 1, true)
         GameTooltip:Show()
     end)
     zone:HookScript("OnLeave", function() GameTooltip:Hide() end)
