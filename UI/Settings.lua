@@ -393,7 +393,7 @@ function SettingsUI:BuildGear()
     pages:Section("gear", 2, L["CLASS TRAINING"])
 
     local trainingRow = pages:Row("gear", 2, L["Class training"],
-        L["The gear window's Training button lists the class spells you can train now and what they cost, and when you level up, chat says what's new. Open a class trainer once and its prices and location are remembered. Also /beq training on or off."])
+        L["The Training button in the gear window shows the class spells you can learn now and what they cost. When you level up, chat tells you what's new. Visit a class trainer once so Equipment learns its prices and where it stands. Also /beq training on or off."])
     controls.classTraining = Widgets.CreateCheckbox(trainingRow, L["Show it"], function(checked)
         ns.ClassTraining:SetOn(checked)
         if not checked and ns.TrainingDrawer then ns.TrainingDrawer:Hide() end
@@ -751,7 +751,7 @@ function SettingsUI:BuildGeneral()
     -- waits for /reload as Text size does. See UI/BlizzardLook.lua. A
     -- stepper, as Text size is: this addon's Widgets have no dropdown.
     local styleRow = pages:Row("general", 1, L["Window style"],
-        L["Titanforged is the house look, with a gold rim and glowing edges. Blizzard uses the game's own frames, red buttons and tick boxes. Takes effect after /reload."])
+        L["Titanforged has a gold rim and glowing edges. Blizzard looks like the game's own windows. Type /reload to see the change."])
     controls.windowStyle = self:WindowStyleControl(styleRow)
 
     pages:Section("general", 2, L["ADVANCED"])
