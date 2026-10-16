@@ -29,6 +29,7 @@ Data\QuestEnds.lua
 Data\ForeverDrops.lua
 Data\ForeverNPCs.lua
 Data\ForeverQuests.lua
+Data\ForeverGoneQuests.lua
 Data\ForeverVendors.lua
 Data\Crafts.lua
 Data\ForeverItems.lua
