@@ -4,6 +4,18 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.30.0
+
+For WoW: Forever (interface 16001). Files were added and the TOC changed, so
+restart the game fully after updating (`/reload` is not enough).
+
+- **Enchants for your gear:** Where to get upgrades has an Enchants view with
+  the best enchant for each piece you wear, for your spec and level. Queue it
+  and Show the way work with Tradeskills. Worn gear's tooltip shows its best
+  enchant ("Best Enchant" on the Gear page of Settings).
+- **Minimap button:** always on, so the setting is gone.
+- **Bug fixes:** various fixes to Equipment.
+
 ## 0.29.0
 
 For WoW: Forever (interface 16001). `/reload` is enough.
