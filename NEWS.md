@@ -29,6 +29,7 @@ tool prints a note for a shipped line that reads like an advert.
 - Casters count hit and crit on their gear.
 - Hit you don't need past the cap isn't counted.
 - Racial stat bonuses count when Equipment compares gear.
+- Gear from recipes you've learned shows under Crafted in the upgrade finder, even the new ones Forever added.
 
 Fixes and changes:
 
