@@ -292,6 +292,22 @@ function Probe:Run()
             or "none read, so no trainer lines")
     end
 
+    if ns.Enchants then
+        -- The enchant on each worn piece, read off its link, and how many
+        -- of them the enchant data knows.
+        local parts, known = {}, 0
+        for _, slot in ipairs(ns.Enchants.SLOTS) do
+            local ok, link = pcall(function() return ns.Items:Equipped(slot) end)
+            local enchant = ok and link and ns.Enchants.EnchantOf(link) or nil
+            if enchant then
+                parts[#parts + 1] = slot .. "=" .. enchant
+                if ns.EnchantData and ns.EnchantData.EFFECTS[enchant] then known = known + 1 end
+            end
+        end
+        Line("worn enchants", #parts > 0 and (table.concat(parts, ", ") .. " (" .. known .. " known)")
+            or "none read")
+    end
+
     local spec, why = Weights:CurrentSpec()
     Line("judged as", spec and (spec .. " (" .. why .. ")") or "no weights for this class")
 

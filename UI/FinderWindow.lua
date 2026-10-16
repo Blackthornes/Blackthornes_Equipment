@@ -60,7 +60,7 @@ local KIND_COLORS = { vendor = "accent", quest = "quest", dungeon = "dungeon", c
 
 local FILTER_BUTTONS = {
     { nil, L["Everything"] }, { "vendor", L["Vendors"] }, { "quest", L["Quests"] },
-    { "dungeon", L["Dungeons and raids"] }, { "craft", L["Crafted"] },
+    { "dungeon", L["Dungeons and raids"] }, { "craft", L["Crafted"] }, { "enchant", L["Enchants"] },
 }
 
 -- How many levels ahead the stepper can look.
@@ -163,7 +163,47 @@ end
 -- Construction
 --------------------------------------------------------------------------------
 
+local function ShowEnchantTooltip(row, line)
+    local Enchants = ns.Enchants
+    local pick, source = line.pick, line.source
+    local r, g, b = Theme.Unpack("text")
+    GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
+    GameTooltip:AddLine(Enchants:Name(pick.recipeID) or "", Theme.Unpack("accent"))
+    GameTooltip:AddLine(L.Format("For your %s", line.plan.link or Enchants.SlotName(line.slot)), r, g, b, true)
+    GameTooltip:AddLine(L.Format("Gives %s", Enchants:Gives(pick.recipeID) or ""), Theme.Unpack("good"))
+    if line.plan.current then
+        GameTooltip:AddLine(L.Format("Now: %s", Enchants:EnchantName(line.plan.current)), r, g, b, true)
+    else
+        GameTooltip:AddLine(L["Nothing on it now"], r, g, b)
+    end
+    if pick.percent then
+        GameTooltip:AddLine(L.Format("%d%% better for your spec", math.floor(pick.percent + 0.5)), Theme.Unpack("good"))
+    end
+    if line.soon then
+        local wr, wg, wb = Theme.Unpack("warn")
+        GameTooltip:AddLine(L["A better piece for this slot is in your upgrade list. This is the cheapest enchant still worth having until then."],
+            wr, wg, wb, true)
+    end
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine(L["How to get it"], Theme.Unpack("accent"))
+    GameTooltip:AddLine(Enchants:Describe(source, Finder.Money), r, g, b, true)
+    local materials = Enchants:MaterialsText(pick.recipeID)
+    if materials ~= "" then
+        GameTooltip:AddLine(L.Format("Materials: %s", materials), r, g, b, true)
+    end
+    local place = (source and (source.state == "learn" or source.state == "skill"))
+        and Enchants:WhereToLearn(pick.recipeID)
+    if place and place.name then
+        local where = place.zone and L.Format("Learn it from %s in %s", place.name, place.zone)
+            or L.Format("Learn it from %s", place.name)
+        GameTooltip:AddLine(where, r, g, b, true)
+    end
+    GameTooltip:Show()
+end
+
 local function ShowTooltip(row)
+    local enchant = rawget(row, "enchant")
+    if enchant then return ShowEnchantTooltip(row, enchant) end
     local pick = row.pick
     if not pick then return end
 
@@ -289,6 +329,11 @@ function FinderUI:BuildRow(index)
     -- Queue it, on crafted gear while Tradeskills is loaded: sends the craft,
     -- or what to buy, to Tradeskills' queue (Logic/TradeskillsQueue.lua).
     local queueIt = Widgets.CreateButton(row, L["Queue it"], function(self)
+        local enchant = rawget(self, "enchant")
+        if enchant and ns.Enchants then
+            ns.Enchants:Queue(enchant.pick.recipeID)
+            return
+        end
         local craft = rawget(self, "source")
         if craft and ns.TradeskillsQueue then
             ns.TradeskillsQueue:Queue(craft)
@@ -297,6 +342,19 @@ function FinderUI:BuildRow(index)
     end, { width = QUEUE_WIDTH, height = 18 })
     queueIt:SetPoint("BOTTOMRIGHT", -8, 5)
     queueIt:HookScript("OnEnter", function(self)
+        local enchant = rawget(self, "enchant")
+        if enchant and ns.Enchants then
+            local source = enchant.source
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:AddLine(L["Queue it"], Theme.Unpack("accent"))
+            local known = source and (source.state == "known" or source.state == "alt")
+            local text = known and L["Puts the enchant in Tradeskills' queue."]
+                or (source and source.kit and source.state == "other") and L["Puts it on Tradeskills' shopping list."]
+                or L["Puts its materials on Tradeskills' shopping list."]
+            GameTooltip:AddLine(text, 1, 1, 1, true)
+            GameTooltip:Show()
+            return
+        end
         local craft = rawget(self, "source")
         if not (craft and ns.TradeskillsQueue) then return end
         local title, text = ns.TradeskillsQueue:Explain(craft)
@@ -308,6 +366,19 @@ function FinderUI:BuildRow(index)
     queueIt:HookScript("OnLeave", function() GameTooltip:Hide() end)
     queueIt:Hide()
     row.queueIt = queueIt
+
+    -- Show the way, on enchants still to learn: pins the trainer or vendor
+    -- through Tradeskills.
+    local showWay = Widgets.CreateButton(row, L["Show the way"], function(self)
+        local enchant = rawget(self, "enchant")
+        if not (enchant and ns.Enchants) then return end
+        if not ns.Enchants:ShowTheWay(enchant.pick.recipeID) then
+            ns.Print(L["Couldn't find where to learn it."])
+        end
+    end, { width = QUEUE_WIDTH, height = 18 })
+    showWay:SetPoint("BOTTOMRIGHT", -8, 5)
+    showWay:Hide()
+    row.showWay = showWay
 
     local function Light(p)
         row.background:SetColorTexture(Motion.Mix(row.restKey, "glassHover", p))
@@ -326,6 +397,21 @@ function FinderUI:BuildRow(index)
         GameTooltip:Hide()
     end)
     row:SetScript("OnClick", function(self, button)
+        -- An enchant row's buttons do its work; Shift-click links its recipe.
+        local enchant = rawget(self, "enchant")
+        if enchant then
+            if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
+                local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
+                if ok and chatLink then
+                    local okLink, link = pcall(function()
+                        local spell = _G.C_Spell and _G.C_Spell.GetSpellLink
+                        return spell and spell(enchant.pick.recipeID) or nil
+                    end)
+                    if okLink and link then pcall(ChatEdit_InsertLink, link) end
+                end
+            end
+            return
+        end
         local pick = self.pick
         if not pick then return end
         if button == "RightButton" then
@@ -648,8 +734,15 @@ end
 --- everything.
 function FinderUI:Filter()
     local show = ns.db and ns.db.finderShow
-    if show == "vendor" or show == "quest" or show == "dungeon" or show == "craft" then return show end
+    if show == "vendor" or show == "quest" or show == "dungeon" or show == "craft"
+        or show == "enchant" then return show end
     return nil
+end
+
+--- Is the Enchants view showing? It lists enchants for what you wear, not
+--- gear, so it has no scan, no stepper and no quest filters.
+function FinderUI:ShowingEnchants()
+    return self:Filter() == "enchant"
 end
 
 function FinderUI:SetFilter(kind)
@@ -702,11 +795,15 @@ local function Gain(result)
 end
 
 function FinderUI:FillRow(row, line)
+    row.enchant = nil
+    row.showWay:Hide()
+    row.queueIt.enchant = nil
     if not line then
         row.pick = nil
         row:Hide()
         return
     end
+    if line.enchant then return self:FillEnchantRow(row, line.enchant) end
 
     row.pick = {
         link = line.pick.link, sources = line.sources, itemID = line.pick.itemID,
@@ -771,6 +868,62 @@ function FinderUI:FillRow(row, line)
     row:Show()
 end
 
+--- One row of the Enchants view: the slot, the piece you wear, the enchant
+--- to get, how much better, and how to get it.
+function FinderUI:FillEnchantRow(row, line)
+    local Enchants = ns.Enchants
+    local pick, source = line.pick, line.source
+    row.pick = nil
+    row.enchant = line
+    row.slot:SetText(Enchants.SlotName(line.slot))
+    Theme.SetItemIcon(row.icon, line.plan.link)
+    row.item:SetText(Enchants:Name(pick.recipeID) or "")
+
+    local gain = pick.percent and ("%+d%%"):format(math.floor(pick.percent + 0.5)) or L["better"]
+    row.gain:SetText(gain)
+    local gainWidth = math.max(GAIN_WIDTH, math.ceil(Theme.TextWidth("normal", gain)) + 4)
+    row.gain:SetWidth(gainWidth)
+    row.item:SetWidth(row.itemRoom - gainWidth)
+    -- Amber while it needs more skill or someone else to make it.
+    local state = source and source.state
+    row.edgeKey = (state == "skill" or state == "other") and "warn" or "good"
+    row.gain:SetTextColor(Theme.Unpack(row.edgeKey))
+
+    local text = Enchants:Describe(source, Finder.Money)
+    local now = line.plan.current and Enchants:EnchantName(line.plan.current) or nil
+    text = text .. "  " .. (now and L.Format("Now: %s", now) or L["Nothing on it now"])
+    if line.soon then
+        text = Colored("warn", L["A better piece is coming, so this is a cheap one"]) .. "  " .. text
+    end
+
+    -- Queue it and Show the way, right to left, with the line kept clear.
+    local used = 0
+    if Enchants:CanQueue() then
+        row.queueIt.enchant = line
+        row.queueIt:SetText(L["Queue it"])
+        row.queueIt:Show()
+        used = math.max(QUEUE_WIDTH, row.queueIt:GetWidth() or 0) + 8
+    else
+        row.queueIt:Hide()
+    end
+    row.queueIt.source = nil
+    if (state == "learn" or state == "skill") and Enchants:CanShowTheWay(pick.recipeID) then
+        row.showWay:ClearAllPoints()
+        if used > 0 then
+            row.showWay:SetPoint("RIGHT", row.queueIt, "LEFT", -6, 0)
+        else
+            row.showWay:SetPoint("BOTTOMRIGHT", -8, 5)
+        end
+        row.showWay.enchant = line
+        row.showWay:Show()
+        used = used + (row.showWay:GetWidth() or QUEUE_WIDTH) + 6
+    end
+    row.sourceWidth = row.fullSourceWidth - used
+    row.source:SetWidth(row.sourceWidth)
+    row.source:SetText(FinderUI.Fit("tiny", text, row.sourceWidth * SOURCE_LINES - WRAP_SLACK))
+    row:Show()
+end
+
 function FinderUI:ScrollBy(steps)
     local most = math.max(0, #(self.lines or {}) - VISIBLE)
     self.offset = math.max(0, math.min(most, (self.offset or 0) + steps))
@@ -784,7 +937,7 @@ function FinderUI:Draw()
         self:FillRow(row, lines[offset + index])
         -- Scrolled under a still mouse: the tooltip follows the new item.
         if rawget(row, "over") == true then
-            if rawget(row, "pick") then ShowTooltip(row) else GameTooltip:Hide() end
+            if rawget(row, "pick") or rawget(row, "enchant") then ShowTooltip(row) else GameTooltip:Hide() end
         end
     end
 
@@ -818,6 +971,7 @@ function FinderUI:Refresh()
     if not (self.frame and self.frame:IsShown()) then return nil end
     -- A slower scan still under way would only draw something older.
     Finder.sliced = nil
+    if self:ShowingEnchants() then return self:PresentEnchants() end
     return self:Present(Finder:Scan(self:Filter(), self:Ahead()))
 end
 
@@ -825,6 +979,11 @@ end
 --- meanwhile: for the events that come in bursts while the window is open.
 function FinderUI:RefreshInBackground()
     if not (self.frame and self.frame:IsShown()) then return end
+    -- Enchants are kept by Logic/Enchants.lua: drawing them is cheap.
+    if self:ShowingEnchants() then
+        self:PresentEnchants()
+        return
+    end
     local filter, ahead = self:Filter(), self:Ahead()
     Finder:ScanSliced(filter, ahead, function(found, why)
         -- The window closed, or the filter or the stepper moved, meanwhile.
@@ -834,13 +993,29 @@ function FinderUI:RefreshInBackground()
     end)
 end
 
---- Draw a scan.
-function FinderUI:Present(found, why)
+--- The gold bar under the filter showing, and the controls only gear uses.
+function FinderUI:MarkFilters()
     for _, button in ipairs(self.filters) do
         local on = button.kind == self:Filter()
         button.mark:SetShown(on)
         button:SetLabelColor(on and "accent" or "text")
     end
+    local gear = not self:ShowingEnchants()
+    for _, control in ipairs({ self.ahead, self.levelLabel, self.questLevels, self.solo, self.zone }) do
+        control:SetShown(gear)
+    end
+    if gear then
+        self.hint:SetText(L["Places and prices are from Classic. Click to follow as a quest, right-click to track, Alt-click for the map."])
+    elseif ns.Enchants and ns.Enchants:CanQueue() then
+        self.hint:SetText(L["The best enchant for each piece you wear, for your spec. Queue it sends it to Tradeskills."])
+    else
+        self.hint:SetText(L["The best enchant for each piece you wear, for your spec."])
+    end
+end
+
+--- Draw a scan.
+function FinderUI:Present(found, why)
+    self:MarkFilters()
 
     if not found then
         self.lines = {}
@@ -904,6 +1079,52 @@ function FinderUI:Present(found, why)
 
     self.found = found
     return found
+end
+
+--- Draw the Enchants view: one row per piece you wear that an enchant
+--- would make better (Logic/Enchants.lua).
+function FinderUI:PresentEnchants()
+    self:MarkFilters()
+    local Enchants = ns.Enchants
+    local plans = Enchants and Enchants:Plans()
+
+    local spec, _, class = Weights:CurrentSpec()
+    local specName = spec and Weights:SpecName(class, spec) or ""
+    local level = ns.Items and ns.Items:PlayerLevel()
+    self.specLabel:SetText(level and L.Format("%s, level %d", specName, level) or specName)
+
+    local lines = {}
+    if plans then
+        for _, line in ipairs(Enchants:Lines()) do lines[#lines + 1] = { enchant = line } end
+    end
+    self.lines = lines
+    local most = math.max(0, #lines - VISIBLE)
+    self.offset = math.min(self.offset or 0, most)
+    self:Draw()
+
+    if #lines == 0 then
+        if not plans then
+            self.empty:SetText(L.Format("There are no stat weights for %s yet.",
+                Weights:PlayerClass() or L["this class"]))
+        elseif Enchants.missing then
+            self.empty:SetText(L["Asking the server about the gear you wear..."])
+        else
+            self.empty:SetText(L["No enchant beats what's on your gear now."])
+        end
+        self.empty:Show()
+    else
+        self.empty:Hide()
+    end
+
+    if #lines == 1 then
+        self.footer:SetText(L["1 piece you wear could use a better enchant."])
+    elseif #lines > 1 then
+        self.footer:SetText(L.Format("%d pieces you wear could use a better enchant.", #lines))
+    else
+        self.footer:SetText("")
+    end
+    self.found = nil
+    return lines
 end
 
 --- Look again once a burst of events settles.

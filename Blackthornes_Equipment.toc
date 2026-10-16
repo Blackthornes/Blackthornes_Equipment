@@ -34,6 +34,7 @@ Data\Crafts.lua
 Data\ForeverItems.lua
 Data\Rolls.lua
 Data\ClassSpells.lua
+Data\Enchants.lua
 
 Logic\Weights.lua
 Logic\Compare.lua
@@ -44,6 +45,7 @@ Logic\Alts.lua
 Logic\NPCSpots.lua
 Logic\QuestLearn.lua
 Logic\Crafting.lua
+Logic\Enchants.lua
 Logic\TradeskillsQueue.lua
 Logic\Rolls.lua
 Logic\Finder.lua

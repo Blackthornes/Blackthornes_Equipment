@@ -380,6 +380,12 @@ function SettingsUI:BuildGear()
         L["Names the other character an item helps most."])
     controls.altTooltipLine = Tick(altRow, L["Show"], "altTooltipLine", true)
 
+    local enchantRow = pages:Row("gear", 2, L["Best Enchant:"],
+        L["Names the best enchant for a piece you wear."])
+    controls.enchantTooltip = Tick(enchantRow, L["Show"], "enchantTooltip", true, function()
+        if ns.Tooltip and ns.Tooltip.ForgetLines then ns.Tooltip.ForgetLines() end
+    end)
+
     local weaponsRow, weaponsButton = CommandRow(pages, "gear", 2, L["Untrained Weapons:"],
         function() return SettingsUI:WeaponsHint() end, L["Show"], "weapons show")
     controls.weapons = weaponsButton
@@ -807,6 +813,7 @@ function SettingsUI:Refresh()
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:SetChecked(ns.db.suffixLine ~= false)
     controls.altTooltipLine:SetChecked(ns.db.altTooltipLine ~= false)
+    controls.enchantTooltip:SetChecked(ns.db.enchantTooltip ~= false)
     self:RefreshSkip()
     controls.classTraining:SetChecked(ns.ClassTraining:IsOn())
     for _, entry in ipairs(HUNTING) do

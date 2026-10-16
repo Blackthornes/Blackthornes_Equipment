@@ -178,6 +178,11 @@ function Tooltip:WorkOutLines(link, carried)
     if okAlt and altLine then lines[#lines + 1] = { altLine, "accent" } end
     local okTrainer, trainer, trainerColor = pcall(WeaponSkills.Describe, WeaponSkills, link)
     if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true } end
+    -- On a piece you wear: the best enchant for it (Logic/Enchants.lua).
+    if ns.Enchants then
+        local okEnchant, enchantLine = pcall(ns.Enchants.TooltipLine, ns.Enchants, link)
+        if okEnchant and enchantLine then lines[#lines + 1] = { enchantLine, "accent" } end
+    end
     local okMore, more = pcall(Tooltip.MoreLines, Tooltip, link)
     if okMore then
         for _, line in ipairs(more) do lines[#lines + 1] = line end
