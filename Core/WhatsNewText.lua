@@ -10,6 +10,7 @@ ns.WHATS_NEW = {
         "Casters count hit and crit on their gear.",
         "Hit you don't need past the cap isn't counted.",
         "Racial stat bonuses count when Equipment compares gear.",
+        "Gear from recipes you've learned shows under Crafted in the upgrade finder, even the new ones Forever added.",
     } },
     { version = "0.30.0", lines = {
         "The upgrade finder has an Enchants view. It shows the best enchant for each piece you wear.",

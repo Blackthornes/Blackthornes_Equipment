@@ -17,6 +17,9 @@ restart the game fully after updating (`/reload` is not enough).
   isn't counted, on the new piece or the one it would replace.
 - **Racial bonuses:** Tauren Stamina, Human Spirit and Gnome Intellect count
   when gear is compared.
+- **Learned crafts:** gear from recipes you or your alts have learned shows
+  under Crafted in Where to get upgrades, even when the recipe is new to
+  Forever.
 - **Bug fixes:** various fixes to Equipment.
 
 ## 0.30.0
