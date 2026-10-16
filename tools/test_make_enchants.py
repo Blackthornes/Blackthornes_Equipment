@@ -153,7 +153,8 @@ expect("other professions are left out", 99 not in recipes)
 expect("the build is named", "(build 1.2.3)" in text)
 expect("names with placeholders are left out", "$k" not in text)
 expect("a resistance is marked other", "[256] = { other = 1" in text)
-expect("the file never names a site", "wago" not in text.lower() and "wowhead" not in text.lower())
+expect("the file never names a site", "http" not in text.lower() and ".com" not in text.lower()
+       and ".tools" not in text.lower())
 
 folder = tempfile.mkdtemp()
 try:
