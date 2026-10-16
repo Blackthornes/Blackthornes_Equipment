@@ -32,6 +32,8 @@ Fixes and changes:
 
 - Various fixes to Equipment.
 
+Thanks MagnusBabbage for the ideas and feedback!
+
 ## 0.29.0
 
 - Equipment can put an upgrade on for you as soon as it lands in your bags. It's off until you turn it on in Settings.
