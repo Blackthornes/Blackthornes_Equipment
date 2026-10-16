@@ -82,7 +82,7 @@ ns.ForeverQuests = {
     [97279] = { title = "Wayward Weapons", level = 2, min = 1, giver = "Gornek", zone = "Durotar", x = 42.1, y = 68.4, side = "H", rewards = {} },
     [97288] = { title = "Unending Torment", level = 21, min = 20, side = "H", rewards = {} },
     [97289] = { title = "Unending Torment", min = 21, giver = "Master Apothecary Faranell", zone = "Undercity", x = 48.8, y = 69.5, side = "H", rewards = {} },
-    [97290] = { title = "Unending Torment", min = 21, giver = "Unfinished Abomination", zone = "Undercity", x = 46.1, y = 62.2, side = "H", rewards = { { 279867, 1, 23, false }, { 279865, 1, 23, false }, { 279864, 1, 23, false } } },
+    [97290] = { title = "Unending Torment", min = 21, giver = "Unfinished Abomination", zone = "Undercity", x = 46.1, y = 62.2, side = "H", rewards = { { 279864, 1, 23, false }, { 279865, 1, 23, false }, { 279867, 1, 23, false } } },
     [97291] = { title = "Unending Torment", level = 21, min = 21, giver = "Master Apothecary Faranell", zone = "Undercity", x = 48.9, y = 69.6, side = "H", rewards = {} },
     [97292] = { title = "Unending Torment", min = 21, giver = "Master Apothecary Faranell", zone = "Undercity", x = 48.4, y = 69.6, side = "H", rewards = {} },
     [97956] = { title = "Camping 101: Fishing", level = 6, min = 16, side = "H", rewards = {} },

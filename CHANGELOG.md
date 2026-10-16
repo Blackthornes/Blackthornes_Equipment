@@ -4,6 +4,21 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.31.0
+
+For WoW: Forever (interface 16001). Files were added and the TOC changed, so
+restart the game fully after updating (`/reload` is not enough).
+
+- **Hit and crit ratings:** gear that gives hit or crit as a rating now counts
+  for the percent it really gives at your level, so it no longer looks better
+  than it is.
+- **Casters:** plain hit and crit rating count as spell hit and crit.
+- **Hit cap:** hit you don't need past the cap (5% for weapons, 3% for spells)
+  isn't counted, on the new piece or the one it would replace.
+- **Racial bonuses:** Tauren Stamina, Human Spirit and Gnome Intellect count
+  when gear is compared.
+- **Bug fixes:** various fixes to Equipment.
+
 ## 0.30.0
 
 For WoW: Forever (interface 16001). Files were added and the TOC changed, so
