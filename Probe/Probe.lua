@@ -341,6 +341,30 @@ function Probe:Run()
         end
     end
 
+    -- Ratings, the hit cap and racials (Weights:RatingPer, Compare:CurrentHit,
+    -- Weights:Racials).
+    pcall(function()
+        local parts = {}
+        for _, key in ipairs({ "ITEM_MOD_HIT_RATING_SHORT", "ITEM_MOD_CRIT_RATING_SHORT",
+            "ITEM_MOD_DODGE_RATING_SHORT", "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT" }) do
+            local rating = Weights.RATINGS and Weights.RATINGS[key]
+            if rating then
+                parts[#parts + 1] = ("%s=%.2f"):format(key:gsub("^ITEM_MOD_", ""):gsub("_SHORT$", ""):lower(),
+                    Weights:RatingPer(rating))
+            end
+        end
+        Line("rating for 1%", #parts > 0 and table.concat(parts, ", ") or "none")
+        local melee, spell = ns.Compare:CurrentHit("melee"), ns.Compare:CurrentHit("spell")
+        Line("hit now", ("weapons %s, spells %s"):format(melee and ("%.2f%%"):format(melee) or "unknown",
+            spell and ("%.2f%%"):format(spell) or "unknown"))
+        local racial = {}
+        for stat, factor in pairs(Weights:Racials()) do
+            racial[#racial + 1] = ("%s x%.2f"):format(stat, factor)
+        end
+        table.sort(racial)
+        Line("racial stat bonuses", #racial > 0 and table.concat(racial, ", ") or "none")
+    end)
+
     if not Has("GetInventoryItemLink") then return end
 
     for _, slot in ipairs(SLOTS) do

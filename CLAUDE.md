@@ -763,6 +763,26 @@ the game's update functions (`ObjectiveTracker_Update`) does the same. To
 put a game frame out of sight, use `ns.Veil`: SetAlpha and the mouse calls
 run no game code. The same holds in every addon.
 
+## Ratings, the hit cap and racials
+
+Asked 2026-10-16, after the 10-15 patch changed the racials. Forever gear
+gives hit and crit as ratings: `Weights.RATINGS` and `Weights:RatingPer`
+turn them into the percent they give (the client's rate first, else the
+usual table scaled by level), so the weights stay per 1%; plain hit and
+crit rating count as spell hit and crit too (`EITHER`). `Weights:Score`
+returns the score and the hit it holds; `Compare:ScoreOf` returns score,
+hit and what the hit adds, and `Against` the hit worn there. Hit past the
+cap (`Compare.HIT_CAP`: 5 weapons, 3 spells; with two weapons half up to
+`DUAL_WIELD_CAP` 24) is taken off both sides in `Judge`, `JudgeCarried`
+and `BestInBags` (`Capped`, `result.hitCapped`), from the hit the client
+says the character has (`Compare:CurrentHit`); unread, nothing is capped.
+Racials (`Weights.RACIALS`: Tauren Stamina, Human Spirit, Gnome Intellect,
+5% unless the spell text says otherwise) are laid on in
+`Weights:ForPlayer` through `WithRacials`, a copy; `Get`, the weights
+window and `customWeights` are untouched. Alts get neither. Since the patch
+no racial favours a weapon kind. Tested in `tools/test_ratingsandcap.lua`.
+A weekly patch check looks for racial, rating and cap changes.
+
 ## Players' own stat weights
 
 Kept in `BlackthornesEquipmentDB.customWeights[CLASS][spec][stat]`, account

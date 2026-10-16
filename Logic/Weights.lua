@@ -434,6 +434,43 @@ local STAT_KEYS = {
     ["ITEM_MOD_BLOCK_VALUE_SHORT"] = "blockValue",
 }
 
+-- Forever's gear carries hit, crit, dodge, parry, block and defense as
+-- rating (Devilsaur Gauntlets: 14 crit rating where Classic had 1% crit),
+-- while the weights are per 1% (per point of defense). So a rating is turned
+-- into what it gives before it is weighed, the way the game does: asked of
+-- the client first (Weights:RatingPer), else by the usual rating table at
+-- the player's level. `cr` is the client's combat rating index (CR_HIT_MELEE
+-- and the like, its number beside it in case the global is missing), and
+-- `at60` the rating for 1% at level 60.
+--
+-- Forever made hit and crit one stat for weapons and spells alike, so the
+-- plain hit and crit rating keys become anyHit and anyCrit, which Score
+-- weighs by whichever of the two weights (hit or spellHit, crit or
+-- spellCrit) the spec cares about more. The keys that name melee, ranged or
+-- spells stay with that one.
+local RATINGS = {
+    ITEM_MOD_HIT_RATING_SHORT = { stat = "anyHit", cr = "CR_HIT_MELEE", index = 6, at60 = 10 },
+    ITEM_MOD_HIT_MELEE_RATING_SHORT = { stat = "hit", cr = "CR_HIT_MELEE", index = 6, at60 = 10 },
+    ITEM_MOD_HIT_RANGED_RATING_SHORT = { stat = "hit", cr = "CR_HIT_RANGED", index = 7, at60 = 10 },
+    ITEM_MOD_HIT_SPELL_RATING_SHORT = { stat = "spellHit", cr = "CR_HIT_SPELL", index = 8, at60 = 8 },
+    ITEM_MOD_SPELL_HIT_RATING_SHORT = { stat = "spellHit", cr = "CR_HIT_SPELL", index = 8, at60 = 8 },
+    ITEM_MOD_CRIT_RATING_SHORT = { stat = "anyCrit", cr = "CR_CRIT_MELEE", index = 9, at60 = 14 },
+    ITEM_MOD_CRIT_MELEE_RATING_SHORT = { stat = "crit", cr = "CR_CRIT_MELEE", index = 9, at60 = 14 },
+    ITEM_MOD_CRIT_RANGED_RATING_SHORT = { stat = "crit", cr = "CR_CRIT_RANGED", index = 10, at60 = 14 },
+    ITEM_MOD_CRIT_SPELL_RATING_SHORT = { stat = "spellCrit", cr = "CR_CRIT_SPELL", index = 11, at60 = 14 },
+    ITEM_MOD_SPELL_CRIT_RATING_SHORT = { stat = "spellCrit", cr = "CR_CRIT_SPELL", index = 11, at60 = 14 },
+    ITEM_MOD_DEFENSE_SKILL_RATING_SHORT = { stat = "defense", cr = "CR_DEFENSE_SKILL", index = 2, at60 = 1.5 },
+    ITEM_MOD_DODGE_RATING_SHORT = { stat = "dodge", cr = "CR_DODGE", index = 3, at60 = 12 },
+    ITEM_MOD_PARRY_RATING_SHORT = { stat = "parry", cr = "CR_PARRY", index = 4, at60 = 20 },
+    ITEM_MOD_BLOCK_RATING_SHORT = { stat = "block", cr = "CR_BLOCK", index = 5, at60 = 5 },
+}
+
+-- The plain rating stats, weighed by the larger of the two weights.
+local EITHER = {
+    anyHit = { "hit", "spellHit" },
+    anyCrit = { "crit", "spellCrit" },
+}
+
 -- Every stat a weight can name, in the order the weights window lists them,
 -- with the name a player reads there. `per` marks the ones counted per 1%.
 -- Weapon damage per second is two weights, because Score applies dps as one
@@ -548,6 +585,7 @@ end
 
 Weights.SPECS = SPECS
 Weights.STAT_KEYS = STAT_KEYS
+Weights.RATINGS = RATINGS
 Weights.STAT_ORDER = STAT_ORDER
 Weights.MAX_WEIGHT = MAX_WEIGHT
 Weights.WEAPON_TYPES = WEAPON_TYPES
@@ -687,6 +725,7 @@ function Weights:OnEnable()
         "PLAYER_LEVEL_UP", "PLAYER_ENTERING_WORLD" }) do
         ns.RegisterEvent(self, event, self.ForgetPoints)
     end
+    ns.RegisterEvent(self, "PLAYER_LEVEL_UP", self.ForgetRatings)
 end
 
 --- The spec this character is judged as, and why: "picked", "talents" or
@@ -719,12 +758,108 @@ function Weights:CurrentSpec()
     return specs.default, "default", class
 end
 
+-- Each merged table's weapon kind numbers, kept beside it rather than in it,
+-- so everything that reads a weights table still finds only stats there.
+local typesOf = setmetatable({}, { __mode = "k" })
+
 --- The weights to judge this character's gear by, or nil for a class that
 --- has none yet. The player's own weights where they changed any.
 function Weights:ForPlayer()
     local spec, _, class = self:CurrentSpec()
     if not spec then return nil end
-    return self:Get(class, spec), spec
+    return self:WithRacials(self:Get(class, spec)), spec
+end
+
+--------------------------------------------------------------------------------
+-- Racial stat bonuses
+--
+-- A few races get more from one stat: Tauren more health, Humans more
+-- Spirit, Gnomes more mana. That stat is worth that much more on gear for
+-- them. Flat crit, hit, haste and dodge racials need nothing here: the
+-- client already counts them in the character's numbers, and the hit cap
+-- reads those (Compare:CurrentHit). Since the 10-15 patch no racial is tied
+-- to a weapon kind any more, so none changes which weapon is better.
+--
+-- Known by the racial's spell, else by race; the percent is read off the
+-- spell's own text when the client gives it, else the usual 5%.
+--------------------------------------------------------------------------------
+
+Weights.RACIALS = {
+    { spell = 20550, race = "Tauren", stat = "stamina", percent = 5 },   -- Endurance
+    { spell = 20598, race = "Human", stat = "spirit", percent = 5 },     -- The Human Spirit
+    { spell = 20591, race = "Gnome", stat = "intellect", percent = 5 },  -- Expansive Mind
+}
+
+local SPELL_KNOWN = { "C_SpellBook.IsSpellKnown", "IsPlayerSpell", "IsSpellKnown" }
+local SPELL_TEXT = { "C_Spell.GetSpellDescription", "GetSpellDescription" }
+
+-- The racials found, read once a session: { [stat] = factor }.
+local racialRead
+
+local function Known(spellID)
+    local Call = ns.Items and ns.Items.Call
+    if not Call then return false end
+    for _, path in ipairs(SPELL_KNOWN) do
+        if Call({ path }, spellID) == true then return true end
+    end
+    return false
+end
+
+local function PercentIn(spellID)
+    local Call = ns.Items and ns.Items.Call
+    local text = Call and Call(SPELL_TEXT, spellID)
+    local ok, percent = pcall(function()
+        if type(text) ~= "string" then return nil end
+        return tonumber(text:match("(%d+)%%"))
+    end)
+    if ok and percent and percent >= 1 and percent <= 25 then return percent end
+    return nil
+end
+
+--- The player's racial stat bonuses, { [stat] = factor }, empty for none.
+function Weights:Racials()
+    if racialRead then return racialRead end
+    local Call = ns.Items and ns.Items.Call
+    local race
+    if Call then
+        local _, file = Call({ "UnitRace" }, "player")
+        local ok, copy = pcall(function()
+            if type(file) == "string" then return file .. "" end
+        end)
+        race = ok and copy or nil
+    end
+    local found = {}
+    for _, racial in ipairs(self.RACIALS) do
+        if Known(racial.spell) or (race and race == racial.race) then
+            local percent = PercentIn(racial.spell) or racial.percent
+            found[racial.stat] = (found[racial.stat] or 1) * (1 + percent / 100)
+        end
+    end
+    -- Not kept until the race can be read, or a login read too early
+    -- would miss it for the session.
+    if race then racialRead = found end
+    return found
+end
+
+-- The player's tables with racials laid on, by the merged table they came from.
+local withRacials = setmetatable({}, { __mode = "k" })
+
+--- A weights table with the player's racial bonuses laid over it. The same
+--- table back when there are none, so nothing is copied for most races.
+function Weights:WithRacials(weights)
+    if type(weights) ~= "table" then return weights end
+    local racials = self:Racials()
+    if not next(racials) then return weights end
+    if withRacials[weights] then return withRacials[weights] end
+
+    local copy = {}
+    for stat, value in pairs(weights) do copy[stat] = value end
+    for stat, factor in pairs(racials) do
+        if copy[stat] then copy[stat] = copy[stat] * factor end
+    end
+    typesOf[copy] = typesOf[weights]
+    withRacials[weights] = copy
+    return copy
 end
 
 --------------------------------------------------------------------------------
@@ -742,9 +877,6 @@ end
 -- Forgotten whenever a weight changes.
 local merged = {}
 
--- Each merged table's weapon kind numbers, kept beside it rather than in it,
--- so everything that reads a weights table still finds only stats there.
-local typesOf = setmetatable({}, { __mode = "k" })
 
 --- The built-in weights for a class and spec, or nil. Never changed.
 function Weights:Defaults(class, spec)
@@ -1140,13 +1272,69 @@ local function SchoolKey(key)
     return nil
 end
 
+--------------------------------------------------------------------------------
+-- Rating to percent
+--------------------------------------------------------------------------------
+
+-- A number the client gave, or nil. Inside a pcall: instances hand out
+-- secret values that raise when compared.
+local function Number(value)
+    local ok, answer = pcall(function()
+        if type(value) == "number" and value == value and value > 0 and value < 1e7 then return value end
+        return nil
+    end)
+    return ok and answer or nil
+end
+
+-- Rating for 1% by combat rating index, kept for the level it was read at.
+local ratingPer, ratingLevel = {}, nil
+
+--- How much rating gives 1% (one point, for defense) at the player's
+--- level. The client says when it can: by the number it gives for a rating
+--- (GetCombatRatingBonusForCombatRatingValue), else by what the player's
+--- own rating gives now. Otherwise the usual table: `at60` at level 60,
+--- less below it, as (level - 8) / 52 of it from level 10.
+function Weights:RatingPer(rating)
+    local level = ns.Items and ns.Items:PlayerLevel() or 60
+    if level ~= ratingLevel then ratingPer, ratingLevel = {}, level end
+    local index = _G[rating.cr]
+    if type(index) ~= "number" then index = rating.index end
+    if ratingPer[index] then return ratingPer[index] end
+
+    local Call = ns.Items and ns.Items.Call
+    local per
+    if Call then
+        local gives = Number((Call({ "GetCombatRatingBonusForCombatRatingValue" }, index, 100)))
+        if gives then per = 100 / gives end
+        if not per then
+            local have = Number((Call({ "GetCombatRating" }, index)))
+            local bonus = have and Number((Call({ "GetCombatRatingBonus" }, index)))
+            if bonus then per = have / bonus end
+        end
+    end
+    if not per or per <= 0 then
+        local scale = level >= 10 and (level - 8) / 52 or 2 / 52
+        per = rating.at60 * math.min(scale, 1)
+    end
+    ratingPer[index] = per
+    return per
+end
+
+--- Forget the rates, so the next item reads them again (a level up).
+function Weights:ForgetRatings()
+    ratingPer, ratingLevel = {}, nil
+end
+
 --- Convert what GetItemStats returned into the names above. Keys this addon
 --- does not know are returned separately so the probe can show them.
+--- Ratings come back as the percent they give.
 function Weights:Normalize(clientStats)
     local stats, unknown = {}, {}
     for key, value in pairs(clientStats or {}) do
-        local name = STAT_KEYS[key] or SchoolKey(key)
+        local rating = RATINGS[key]
+        local name = rating and rating.stat or STAT_KEYS[key] or SchoolKey(key)
         if name and type(value) == "number" then
+            if rating then value = value / self:RatingPer(rating) end
             stats[name] = (stats[name] or 0) + value
         else
             unknown[#unknown + 1] = key
@@ -1167,8 +1355,19 @@ function Weights:AddSchools(stats, schools)
     return stats
 end
 
+--- Which hit the spec cares about: "melee" (weapons) or "spell", and its
+--- weight. Nil when it weighs neither.
+function Weights.HitKind(weights)
+    local melee, spell = weights and weights.hit or 0, weights and weights.spellHit or 0
+    if melee <= 0 and spell <= 0 then return nil, 0 end
+    if spell > melee then return "spell", spell end
+    return "melee", melee
+end
+
 --- One number for how good a set of stats is: each stat times its weight.
 -- `ranged` says whether weapon dps counts as a ranged or a melee weapon.
+-- The second return is how much hit, in percent, counts toward the hit the
+-- spec cares about (HitKind), so Compare can stop counting it at the cap.
 function Weights:Score(stats, weights, ranged)
     local score = 0
     for name, value in pairs(stats or {}) do
@@ -1177,6 +1376,9 @@ function Weights:Score(stats, weights, ranged)
             -- Not `ranged and rangedDps or meleeDps`: a spec with no ranged
             -- weight would then count a bow's damage as melee damage.
             if ranged then weight = weights.rangedDps else weight = weights.meleeDps end
+        elseif EITHER[name] then
+            local pair = EITHER[name]
+            weight = math.max(weights[pair[1]] or 0, weights[pair[2]] or 0)
         else
             weight = weights[name]
         end
@@ -1184,7 +1386,13 @@ function Weights:Score(stats, weights, ranged)
             score = score + value * weight
         end
     end
-    return score
+
+    local kind = Weights.HitKind(weights)
+    local hit = 0
+    if kind and stats then
+        hit = (stats.anyHit or 0) + (kind == "spell" and (stats.spellHit or 0) or (stats.hit or 0))
+    end
+    return score, hit
 end
 
 --------------------------------------------------------------------------------
