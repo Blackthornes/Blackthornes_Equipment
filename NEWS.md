@@ -23,6 +23,17 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.31.0
+
+- Gear with hit or crit ratings now counts for the percent it really gives, so it doesn't look better than it is.
+- Casters count hit and crit on their gear.
+- Hit you don't need past the cap isn't counted.
+- Racial stat bonuses count when Equipment compares gear.
+
+Fixes and changes:
+
+- Various fixes to Equipment.
+
 ## 0.30.0
 
 - The upgrade finder has an Enchants view. It shows the best enchant for each piece you wear.
