@@ -8,28 +8,49 @@
 
 local _, ns = ...
 
+-- Dungeons and raids Forever added, laid beside Classic's: name, levels
+-- of the mobs looted there, the zone the door is in (its own name when
+-- not known), "" for both sides, and true for a raid.
+ns.Sources.DUNGEONS["2999"] = ns.Sources.DUNGEONS["2999"] or { "Ruins of Lordaeron", 1, 60, "Tirisfal Glades", "" }
+
 ns.Sources.FOREVER = {
     [1210] = { { "Earthborer", "389", 0 } },
+    [1497] = { { "Broodling", "2999", 0 } },
+    [1510] = { { "Broodling", "2999", 0 } },
+    [1515] = { { "Broodling", "2999", 0 }, { "Spider", "2999", 0 } },
+    [1731] = { { "Deep Widow", "2999", 0 } },
     [1732] = { { "Ragefire Shaman", "389", 0 } },
+    [1789] = { { "Deep Widow", "2999", 0 } },
+    [1791] = { { "Spider", "2999", 0 } },
     [1812] = { { "Devouring Ectoplasm", "43", 0 } },
     [2318] = { { "Deviate Creeper", "43", 0 }, { "Deviate Slayer", "43", 0 }, { "Deviate Stinglash", "43", 0 } },
     [2319] = { { "Deviate Creeper", "43", 0 } },
     [2589] = { { "Ragefire Trogg", "389", 0 } },
     [2608] = { { "Deviate Lurker", "43", 0 } },
+    [2763] = { { "Broodling", "2999", 0 } },
     [2777] = { { "Ragefire Trogg", "389", 0 } },
     [2778] = { { "Ragefire Trogg", "389", 0 } },
+    [2974] = { { "Deep Widow", "2999", 0 } },
     [3036] = { { "Ragefire Trogg", "389", 0 } },
+    [3167] = { { "Broodling", "2999", 0 }, { "Deep Widow", "2999", 0 }, { "Spider", "2999", 0 } },
     [3180] = { { "Deviate Creeper", "43", 0 } },
     [3307] = { { "Ragefire Trogg", "389", 0 } },
+    [3374] = { { "Spider", "2999", 0 } },
+    [3377] = { { "Spider", "2999", 0 } },
     [3669] = { { "Earthborer", "389", 0 } },
     [3674] = { { "Devouring Ectoplasm", "43", 0 } },
     [3676] = { { "Earthborer", "389", 0 } },
+    [3931] = { { "Broodling", "2999", 0 }, { "Deep Widow", "2999", 0 }, { "Spider", "2999", 0 }, { "Venom Lurker", "2999", 0 } },
+    [4345] = { { "Broodling", "2999", 0 } },
+    [4585] = { { "Tarantula", "2999", 0 } },
     [5124] = { { "Deviate Creeper", "43", 0 }, { "Deviate Stalker", "43", 0 } },
     [5334] = { { "Mad Magglish", "43", 0 } },
+    [6347] = { { "Broodling", "2999", 0 } },
     [6443] = { { "Deviate Coiler", "43", 0 }, { "Deviate Creeper", "43", 0 }, { "Deviate Slayer", "43", 0 }, { "Deviate Stalker", "43", 0 } },
     [6444] = { { "Deviate Coiler", "43", 0 }, { "Deviate Stinglash", "43", 0 } },
     [6470] = { { "Deviate Coiler", "43", 0 }, { "Deviate Creeper", "43", 0 }, { "Deviate Stalker", "43", 0 } },
     [6471] = { { "Deviate Stalker", "43", 0 } },
+    [9765] = { { "Spider", "2999", 0 } },
     [15012] = { { "Devouring Ectoplasm", "43", 0 } },
     [15304] = { { "Deviate Stalker", "43", 0 } },
     [17056] = { { "Deviate Coiler", "43", 0 } },
