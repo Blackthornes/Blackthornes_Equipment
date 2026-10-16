@@ -134,6 +134,86 @@ local function Tradeskills()
     return nil
 end
 
+--------------------------------------------------------------------------------
+-- Recipes the Classic data lacks
+--------------------------------------------------------------------------------
+
+-- Forever added recipes Classic never had (the ones bought with Merchant's
+-- Favor among them, a player found 2026-10-16), so Data/Crafts.lua cannot
+-- list them. Tradeskills reads every recipe a character has learned, with
+-- what it makes and its materials, so a learned one that makes gear is laid
+-- into Crafts.ITEMS as the addon runs, in the same shape (never saved).
+-- Such a row carries `learned = true`: nobody here knows how to learn it,
+-- so it is only offered to a character who knows it or can ask an alt.
+
+--- Note a recipe Tradeskills read, when it makes something Crafts.lua does
+--- not list and comes from a profession that makes gear. Laid by LayLearned.
+local function NoteLearned(recipeID, recipe)
+    if type(recipeID) ~= "number" or type(recipe) ~= "table" then return end
+    local itemID = Number(recipe.outputItemID)
+    if not itemID or ns.Crafts.ITEMS[itemID] then return end
+    local line = LineOf(recipe.skillLineID)
+    if not line then return end
+    local pending = Crafting.pending
+    if not pending or pending[itemID] == false then return end
+    local materials = {}
+    for _, reagent in ipairs(type(recipe.reagents) == "table" and recipe.reagents or {}) do
+        local id, count
+        if type(reagent) == "table" then id, count = Number(reagent.itemID), Number(reagent.quantity) end
+        if id and count and count > 0 then
+            materials[#materials + 1] = id
+            materials[#materials + 1] = count
+        end
+    end
+    pending[itemID] = { line = line, spell = recipeID, m = materials }
+end
+
+--- One pending recipe as a Crafts.ITEMS row: the row, false when what it
+--- makes is not gear, or nil while the client has not loaded the item yet.
+local function LearnedRow(itemID, recipe)
+    local key = ("item:%d"):format(itemID)
+    local C = _G.C_Item
+    local _, _, _, equipLoc, _, classID = Items.Call({ "C_Item.GetItemInfoInstant", "GetItemInfoInstant" }, key)
+    classID = Number(classID)
+    if classID == nil then
+        Read(C and C.RequestLoadItemDataByID, itemID)
+        return nil
+    end
+    equipLoc = Plain(equipLoc)
+    if (classID ~= 2 and classID ~= 4) or not equipLoc or equipLoc == "INVTYPE_NON_EQUIP_IGNORE"
+        or equipLoc == "INVTYPE_NON_EQUIP" then
+        return false
+    end
+    local info = { Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, key) }
+    local itemLevel, level = Number(info[4]), Number(info[5])
+    if not (itemLevel and level) then
+        Read(C and C.RequestLoadItemDataByID, itemID)
+        return nil
+    end
+    local bop = Number(info[14]) == 1 and 1 or 0
+    return { recipe.line, 0, recipe.spell, level, itemLevel, 0, 0, bop, m = recipe.m, learned = true }
+end
+
+--- Lay the learned recipes Classic lacks into Crafts.ITEMS. Cheap when
+--- nothing waits: only items the client had not loaded are asked again.
+function Crafting:LayLearned()
+    self:Known()
+    local pending = self.pending
+    if not pending then return end
+    local items = ns.Crafts.ITEMS
+    for itemID, recipe in pairs(pending) do
+        if recipe then
+            local row = LearnedRow(itemID, recipe)
+            if row then
+                if not items[itemID] then items[itemID] = row end
+                pending[itemID] = nil
+            elseif row == false then
+                pending[itemID] = false
+            end
+        end
+    end
+end
+
 --- What Tradeskills knows about who can make what: { [recipe spell] =
 --- { mine = true, alts = { "Bob", ... } } }, or an empty table. A recipe on
 --- Forever is the spell that makes it, the same ID Crafts.lua carries.
@@ -141,6 +221,13 @@ function Crafting:Known()
     if self.known then return self.known end
     local known = {}
     self.known = known
+    -- Items found not to be gear stay set aside (false); the rest is read
+    -- again.
+    local pending = {}
+    for itemID, value in pairs(self.pending or {}) do
+        if value == false then pending[itemID] = false end
+    end
+    self.pending = pending
 
     local ts = Tradeskills()
     local recipes = ts and ts.Recipes
@@ -161,6 +248,7 @@ function Crafting:Known()
             return okMe and me == true
         end
         for recipeID, recipe in pairs(recipes:GetAccountWide(true)) do
+            NoteLearned(tonumber(recipeID) or recipeID, recipe)
             local entry = { alts = {} }
             local named = {}
             for _, key in ipairs(recipe.knownBy or {}) do
@@ -265,7 +353,8 @@ function Crafting:MaterialsText(itemID)
     local parts, list = {}, craft.m or {}
     for i = 1, #list, 2 do
         local material = ns.Crafts.MATERIALS[list[i]]
-        parts[#parts + 1] = ("%d %s"):format(list[i + 1], material and material[1] or "?")
+        local name = material and material[1] or Plain((Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, ("item:%d"):format(list[i]))))
+        parts[#parts + 1] = ("%d %s"):format(list[i + 1], name or "?")
     end
     return table.concat(parts, ", ")
 end
@@ -379,7 +468,18 @@ function Crafting:SourceFor(itemID, player, band)
 
     local knows = have and self:Knows(spellID)
     local entry = self:Known()[spellID]
-    if have and knows and have >= skill then
+    if craft.learned then
+        -- Learned in game, so how to learn it is not known: whoever knows
+        -- it makes it, else an alt who does, else it is not offered.
+        if knows then
+            source.state = "known"
+        elseif entry and #entry.alts > 0 and not source.bop then
+            source.state = "alt"
+            source.who = entry.alts
+        else
+            return nil
+        end
+    elseif have and knows and have >= skill then
         source.state = "known"
     elseif have and have >= skill and not knows then
         source.state = "learn"
@@ -503,6 +603,7 @@ end
 --- A short line for a crafted item's tooltip, and its colour key, or nil:
 --- "You can make this", "Bob can make this", "Made with Tailoring 150".
 function Crafting:TooltipLine(itemID)
+    if not ns.Crafts.ITEMS[itemID] and self.pending and self.pending[itemID] then self:LayLearned() end
     if not (ns.Crafts.ITEMS[itemID] and ns.Finder) then return nil end
     local player = ns.Finder:Player()
     if not player then return nil end

@@ -159,6 +159,65 @@ _G.BlackthornesTS.RecipeBook.GetSkill = function() error("boom") end
 suite.check("and a raise falls back to Classic's", Source(3003).skill == C.ITEMS[3003][2])
 _G.BlackthornesTS.RecipeBook = nil
 
+-- Recipes Forever added (Merchant's Favor ones among them) are not in
+-- Classic's data, so a learned one comes from what Tradeskills read: what it
+-- makes, its profession and its materials.
+env.items["item:3101"] = Gear("INVTYPE_CHEST", 40, { minLevel = 18 })
+env.items["item:3102"] = Gear("INVTYPE_HANDS", 25)
+env.items["item:3103"] = { loc = "", class = 0, subclass = 0 }   -- a potion, not gear
+env.items["item:3104"] = Gear("INVTYPE_LEGS", 25)                -- only a Horde alt knows it
+env.items["item:7777"] = { loc = "", class = 7, subclass = 0 }   -- a material Classic does not list
+_G.BlackthornesTS.Recipes.GetAccountWide = function()
+    return {
+        [9003] = { knownBy = { "alt-1", "horde-alt" } }, [9001] = { knownBy = { "me" } },
+        [9101] = { knownBy = { "me" }, outputItemID = 3101, skillLineID = 2945,
+            reagents = { { itemID = 2318, quantity = 12 }, { itemID = 7777, quantity = 2 } } },
+        [9102] = { knownBy = { "alt-1" }, outputItemID = 3102, skillLineID = 197, reagents = {} },
+        [9103] = { knownBy = { "me" }, outputItemID = 3103, skillLineID = 165, reagents = {} },
+        [9104] = { knownBy = { "horde-alt" }, outputItemID = 3104, skillLineID = 165, reagents = {} },
+        [9105] = { knownBy = { "me" }, outputItemID = 3001, skillLineID = 165, reagents = {} },
+    }
+end
+Crafting:Forget()
+Crafting:LayLearned()
+local favor = C.ITEMS[3101]
+suite.check("a learned recipe Classic lacks is laid in", favor and favor.learned == true and favor[3] == 9101
+    and favor[1] == 165 and favor[4] == 18, favor and favor[1])
+suite.check("with its materials", favor and favor.m[1] == 2318 and favor.m[2] == 12 and favor.m[4] == 2)
+suite.check("you can make it", Source(3101) and Source(3101).state == "known")
+suite.check("an alt's learned recipe: ask the alt", Source(3102) and Source(3102).state == "alt"
+    and Source(3102).who[1] == "Bob Wither")
+suite.check("what isn't gear is left out", C.ITEMS[3103] == nil and Crafting.pending[3103] == false)
+suite.check("one only the other side knows is not offered", C.ITEMS[3104] and Source(3104) == nil)
+suite.check("Classic's row is kept as it is", C.ITEMS[3001].learned == nil and C.ITEMS[3001][3] == 9001)
+suite.check("its materials read by name, from the client where Classic has none",
+    Crafting:MaterialsText(3101) == "12 Light Leather, 2 Item", Crafting:MaterialsText(3101))
+suite.check("the tooltip says so", Crafting:TooltipLine(3101) == "You can make this")
+
+-- An item the client has not loaded waits, and is laid once it has.
+env.items["item:3106"] = nil
+local realRecipes = _G.BlackthornesTS.Recipes.GetAccountWide
+_G.BlackthornesTS.Recipes.GetAccountWide = function()
+    local all = realRecipes()
+    all[9106] = { knownBy = { "me" }, outputItemID = 3106, skillLineID = 165, reagents = {} }
+    return all
+end
+Crafting:Forget()
+Crafting:LayLearned()
+suite.check("an item not loaded yet waits", C.ITEMS[3106] == nil and type(Crafting.pending[3106]) == "table")
+env.items["item:3106"] = Gear("INVTYPE_WAIST", 20)
+Crafting:LayLearned()
+suite.check("and is laid once the client has it", C.ITEMS[3106] and C.ITEMS[3106].learned == true)
+_G.BlackthornesTS.Recipes.GetAccountWide = realRecipes
+
+-- Nobody knows it any more: it is not offered.
+_G.BlackthornesTS.Recipes.GetAccountWide = function()
+    return { [9003] = { knownBy = { "alt-1", "horde-alt" } }, [9001] = { knownBy = { "me" } } }
+end
+Crafting:Forget()
+suite.check("a learned recipe nobody knows now is not offered", Source(3101) == nil)
+for _, id in ipairs({ 3101, 3102, 3104, 3106 }) do C.ITEMS[id] = nil end
+
 -- Tradeskills raising never breaks anything.
 _G.BlackthornesTS.Recipes.GetAccountWide = function() error("boom") end
 Crafting:Forget()
