@@ -533,6 +533,8 @@ function Finder:Candidates(player, only, pause)
     for itemID in pairs(ns.Sources.FOREVER or {}) do
         if not ns.Sources.ITEMS[itemID] then ids[#ids + 1] = itemID end
     end
+    -- Recipes the characters learned that Classic's data lacks.
+    if ns.Crafting and ns.Crafting.LayLearned then ns.Crafting:LayLearned() end
     for itemID, craft in pairs(ns.Crafts and ns.Crafts.ITEMS or {}) do
         if not ns.Sources.ITEMS[itemID] and not (ns.Sources.FOREVER or {})[itemID]
             and craft[5] >= floor and craft[4] <= player.level then

@@ -191,6 +191,16 @@ Character names are always shown whole, first and last (the owner,
 2026-10-11: Forever characters have last names), so never "Bob" or
 "Bob B.".
 
+Recipes Forever added (Merchant's Favor ones among them, a player found
+2026-10-16) are not in `Data/Crafts.lua`, so `Crafting:LayLearned` (asked
+by `Finder:Candidates` and the tooltip) lays a learned one into
+`Crafts.ITEMS` at runtime, never saved, from the `GetAccountWide` record's
+`outputItemID`, `skillLineID` and `reagents` (`{ itemID, quantity }`),
+with level, item level and bind type from the client. Such a row has
+`learned = true` and is offered only as "known" or "alt"; nothing here
+says how to learn it. If Tradeskills renames those fields, change
+`Logic/Crafting.lua` too.
+
 `GetSkill` (2026-10-09): Forever moved some recipes to other skill levels,
 and Tradeskills reads the right one from the recipe item's tooltip.
 `Crafting:Skill` uses it over `Data/Crafts.lua`'s Classic skill.
