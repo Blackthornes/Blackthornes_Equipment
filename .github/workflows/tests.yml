@@ -50,6 +50,9 @@ jobs:
       - name: The vendor spot tool reads a save as data only
         run: python tools/test_forever_npcs.py
 
+      - name: The enchant tool reads the client tables right
+        run: python tools/test_make_enchants.py
+
       - name: The Forever item tool keeps only what changed
         run: python tools/test_forever_items.py
 

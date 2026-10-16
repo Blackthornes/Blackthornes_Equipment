@@ -58,6 +58,19 @@ already worn, so a worn ring is never an upgrade over the other ring. It never
 raises. Keep the global, `Compare` and `IsUpgrade(item)` stable; if one has to
 change, change Tradeskills' `Logic/Upgrades.lua` too.
 
+Its Level Up tab also puts the arrow, and "For you: Chest +3%", on an
+enchanting recipe that beats what is on the gear worn (2026-10-16; see
+"Enchants for your gear"):
+
+```lua
+_G.BlackthornesEquipment.Enchants:ForRecipe(recipeID)
+  -- { slot (shown name), slotID, gain (whole percent, nil for an empty
+  --   slot's), current (enchant on it now), best (the top pick) }, or nil
+```
+
+A fresh table, never raises, laid out once per gear or weights change. Keep
+it stable; if it changes, change Tradeskills' `Upgrades:EnchantFor` too.
+
 The CurseForge project ID is **1720051** (the owner created it 2026-09-30), on the
 TOC's `X-Curse-Project-ID` line. The first release is 0.1.0.
 
@@ -204,9 +217,49 @@ materials put on the list; gear nobody makes (`other`) goes on the list
 itself. A craft Tradeskills has not read yet falls back to its materials.
 The source is read again on each click (`TradeskillsQueue.Fresh`), since
 the upgrade quest keeps one from when it was picked. If these change in
-Tradeskills, change `Logic/TradeskillsQueue.lua` too. Nothing else here
-calls the other addons, apart from the shared arrow table (see the quest
-arrow below).
+Tradeskills, change `Logic/TradeskillsQueue.lua` too.
+
+The Enchants view (see "Enchants for your gear") uses the same `Ensure`
+and `EnsureBuy` for its Queue it, and asks where a recipe is learned:
+
+```lua
+ts.LearnNext:WhereFor(recipeID)       -- { kind, name, zone, x, y, price }, or nil
+ts.LearnNext:ShowTheWayFor(recipeID)  -- the Level Up tab's pin and chat line; true when set
+```
+
+If these change in Tradeskills, change `Logic/Enchants.lua` too. Nothing
+else here calls the other addons, apart from the shared arrow table (see
+the quest arrow below).
+
+## Enchants for your gear
+
+A player asked (2026-10-15, the owner said build it) for the best enchant
+for each worn piece, by spec and level, and a way into Tradeskills for an
+enchanter. `Data/Enchants.lua` is written by `tools/make_enchants.py
+<tables folder> --build <build> [--learnspots <Tradeskills'
+Data/LearnSpots.lua>]` from the Forever client's game tables
+(SpellItemEnchantment, SpellEquippedItems, SpellEffect, SpellReagents,
+SkillLineAbility, ItemEffect, ItemXItemEffect, Item, ItemSparse); never
+edit it by hand, never commit the tables or name where they came from.
+It holds Enchanting recipes, armor kits and scopes (oils and stones left
+for later), each with its slots, materials and skill, and what each
+enchant gives; a resistance or a proc alone is never offered.
+
+`Logic/Enchants.lua` reads each worn piece's enchant from its link, weighs
+every enchant that fits with the gear's own stat weights (`Weights:Score`)
+and keeps those more than `MIN_PERCENT` better (`Enchants:Plans`, laid out
+again when the gear or weights move). Who can get it is read as crafted
+gear's is (`known`, `alt`, `learn`, `skill`, `other`); when a better piece
+is coming for a slot, the cheapest good enchant is offered instead. Gear
+upgrades are still judged without enchants.
+
+It shows as an Enchants filter in Where to get upgrades (`FinderUI:
+PresentEnchants`; the gear controls hide there), with Queue it and Show
+the way (the calls above), and as "Best enchant: NAME (+3%)" on the
+tooltip of a piece you wear ("Best Enchant" on the Gear page,
+`enchantTooltip`, on unless unticked, never rename it). `/beq probe` has a
+"worn enchants" line. Tested in `tools/test_enchants.lua` and
+`tools/test_make_enchants.py`. Not yet seen in game.
 
 ## Where to get upgrades (the finder)
 

@@ -45,7 +45,18 @@ suite.check("a bare id is enough", #tip._lines == 1, #tip._lines)
 
 tip._lines = {}
 postCall(tip, { id = 1, hyperlink = "item:1" })
+suite.check("the worn item gets no verdict, only its best enchant", #tip._lines == 1
+    and tip._lines[1]:find("Best enchant: ", 1, true) ~= nil, tip._lines[1])
+
+-- With the enchant line turned off, the worn item gets nothing.
+ns.db.enchantTooltip = false
+ns.Tooltip.ForgetLines()
+tip._scripts.OnTooltipCleared(tip)
+tip._lines = {}
+postCall(tip, { id = 1, hyperlink = "item:1" })
 suite.check("the worn item gets no line", #tip._lines == 0, #tip._lines)
+ns.db.enchantTooltip = nil
+ns.Tooltip.ForgetLines()
 
 local shopping = env.Stub({ _lines = {}, AddLine = function(self, t) self._lines[#self._lines + 1] = t end })
 postCall(shopping, { id = 2, hyperlink = "item:2" })
