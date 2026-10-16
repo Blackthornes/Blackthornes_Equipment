@@ -97,6 +97,42 @@ end
 
 Finder.LayForeverItems(ns.ForeverItems, ns.Sources and ns.Sources.ITEMS, ns.Crafts and ns.Crafts.ITEMS)
 
+--- Leave out the Classic quests the Forever client does not have
+--- (Data/ForeverGoneQuests.lua): their rows go, and so do their IDs in each
+--- item's quest lists and any quest's `p`. Done once as the addon loads,
+--- before QuestLearn lays what was learned in game, so a quest met in game
+--- still shows.
+function Finder.DropGoneQuests(gone, sources)
+    if type(gone) ~= "table" or type(sources) ~= "table" then return 0 end
+    local quests, items = sources.QUESTS, sources.ITEMS
+    local dropped = 0
+    if type(quests) == "table" then
+        for questID in pairs(gone) do
+            local quest = quests[questID]
+            if quest and not quest.learned then
+                quests[questID] = nil
+                dropped = dropped + 1
+            end
+        end
+        for _, quest in pairs(quests) do
+            if quest.p and gone[quest.p] and not quests[quest.p] then quest.p = nil end
+        end
+    end
+    local function Strip(list)
+        if type(list) ~= "table" then return end
+        for i = #list, 1, -1 do
+            if gone[list[i]] and not (quests and quests[list[i]]) then table.remove(list, i) end
+        end
+    end
+    for _, item in pairs(type(items) == "table" and items or {}) do
+        Strip(item.q)
+        Strip(item.g)
+    end
+    return dropped
+end
+
+Finder.DropGoneQuests(ns.ForeverGoneQuests, ns.Sources)
+
 --------------------------------------------------------------------------------
 -- The character
 --------------------------------------------------------------------------------

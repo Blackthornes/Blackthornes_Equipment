@@ -390,6 +390,17 @@ pulled again; it touches no other data file, so the weekly drops refresh
 (`forever_drops.py`) is unaffected. Tested in `tools/test_foreveritems.lua`
 and `tools/test_forever_items.py`.
 
+Quests the Forever client does not have (the owner said yes,
+2026-10-16): `tools/forever_gone_quests.py <tables folder> --build <build>`
+reads only the client's `QuestV2.csv` and writes
+`Data/ForeverGoneQuests.lua`, the Classic quests in `Sources.QUESTS` it
+lacks (95 at build 70338, all level 55 to 60). `Finder.DropGoneQuests`
+takes them out of `Sources.QUESTS` and the items' `q`/`g` lists once at
+load, before `QuestLearn:LayAll`, so a quest learned in game still shows.
+Never by hand; rerun it after `make_sources.py` and when the tables are
+pulled again. Tested in `tools/test_gonequests.lua` and
+`tools/test_forever_gone_quests.py`.
+
 Vendor and trainer spots on Forever (the owner asked 2026-10-07, after Varg
 Windwhisper turned out to stand elsewhere): `Logic/NPCSpots.lua` keeps,
 whenever a merchant or trainer window opens, the NPC ID from
