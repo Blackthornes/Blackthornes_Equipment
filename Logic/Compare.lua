@@ -67,9 +67,12 @@ local FIRST_BAG, LAST_BAG = 0, 4
 local scores = setmetatable({}, { __mode = "k" })
 
 --- One item's score for these weights, or nil if its stats cannot be read.
+-- The second and third returns are its hit (percent, the kind the spec
+-- cares about) and what that hit adds to the score, for the hit cap.
 function Compare:ScoreOf(link, weights)
     local kept = type(weights) == "table" and type(link) == "string" and scores[weights]
-    if kept and kept[link] then return kept[link] end
+    local held = kept and kept[link]
+    if held then return held[1], held[2], held[3] end
 
     local raw = Items:Stats(link)
     if not raw then return nil end
@@ -78,9 +81,15 @@ function Compare:ScoreOf(link, weights)
     local stats = Weights:Normalize(raw)
     local schools = Items:SchoolDamage(link)
     Weights:AddSchools(stats, schools)
-    local score = Weights:Score(stats, weights, info and RANGED[info.equipLoc] or false)
+    local score, hit = Weights:Score(stats, weights, info and RANGED[info.equipLoc] or false)
+    local _, hitWeight = Weights.HitKind(weights)
+    hit = hit or 0
     -- A kind of weapon the player counts for more or less (Weights:FactorFor).
-    if info then score = score * Weights:FactorFor(weights, info.classID, info.subclassID) end
+    if info then
+        local factor = Weights:FactorFor(weights, info.classID, info.subclassID)
+        score, hitWeight = score * factor, hitWeight * factor
+    end
+    local hitValue = hit * hitWeight
 
     -- Kept only once everything it read had loaded: the stats, what kind of
     -- item it is, and the tooltip's school damage (nil until it can be read).
@@ -91,10 +100,121 @@ function Compare:ScoreOf(link, weights)
             kept = {}
             scores[weights] = kept
         end
-        kept[link] = score
+        kept[link] = { score, hit, hitValue }
     end
-    return score
+    return score, hit, hitValue
 end
+
+--- Forget every kept score: what rating gives moves with the level.
+function Compare:ForgetScores()
+    scores = setmetatable({}, { __mode = "k" })
+    if Weights.ForgetRatings then Weights:ForgetRatings() end
+end
+
+function Compare:OnEnable()
+    ns.RegisterEvent(self, "PLAYER_LEVEL_UP", self.ForgetScores)
+end
+
+--------------------------------------------------------------------------------
+-- The hit cap
+--
+-- Past a point, more hit does nothing: against a mob of your own level,
+-- 5% hit stops weapon attacks missing and 3% stops spells missing (Classic's
+-- numbers). Someone swinging two weapons still misses with plain swings
+-- until 24%, so for them hit past 5% counts for half, up to 24%. The hit the
+-- character has now comes from the client (talents, racials and gear all
+-- in it); when it cannot be read, hit counts in full as before.
+--------------------------------------------------------------------------------
+
+Compare.HIT_CAP = { melee = 5, spell = 3 }
+Compare.DUAL_WIELD_CAP = 24
+Compare.DUAL_WIELD_PAST_CAP = 0.5
+
+local HIT_CALLS = {
+    melee = { modifier = "GetHitModifier", cr = "CR_HIT_MELEE", index = 6 },
+    spell = { modifier = "GetSpellHitModifier", cr = "CR_HIT_SPELL", index = 8 },
+}
+
+local hitRead, hitReadAt = {}, {}
+
+-- A number the client gave, or nil, read inside a pcall.
+local function Number(value)
+    local ok, answer = pcall(function()
+        if type(value) == "number" and value == value and value > -100 and value < 100 then return value end
+        return nil
+    end)
+    return ok and answer or nil
+end
+
+--- The hit the character has now, in percent, for "melee" or "spell", or
+--- nil when the client will not say. Read at most once a second.
+function Compare:CurrentHit(kind)
+    local calls = HIT_CALLS[kind]
+    if not calls then return nil end
+    local now = (type(GetTime) == "function" and GetTime()) or 0
+    if hitReadAt[kind] and now - hitReadAt[kind] < 1 then return hitRead[kind] or nil end
+
+    local index = _G[calls.cr]
+    if type(index) ~= "number" then index = calls.index end
+    local modifier = Number((Items.Call({ calls.modifier })))
+    local rating = Number((Items.Call({ "GetCombatRatingBonus" }, index)))
+    local hit = nil
+    if modifier or rating then hit = math.max(0, (modifier or 0) + (rating or 0)) end
+    hitRead[kind], hitReadAt[kind] = hit or false, now
+    return hit
+end
+
+--- Is the character swinging a weapon in each hand?
+local function DualWielding()
+    for _, slot in ipairs({ 16, 17 }) do
+        local link = Items:Equipped(slot)
+        local info = link and Items:Info(link)
+        local loc = info and info.equipLoc
+        if not (loc == "INVTYPE_WEAPON" or loc == "INVTYPE_WEAPONMAINHAND" or loc == "INVTYPE_WEAPONOFFHAND") then
+            return false
+        end
+    end
+    return true
+end
+
+--- How much of `hit` (percent) counts, added on top of `base`.
+function Compare.HitThatCounts(hit, base, cap, dualCap, past)
+    local function Worth(total)
+        local worth = math.min(total, cap)
+        if dualCap and total > cap then worth = worth + (math.min(total, dualCap) - cap) * past end
+        return worth
+    end
+    base = math.max(0, base)
+    return Worth(base + hit) - Worth(base)
+end
+
+--- The hit cap, worked out for these weights: a function that takes an
+--- item's hit (percent) and what that hit added to its score, and the worn
+--- hit it would replace, and gives back how much to take off its score.
+--- Nil when the spec weighs no hit or the client says nothing.
+function Compare:HitCapFor(weights, wornHit)
+    local kind = Weights.HitKind(weights)
+    if not kind then return nil end
+    local current = self:CurrentHit(kind)
+    if not current then return nil end
+    local cap = self.HIT_CAP[kind]
+    local dualCap = kind == "melee" and DualWielding() and self.DUAL_WIELD_CAP or nil
+    local base = current - (wornHit or 0)
+    return function(hit, hitValue)
+        if not hit or hit <= 0 or not hitValue or hitValue <= 0 then return 0 end
+        local counts = Compare.HitThatCounts(hit, base, cap, dualCap, self.DUAL_WIELD_PAST_CAP)
+        return hitValue * (1 - counts / hit)
+    end
+end
+
+--- Score and the score to beat with hit past the cap taken off both.
+local function Capped(self, weights, score, hit, hitValue, against, wornHit, wornValue)
+    local lose = self:HitCapFor(weights, wornHit)
+    if not lose then return score, against, false end
+    local off, wornOff = lose(hit, hitValue), lose(wornHit, wornValue)
+    return score - off, math.max(0, (against or 0) - wornOff), off > 0 or wornOff > 0
+end
+Compare.Capped = Capped
 
 --- What is worn where this item would go, and the score to beat.
 -- @return against (number), empty (true when every slot it could go in is
@@ -122,16 +242,20 @@ function Compare:Against(link, equipLoc, weights)
     end
 
     local weakest, weakestSlot, empty = nil, slots[1], true
+    local wornHit, wornValue = 0, 0
     for _, slot in ipairs(slots) do
         local worn = Items:Equipped(slot)
-        if worn == link then return 0, false, true, slot end
+        if worn == link then return 0, false, true, slot, 0, 0 end
 
-        local score = 0
+        local score, hit, value = 0, 0, 0
         if worn then
             empty = false
-            score = self:ScoreOf(worn, weights) or 0
+            score, hit, value = self:ScoreOf(worn, weights)
+            score = score or 0
         end
-        if not weakest or score < weakest then weakest, weakestSlot = score, slot end
+        if not weakest or score < weakest then
+            weakest, weakestSlot, wornHit, wornValue = score, slot, hit or 0, value or 0
+        end
     end
 
     -- A two-hander replaces the off hand too.
@@ -139,7 +263,9 @@ function Compare:Against(link, equipLoc, weights)
         local offHand = Items:Equipped(17)
         if offHand then
             empty = false
-            weakest = weakest + (self:ScoreOf(offHand, weights) or 0)
+            local score, hit, value = self:ScoreOf(offHand, weights)
+            weakest = weakest + (score or 0)
+            wornHit, wornValue = wornHit + (hit or 0), wornValue + (value or 0)
         end
     end
 
@@ -150,11 +276,14 @@ function Compare:Against(link, equipLoc, weights)
         local mainInfo = mainHand and Items:Info(mainHand)
         if mainInfo and mainInfo.equipLoc == "INVTYPE_2HWEAPON" then
             empty = false
-            weakest = self:ScoreOf(mainHand, weights) or 0
+            local score, hit, value = self:ScoreOf(mainHand, weights)
+            weakest, wornHit, wornValue = score or 0, hit or 0, value or 0
         end
     end
 
-    return weakest or 0, empty, false, weakestSlot
+    -- The fifth and sixth returns: the worn hit it would replace, and what
+    -- that hit adds to the score to beat (for the hit cap).
+    return weakest or 0, empty, false, weakestSlot, wornHit, wornValue
 end
 
 --- The character playing is skipped for upgrades (Alts:SetSkipped, a
@@ -241,16 +370,18 @@ function Compare:Judge(link)
         result.level = needs
     end
 
-    local score = self:ScoreOf(link, weights)
+    local score, hit, hitValue = self:ScoreOf(link, weights)
     if not score then return nil end
 
-    local against, empty, equipped, slot = self:Against(link, info.equipLoc, weights)
+    local against, empty, equipped, slot, wornHit, wornValue = self:Against(link, info.equipLoc, weights)
     result.slot = slot
     if equipped then
         result.verdict = "equipped"
         return result
     end
 
+    -- Hit past the cap counts for less, on this item and on what it replaces.
+    score, against, result.hitCapped = Capped(self, weights, score, hit, hitValue, against, wornHit, wornValue)
     result.score, result.against, result.empty = score, against, empty
 
     if empty then
@@ -312,13 +443,19 @@ function Compare:JudgeCarried(link)
     if not (result and result.verdict == "equipped" and PAIRED[result.slot]) then return result end
 
     local weights = Weights:ForPlayer()
-    local score = weights and self:ScoreOf(link, weights)
+    if not weights then return result end
+    local score, hit, hitValue = self:ScoreOf(link, weights)
     if not score then return result end
 
     local other = PAIRED[result.slot]
     local worn = Items:Equipped(other)
     if worn == link or self:IsUnique(link) then return result end
-    local against = worn and (self:ScoreOf(worn, weights) or 0) or 0
+    local against, wornHit, wornValue = 0, 0, 0
+    if worn then
+        against, wornHit, wornValue = self:ScoreOf(worn, weights)
+        against = against or 0
+    end
+    score, against = Capped(self, weights, score, hit, hitValue, against, wornHit, wornValue)
 
     local judged = {
         className = result.className, specName = result.specName, slot = other,
@@ -374,13 +511,21 @@ function Compare:BestInBags()
         local other = best[pair[1]] and pair[2] or pair[1]
         if weights and taken and not best[other] then
             local worn = Items:Equipped(other)
-            local against = worn and (self:ScoreOf(worn, weights) or 0) or 0
+            local wornScore, wornHit, wornValue = 0, 0, 0
+            if worn then
+                wornScore, wornHit, wornValue = self:ScoreOf(worn, weights)
+                wornScore = wornScore or 0
+            end
             for _, entry in ipairs(paired) do
                 local result = entry.result
                 local twin = IDOf(entry.link) == IDOf(taken.link) and self:IsUnique(entry.link)
                 if entry.where ~= taken.where and not twin
                     and (result.slot == pair[1] or result.slot == pair[2]) then
-                    local score = result.score or 0
+                    -- Scored again against this ring, since the hit cap
+                    -- depends on which one it replaces.
+                    local raw, hit, hitValue = self:ScoreOf(entry.link, weights)
+                    local score, against = Capped(self, weights, raw or result.score or 0, hit, hitValue,
+                        wornScore, wornHit, wornValue)
                     local percent = against > 0 and (score - against) / against * 100 or nil
                     local beats = not worn or (percent and percent >= SAME_WITHIN)
                         or (against <= 0 and score > 0)

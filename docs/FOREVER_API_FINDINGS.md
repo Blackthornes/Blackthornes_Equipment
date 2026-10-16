@@ -314,3 +314,26 @@ rogue does, and the druid's weapon list has polearms. Not yet seen in game.
 | Question | Answer | What it means here |
 |---|---|---|
 | School spell damage ("Increases damage done by Frost spells and effects by up to 10") | The game's own comparison lists it as "Frost Damage", but nothing here counted it, so Azure Silk Pants scored as Intellect alone | `Items:SchoolDamage` reads the Equip: line off `C_TooltipInfo.GetHyperlink` (by item ID if that is missing), and `Weights:Normalize` also takes any stat key naming a school. Not yet seen in game: `/beq probe` prints a `school damage` line under each worn slot that has some, and any school key `C_Item.GetItemStats` hands over. |
+
+## 2026-10-16: ratings, the hit cap and racials (from the client's game tables and the game's patch notes)
+
+- Forever gear gives hit and crit as **ratings**, not percent: the client's
+  item table has hit rating on 184 items and crit rating on 521 (Devilsaur
+  Gauntlets went from 1% crit to 14 crit rating). Equipment used to read a
+  rating point as 1%. `Weights:Normalize` now divides by `Weights:RatingPer`:
+  the client's own rate (`GetCombatRatingBonusForCombatRatingValue`, else the
+  player's rating over its bonus), else the usual table (10 hit, 14 crit, 12
+  dodge, 20 parry, 5 block, 1.5 defense per 1% at 60, scaled by
+  (level - 8) / 52). Plain hit and crit rating count for weapons and spells
+  alike, so casters weigh them too. Not yet probed: `/beq probe` has a
+  "rating for 1%" line.
+- The 10-15 patch took every weapon kind out of the racials (Sword, Mace and
+  Axe Specialization became flat crit), moved Tauren Endurance from hit to
+  crit damage, and raised Skyborne haste. Flat crit, hit and haste racials
+  need nothing from Equipment: the client counts them. What is left for
+  gear is Tauren +5% health, Human +5% Spirit and Gnome +5% mana
+  (`Weights.RACIALS`, read off the spell text when it can be).
+- The hit cap reads `GetHitModifier` / `GetSpellHitModifier` plus
+  `GetCombatRatingBonus(CR_HIT_MELEE / CR_HIT_SPELL)`. Not yet probed:
+  `/beq probe` has a "hit now" line. Caps are Classic's, against a mob of
+  your level: 5% weapons, 3% spells, plain swings with two weapons to 24%.
