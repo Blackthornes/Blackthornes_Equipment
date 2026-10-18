@@ -1057,3 +1057,9 @@ L["%s: %d vendor and %d quest from %s."] = "%s：从%4$s那里收到 %2$d 个商
 L["%s: %d vendor and %d quests from %s."] = "%s：从%4$s那里收到 %2$d 个商人和 %3$d 个任务。"
 L["%s: %d vendors and %d quest from %s."] = "%s：从%4$s那里收到 %2$d 个商人和 %3$d 个任务。"
 L["%s: %d vendors and %d quests from %s."] = "%s：从%4$s那里收到 %2$d 个商人和 %3$d 个任务。"
+
+-- Off, Shift or Always for each tooltip line (UI/TooltipShift.lua).
+L["Off"] = "关"
+L["Shift"] = "Shift"
+L["Always"] = "总是"
+L["Hold Shift for more."] = "按住 Shift 查看更多。"

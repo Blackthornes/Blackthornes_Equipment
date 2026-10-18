@@ -413,7 +413,8 @@ end
 check("buttons checked across the windows", #made > 20, true)
 check("every one readable at rest and lit", table.concat(unreadable, ", "), "")
 -- (Settings' character picker adds its < and > while no character is known.)
-check("bar the few dimmed at the end of a range", dimmed > 0 and dimmed < 10, true)
+-- (The four tooltip line steppers start on Always, their + dimmed.)
+check("bar the few dimmed at the end of a range", dimmed > 0 and dimmed < 14, true)
 
 addon.Widgets.CreateButton = CreateButton
 

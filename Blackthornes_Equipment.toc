@@ -71,6 +71,7 @@ UI\Veil.lua
 UI\Titanforged.lua
 UI\About.lua
 UI\WhatsNew.lua
+UI\TooltipShift.lua
 UI\SettingsPages.lua
 UI\Minimap.lua
 UI\Settings.lua
