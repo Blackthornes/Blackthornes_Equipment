@@ -738,7 +738,10 @@ wait) and `UI/TrainingDrawer.lua`, a drawer against the window's right
 edge (left open in `trainingDrawer`): READY NOW and AT LEVEL N with each
 spell's cost, WEAPON SKILLS for untrained weapon upgrades in the bags
 (`UI.untrained`, a click shows the weapon master), and the other
-characters'. Show the way aims the quest arrow at the class trainer
+characters' on this realm and side (`ClassTraining.SameSide`: each note
+keeps its `realm` and `faction`, an older one takes them from
+`characterGear` or Tradeskills' `Holdings`, else it waits until that
+character logs in; a player saw the other side's, 2026-10-18). Show the way aims the quest arrow at the class trainer
 (`ClassTraining.Guide` = `TrainingDrawer.Guide`). Tested in
 `tools/test_classtraining.lua`. Not yet seen in game.
 
