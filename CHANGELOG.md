@@ -4,6 +4,14 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.31.2
+
+For WoW: Forever (interface 16001). Files were added and the TOC changed, so
+restart the game fully after updating (`/reload` is not enough).
+
+- **Rarity colors:** item names use their rarity color.
+- **Bug fixes:** various fixes to Equipment.
+
 ## 0.31.1
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
