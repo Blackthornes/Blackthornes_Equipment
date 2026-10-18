@@ -799,8 +799,11 @@ local function GoalText(goal)
     local where = goal.dungeon and L.Format(" in %s", goal.dungeon)
         or L.Format(" in %s", goal.zone) .. At(goal)
     if goal.item then
-        if goal.kind == "vendor" then return L.Format("buy %s from %s%s", goal.item, goal.name, where) end
-        return L.Format("collect %s from %s%s", goal.item, goal.name, where)
+        -- The data names the item without its ID: coloured once the
+        -- client knows the name, else as it is.
+        local item = Items.ColorName(nil, goal.item)
+        if goal.kind == "vendor" then return L.Format("buy %s from %s%s", item, goal.name, where) end
+        return L.Format("collect %s from %s%s", item, goal.name, where)
     end
     return L.Format("find %s%s", goal.name, where)
 end
@@ -844,7 +847,9 @@ function UpgradeQuest:Steps(quest)
     if not quest then return {}, 0 end
     local source = quest.source or {}
     local itemID = quest.itemID
-    local link = quest.link
+    -- Shown in its rarity colour: the item's own link once the client has
+    -- it, even when the quest was saved before it did.
+    local link = Items.ShowLink(quest.link)
     local zone = self.Zone()
     local have = self.Count(itemID) > 0
     local worn = self.Worn(itemID)
@@ -870,6 +875,8 @@ function UpgradeQuest:Steps(quest)
         title = title or L["the quest"]
         local starter = questID and UpgradeQuest.Starter(questID)
         itemName = (starter and starter.item) or itemName or L["an item"]
+        -- The item that starts it, in its rarity colour.
+        itemName = Items.ColorName(starter and starter.itemID, itemName)
         local held = starter and UpgradeQuest.Count(starter.itemID) > 0
         local first = starter and starter.places[1]
         if not first and not held then
@@ -1348,7 +1355,7 @@ function UpgradeQuest:Check()
             -- show says so; the others quietly pick again.
             quests[tab.key] = nil
             if shown then
-                ns.Print(L.Format("dropped the upgrade quest for %s, since you're already wearing something as good.", quest.link))
+                ns.Print(L.Format("dropped the upgrade quest for %s, since you're already wearing something as good.", Items.ShowLink(quest.link)))
                 if ns.Toast then
                     ns.Toast:Show({ title = L["You already beat this one"], link = quest.link,
                         text = L["You're already wearing something as good. Picking your next upgrade."] })
@@ -1360,7 +1367,7 @@ function UpgradeQuest:Check()
             -- done again, so this upgrade is out of reach.
             quests[tab.key] = nil
             self:Skipped()[quest.itemID] = true
-            ns.Print(L.Format("dropped the upgrade quest for %s, since that quest is already done.", quest.link))
+            ns.Print(L.Format("dropped the upgrade quest for %s, since that quest is already done.", Items.ShowLink(quest.link)))
         end
         if Valid(quests[tab.key]) then self.states[tab.key] = "active" end
     end
@@ -1768,7 +1775,7 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
         local quest = UpgradeQuest:Current()
         if UpgradeQuest:Skip() then
             ns.Print(L.Format("ignored %s. It won't be offered again. To bring it back, go to Settings > Upgrade quest > Ignored.",
-                quest and quest.link or L["that upgrade"]))
+                quest and Items.ShowLink(quest.link) or L["that upgrade"]))
         else
             ns.Print(L["there is no upgrade quest to ignore."])
         end

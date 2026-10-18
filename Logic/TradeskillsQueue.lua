@@ -80,7 +80,8 @@ local function Name(itemID)
             or (GetItemInfo and GetItemInfo(itemID))
         return info
     end)
-    if ok and type(name) == "string" then return name end
+    -- Chat names it in its rarity colour.
+    if ok and type(name) == "string" then return ns.Items.ColorName(itemID, name) end
     return L["that upgrade"]
 end
 

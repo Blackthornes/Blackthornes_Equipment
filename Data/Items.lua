@@ -361,3 +361,156 @@ function Items:WornSignature()
 end
 
 Items.Call = Call
+
+--------------------------------------------------------------------------------
+-- Item names in their quality colour
+--
+-- The owner (2026-10-18): an item's name always shows its rarity colour,
+-- grey, white, green, blue, purple or orange, wherever it is drawn. Saved
+-- data and anything compared or put in a macro stays plain; only the text
+-- put on screen is coloured, at the moment it is drawn. A quality is kept
+-- per item once the client has said it; until then the item is asked for
+-- once (GET_ITEM_INFO_RECEIVED says when it arrives, and the windows that
+-- show names already draw again then) and the name keeps the colour of
+-- the line it sits in.
+--------------------------------------------------------------------------------
+
+local qualityOf = {}       -- [itemID] = quality, once known
+local qualityByName = {}   -- [name] = quality, for a name with no ID
+local hexOf = {}           -- [quality] = "ffrrggbb"
+local asked = {}           -- [itemID] = true once asked for this session
+
+local function ItemIDOf(item)
+    if type(item) == "number" then return item end
+    if type(item) ~= "string" then return nil end
+    local ok, id = pcall(function() return tonumber(item:match("item:(%d+)")) end)
+    return ok and id or nil
+end
+Items.ItemIDOf = ItemIDOf
+
+local function Hex(r, g, b)
+    local ok, hex = pcall(function()
+        return ("ff%02x%02x%02x"):format(math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5),
+            math.floor(b * 255 + 0.5))
+    end)
+    return ok and hex or nil
+end
+
+--- The colour code of a quality ("ff1eff00" for green), or nil.
+function Items.QualityHex(quality)
+    if type(quality) ~= "number" then return nil end
+    if hexOf[quality] then return hexOf[quality] end
+    local hex
+    local colors = rawget(_G, "ITEM_QUALITY_COLORS")
+    local color = type(colors) == "table" and colors[quality] or nil
+    if type(color) == "table" and type(color.r) == "number" then
+        hex = Hex(color.r, color.g, color.b)
+    end
+    if not hex then
+        local r, g, b, h = Call({ "C_Item.GetItemQualityColor", "GetItemQualityColor" }, quality)
+        if type(h) == "string" and h:match("^%x%x%x%x%x%x%x%x$") then
+            hex = h:lower()
+        elseif type(r) == "number" and type(g) == "number" and type(b) == "number" then
+            hex = Hex(r, g, b)
+        end
+    end
+    if hex then hexOf[quality] = hex end
+    return hex
+end
+
+--- Ask the server about an item once a session, so its quality comes in.
+local function Ask(id)
+    if asked[id] then return end
+    asked[id] = true
+    local C = rawget(_G, "C_Item")
+    if type(C) == "table" and type(C.RequestLoadItemDataByID) == "function" then
+        pcall(C.RequestLoadItemDataByID, id)
+    end
+end
+
+--- An item's quality (0 grey to 5 orange and up), or nil while not known.
+--- `item` is an ID, a link or item string, or (with no ID to go on) a name,
+--- which the client answers only once it has that item.
+function Items:Quality(item)
+    local id = ItemIDOf(item)
+    if id and qualityOf[id] then return qualityOf[id] end
+    local name = not id and type(item) == "string" and item ~= "" and item or nil
+    if name and qualityByName[name] then return qualityByName[name] end
+    local key = id or name
+    if not key then return nil end
+    -- A link carries its own colour; the client's answer is the same.
+    local _, _, quality = Call(ITEM_INFO, type(item) == "string" and item or key)
+    local ok, number = pcall(function()
+        local value = tonumber(quality)
+        if value and value >= 0 and value <= 9 then return value end
+    end)
+    if ok and number then
+        if id then qualityOf[id] = number else qualityByName[name] = number end
+        return number
+    end
+    if id then Ask(id) end
+    return nil
+end
+
+--- `name` in the quality colour of `item` (an ID, link or the name itself),
+--- or `name` as it is while the quality is not known. Text that already
+--- carries a colour is left alone.
+function Items.ColorName(item, name)
+    if type(name) ~= "string" or name == "" then return name end
+    if name:find("|c", 1, true) then return name end
+    local hex = Items.QualityHex(Items:Quality(item or name))
+    if not hex then return name end
+    return "|c" .. hex .. name .. "|r"
+end
+
+--- A link to show: a real link (coloured by the game) as it is; an item
+--- string ("item:123", kept while the client had not sent the item) as the
+--- item's link once the client has it, else as it was.
+function Items.ShowLink(link)
+    if type(link) ~= "string" then return link end
+    if link:find("|H", 1, true) then return link end
+    local id = ItemIDOf(link)
+    if not id then return Items.ColorName(nil, link) end
+    local _, real = Call(ITEM_INFO, id)
+    real = Items.PlainLink(real)
+    if real and real:find("|H", 1, true) then return real end
+    Ask(id)
+    return link
+end
+
+--- Is a name drawn plain while its item's quality is on its way?
+function Items:Waiting(itemID)
+    local ok, id = pcall(function() return tonumber(itemID) end)
+    return ok and id ~= nil and asked[id] == true and qualityOf[id] == nil
+end
+
+-- Windows that draw names again when an item they showed plain arrives.
+-- One redraw for a burst of answers, never for items nobody here asked for.
+local watchers = {}
+local redrawSoon = false
+
+--- Call `fn` (in a pcall) a moment after items whose names were drawn
+--- plain arrive, once for a burst.
+function Items:WatchNames(fn)
+    if type(fn) == "function" then watchers[#watchers + 1] = fn end
+end
+
+local function Redraw()
+    redrawSoon = false
+    for _, fn in ipairs(watchers) do pcall(fn) end
+end
+
+function Items:OnItemInfo(_, itemID)
+    if not self:Waiting(itemID) or redrawSoon then return end
+    redrawSoon = true
+    local timer = rawget(_G, "C_Timer")
+    if type(timer) == "table" and type(timer.After) == "function" then
+        timer.After(0.2, Redraw)
+    else
+        Redraw()
+    end
+end
+
+function Items:OnEnable()
+    ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", self.OnItemInfo)
+end

@@ -351,7 +351,7 @@ function QuestPanel:BuildTab(frame, tab)
         if tab.log then
             GameTooltip:AddLine(L["Every quest in your log."], 1, 1, 1, true)
         elseif quest then
-            GameTooltip:AddLine(quest.link, 1, 1, 1, true)
+            GameTooltip:AddLine(ns.Items.ShowLink(quest.link), 1, 1, 1, true)
         else
             GameTooltip:AddLine(logic and logic.NONE[tab.key] or "", 1, 1, 1, true)
         end
@@ -1109,8 +1109,10 @@ function QuestPanel:FillBody(quest, steps, current, done)
     end
     self.name:SetWidth(textWidth)
     self.gain:SetWidth(textWidth)
-    self.name:SetText(quest.link or "?")
-    local nameLines = math.min(2, QuestPanel.Lines("normal", quest.link or "?", textWidth))
+    -- In its rarity colour, even for a quest saved before the client sent it.
+    local shown = ns.Items.ShowLink(quest.link) or "?"
+    self.name:SetText(shown)
+    local nameLines = math.min(2, QuestPanel.Lines("normal", shown, textWidth))
     self.gain:SetText(QuestPanel.GainText(quest))
     local itemHeight = math.max(ICON, 4 + nameLines * LINE_HEIGHT.normal + 3 + LINE_HEIGHT.tiny)
     self.item:SetHeight(itemHeight)
@@ -1184,7 +1186,7 @@ function QuestPanel:FillOffer(offer)
 
     local link = offer.pick.link or "?"
     Theme.SetItemIcon(self.offerIcon, link)
-    self.offerName:SetText(link)
+    self.offerName:SetText(ns.Items.ShowLink(link))
     local parts = {}
     if offer.howMuch then parts[#parts + 1] = L.Format("%s over what you wear", offer.howMuch) end
     local source = offer.source
@@ -1557,4 +1559,6 @@ end
 function QuestPanel:OnEnable()
     self:Refresh()
     ns.RegisterEvent(self, "PLAYER_MONEY", function() QuestPanel:OnMoney() end)
+    -- A name drawn plain takes its rarity colour once the client sends it.
+    ns.Items:WatchNames(function() QuestPanel:RefreshSoon() end)
 end

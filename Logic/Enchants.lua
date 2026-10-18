@@ -145,6 +145,15 @@ function Enchants:Name(recipeID)
     return recipe.name
 end
 
+--- The name to show: a kit or scope is an item, so it is in its rarity
+--- colour; an enchanting recipe is a spell and stays as it is.
+function Enchants:ShownName(recipeID)
+    local name = self:Name(recipeID)
+    local recipe = Data().RECIPES[recipeID]
+    if name and recipe and recipe.kit then return Items.ColorName(recipe.kit, name) end
+    return name
+end
+
 --- An enchant already on gear, in words: its name, else what it gives.
 function Enchants:EnchantName(enchantID)
     local effect = Data().EFFECTS[enchantID]
@@ -177,7 +186,8 @@ function Enchants:MaterialsText(recipeID)
         if type(name) ~= "string" or name == "" then
             name = Data().MATERIALS and Data().MATERIALS[list[i]] or "?"
         end
-        parts[#parts + 1] = ("%d %s"):format(list[i + 1], name)
+        -- Each name in its rarity colour, as the game shows items.
+        parts[#parts + 1] = ("%d %s"):format(list[i + 1], name == "?" and name or Items.ColorName(list[i], name))
     end
     return table.concat(parts, ", ")
 end
@@ -583,6 +593,8 @@ function Enchants:Queue(recipeID)
         return false
     end
     local name = self:Name(recipeID) or recipe.name
+    -- What chat says: a kit's name in its colour. Tradeskills gets it plain.
+    local shown = self:ShownName(recipeID) or name
     local source = self:Source(recipeID)
     local done, why
 
@@ -591,7 +603,7 @@ function Enchants:Queue(recipeID)
         ok, done, why = pcall(queue.Ensure, queue, recipeID, 1)
         if not ok then done, why = nil, L["Tradeskills ran into an error"] end
         if done then
-            ns.Print(L.Format("Queued %s in Tradeskills. Its materials are on the shopping list.", name))
+            ns.Print(L.Format("Queued %s in Tradeskills. Its materials are on the shopping list.", shown))
             return true
         end
     end
@@ -601,7 +613,7 @@ function Enchants:Queue(recipeID)
         ok, done, why = pcall(queue.EnsureBuy, queue, recipe.kit, 1, recipe.kit)
         if not ok then done, why = nil, L["Tradeskills ran into an error"] end
         if done then
-            ns.Print(L.Format("Put %s on Tradeskills' shopping list.", name))
+            ns.Print(L.Format("Put %s on Tradeskills' shopping list.", shown))
             return true
         end
     else
@@ -614,12 +626,12 @@ function Enchants:Queue(recipeID)
             if not bought then done, why = nil, buyWhy break end
         end
         if done then
-            ns.Print(L.Format("Put the materials for %s on Tradeskills' shopping list.", name))
+            ns.Print(L.Format("Put the materials for %s on Tradeskills' shopping list.", shown))
             return true
         end
     end
 
-    ns.Print(L.Format("Couldn't queue %s: %s.", name, why or L["Tradeskills said no"]))
+    ns.Print(L.Format("Couldn't queue %s: %s.", shown, why or L["Tradeskills said no"]))
     return false
 end
 

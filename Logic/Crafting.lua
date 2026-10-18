@@ -354,7 +354,8 @@ function Crafting:MaterialsText(itemID)
     for i = 1, #list, 2 do
         local material = ns.Crafts.MATERIALS[list[i]]
         local name = material and material[1] or Plain((Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, ("item:%d"):format(list[i]))))
-        parts[#parts + 1] = ("%d %s"):format(list[i + 1], name or "?")
+        -- Each name in its rarity colour, as the game shows items.
+        parts[#parts + 1] = ("%d %s"):format(list[i + 1], name and Items.ColorName(list[i], name) or "?")
     end
     return table.concat(parts, ", ")
 end
@@ -418,10 +419,12 @@ function Crafting:LearnFrom(itemID, player)
             local place = Nearest(places, player.zone)
             if place then
                 place.how, place.recipe, place.price = "recipe", recipe[1], recipe[3]
+                place.recipeID = recipeID
                 return place
             end
             if (recipe.d or 0) > 0 and not dropped then
-                dropped = { how = "drop", recipe = recipe[1], drops = recipe.d, named = recipe.n }
+                dropped = { how = "drop", recipe = recipe[1], drops = recipe.d, named = recipe.n,
+                    recipeID = recipeID }
             end
         end
     end
@@ -527,7 +530,7 @@ end
 
 --- How to learn it, in words: "learn it from Darianna in Darnassus (64,
 --- 21) for 50s".
-function Crafting:LearnText(learn, money)
+function Crafting:LearnText(learn, money, plain)
     if not learn then return nil end
     if learn.how == "start" then return L["comes with the profession"] end
     if learn.how == "trainer" then
@@ -537,17 +540,19 @@ function Crafting:LearnText(learn, money)
         if cost then return L.Format("learn it from %s for %s", learn.name, cost) end
         return L.Format("learn it from %s", learn.name)
     end
+    -- The recipe is an item, so its name is in its rarity colour.
+    local recipe = learn.recipe and (plain and learn.recipe or Items.ColorName(learn.recipeID, learn.recipe))
     if learn.how == "recipe" then
         local where, price = Place(learn), money(learn.price)
         local text
         if where and price then
-            text = L.Format("%s, sold by %s in %s for %s", learn.recipe, learn.name, where, price)
+            text = L.Format("%s, sold by %s in %s for %s", recipe, learn.name, where, price)
         elseif where then
-            text = L.Format("%s, sold by %s in %s", learn.recipe, learn.name, where)
+            text = L.Format("%s, sold by %s in %s", recipe, learn.name, where)
         elseif price then
-            text = L.Format("%s, sold by %s for %s", learn.recipe, learn.name, price)
+            text = L.Format("%s, sold by %s for %s", recipe, learn.name, price)
         else
-            text = L.Format("%s, sold by %s", learn.recipe, learn.name)
+            text = L.Format("%s, sold by %s", recipe, learn.name)
         end
         if learn.limited then text = L.Format("%s (limited stock)", text) end
         return text
@@ -555,25 +560,25 @@ function Crafting:LearnText(learn, money)
     if learn.how == "drop" then
         local named = learn.named
         if named and #named > 0 and learn.drops <= 3 then
-            return L.Format("%s, dropped by %s", learn.recipe, named[1])
+            return L.Format("%s, dropped by %s", recipe, named[1])
         end
-        return L.Format("%s, a world drop", learn.recipe)
+        return L.Format("%s, a world drop", recipe)
     end
     return nil
 end
 
 --- One crafted source in words, without its "Crafted" tag. `money` turns
 --- copper into coloured coins (Finder.Money).
-function Crafting:Describe(source, money)
+function Crafting:Describe(source, money, plain)
     local text
     local profession = source.profession or L["a profession"]
     if source.state == "known" then
         text = L.Format("You can make it (%s)", profession)
     elseif source.state == "learn" then
-        text = L.Format("%s %d: %s", profession, source.skill, self:LearnText(source.learn, money)
+        text = L.Format("%s %d: %s", profession, source.skill, self:LearnText(source.learn, money, plain)
             or L["you can learn it"])
     elseif source.state == "skill" then
-        local how = self:LearnText(source.learn, money)
+        local how = self:LearnText(source.learn, money, plain)
         if how then
             text = L.Format("Needs %s %d, you have %d; then %s", profession, source.skill, source.have or 0, how)
         else

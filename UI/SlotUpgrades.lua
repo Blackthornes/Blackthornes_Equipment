@@ -133,7 +133,7 @@ function SlotUpgrades:AddLines(tooltip, slot, picks)
                 local r, g, b = Theme.Unpack(gainKey)
                 tooltip:AddDoubleLine(pick.link, SlotUpgrades.Gain(pick), 1, 1, 1, r, g, b)
             else
-                tooltip:AddLine(pick.link .. "  " .. Colored(gainKey, SlotUpgrades.Gain(pick)))
+                tooltip:AddLine(ns.Items.ShowLink(pick.link) .. "  " .. Colored(gainKey, SlotUpgrades.Gain(pick)))
             end
             local source = pick.sources and pick.sources[1]
             if source and ns.FinderUI then
@@ -311,7 +311,7 @@ function SlotUpgrades:Fill()
         row.pick = pick
         if pick then
             Theme.SetItemIcon(row.icon, pick.link)
-            row.item:SetText(pick.link)
+            row.item:SetText(ns.Items.ShowLink(pick.link))
             local gainText = SlotUpgrades.Gain(pick)
             row.gain:SetText(gainText)
             local gainWidth = math.max(54, math.ceil(Theme.TextWidth("normal", gainText or "")) + 4)

@@ -168,7 +168,7 @@ local function ShowEnchantTooltip(row, line)
     local pick, source = line.pick, line.source
     local r, g, b = Theme.Unpack("text")
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
-    GameTooltip:AddLine(Enchants:Name(pick.recipeID) or "", Theme.Unpack("accent"))
+    GameTooltip:AddLine(Enchants:ShownName(pick.recipeID) or "", Theme.Unpack("accent"))
     GameTooltip:AddLine(L.Format("For your %s", line.plan.link or Enchants.SlotName(line.slot)), r, g, b, true)
     GameTooltip:AddLine(L.Format("Gives %s", Enchants:Gives(pick.recipeID) or ""), Theme.Unpack("good"))
     if line.plan.current then
@@ -812,7 +812,7 @@ function FinderUI:FillRow(row, line)
     }
     row.slot:SetText(line.first and line.slotName or "")
     Theme.SetItemIcon(row.icon, line.pick.link)
-    row.item:SetText(line.pick.link)
+    row.item:SetText(ns.Items.ShowLink(line.pick.link))
     local gain = Gain(line.pick.result)
     -- A weapon whose skill is not learned yet says "Train" in red, so the
     -- weapon master comes first (a player asked, 2026-10-10).
@@ -877,7 +877,7 @@ function FinderUI:FillEnchantRow(row, line)
     row.enchant = line
     row.slot:SetText(Enchants.SlotName(line.slot))
     Theme.SetItemIcon(row.icon, line.plan.link)
-    row.item:SetText(Enchants:Name(pick.recipeID) or "")
+    row.item:SetText(Enchants:ShownName(pick.recipeID) or "")
 
     local gain = pick.percent and ("%+d%%"):format(math.floor(pick.percent + 0.5)) or L["better"]
     row.gain:SetText(gain)
@@ -1209,9 +1209,9 @@ function FinderUI:Follow(pick)
     if not logic then return nil end
     local quest, why = logic:Follow(pick)
     if quest then
-        ns.Print(L.Format("following %s on the upgrade quest panel.", pick.link or quest.link))
+        ns.Print(L.Format("following %s on the upgrade quest panel.", ns.Items.ShowLink(pick.link or quest.link)))
     else
-        ns.Print(L.Format("%s can't be an upgrade quest yet: %s.", pick.link or L["that"], why or L["unknown"]))
+        ns.Print(L.Format("%s can't be an upgrade quest yet: %s.", pick.link and ns.Items.ShowLink(pick.link) or L["that"], why or L["unknown"]))
     end
     return quest
 end
@@ -1234,6 +1234,11 @@ function FinderUI:OnEnable()
     -- always its own green zone names and nearest-first order.
     ns.RegisterEvent(self, "ZONE_CHANGED_NEW_AREA", function()
         FinderUI:RefreshSoon()
+    end)
+    -- A name drawn plain (a material, a recipe) takes its rarity colour
+    -- once the client sends it: redraw, no rescan.
+    ns.Items:WatchNames(function()
+        if FinderUI.frame and FinderUI.frame:IsShown() then FinderUI:Draw() end
     end)
     -- Only the "need ... more" on vendor rows changes: redraw, no rescan.
     ns.RegisterEvent(self, "PLAYER_MONEY", function()

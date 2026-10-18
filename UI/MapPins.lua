@@ -134,7 +134,7 @@ function MapPins:MakePin(canvas)
         pcall(GameTooltip.SetHyperlink, GameTooltip, hunt.link)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine(hunt.quest and L["Upgrade quest"] or L["Tracked upgrade"], Theme.Unpack("accent"))
-        if hunt.place.text then GameTooltip:AddLine(hunt.place.text, Theme.Unpack("text")) end
+        if hunt.place.text then GameTooltip:AddLine(ns.Tracking.PlaceText(hunt.place), Theme.Unpack("text")) end
         GameTooltip:AddLine(L["Click to pin it on your map"], Theme.Unpack("muted"))
         GameTooltip:Show()
     end)
