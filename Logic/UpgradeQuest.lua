@@ -1180,6 +1180,12 @@ function UpgradeQuest:StillWanted(quest)
     return true
 end
 
+--- Is the quest's item armor Best Armor Only now leaves out?
+function UpgradeQuest:LighterArmor(quest)
+    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    return ok and type(result) == "table" and result.lighterArmor == true
+end
+
 --- Was the quest that gives this upgrade handed in, with the upgrade
 --- neither carried nor worn? Only after a few seconds of it missing, since
 --- the reward can reach the bags a moment after the hand-in.
@@ -1348,6 +1354,11 @@ function UpgradeQuest:Check()
                         text = L.Format("That's %d upgrade quests done. Picking your next one.", self:DoneCount()) })
                 end
             end
+            if ns.Finder then ns.Finder:MarkStale() end
+        elseif quest and self:LighterArmor(quest) then
+            -- Best Armor Only was ticked after this was picked: let it go
+            -- quietly (not skipped), and the tab picks again.
+            quests[tab.key] = nil
             if ns.Finder then ns.Finder:MarkStale() end
         elseif quest and not self:StillWanted(quest) then
             -- Something as good or better was put on first (looted, bought,

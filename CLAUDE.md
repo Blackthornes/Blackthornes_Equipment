@@ -822,6 +822,25 @@ the game's update functions (`ObjectiveTracker_Update`) does the same. To
 put a game frame out of sight, use `ns.Veil`: SetAlpha and the mouse calls
 run no game code. The same holds in every addon.
 
+## Best Armor Only
+
+A player-facing choice the owner asked for (2026-10-18): a character that
+wears a heavier armor can stop being offered lighter kinds. "Best Armor
+Only:" on the Gear page under JUDGING GEAR, kept per character in
+`BlackthornesEquipmentCharDB.bestArmorOnly` (off unless ticked, never
+rename it; `Compare.BestArmorOnly`, `Compare:SetBestArmorOnly`). Ticked,
+`Compare:Judge` answers "cantuse" with `lighterArmor` (no tooltip line) for
+cloth, leather or mail lighter than `Weights:IsLighterArmor` allows: the
+heaviest kind open at the character's level, where a kind learned later
+(plate or mail at 40) counts only once a piece of it is worn
+(`Weights.WornArmorRank`), so a warrior just turned 40 still sees mail.
+Cloaks, rings, necks, trinkets, shields and weapons are never touched.
+Everything that judges through `Judge` follows (arrows, gear window,
+finder, quest rewards, Butler, Tradeskills' arrows); an upgrade quest
+picked for lighter armor is let go quietly (`UpgradeQuest:LighterArmor`).
+Alts keep `Weights:IsBestArmor` as before. Tested in
+`tools/test_bestarmor.lua`.
+
 ## Ratings, the hit cap and racials
 
 Asked 2026-10-16, after the 10-15 patch changed the racials. Forever gear

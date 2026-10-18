@@ -371,6 +371,14 @@ function SettingsUI:BuildGear()
         L["Puts an upgrade on as soon as you get it. Gear that would bind waits for your click."])
     controls.autoEquip = Tick(autoRow, L["On"], "autoEquip", false)
 
+    -- Saved per character, since the armor a class wears is its own.
+    local armorRow = pages:Row("gear", 1, L["Best Armor Only:"],
+        L["Only shows armor of the heaviest kind you can wear. Cloaks, rings, necks and trinkets still show."])
+    controls.bestArmorOnly = Widgets.CreateCheckbox(armorRow, L["On"], function(checked)
+        if ns.Compare then ns.Compare:SetBestArmorOnly(checked) end
+    end, ns.Compare and ns.Compare.BestArmorOnly() or false)
+    controls.bestArmorOnly:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- Characters skipped for upgrades (a player asked, the owner agreed
     -- 2026-10-14): pick one by its whole name, then tick it.
     pages:Section("gear", 1, L["YOUR CHARACTERS"])
@@ -842,6 +850,7 @@ function SettingsUI:Refresh()
     controls.hideGamepadBag:SetChecked(ns.db.hideGamepadBag ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
     controls.autoEquip:SetChecked(ns.db.autoEquip == true)
+    controls.bestArmorOnly:SetChecked(ns.Compare.BestArmorOnly())
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:SetChecked(ns.db.suffixLine ~= false)
     controls.altTooltipLine:SetChecked(ns.db.altTooltipLine ~= false)
