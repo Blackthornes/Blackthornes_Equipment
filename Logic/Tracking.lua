@@ -53,13 +53,33 @@ end
 --- pin need no new scan: { text, kind, zone, x, y }.
 local function PlaceOf(source)
     if type(source) ~= "table" then return nil end
-    local text = ns.Finder and ns.Finder.Label(source) .. "  " .. ns.Finder:Describe(source) or nil
+    -- Saved, so the words stay plain; the item names they hold are kept
+    -- by ID beside them and coloured only when drawn (Tracking.PlaceText).
+    local text = ns.Finder and ns.Finder.Label(source) .. "  " .. ns.Finder:Describe(source, true) or nil
     return {
         text = text, kind = source.kind, label = ns.Finder and ns.Finder.Label(source),
         name = source.name, zone = source.zone, x = source.x, y = source.y,
+        items = ns.Finder and ns.Finder.NamedItems(source) or nil,
     }
 end
 Tracking.PlaceOf = PlaceOf
+
+--- A kept place's words to draw, its item names in their rarity colour.
+function Tracking.PlaceText(place)
+    local text = type(place) == "table" and place.text
+    if type(text) ~= "string" or type(place.items) ~= "table" then return text end
+    for _, item in ipairs(place.items) do
+        local id, name = type(item) == "table" and item[1], type(item) == "table" and item[2]
+        if type(name) == "string" and name ~= "" then
+            local at = text:find(name, 1, true)
+            if at then
+                text = text:sub(1, at - 1) .. ns.Items.ColorName(type(id) == "number" and id or nil, name)
+                    .. text:sub(at + #name)
+            end
+        end
+    end
+    return text
+end
 
 function Tracking:IsTracked(itemID)
     local store = Store(false)
@@ -244,7 +264,7 @@ ns.RegisterCommand("tracked", L["the upgrades you are tracking (/beq tracked cle
     end
     ns.Print(#list == 1 and L.Format("tracking %d upgrade", #list) or L.Format("tracking %d upgrades", #list))
     for _, hunt in ipairs(list) do
-        local where = hunt.place and hunt.place.text or ""
+        local where = Tracking.PlaceText(hunt.place) or ""
         local state = hunt.got and L.Format("|c%s in your bags|r", ns.COLORS.upgrade) or ""
         ns.PrintRaw(("  %s%s  |c%s%s|r"):format(hunt.link or "?", state, ns.COLORS.muted, where))
     end

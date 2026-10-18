@@ -211,11 +211,18 @@ end
 --- as it did when it was clicked: once that step is done, or turns into
 --- the next thing to do (the objective met, now hand it in), the arrow goes
 --- back to following the steps by itself.
+local function Uncoloured(text)
+    if type(text) ~= "string" then return text end
+    return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+end
+
 function QuestArrow.PinHolds(pinned, steps)
     if type(steps) ~= "table" then return true end
     local step = steps[pinned.place.step]
     if not step then return false end
-    return step.text == pinned.text and (step.done and true or false) == (pinned.done and true or false)
+    -- An item's name taking its colour once the client sends it is the
+    -- same step.
+    return Uncoloured(step.text) == Uncoloured(pinned.text) and (step.done and true or false) == (pinned.done and true or false)
 end
 
 --- Point at the place on step `index` of the quest shown (a click on that

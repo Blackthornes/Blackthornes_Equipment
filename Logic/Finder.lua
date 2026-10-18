@@ -1114,9 +1114,34 @@ local function Place(source)
     return source.zone
 end
 
+--- The item a quest starts from, by its ID, when the source names one.
+function Finder.StartsItem(source)
+    if type(source) ~= "table" or source.kind ~= "quest" or source.x then return nil end
+    local starts = ns.Sources.STARTS
+    local row = type(starts) == "table" and source.questID and starts[source.questID]
+    return type(row) == "table" and row[1] or nil
+end
+
+--- The items a source's words name, as { { id, name } }, so text kept plain
+--- can show them in their rarity colour when drawn.
+function Finder.NamedItems(source)
+    if type(source) ~= "table" then return nil end
+    if source.kind == "quest" and not source.x and type(source.name) == "string" then
+        return { { Finder.StartsItem(source), source.name } }
+    end
+    local learn = source.kind == "craft" and (source.state == "learn" or source.state == "skill")
+        and source.learn
+    if type(learn) == "table" and type(learn.recipe) == "string"
+        and (learn.how == "recipe" or learn.how == "drop") then
+        return { { learn.recipeID, learn.recipe } }
+    end
+    return nil
+end
+
 --- One source in words, without its kind: what the window shows after the
---- coloured "Vendor", "Quest" or "Dungeon" tag.
-function Finder:Describe(source)
+--- coloured "Vendor", "Quest" or "Dungeon" tag. `plain` leaves item names
+--- uncoloured, for text that is saved.
+function Finder:Describe(source, plain)
     if source.kind == "vendor" then
         local text = source.name
         local where = Place(source)
@@ -1146,7 +1171,10 @@ function Finder:Describe(source)
                 text = L.Format("%s, from %s", text, source.name)
             end
         else
-            text = L.Format("%s, starts from %s", text, source.name)
+            -- The item that starts it, in its rarity colour (plain for text
+            -- that is saved).
+            local shown = plain and source.name or Items.ColorName(Finder.StartsItem(source), source.name)
+            text = L.Format("%s, starts from %s", text, shown)
         end
         return text
     elseif source.kind == "dungeon" then
@@ -1157,7 +1185,7 @@ function Finder:Describe(source)
         if source.chance then text = L.Format("%s, %s%% drop", text, tostring(source.chance)) end
         return text
     elseif source.kind == "craft" and ns.Crafting then
-        return ns.Crafting:Describe(source, self.Money)
+        return ns.Crafting:Describe(source, self.Money, plain)
     end
     return ""
 end

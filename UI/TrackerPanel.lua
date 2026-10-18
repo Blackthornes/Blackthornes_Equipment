@@ -49,7 +49,7 @@ local function ShowTooltip(row)
         GameTooltip:AddLine(L["Hunt done"], Theme.Unpack("good"))
     else
         if hunt.place and hunt.place.text then
-            GameTooltip:AddLine(hunt.place.text, Theme.Unpack("text"))
+            GameTooltip:AddLine(ns.Tracking.PlaceText(hunt.place), Theme.Unpack("text"))
         end
         if hunt.place and hunt.place.x then
             GameTooltip:AddLine(L["Click to pin it on your map"], Theme.Unpack("muted"))
@@ -188,7 +188,7 @@ end
 function TrackerPanel.WhereText(hunt)
     if hunt.done then return Colored("good", L["Done"]) end
     if hunt.got then return Colored("good", L["In your bags: put it on"]) end
-    if hunt.place and hunt.place.text then return hunt.place.text end
+    if hunt.place and hunt.place.text then return ns.Tracking.PlaceText(hunt.place) end
     return L["Open Where to get upgrades for the details"]
 end
 
@@ -228,7 +228,7 @@ function TrackerPanel:Refresh()
         if hunt then
             shown = shown + 1
             Theme.SetItemIcon(row.icon, hunt.link)
-            row.item:SetText(hunt.link or "?")
+            row.item:SetText(ns.Items.ShowLink(hunt.link) or "?")
             row.where:SetText(Fit("tiny", TrackerPanel.WhereText(hunt), row.textWidth * 2 - 50))
             row:Show()
         else
@@ -285,4 +285,8 @@ end
 
 function TrackerPanel:OnEnable()
     self:Refresh()
+    -- A name drawn plain takes its rarity colour once the client sends it.
+    ns.Items:WatchNames(function()
+        if TrackerPanel.frame and TrackerPanel.frame:IsShown() then TrackerPanel:Refresh() end
+    end)
 end

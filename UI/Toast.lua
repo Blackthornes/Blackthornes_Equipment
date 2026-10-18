@@ -135,7 +135,7 @@ function Toast:Present(banner)
     -- The mouse left with the last banner, even if the client said nothing.
     self.hovered = false
     self.title:SetText(banner.title or "")
-    self.item:SetText(banner.link or "")
+    self.item:SetText(ns.Items.ShowLink(banner.link) or "")
     self.text:SetText(banner.text or "")
     Theme.SetItemIcon(self.icon, banner.link)
     local actions = type(banner.actions) == "table" and banner.actions or {}
