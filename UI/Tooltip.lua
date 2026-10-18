@@ -23,6 +23,16 @@ local WeaponSkills = ns.WeaponSkills
 
 local TOOLTIP_NAMES = { "GameTooltip", "ItemRefTooltip" }
 
+-- Each line's key for Off, Shift or Always (UI/TooltipShift.lua): the
+-- verdict and the weapon master under it ("upgrade", tooltipLine), a random
+-- roll's name ("suffix", suffixLine), an alt's upgrade ("alt",
+-- altTooltipLine) and the best enchant ("enchant", enchantTooltip). A line
+-- carries its key as `line.key`; the Shift answer is asked as the lines go
+-- on the tooltip, never kept with them.
+if ns.TooltipShift then
+    ns.TooltipShift.KEYS = { "upgrade", "suffix", "alt", "enchant" }
+end
+
 local function Field(object, key)
     if type(object) ~= "table" then return nil end
     local ok, value = pcall(function() return object[key] end)
@@ -119,7 +129,8 @@ function Tooltip:MoreLines(link)
     if not (ns.db and ns.db.suffixLine == false) and ns.Rolls and ns.Rolls.RollOf(link) then
         local name, stats = ns.Rolls:Describe(link)
         if stats then
-            lines[#lines + 1] = { name and (name .. ": " .. stats) or L.Format("Random roll: %s", stats), "accent" }
+            lines[#lines + 1] = { name and (name .. ": " .. stats) or L.Format("Random roll: %s", stats), "accent",
+                key = "suffix" }
         end
     end
     local itemID = tonumber(link:match("item:(%d+)"))
@@ -172,16 +183,16 @@ function Tooltip:WorkOutLines(link, carried)
     local judge = carried and Compare.JudgeCarried or Compare.Judge
     local result = judge(Compare, link)
     local text, color = Compare:Describe(result)
-    if text then lines[#lines + 1] = { text, color } end
+    if text then lines[#lines + 1] = { text, color, key = "upgrade" } end
     -- No use to you, but an upgrade for another of your characters.
     local okAlt, altLine = pcall(Tooltip.AltLine, Tooltip, link, result)
-    if okAlt and altLine then lines[#lines + 1] = { altLine, "accent" } end
+    if okAlt and altLine then lines[#lines + 1] = { altLine, "accent", key = "alt" } end
     local okTrainer, trainer, trainerColor = pcall(WeaponSkills.Describe, WeaponSkills, link)
-    if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true } end
+    if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true, key = "upgrade" } end
     -- On a piece you wear: the best enchant for it (Logic/Enchants.lua).
     if ns.Enchants then
         local okEnchant, enchantLine = pcall(ns.Enchants.TooltipLine, ns.Enchants, link)
-        if okEnchant and enchantLine then lines[#lines + 1] = { enchantLine, "accent" } end
+        if okEnchant and enchantLine then lines[#lines + 1] = { enchantLine, "accent", key = "enchant" } end
     end
     local okMore, more = pcall(Tooltip.MoreLines, Tooltip, link)
     if okMore then
@@ -227,12 +238,20 @@ function Tooltip:Decorate(tooltip, data)
     if type(addLine) ~= "function" then return "noitem" end
 
     self.writing = true
+    local shift = ns.TooltipShift
+    local held = false
     for _, line in ipairs(lines) do
-        -- The trainer line wraps, so a list of cities folds onto a second
-        -- line rather than stretching the tooltip.
-        pcall(addLine, tooltip, ("|c%s%s|r"):format(ns.COLORS[line[2]] or ns.COLORS.text, line[1]),
-            nil, nil, nil, line[3])
+        -- A line on Shift waits while Shift is up.
+        if line.key and shift and not shift:Shows(line.key) then
+            held = true
+        else
+            -- The trainer line wraps, so a list of cities folds onto a
+            -- second line rather than stretching the tooltip.
+            pcall(addLine, tooltip, ("|c%s%s|r"):format(ns.COLORS[line[2]] or ns.COLORS.text, line[1]),
+                nil, nil, nil, line[3])
+        end
     end
+    if held then pcall(shift.Held, shift, tooltip) end
 
     -- Adding a line needs the tooltip resized, which Show does; on a client
     -- where that re-enters the hook, `writing` is what stops it.

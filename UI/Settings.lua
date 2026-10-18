@@ -300,6 +300,29 @@ local function Tick(row, text, key, initial, after)
     return box
 end
 
+--- Off, Shift or Always for a tooltip line on `row` (UI/TooltipShift.lua).
+--- Whether the line is on stays in `key`, saved as the tick box saved it;
+--- only the Shift choice is new. `stepper:Sync()` reads it back silently.
+local function ShiftStepper(row, key, lineKey)
+    local Shift = ns.TooltipShift
+    local function IsOn() return ns.db[key] ~= false end
+    local stepper = Widgets.CreateStepper(row, {
+        min = 0, max = 2, step = 1, value = Shift:Mode(IsOn(), lineKey),
+        format = function(value) return Shift.NAMES[value] end,
+        onChange = function(value)
+            Shift:Apply(value, lineKey, IsOn(), function(on) ns.db[key] = on end)
+            -- The kept lines were worked out with the old setting.
+            if ns.Tooltip and ns.Tooltip.ForgetLines then ns.Tooltip.ForgetLines() end
+        end,
+    })
+    ns.SettingsPages.FitStepper(stepper, Shift.NAMES)
+    stepper:SetPoint("TOPLEFT", CONTROL_X, -2)
+    function stepper:Sync()
+        self:SetValue(Shift:Mode(IsOn(), lineKey), true)
+    end
+    return stepper
+end
+
 --- Gear: how it is judged on the left; the gear window, the bags and the
 --- tooltip on the right.
 function SettingsUI:BuildGear()
@@ -336,7 +359,7 @@ function SettingsUI:BuildGear()
 
     local tooltipRow = pages:Row("gear", 1, L["Tooltip Line:"],
         L["Says if gear beats what you wear."])
-    controls.tooltip = Tick(tooltipRow, L["Show"], "tooltipLine", true)
+    controls.tooltip = ShiftStepper(tooltipRow, "tooltipLine", "upgrade")
 
     local arrowRow = pages:Row("gear", 1, L["Upgrade Arrows:"],
         L["A green arrow on upgrades you can wear now."])
@@ -413,17 +436,15 @@ function SettingsUI:BuildGear()
 
     local suffixRow = pages:Row("gear", 2, L["Random Roll Names:"],
         L["Adds a green's roll, like of the Monkey, to its tooltip."])
-    controls.suffixLine = Tick(suffixRow, L["Show"], "suffixLine", true)
+    controls.suffixLine = ShiftStepper(suffixRow, "suffixLine", "suffix")
 
     local altRow = pages:Row("gear", 2, L["Upgrades for Alts:"],
         L["Names the other character an item helps most."])
-    controls.altTooltipLine = Tick(altRow, L["Show"], "altTooltipLine", true)
+    controls.altTooltipLine = ShiftStepper(altRow, "altTooltipLine", "alt")
 
     local enchantRow = pages:Row("gear", 2, L["Best Enchant:"],
         L["Names the best enchant for a piece you wear."])
-    controls.enchantTooltip = Tick(enchantRow, L["Show"], "enchantTooltip", true, function()
-        if ns.Tooltip and ns.Tooltip.ForgetLines then ns.Tooltip.ForgetLines() end
-    end)
+    controls.enchantTooltip = ShiftStepper(enchantRow, "enchantTooltip", "enchant")
 
     local weaponsRow, weaponsButton = CommandRow(pages, "gear", 2, L["Untrained Weapons:"],
         function() return SettingsUI:WeaponsHint() end, L["Show"], "weapons show")
@@ -844,7 +865,7 @@ function SettingsUI:Refresh()
     controls.sisters:SetChecked(ns.SisterNote:IsOn())
     controls.whatsNewPopup:SetChecked(ns.WhatsNew:IsOn())
     controls.whatsNewMotion:SetChecked(ns.WhatsNew:IsMotionOn())
-    controls.tooltip:SetChecked(ns.db.tooltipLine ~= false)
+    controls.tooltip:Sync()
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
     controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)
     controls.hideGamepadBag:SetChecked(ns.db.hideGamepadBag ~= false)
@@ -852,9 +873,9 @@ function SettingsUI:Refresh()
     controls.autoEquip:SetChecked(ns.db.autoEquip == true)
     controls.bestArmorOnly:SetChecked(ns.Compare.BestArmorOnly())
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
-    controls.suffixLine:SetChecked(ns.db.suffixLine ~= false)
-    controls.altTooltipLine:SetChecked(ns.db.altTooltipLine ~= false)
-    controls.enchantTooltip:SetChecked(ns.db.enchantTooltip ~= false)
+    controls.suffixLine:Sync()
+    controls.altTooltipLine:Sync()
+    controls.enchantTooltip:Sync()
     self:RefreshSkip()
     controls.classTraining:SetChecked(ns.ClassTraining:IsOn())
     for _, entry in ipairs(HUNTING) do

@@ -1056,3 +1056,9 @@ L["%s: %d vendor and %d quest from %s."] = "%1$s: от %4$s торговцев %
 L["%s: %d vendor and %d quests from %s."] = "%1$s: от %4$s торговцев %2$d, заданий %3$d."
 L["%s: %d vendors and %d quest from %s."] = "%1$s: от %4$s торговцев %2$d, заданий %3$d."
 L["%s: %d vendors and %d quests from %s."] = "%1$s: от %4$s торговцев %2$d, заданий %3$d."
+
+-- Off, Shift or Always for each tooltip line (UI/TooltipShift.lua).
+L["Off"] = "Выкл"
+L["Shift"] = "Shift"
+L["Always"] = "Всегда"
+L["Hold Shift for more."] = "Зажми Shift, чтобы увидеть больше."

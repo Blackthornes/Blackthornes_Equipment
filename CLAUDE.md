@@ -906,6 +906,26 @@ when it needs one (an empty description shows nothing). The minimap button
 always shows; there is no `/beq minimap`, and a saved `minimapHidden` is
 kept but not read.
 
+## Off, Shift or Always for tooltip lines
+
+A player asked, the owner said yes (2026-10-18), in all five addons: each
+tooltip line gets Off, Shift or Always in Settings, Shift showing it only
+while Shift is held. `UI/TooltipShift.lua` is the same file in all five (a
+fix to it belongs in all five). No one's settings change: whether a line is
+on stays in its own key, so a line that was on reads Always and one that
+was off reads Off; only a Shift pick is new, kept account wide in
+`tooltipShift[key] = true` (never rename it). Equipment's keys
+(`TooltipShift.KEYS` in `UI/Tooltip.lua`): "upgrade" (Tooltip Line,
+`tooltipLine`: the verdict and the weapon master line), "suffix" (Random
+Roll Names, `suffixLine`), "alt" (Upgrades for Alts, `altTooltipLine`) and
+"enchant" (Best Enchant, `enchantTooltip`). Each line carries `line.key`;
+`Tooltip:Decorate` asks `TooltipShift:Shows` as it adds them, so the kept
+lines (`LinesFor`) never hold the Shift answer, and a line held back adds
+"Hold Shift for more." once (`TooltipShift:Held`). The shared frame redraws
+the tooltip when Shift moves, only while some line is on Shift. The
+Settings rows are steppers (`ShiftStepper` in `UI/Settings.lua`, synced on
+Refresh). Tested in `tools/test_tooltipshift.lua`.
+
 ## German translation
 
 The owner said yes (2026-10-12) to German in Equipment, after Pets' pilot
