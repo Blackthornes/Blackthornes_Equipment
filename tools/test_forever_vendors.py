@@ -6,7 +6,7 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lupa import lua51  # noqa: E402
-from forever_vendors import from_save, merge, new_to_classic, render  # noqa: E402
+from forever_vendors import from_save, shared_from_save, merge, new_to_classic, render  # noqa: E402
 
 checks = 0
 failures = 0
@@ -28,6 +28,16 @@ def read(text):
         return from_save(lua51.LuaRuntime(unpack_returned_tuples=True, register_eval=False), path)
     finally:
         os.remove(path)
+
+def read_shared(text):
+    with tempfile.NamedTemporaryFile("w", suffix=".lua", delete=False, encoding="utf-8") as f:
+        f.write(text)
+        path = f.name
+    try:
+        return shared_from_save(lua51.LuaRuntime(unpack_returned_tuples=True, register_eval=False), path)
+    finally:
+        os.remove(path)
+
 
 
 SAVE = """
@@ -61,6 +71,21 @@ text = render({250001: found[250001]})
 expect("the file names the vendor", '[250001] = { name = "Aetheen", zone = "Zephras Isle"' in text)
 expect("with its gear", "[1003] = { 300, 4, 0, true }" in text)
 expect("and leaves out anything private", "Private" not in text and "Player-1-2" not in text)
+
+SHARED = """
+BlackthornesEquipmentDB = {
+    ["sharedData"] = {
+        ["a1b2c3d4e5f6"] = { at = 5, hash = "x", quests = {},
+            vendors = { [800005] = { name = "Sent Vendor", zone = "Zephras Isle", x = 30, y = 60, side = "A",
+                items = { [2001] = { 500, 10, 15, false } } } } },
+        ["badbadbadbad"] = "junk",
+    },
+}
+"""
+shares = read_shared(SHARED)
+expect("a sender's vendors are read from sharedData", any(800005 in s for s in shares))
+expect("junk in sharedData is skipped", len(shares) == 1)
+expect("the save's own list is still empty", read(SHARED) == {})
 
 print(f"{checks - failures}/{checks} checks passed")
 sys.exit(1 if failures else 0)

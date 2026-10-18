@@ -18,6 +18,8 @@ Locale\Locale.lua
 Locale\deDE.lua
 
 Core\Init.lua
+Core\Serialize.lua
+Core\Comm.lua
 Core\SisterNote.lua
 Core\WhatsNewText.lua
 
@@ -56,6 +58,7 @@ Logic\UpgradeQuest.lua
 Logic\QuestArrow.lua
 Logic\QuestLog.lua
 Logic\TomTom.lua
+Logic\Contribute.lua
 
 UI\Theme.lua
 UI\BlizzardLook.lua

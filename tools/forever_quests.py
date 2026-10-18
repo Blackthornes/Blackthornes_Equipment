@@ -17,6 +17,10 @@ every reward linked, is left out, since there is nothing to add.
 
 Options:
     --stdout   print the file instead of writing it
+    --shared   also fold in the quests players sent (sharedData, from
+               Logic/Contribute.lua). Only each sender's quests are read,
+               never who sent them, and the save is never changed. They go
+               in before the save's own, so the player's own readings win.
 """
 
 import os
@@ -91,6 +95,24 @@ def from_save(lua, path):
     if why:
         print(f"could not read {path}: {why}", file=sys.stderr)
     return table_to_records(db and db.learnedQuests)
+
+
+def shared_from_save(lua, path):
+    """What players sent, by Logic/Contribute.lua, in one account save: each
+    sender's `quests` from `sharedData`. The sender ids are only keys."""
+    with open(path, encoding="utf-8") as f:
+        db, why = lua.eval(READ_SAVE)(f.read())
+    if why:
+        print(f"could not read {path}: {why}", file=sys.stderr)
+    found = []
+    shared = db and db.sharedData
+    for sender in shared or {}:
+        entry = shared[sender]
+        try:
+            found.append(table_to_records(entry["quests"]))
+        except (TypeError, KeyError):
+            print("skipped a share that could not be read", file=sys.stderr)
+    return found
 
 
 def shipped(lua):
@@ -177,10 +199,16 @@ def render(records):
 
 def main(argv):
     to_stdout = "--stdout" in argv
-    saves = [a for a in argv if a != "--stdout"]
+    with_shared = "--shared" in argv
+    saves = [a for a in argv if a not in ("--stdout", "--shared")]
     lua = lua51.LuaRuntime(unpack_returned_tuples=True, register_eval=False)
     quests, items = classic(lua)
     records = shipped(lua)
+    if with_shared:
+        for path in saves:
+            for share in shared_from_save(lua, path):
+                for quest_id, rec in share.items():
+                    records[quest_id] = merge(records[quest_id], rec) if quest_id in records else rec
     for path in saves:
         for quest_id, rec in from_save(lua, path).items():
             records[quest_id] = merge(records[quest_id], rec) if quest_id in records else rec
