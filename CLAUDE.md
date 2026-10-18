@@ -931,6 +931,20 @@ stay `deDE` and `Locale/deDE.lua`.
 - German runs about 30% longer: buttons grow to fit, settings rows wrap,
   and a new fixed width must wrap or grow, never end in "...".
 
+## Simplified Chinese, French, Spanish and Russian
+
+The owner said yes (2026-10-18) to these four in every addon, after Pets'
+Simplified Chinese pilot. They are written by us from the English keys:
+never take a translation file or text from a player or anyone outside.
+Talk to the owner about the languages by name ("Simplified Chinese",
+"French"); the code names are `zhCN`, `frFR`, `esES` and `ruRU`, each a
+`Locale/` file that works like `Locale/deDE.lua` and loads only on its own
+client. One Spanish file serves both Spanish clients (`esES` and `esMX`).
+The voice is informal (tu, tú, ты), the game's own words, metres in French,
+Spanish and Russian and 码 in Chinese. Every new string gets a line in each
+of the five files; `tools/check_locale.py` checks them all. Tested in
+`tools/test_locale.lua`. Not yet seen in game.
+
 ## The house frame (Titanforged)
 
 The owner picked this look for all four addons on 2026-10-04 from two mockups
