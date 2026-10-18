@@ -218,6 +218,7 @@ function SettingsUI:Build()
         pages:Section("about", 2, L["ABOUT"])
         local info = pages:Place("about", 2, ns.About:Info(pages.pages.about.content, COLUMN_WIDTH))
         pages:Searchable("about", info, info.words)
+        self:BuildShareBox()
     end
     self.pages:Fit()
 
@@ -229,6 +230,36 @@ function SettingsUI:Build()
 
     frame:Hide()
     return frame
+end
+
+-- Logic/Contribute.lua: vendors and quest rewards sent to help the
+-- shipped data, off until ticked, and offered only where it can send
+-- (North America). Its words wrap under the box, since they run long.
+function SettingsUI:BuildShareBox()
+    if not (ns.Contribute and ns.Contribute:InRegion()) then return end
+    local pages = self.pages
+    local text = L["Share your data with Blackthornes to improve the Equipment AddOn."]
+    local holder = CreateFrame("Frame", nil, pages.pages.about.content)
+    holder:SetSize(COLUMN_WIDTH, 36)
+    local box = Widgets.CreateCheckbox(holder, text, function(checked)
+        ns.Contribute:SetOn(checked)
+        SettingsUI:Refresh()
+    end, false)
+    box:SetPoint("TOPLEFT", 0, -2)
+    box:SetWidth(COLUMN_WIDTH)
+    box.label:ClearAllPoints()
+    box.label:SetPoint("TOPLEFT", box, "TOPLEFT", 20, -1)
+    box.label:SetWidth(COLUMN_WIDTH - 24)
+    box.label:SetJustifyH("LEFT")
+    if box.label.SetWordWrap then box.label:SetWordWrap(true) end
+    local ok, tall = pcall(box.label.GetStringHeight, box.label)
+    tall = ok and tonumber(tall) or 0
+    if tall < 14 then tall = 28 end
+    box:SetHeight(math.max(18, tall + 2))
+    holder:SetHeight(math.max(18, tall + 2) + 6)
+    pages:Place("about", 2, holder, -14)
+    pages:Searchable("about", holder, text)
+    self.controls.shareData = box
 end
 
 function SettingsUI:BuildHeader()
@@ -801,6 +832,7 @@ function SettingsUI:Refresh()
 
     local controls = self.controls
     controls.debug:SetChecked(ns.db.debug == true)
+    if controls.shareData then controls.shareData:SetChecked(ns.db.shareData == true) end
     controls.sisters:SetChecked(ns.SisterNote:IsOn())
     controls.whatsNewPopup:SetChecked(ns.WhatsNew:IsOn())
     controls.whatsNewMotion:SetChecked(ns.WhatsNew:IsMotionOn())

@@ -239,7 +239,8 @@ ts.LearnNext:ShowTheWayFor(recipeID)  -- the Level Up tab's pin and chat line; t
 
 If these change in Tradeskills, change `Logic/Enchants.lua` too. Nothing
 else here calls the other addons, apart from the shared arrow table (see
-the quest arrow below).
+the quest arrow below) and the whispers of "Sending vendors and quests to
+Blackthornes", which only talk to Equipment.
 
 ## Enchants for your gear
 
@@ -501,6 +502,43 @@ login and as each is learned. Before a release, `tools/forever_vendors.py
 <save>` reads only `learnedVendors` and rewrites `Data/ForeverVendors.lua`
 (never by hand), the same way as the quests. Tested in
 `tools/test_learnmore.lua` and `tools/test_forever_vendors.py`.
+
+## Sending vendors and quests to Blackthornes
+
+The owner said do it (2026-10-18), as Farmer's "Sending drops to
+Blackthornes" and Tradeskills' "Sending data to Blackthornes": players can
+opt in to send the vendors and quest rewards their Equipment learned
+(`learnedVendors`, `learnedQuests`, see "Quests learned in game") to his
+characters, for the shipped data. Off by default (`shareData`, never
+rename it), never announced: one tick box on the About page of Settings,
+"Share your data with Blackthornes to improve the Equipment AddOn.", no
+hover, only on North American clients (`Contribute:InRegion`,
+`GetCurrentRegion` 1 or 110, else `GetCurrentRegionName` "US"), and
+`/beq share on|off|log` (typed only, set straight in `ns.commands`, so it
+is not in the help line or Settings' command list). Only English clients
+send (names come in the client's language). `Logic/Contribute.lua`
+whispers a hello (`Q<id>:<hash>`) to each name in `Contribute.RECIPIENTS`
+(full names, only in code, never shown; the same two as Farmer's and
+Tradeskills' lists, change all three together) 30 s after login and every
+half hour. Only those characters ask (`R<id>`), one sender at a time, each
+at most every half hour, and the sender answers only a recipient asking
+for its own id. The table (`K`, `{ q, v }` in the saved shapes) is checked
+field by field (`CleanQuest`, `CleanVendor`: plain text, spots 0 to 100,
+whole numbers in range) and kept apart on the receiver in `sharedData[id]
+= { at, hash, quests, vendors }`, each sender's newest replacing the last
+(at most `MAX_SENDERS`); it never joins the receiver's own learned lists
+and nothing in the windows reads it. A chat line, a sound and a screen
+line say "Got 3 vendors and 5 quests from NAME.", and `sharedDataLog`
+(`/beq share log`, the newest `LOG_KEEP`) keeps who sent. Never rename
+`shareDataId`, `sharedData` or `sharedDataLog`. At a release,
+`tools/forever_quests.py --shared` and `tools/forever_vendors.py --shared`
+fold `sharedData` in before the save's own records (the save is never
+changed, sender ids never read as names). Never announce the fold-in.
+`Core/Comm.lua` (prefix `BEQshare`) and `Core/Serialize.lua` are Farmer's
+copies of Tradeskills' files; a fix to the wire or the serializer belongs
+in all three. Tested in `tools/test_contribute.lua`,
+`tools/test_forever_quests.py` and `tools/test_forever_vendors.py`. Not
+yet seen in game.
 
 ## The upgrade quest
 

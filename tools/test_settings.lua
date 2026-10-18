@@ -263,4 +263,17 @@ local ns2 = env.Load()
 _G.UnitClass = function() return "Hunter", "HUNTER" end
 suite.check("no options API is not an error", ns2.SettingsUI:RegisterGameOptions() == false)
 
+-- The share box on About shows only in North America, off until ticked.
+suite.check("no share box outside North America", ns.SettingsUI.controls.shareData == nil)
+_G.GetCurrentRegion = function() return 1 end
+local ns3 = env.Load()
+_G.UnitClass = function() return "Hunter", "HUNTER" end
+ns3.SettingsUI:Build()
+local share = ns3.SettingsUI.controls.shareData
+suite.check("a share box in North America", share ~= nil)
+suite.check("unticked at first", share and not share:GetChecked())
+if share then share:GetScript("OnClick")(share) end
+suite.check("ticking it turns sharing on", ns3.db.shareData == true)
+_G.GetCurrentRegion = nil
+
 suite.done()
