@@ -1227,11 +1227,12 @@ function Weights:IsBestArmor(class, level, classID, subclassID, equipLoc)
     return rank >= best
 end
 
---- The heaviest body armor kind worn now, 0 for none (1 cloth to 4 plate).
-function Weights.WornArmorRank()
+--- The heaviest body armor kind worn now, 0 for none (1 cloth to 4 plate),
+--- in the slots given, else in every armor slot.
+function Weights.WornArmorRank(slots)
     local Items = ns.Items
     local heaviest = 0
-    for _, slot in ipairs({ 1, 3, 5, 6, 7, 8, 9, 10 }) do
+    for _, slot in ipairs(slots or { 1, 3, 5, 6, 7, 8, 9, 10 }) do
         local link = Items and Items:Equipped(slot)
         local info = link and Items:Info(link)
         local rank = info and info.classID == CLASS_ARMOR and BODY_ARMOR[info.subclassID]
@@ -1242,8 +1243,9 @@ end
 
 --- Best Armor Only (the owner, 2026-10-18): is this armor lighter than the
 --- heaviest kind the character wears? A kind the class learns later (plate
---- or mail at 40) only counts once a piece of it is worn (`wornRank`), so a
---- warrior who just turned 40 still sees mail until the first plate.
+--- or mail at 40) only counts once a piece of it is worn in that slot
+--- (`wornRank`), so a warrior who just turned 40 still sees mail for each
+--- slot until plate goes in it.
 function Weights:IsLighterArmor(class, level, classID, subclassID, equipLoc, wornRank)
     if self:IsBestArmor(class, level, classID, subclassID, equipLoc) then return false end
     local rank = BODY_ARMOR[subclassID]

@@ -1,6 +1,6 @@
 -- Best Armor Only (the owner, 2026-10-18): ticked on a character, armor
 -- lighter than the heaviest kind it wears is never an upgrade. A kind the
--- class learns at 40 counts only once a piece of it is worn.
+-- class learns at 40 counts in a slot only once that slot holds a piece of it.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("bestarmor")
@@ -20,6 +20,12 @@ local ITEMS = {
     -- Plate, for later.
     ["item:7"] = { loc = "INVTYPE_HEAD", class = ARMOR, subclass = PLATE, stats = Str(5) },
     ["item:8"] = { loc = "INVTYPE_WRIST", class = ARMOR, subclass = MAIL, stats = Str(20) },
+    ["item:9"] = { loc = "INVTYPE_WRIST", class = ARMOR, subclass = PLATE, stats = Str(1) },
+    -- For the shaman: a mail helm, a weak leather chest, mail and leather wrists.
+    ["item:10"] = { loc = "INVTYPE_HEAD", class = ARMOR, subclass = MAIL, stats = Str(1) },
+    ["item:11"] = { loc = "INVTYPE_CHEST", class = ARMOR, subclass = LEATHER, stats = Str(1) },
+    ["item:12"] = { loc = "INVTYPE_WRIST", class = ARMOR, subclass = MAIL, stats = Str(1) },
+    ["item:13"] = { loc = "INVTYPE_WRIST", class = ARMOR, subclass = LEATHER, stats = Str(20) },
 }
 
 local ns = env.Load()
@@ -58,8 +64,13 @@ level = 40
 suite.check("mail still shows at 40 with no plate", Verdict("item:8") == "upgrade", Verdict("item:8"))
 suite.check("leather still not", Verdict("item:2") == "cantuse")
 worn[1] = "item:7"
-suite.check("once plate is worn, mail goes", Verdict("item:8") == "cantuse", Verdict("item:8"))
+suite.check("plate on the head leaves mail wrists", Verdict("item:8") == "upgrade", Verdict("item:8"))
+suite.check("and a mail chest", Verdict("item:3") == "upgrade", Verdict("item:3"))
 suite.check("the plate itself is fine", Verdict("item:7") == "equipped", Verdict("item:7"))
+worn[9] = "item:9"
+suite.check("once plate is on the wrists, mail wrists go", Verdict("item:8") == "cantuse", Verdict("item:8"))
+suite.check("the mail chest still shows", Verdict("item:3") == "upgrade", Verdict("item:3"))
+worn[9] = nil
 
 -- A hunter under 40 still sees leather: mail is not open yet.
 _G.UnitClass = function() return "HUNTER", "HUNTER" end
@@ -67,6 +78,17 @@ worn[1], worn[5] = nil, nil
 level = 20
 suite.check("a young hunter sees leather", Verdict("item:2") == "upgrade", Verdict("item:2"))
 suite.check("and not cloth", Verdict("item:4") == "cantuse")
+
+-- A shaman at 40 the same way: leather stays in each slot until mail goes in it.
+_G.UnitClass = function() return "SHAMAN", "SHAMAN" end
+level = 40
+worn[1], worn[5] = "item:10", "item:11"
+suite.check("a shaman with a mail helm still sees a leather chest", Verdict("item:2") == "upgrade", Verdict("item:2"))
+worn[9] = "item:12"
+suite.check("mail wrists worn, leather wrists go", Verdict("item:13") == "cantuse", Verdict("item:13"))
+worn[9] = nil
+suite.check("no mail on the wrists, leather wrists show", Verdict("item:13") == "upgrade", Verdict("item:13"))
+worn[1], worn[5] = nil, nil
 
 -- Alts keep their own rule, untouched.
 suite.check("alts' check unchanged", Weights:IsBestArmor("WARRIOR", 40, ARMOR, MAIL, "INVTYPE_CHEST") == false)

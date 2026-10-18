@@ -363,9 +363,11 @@ function Compare:Judge(link)
     end
 
     -- Best Armor Only, ticked on this character: lighter armor than the
-    -- heaviest kind it wears is not for it (no tooltip line of its own).
+    -- heaviest kind it wears is not for it (no tooltip line of its own). A
+    -- kind learned later counts in a slot once that slot holds a piece of it.
     if self.BestArmorOnly() and Weights:IsLighterArmor(class, Items:PlayerLevel(),
-        info.classID, info.subclassID, info.equipLoc, Weights.WornArmorRank()) then
+        info.classID, info.subclassID, info.equipLoc,
+        Weights.WornArmorRank(SLOTS[info.equipLoc])) then
         result.verdict = "cantuse"
         result.lighterArmor = true
         return result
