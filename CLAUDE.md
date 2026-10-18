@@ -832,8 +832,9 @@ rename it; `Compare.BestArmorOnly`, `Compare:SetBestArmorOnly`). Ticked,
 `Compare:Judge` answers "cantuse" with `lighterArmor` (no tooltip line) for
 cloth, leather or mail lighter than `Weights:IsLighterArmor` allows: the
 heaviest kind open at the character's level, where a kind learned later
-(plate or mail at 40) counts only once a piece of it is worn
-(`Weights.WornArmorRank`), so a warrior just turned 40 still sees mail.
+(plate or mail at 40) counts in a slot only once that slot holds a piece
+of it (`Weights.WornArmorRank(slots)`, the owner 2026-10-18), so a warrior
+past 40 still sees mail for every slot plate has not replaced yet.
 Cloaks, rings, necks, trinkets, shields and weapons are never touched.
 Everything that judges through `Judge` follows (arrows, gear window,
 finder, quest rewards, Butler, Tradeskills' arrows); an upgrade quest
