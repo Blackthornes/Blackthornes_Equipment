@@ -23,6 +23,11 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.32.0
+
+- Equipment speaks Simplified Chinese, French, Spanish and Russian now if your game is in one of those.
+- Best Armor Only is under Put On Upgrades on the Gear page of Settings. It stops Equipment from offering lighter armor in a slot once you wear the heavier kind there. It's off until you turn it on.
+
 ## 0.31.2
 
 Fixes and changes:

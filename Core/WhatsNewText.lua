@@ -5,6 +5,10 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "0.32.0", lines = {
+        "Equipment speaks Simplified Chinese, French, Spanish and Russian now if your game is in one of those.",
+        "Best Armor Only is under Put On Upgrades on the Gear page of Settings. It stops Equipment from offering lighter armor in a slot once you wear the heavier kind there. It's off until you turn it on.",
+    } },
     { version = "0.31.0", lines = {
         "Gear with hit or crit ratings now counts for the percent it really gives, so it doesn't look better than it is.",
         "Casters count hit and crit on their gear.",
@@ -15,8 +19,5 @@ ns.WHATS_NEW = {
     { version = "0.30.0", lines = {
         "The upgrade finder has an Enchants view. It shows the best enchant for each piece you wear.",
         "Worn gear's tooltip shows its best enchant.",
-    } },
-    { version = "0.29.0", lines = {
-        "Equipment can put an upgrade on for you as soon as it lands in your bags. It's off until you turn it on in Settings.",
     } },
 }
