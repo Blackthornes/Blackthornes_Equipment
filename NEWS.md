@@ -23,6 +23,14 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.33.0
+
+- Each tooltip line Equipment adds can be Off, Shift or Always. You pick in Settings.
+
+Fixes and changes:
+
+- The Training drawer lists only characters on your realm and side.
+
 ## 0.32.0
 
 - Equipment speaks Simplified Chinese, French, Spanish and Russian now if your game is in one of those.
