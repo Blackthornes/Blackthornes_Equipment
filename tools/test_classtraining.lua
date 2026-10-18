@@ -5,7 +5,8 @@
 -- What must hold here:
 --   1. The Training button counts the spells waiting, and opens the drawer.
 --   2. The drawer lists ready spells with their cost, the next level's,
---      untrained weapon upgrades and the other characters'.
+--      untrained weapon upgrades and the other characters' on this
+--      realm and side.
 --   3. A class trainer's window keeps the prices and the trainer's spot,
 --      and Show the way aims the quest arrow there.
 --   4. Turned off, the button goes and nothing is listed.
@@ -93,10 +94,27 @@ suite.check("Show the way aims the quest arrow at the trainer", aimed and aimed.
     and aimed.place.zone == "Stormwind City" and math.abs(aimed.place.x - 38) < 0.01)
 
 -- Another character's spells.
-CT:Data().characters["Player-1-BBB"] = { name = "Bob Stone", class = "MAGE", level = 10, ready = { 2, 3 }, at = 1 }
+CT:Data().characters["Player-1-BBB"] = { name = "Bob Stone", class = "MAGE", level = 10, faction = "Alliance",
+    ready = { 2, 3 }, at = 1 }
+-- Only this realm and side (a player saw the other side's and other
+-- realms' characters, 2026-10-18). An older note with no side takes it
+-- from this addon's note of that character's gear.
+CT:Data().characters["Player-1-HHH"] = { name = "Hord Guy", class = "MAGE", level = 10, faction = "Horde",
+    ready = { 2 }, at = 1 }
+CT:Data().characters["Player-2-FAR"] = { name = "Far Away", class = "MAGE", level = 10, faction = "Alliance",
+    ready = { 2 }, at = 1 }
+CT:Data().characters["Player-1-OLD"] = { name = "Old Note", class = "MAGE", level = 10, ready = { 2 }, at = 1 }
+CT:Data().characters["Player-1-NOP"] = { name = "No Side", class = "MAGE", level = 10, ready = { 2 }, at = 1 }
+ns.db.characterGear = ns.db.characterGear or {}
+ns.db.characterGear["Player-1-OLD"] = { faction = "Alliance" }
 CT:Changed()
 text = Texts()
 suite.check("the other characters", text:find("Bob Stone", 1, true) ~= nil and text:find("2 spells at level 10", 1, true) ~= nil, text)
+suite.check("an older note takes its side from the gear note", text:find("Old Note", 1, true) ~= nil, text)
+suite.check("never the other side", text:find("Hord Guy", 1, true) == nil, text)
+suite.check("never another realm", text:find("Far Away", 1, true) == nil, text)
+suite.check("never a character whose side isn't known", text:find("No Side", 1, true) == nil, text)
+ns.db.characterGear["Player-1-OLD"] = nil
 
 -- 4. Turned off.
 ns.HandleSlash("training off")
