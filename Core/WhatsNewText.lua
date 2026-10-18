@@ -5,6 +5,9 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "0.33.0", lines = {
+        "Each tooltip line Equipment adds can be Off, Shift or Always. You pick in Settings.",
+    } },
     { version = "0.32.0", lines = {
         "Equipment speaks Simplified Chinese, French, Spanish and Russian now if your game is in one of those.",
         "Best Armor Only is under Put On Upgrades on the Gear page of Settings. It stops Equipment from offering lighter armor in a slot once you wear the heavier kind there. It's off until you turn it on.",
@@ -15,9 +18,5 @@ ns.WHATS_NEW = {
         "Hit you don't need past the cap isn't counted.",
         "Racial stat bonuses count when Equipment compares gear.",
         "Gear from recipes you've learned shows under Crafted in the upgrade finder, even the new ones Forever added.",
-    } },
-    { version = "0.30.0", lines = {
-        "The upgrade finder has an Enchants view. It shows the best enchant for each piece you wear.",
-        "Worn gear's tooltip shows its best enchant.",
     } },
 }
