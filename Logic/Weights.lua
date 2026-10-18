@@ -1227,6 +1227,39 @@ function Weights:IsBestArmor(class, level, classID, subclassID, equipLoc)
     return rank >= best
 end
 
+--- The heaviest body armor kind worn now, 0 for none (1 cloth to 4 plate).
+function Weights.WornArmorRank()
+    local Items = ns.Items
+    local heaviest = 0
+    for _, slot in ipairs({ 1, 3, 5, 6, 7, 8, 9, 10 }) do
+        local link = Items and Items:Equipped(slot)
+        local info = link and Items:Info(link)
+        local rank = info and info.classID == CLASS_ARMOR and BODY_ARMOR[info.subclassID]
+        if rank and rank > heaviest then heaviest = rank end
+    end
+    return heaviest
+end
+
+--- Best Armor Only (the owner, 2026-10-18): is this armor lighter than the
+--- heaviest kind the character wears? A kind the class learns later (plate
+--- or mail at 40) only counts once a piece of it is worn (`wornRank`), so a
+--- warrior who just turned 40 still sees mail until the first plate.
+function Weights:IsLighterArmor(class, level, classID, subclassID, equipLoc, wornRank)
+    if self:IsBestArmor(class, level, classID, subclassID, equipLoc) then return false end
+    local rank = BODY_ARMOR[subclassID]
+    local list = SPECS[class].armor
+    level = tonumber(level) or 0
+    local best = 0
+    for kind, opens in pairs(list) do
+        local kindRank = BODY_ARMOR[kind]
+        if kindRank and opens <= level and kindRank > best
+            and (opens <= 1 or (wornRank or 0) >= kindRank) then
+            best = kindRank
+        end
+    end
+    return rank < best
+end
+
 --- Can this character hold a weapon in the off hand now? The client's
 --- CanDualWield answers when it has one; otherwise classic's rule.
 function Weights:CanDualWield(class, level)

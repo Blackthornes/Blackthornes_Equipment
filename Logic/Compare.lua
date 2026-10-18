@@ -298,6 +298,21 @@ local function Skip(result)
     return result
 end
 
+--- Is Best Armor Only ticked on this character? Kept per character in
+--- BlackthornesEquipmentCharDB.bestArmorOnly (off unless ticked).
+function Compare.BestArmorOnly()
+    return type(ns.charDB) == "table" and ns.charDB.bestArmorOnly == true
+end
+
+--- Tick or untick it, and judge everything again.
+function Compare:SetBestArmorOnly(on)
+    if type(ns.charDB) ~= "table" then return end
+    ns.charDB.bestArmorOnly = on and true or nil
+    Weights:Changed()
+    -- An upgrade quest already picked for lighter armor is let go.
+    if ns.UpgradeQuest then pcall(ns.UpgradeQuest.Check, ns.UpgradeQuest) end
+end
+
 --- The verdict on one item for this character.
 --
 -- @return nil when the item is not gear this addon judges, or its details are
@@ -344,6 +359,15 @@ function Compare:Judge(link)
     end
     if not usable then
         result.verdict = "cantuse"
+        return result
+    end
+
+    -- Best Armor Only, ticked on this character: lighter armor than the
+    -- heaviest kind it wears is not for it (no tooltip line of its own).
+    if self.BestArmorOnly() and Weights:IsLighterArmor(class, Items:PlayerLevel(),
+        info.classID, info.subclassID, info.equipLoc, Weights.WornArmorRank()) then
+        result.verdict = "cantuse"
+        result.lighterArmor = true
         return result
     end
 
@@ -622,7 +646,9 @@ function Compare:Describe(result)
     local verdict, spec = result.verdict, result.specName
     local percent = result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5)) or nil
 
-    if verdict == "cantuse" and result.ignoredSkill then
+    if verdict == "cantuse" and result.lighterArmor then
+        return nil
+    elseif verdict == "cantuse" and result.ignoredSkill then
         return L.Format("Ignored until you train %s", result.ignoredSkill), "muted"
     elseif verdict == "cantuse" then
         return L.Format("%s can't use this", CLASS_NAMES[result.className] or L["Your class"]), "muted"
