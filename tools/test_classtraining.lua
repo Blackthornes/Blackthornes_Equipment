@@ -116,6 +116,17 @@ suite.check("never another realm", text:find("Far Away", 1, true) == nil, text)
 suite.check("never a character whose side isn't known", text:find("No Side", 1, true) == nil, text)
 ns.db.characterGear["Player-1-OLD"] = nil
 
+-- A spell the trainer shows as learned leaves the drawer, whatever the
+-- client's own check says (a player was told to train spells known a long
+-- time, 2026-10-19).
+services[2] = { "Frost Nova", "", "used", 200 }
+handler(_G.BlackthornesEquipmentEventFrame, "TRAINER_SHOW")
+text = Texts()
+suite.check("a spell the trainer says is learned is not listed", text:find("Frost Nova", 1, true) == nil, text)
+CT:Data().learned["Player-1-AAA"] = nil
+services[2] = { "Frost Nova", "", "available", 200 }
+handler(_G.BlackthornesEquipmentEventFrame, "TRAINER_SHOW")
+
 -- 4. Turned off.
 ns.HandleSlash("training off")
 suite.check("off is saved", ns.db.classTraining == false)
