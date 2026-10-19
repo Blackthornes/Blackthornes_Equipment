@@ -316,13 +316,15 @@ QuestLog.DIFFICULTY = {
 }
 
 --- Where to go for a quest, from Data/QuestEnds.lua: the hand-in once
---- it is done, else the objective's place, else the hand-in. Nil when the
+--- it is done, else the place of the first objective not done yet, else
+--- the hand-in. Nil when the
 --- data has nothing; a place is { zone, x, y, name }.
 function QuestLog.Place(quest)
     local upgrade = ns.UpgradeQuest
     local ends = quest.questID and upgrade and upgrade.Ender and upgrade.Ender(quest.questID)
     if not ends then return nil end
-    local pick = quest.complete and ends.hand or ends.goal or ends.hand
+    local goal = upgrade.OpenGoal and upgrade.OpenGoal(ends, quest.objectives) or ends.goal
+    local pick = quest.complete and ends.hand or goal or ends.hand
     if not (pick and pick.zone) then return nil end
     return { zone = pick.zone, x = pick.x, y = pick.y, name = pick.dungeon or pick.name }
 end
