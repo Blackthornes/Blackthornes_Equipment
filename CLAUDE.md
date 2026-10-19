@@ -753,6 +753,12 @@ keeps its `realm` and `faction`, an older one takes them from
 character logs in; a player saw the other side's, 2026-10-18). Show the way aims the quest arrow at the class trainer
 (`ClassTraining.Guide` = `TrainingDrawer.Guide`). Tested in
 `tools/test_classtraining.lua`. Not yet seen in game.
+A spell is known when the client says so, when a class trainer showed it
+as learned (kept by GUID in `classTrainingData.learned`, never rename it),
+or when a higher rank of the same name is known (the data skips a rank now
+and then; a player was told to train spells known a long time,
+2026-10-19). A trainer line in another language matches by name and the
+rank's number.
 
 ## What Farmer calls here
 
