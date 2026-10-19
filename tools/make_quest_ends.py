@@ -12,7 +12,10 @@ Mulgore. For every quest in Sources.QUESTS this writes who or what takes it
 back (an NPC or an object, with one real spawn spot) and one place to work
 on it: the first objective that has a spot, whether a mob to kill, an
 object to use, or an item to collect (then the mob, object or vendor it
-comes from, the dungeon for a dungeon boss).
+comes from, the dungeon for a dungeon boss). A quest with more than one
+objective also lists a place for each of the others, so the steps can
+move on once the log shows one done (Warsong Supplies wants four items
+from four places).
 
 For items, what Farmer saw dropping on WoW: Forever comes first (its
 Data/Data_Harvested.lua names mob, zone and spot, never the player), then
@@ -35,6 +38,9 @@ from lupa import lua51  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT = os.path.join(ROOT, "Data", "QuestEnds.lua")
+
+# At most this many objective places a quest: no Classic quest asks for more.
+MOST_GOALS = 6
 
 
 def ids(table):
@@ -86,31 +92,32 @@ def main(argv):
         return ("object", what, zone_names[where[0]], where[1], where[2])
 
     def item_place(iid):
-        """Where to get an item: Forever's best drop, else Classic's."""
+        """Where to get an item: in the quest's own zone first (Tough Wolf
+        Meat for a Dun Morogh quest is not fetched from Elwynn's wolves),
+        Forever's best drop before Classic's, then anywhere the same way."""
         name = item_names[iid]
         if not name:
             return None
         rows = sorted(forever.get(name, []), key=lambda r: -(r[6] or 0))
-        if rows:
-            row = rows[0]
-            return ("mob", row[0], row[1], row[2], row[3])
-        entry = pf_items[iid]
-        if not entry:
-            return None
+        ours = [("mob", r[0], r[1], r[2], r[3]) for r in rows]
         found = []
-        for key, kind in (("U", "mob"), ("O", "object")):
-            table = entry[key]
-            for k in (table or {}):
-                place = unit_place(k) if kind == "mob" else object_place(k)
+        entry = pf_items[iid]
+        if entry:
+            for key, kind in (("U", "mob"), ("O", "object")):
+                table = entry[key]
+                for k in (table or {}):
+                    place = unit_place(k) if kind == "mob" else object_place(k)
+                    if place:
+                        found.append((float(table[k] or 0), place))
+            for uid in ([k for k in entry["V"]] if entry["V"] else []):
+                place = unit_place(uid, "vendor")
                 if place:
-                    found.append((float(table[k] or 0), place))
-        for uid in ([k for k in entry["V"]] if entry["V"] else []):
-            place = unit_place(uid, "vendor")
-            if place:
-                found.append((100.0, place))
-        if not found:
-            return None
-        return sorted(found, key=lambda f: (-f[0], f[1][1]))[0][1]
+                    found.append((100.0, place))
+        classic = [f[1] for f in sorted(found, key=lambda f: (-f[0], f[1][1]))]
+        here = zone_names[home[0]] if home[0] else None
+        for place in [p for p in ours if p[2] == here] + [p for p in classic if p[2] == here] + ours + classic:
+            return place
+        return None
 
     ends = {}
     for qid in sources.QUESTS:
@@ -130,26 +137,32 @@ def main(argv):
                     done = object_place(oid)
                     if done:
                         break
-        goal, item = None, None
+        # Every objective's place, in pfQuest's order (mobs, objects, then
+        # items), the first being the one a quest with one objective shows.
+        goals = []
         obj = pq["obj"]
         if obj:
             for uid in ids(obj["U"]):
-                goal = unit_place(uid)
-                if goal:
-                    break
-            if not goal:
-                for oid in ids(obj["O"]):
-                    goal = object_place(oid)
-                    if goal:
-                        break
-            if not goal:
-                for iid in ids(obj["I"]):
-                    goal = item_place(iid)
-                    if goal:
-                        item = item_names[iid]
-                        break
-        if done or goal:
-            ends[qid] = (done, goal, item)
+                place = unit_place(uid)
+                if place:
+                    goals.append((place, None))
+            for oid in ids(obj["O"]):
+                place = object_place(oid)
+                if place:
+                    goals.append((place, None))
+            for iid in ids(obj["I"]):
+                place = item_place(iid)
+                if place:
+                    goals.append((place, item_names[iid]))
+        seen, unique = set(), []
+        for goal in goals:
+            key = goal[1] or goal[0][1]
+            if key not in seen:
+                seen.add(key)
+                unique.append(goal)
+        goals = unique[:MOST_GOALS]
+        if done or goals:
+            ends[qid] = (done, goals)
 
     def row(place):
         kind, name, zone, x, y = place
@@ -172,15 +185,22 @@ def main(argv):
     w("-- [quest] = { who or what takes it back: kind (\"npc\" or \"object\"), name,")
     w("-- zone, x, y; o = where to work on it: kind (\"mob\", \"object\", \"vendor\"")
     w("-- or \"boss\", whose zone is its dungeon with x and y 0), name, zone, x, y,")
-    w("-- and the item to collect there, if that is the objective }.")
+    w("-- and the item to collect there, if that is the objective; m = the same")
+    w("-- for each other objective, when the quest has more than one }.")
     w("-- Either part can be missing when the data does not say.")
     w("Sources.ENDS = {")
     for qid in sorted(ends):
-        done, goal, item = ends[qid]
+        done, goals = ends[qid]
         parts = [row(done)] if done else []
-        if goal:
+
+        def goal_row(goal):
+            place, item = goal
             extra = f", {lua_string(item)}" if item else ""
-            parts.append(f"o = {{ {row(goal)}{extra} }}")
+            return f"{{ {row(place)}{extra} }}"
+        if goals:
+            parts.append(f"o = {goal_row(goals[0])}")
+        if len(goals) > 1:
+            parts.append("m = { " + ", ".join(goal_row(g) for g in goals[1:]) + " }")
         w(f"    [{qid}] = {{ " + ", ".join(parts) + " },")
     w("}")
     text = "\n".join(out) + "\n"
@@ -191,7 +211,8 @@ def main(argv):
         f.write(text)
     print(f"wrote {OUTPUT}: {len(ends)} quests, "
           f"{sum(1 for e in ends.values() if e[0])} with a hand-in, "
-          f"{sum(1 for e in ends.values() if e[1])} with a place to work on it")
+          f"{sum(1 for e in ends.values() if e[1])} with a place to work on it, "
+          f"{sum(1 for e in ends.values() if len(e[1]) > 1)} with more than one")
 
 
 if __name__ == "__main__":

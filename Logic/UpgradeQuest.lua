@@ -771,17 +771,68 @@ local function EndPlace(p)
 end
 
 --- Where a quest is worked on and handed in (Data/QuestEnds.lua): { hand,
---- goal }, each a place { kind, name, zone, x, y }, `goal` with the `item`
---- to collect when that is the objective and `dungeon` for a boss. Either
---- can be nil; nil when the data has nothing for the quest.
+--- goal, goals }, each a place { kind, name, zone, x, y }, `goal` with the
+--- `item` to collect when that is the objective and `dungeon` for a boss.
+--- `goals` is every objective's place, `goal` the first. Either can be
+--- nil; nil when the data has nothing for the quest.
 function UpgradeQuest.Ender(questID)
     local ends = ns.Sources and ns.Sources.ENDS
     local row = type(ends) == "table" and questID and ends[questID]
     if type(row) ~= "table" then return nil end
     local hand = row[1] and EndPlace(row) or nil
     if hand then hand.item = nil end
-    return { hand = hand, goal = EndPlace(row.o) }
+    local goals = {}
+    goals[#goals + 1] = EndPlace(row.o)
+    if type(row.m) == "table" then
+        for _, more in ipairs(row.m) do goals[#goals + 1] = EndPlace(more) end
+    end
+    return { hand = hand, goal = goals[1], goals = goals }
 end
+
+--- Does a quest log objective line name this place's objective? The item
+--- to collect, else the mob or object, found in the line's text ("1/1
+--- Logging Rope", "Foulweald Den Watcher slain: 0/8"). The data's names
+--- are English, so another language matches nothing.
+local function Names(text, goal)
+    local key = goal.item or goal.name
+    if type(key) ~= "string" or key == "" then return false end
+    local ok, found = pcall(function()
+        return text:lower():find(key:lower(), 1, true) ~= nil
+    end)
+    return ok and found or false
+end
+
+--- The objective to work on now: the first of the quest's places whose
+--- objective the log does not show done. `objectives` is the log's list
+--- ({ text, done } each); without it, the first place. A place the log
+--- has no line for counts as not done. Nil when every place's objective
+--- is done.
+function UpgradeQuest.OpenGoal(ender, objectives)
+    if not ender then return nil end
+    local goals = ender.goals or { ender.goal }
+    if type(objectives) ~= "table" or #objectives == 0 then return goals[1] end
+    for _, goal in ipairs(goals) do
+        local done = false
+        for _, objective in ipairs(objectives) do
+            if type(objective) == "table" and objective.done and type(objective.text) == "string"
+                and Names(objective.text, goal) then
+                done = true
+                break
+            end
+        end
+        if not done then return goal end
+    end
+    return nil
+end
+
+--- The log's objectives for a quest in it, read for that one quest; nil
+--- when it can't be read.
+local function LogObjectives(questID)
+    if not (questID and ns.QuestLog and ns.QuestLog.Find) then return nil end
+    local ok, found = pcall(ns.QuestLog.Find, ns.QuestLog, questID)
+    return ok and type(found) == "table" and found.objectives or nil
+end
+UpgradeQuest.LogObjectives = LogObjectives
 
 --- "to Morin Cloudstalker in Mulgore (51.9, 59.6)", "at" for an object.
 local function HandText(hand, withZone)
@@ -979,7 +1030,8 @@ function UpgradeQuest:Steps(quest)
                 -- the objective, or to whoever takes it back once it is done
                 -- (or when it has nothing else to do).
                 local ender = UpgradeQuest.Ender(before.questID) or {}
-                local hand, goal = ender.hand, ender.goal
+                local hand = ender.hand
+                local goal = ender.goal and UpgradeQuest.OpenGoal(ender, LogObjectives(before.questID))
                 local title = L.Format("%s (level %d)", before.title, before.questLevel or 0)
                 if hand and QuestReady(before.questID) then
                     text = L.Format("Hand in %s %s", before.title, HandText(hand, true))
@@ -1032,11 +1084,15 @@ function UpgradeQuest:Steps(quest)
         -- Where to work on it and who takes it back (Data/QuestEnds.lua),
         -- so the arrow leaves the giver once the quest is in the log.
         local ender = questID and UpgradeQuest.Ender(questID) or {}
-        local complete = ender.goal
+        -- In the log, the first objective not done yet: Warsong Supplies
+        -- moves on from Logging Rope once the log shows it collected.
+        local goal = ender.goal
+        if goal and onQuest then goal = UpgradeQuest.OpenGoal(ender, LogObjectives(questID)) end
+        local complete = goal
             and L.Format("Complete %s (level %d): %s", source.title or L["the quest"], source.questLevel or 0,
-                GoalText(ender.goal))
+                GoalText(goal))
             or L.Format("Complete %s (level %d)", source.title or L["the quest"], source.questLevel or 0)
-        Add(complete, questID and QuestReady(questID), Spot(ender.goal), note)
+        Add(complete, questID and QuestReady(questID), Spot(goal), note)
         if onQuest then steps[#steps].questID = questID end
         -- A reward given outright comes with the quest; only one of a
         -- choice is picked. Read from the data, so a quest kept from before

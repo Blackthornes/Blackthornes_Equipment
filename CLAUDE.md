@@ -596,6 +596,15 @@ item drops, Forever's drops first), real spawns in the quest's own zone
 first. `UpgradeQuest.Ender` reads it: a quest in the log points at its
 objective, else its hand-in, and the hand-in once it is ready, never at
 its giver; with nothing known it has no place.
+A quest with several objectives carries a place for each (`m` beside `o`,
+2026-10-19, after the arrow stayed on Logging Rope once Warsong Supplies
+had it): `UpgradeQuest.OpenGoal` reads the log's objectives
+(`LogObjectives`, `QuestLog:Find`) and picks the first place whose item or
+mob name a line marked done does not name, so the step, arrow and pin move
+on; a line it can't match (another language) counts as not done. The
+quest log tab's `QuestLog.Place` uses the same. An item objective prefers
+a source in the quest's own zone, Forever's before Classic's. Tested in
+`tools/test_questobjectives.lua`.
 A hand-in step whose quest is ready (`QuestReady`) carries `turnIn`, and
 the panel then shows the game's yellow ? (`ActiveQuestIcon`) on that step
 and in its header instead of the ! (the owner asked 2026-10-10), read on
