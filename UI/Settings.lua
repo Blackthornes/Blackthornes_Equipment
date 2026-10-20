@@ -131,6 +131,7 @@ local POSITION_KEYS = {
     { "questPoint", "questRelativePoint", "questX", "questY" },
     { "questArrowX", "questArrowY" },
     { "ignoredPoint", "ignoredRelativePoint", "ignoredX", "ignoredY" },
+    { "dungeonQuestsPoint", "dungeonQuestsRelPoint", "dungeonQuestsX", "dungeonQuestsY" },
 }
 
 --- Put every Equipment window back where it started: the gear window, this
@@ -141,7 +142,7 @@ function SettingsUI:ResetPositions()
     for _, keys in ipairs(POSITION_KEYS) do
         for _, key in ipairs(keys) do ns.db[key] = nil end
     end
-    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI, ns.IgnoredUI }) do
+    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI, ns.IgnoredUI, ns.DungeonQuestsUI }) do
         if module and module.frame and module.RestorePosition then module:RestorePosition() end
     end
 end
@@ -741,6 +742,11 @@ function SettingsUI:BuildQuest()
         if ns.QuestLogUI then ns.QuestLogUI:SetHidesTracker(checked) end
     end, false)
     controls.hideQuestTracker:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    -- Every quest done inside a dungeon or raid (UI/DungeonQuestsWindow.lua).
+    local _, dungeonsButton = CommandRow(pages, "quest", 2, L["Dungeon Quests:"], nil,
+        L["Open"], "dungeons")
+    controls.dungeonQuests = dungeonsButton
 end
 
 --- General: windows and text on the left, help and problems on the right.

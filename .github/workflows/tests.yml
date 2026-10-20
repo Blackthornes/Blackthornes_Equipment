@@ -53,6 +53,9 @@ jobs:
       - name: The enchant tool reads the client tables right
         run: python tools/test_make_enchants.py
 
+      - name: The dungeon quest tool reads the client tables right
+        run: python tools/test_make_dungeon_quests.py
+
       - name: The Forever item tool keeps only what changed
         run: python tools/test_forever_items.py
 

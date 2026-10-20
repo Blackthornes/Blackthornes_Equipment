@@ -214,6 +214,7 @@ local covered = { sisters = true, whatsnew = true,
     window = true, find = true, quest = true, arrow = true,
     probe = true, perf = true, spec = true, weights = true,
     settings = true, weapons = true, training = true, skip = true, autoequip = true,
+    dungeons = true,
 }
 local typedOnly = { bags = true, tracked = true, help = true }
 for _, name in ipairs(ns.commandOrder) do

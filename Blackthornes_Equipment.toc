@@ -37,6 +37,7 @@ Data\ForeverNPCs.lua
 Data\ForeverQuests.lua
 Data\ForeverGoneQuests.lua
 Data\ForeverVendors.lua
+Data\DungeonQuests.lua
 Data\Crafts.lua
 Data\ForeverItems.lua
 Data\Rolls.lua
@@ -61,6 +62,7 @@ Logic\Waypoints.lua
 Logic\UpgradeQuest.lua
 Logic\QuestArrow.lua
 Logic\QuestLog.lua
+Logic\DungeonQuests.lua
 Logic\TomTom.lua
 Logic\Contribute.lua
 
@@ -91,6 +93,7 @@ UI\SlotUpgrades.lua
 UI\MoreMarks.lua
 UI\QuestPanel.lua
 UI\QuestLogTab.lua
+UI\DungeonQuestsWindow.lua
 UI\IgnoredWindow.lua
 UI\QuestArrow.lua
 

@@ -308,6 +308,11 @@ function Probe:Run()
             or "none read")
     end
 
+    if ns.DungeonQuests then
+        local ok, text = pcall(ns.DungeonQuests.Describe, ns.DungeonQuests)
+        Line("dungeon quests", ok and text or "could not read")
+    end
+
     local spec, why = Weights:CurrentSpec()
     Line("judged as", spec and (spec .. " (" .. why .. ")") or "no weights for this class")
 
