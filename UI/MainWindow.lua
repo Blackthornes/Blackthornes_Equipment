@@ -153,16 +153,24 @@ function UI:Build()
     find:SetPoint("BOTTOMRIGHT", -PADDING, 12)
     self.findButton = find
 
+    -- Every quest done inside a dungeon or raid, and which are done
+    -- (UI/DungeonQuestsWindow.lua, the owner said build it 2026-10-20).
+    local dungeons = Widgets.CreateButton(frame, L["Dungeon Quests"], function()
+        if ns.DungeonQuestsUI then ns.DungeonQuestsUI:Toggle() end
+    end, { width = 110, height = 24 })
+    dungeons:SetPoint("RIGHT", find, "LEFT", -8, 0)
+    self.dungeonButton = dungeons
+
     local footer = Theme.CreateLabel(frame, "normal", "muted")
     footer:SetPoint("BOTTOMLEFT", PADDING, 26)
-    footer:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, 14)
+    footer:SetPoint("BOTTOMRIGHT", dungeons, "BOTTOMLEFT", -10, 14)
     self.footer = footer
 
     -- The installed version, small and faint at the end of the hint's line
     -- beside Find upgrades, so a player can see at a glance which one they
     -- run.
     local version = Theme.CreateLabel(frame, "tiny", "dim", "RIGHT")
-    version:SetPoint("BOTTOMRIGHT", find, "BOTTOMLEFT", -10, -1)
+    version:SetPoint("BOTTOMRIGHT", dungeons, "BOTTOMLEFT", -10, -1)
     version:SetText(ns.VersionLabel())
     self.versionLabel = version
 

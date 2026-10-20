@@ -692,6 +692,34 @@ the latest claim is drawn; the others wait hidden. The lines are the same
 in each dial's file (`ArrowUI:Claim`, `ArrowUI.Wins`); a change to them
 belongs in all three.
 
+## Dungeon Quests
+
+The owner said build it (2026-10-20, from a mockup): every quest done
+inside a dungeon or raid, and which this character has done.
+`Data/DungeonQuests.lua` (`ns.DUNGEON_QUESTS[questID] = { dungeon key,
+title, min, level, side, classes, giver, zone, x, y, reward, prev }`, and
+`ns.FOREVER_DUNGEON_PLACES` from `forever_drops.py`'s `FOREVER_DUNGEONS`)
+is written by `tools/make_dungeon_quests.py <mangoszero> <pfQuest>
+--tables <tables folder>`, never by hand: Classic's quests filed under a
+dungeon's zone (AreaTable's ContinentID is the instance) or whose
+objectives are inside one, kept only when the Forever client's QuestV2
+table has them. The tables hold IDs only, no names, so Forever's own
+dungeon quests are learned in game (`Logic/DungeonQuests.lua`,
+`DQ:LearnLog`): a quest in the log under a heading naming a dungeon, or
+accepted while inside one, is kept account wide in
+`learnedDungeonQuests[questID]`. Other authors' Forever quest pages may be
+read as a checklist only, never copied into the data or named.
+Status is Done (`Finder:QuestDone`), In Log or To Do. `UI/DungeonQuestsWindow.lua`
+(`/beq dungeons`, the gear window's Dungeon Quests button, Settings >
+Upgrade quest) lists the dungeons and the picked one's quests; Follow aims
+the quest arrow, Show the Way the game's map pin. Saved, account wide,
+never rename them: `learnedDungeonQuests`, `dungeonQuestsHideDone` (off
+unless ticked), `dungeonQuestsMyLevel` (false when unticked),
+`dungeonQuestsPick` and the window's `dungeonQuestsPoint`,
+`dungeonQuestsRelPoint`, `dungeonQuestsX`, `dungeonQuestsY`. `/beq probe`
+has a "dungeon quests" line. Tested in `tools/test_dungeonquests.lua` and
+`tools/test_make_dungeon_quests.py`. Not yet seen in game.
+
 ## The Quest log tab
 
 The owner asked (2026-10-10) for the game's quest tracker inside the
