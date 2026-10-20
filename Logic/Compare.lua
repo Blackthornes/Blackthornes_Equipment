@@ -375,13 +375,13 @@ function Compare:Judge(link)
 
     -- A weapon whose skill is not trained yet is still an upgrade, but one
     -- that can't be put on until it is (`skill`, its name). One of a type
-    -- this character ignores until trained (Logic/WeaponSkills.lua) is not
-    -- for it at all.
+    -- this character ignores until trained, or any while Settings hides
+    -- untrained weapons (Logic/WeaponSkills.lua), is not for it at all.
     local skills = ns.WeaponSkills
     if info.classID == 2 and skills then
         local skill, subclassID = skills:Untrained(link)
         if skill then
-            if skills:IsIgnored(subclassID) then
+            if skills:IsHidden(subclassID) then
                 result.verdict = "cantuse"
                 result.ignoredSkill = skill
                 return result

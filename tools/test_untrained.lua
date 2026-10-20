@@ -158,4 +158,40 @@ suite.check("/beq weapons lists them", env.chat[#env.chat]:find("ignored until y
 ns.HandleSlash("weapons show")
 suite.check("/beq weapons show clears them", next(ns.charDB.ignoredWeaponTypes) == nil)
 
+-- Settings, Untrained Weapons: Hide keeps every untrained weapon out of the
+-- upgrades for this character; Show brings them back, banner ignores too.
+known[227] = nil
+ns.WeaponSkills:Learned()
+suite.check("shown, the staff is an upgrade", Compare:JudgeCarried("item:2").verdict == "upgrade")
+ns.WeaponSkills:HideAll(true)
+suite.check("Hide is kept for this character", ns.charDB.hideUntrainedWeapons == true)
+result = Compare:JudgeCarried("item:2")
+suite.check("hidden, the staff is not for this character", result.verdict == "cantuse"
+    and result.ignoredSkill == "Staves", result.verdict)
+suite.check("a trained sword still is", Compare:JudgeCarried("item:3").verdict == "upgrade")
+suite.check("Settings says they're hidden", ns.SettingsUI:WeaponsHint()
+    == "Weapons you haven't trained don't show as upgrades until you train them.")
+ns.charDB.ignoredWeaponTypes = { [10] = true }
+suite.check("Show clears both", ns.WeaponSkills:ShowAll(true) and ns.charDB.hideUntrainedWeapons == nil
+    and next(ns.charDB.ignoredWeaponTypes) == nil)
+suite.check("and the staff is back", Compare:JudgeCarried("item:2").verdict == "upgrade")
+ns.HandleSlash("weapons hide")
+suite.check("/beq weapons hide hides them", ns.charDB.hideUntrainedWeapons == true)
+ns.HandleSlash("weapons show")
+suite.check("/beq weapons show shows them", ns.charDB.hideUntrainedWeapons == nil)
+
+-- The Settings row is a Show or Hide stepper that follows the save.
+ns.SettingsUI:Show()
+local stepper = ns.SettingsUI.controls.weapons
+suite.check("the row reads Show", stepper and stepper.text:GetText() == "Show", stepper and stepper.text:GetText())
+stepper:SetValue(0)
+suite.check("picking Hide hides them", stepper.text:GetText() == "Hide" and ns.charDB.hideUntrainedWeapons == true)
+stepper:SetValue(1)
+suite.check("picking Show shows them", stepper.text:GetText() == "Show" and ns.charDB.hideUntrainedWeapons == nil)
+ns.charDB.ignoredWeaponTypes = { [10] = true }
+ns.SettingsUI:Refresh()
+suite.check("a type ignored from a banner reads Hide", stepper.text:GetText() == "Hide")
+stepper:SetValue(1)
+suite.check("and Show clears it", next(ns.charDB.ignoredWeaponTypes) == nil)
+
 suite.done()
