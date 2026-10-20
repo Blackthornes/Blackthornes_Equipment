@@ -492,8 +492,12 @@ into the updates. `Logic/QuestLearn.lua`: at `QUEST_DETAIL` and
 `QUEST_COMPLETE` it reads the quest window (ID, title, level, the gear
 offered or given, and for an offer who stands in front of the player and
 where) and keeps what Classic's data lacks, account wide, in
-`BlackthornesEquipmentDB.learnedQuests[questID]` (never rename it). Only
-gear is kept; a quest and rewards the data already has are not saved. The
+`BlackthornesEquipmentDB.learnedQuests[questID]` (never rename it). For a
+quest Classic's data has, only gear it lacks is kept; a quest the data
+lacks is kept whole (the owner, 2026-10-20: "all quests and their
+rewards"), its gear in `rewards` and also its other reward items with
+counts (`items = { { itemID, count, given } }`), `money` and `xp`, read as
+first seen. Only gear is laid over the data. The
 records are laid over `Sources.QUESTS` and `Sources.ITEMS` at login and as
 each is learned, so the finder and the upgrade quest offer them; nothing
 Classic says is replaced. Nothing is shared with other players.
@@ -532,8 +536,10 @@ login and as each is learned. Before a release, `tools/forever_vendors.py
 
 The owner said do it (2026-10-18), as Farmer's "Sending drops to
 Blackthornes" and Tradeskills' "Sending data to Blackthornes": players can
-opt in to send the vendors and quest rewards their Equipment learned
-(`learnedVendors`, `learnedQuests`, see "Quests learned in game") to his
+opt in to send the vendors, quests and rewards their Equipment learned
+(`learnedVendors`, `learnedQuests`, and since 2026-10-20 every quest the
+data lacks and `learnedDungeonQuests`, see "Quests learned in game" and
+"Dungeon Quests") to his
 characters, for the shipped data. Off by default (`shareData`, never
 rename it), never announced: one tick box on the About page of Settings,
 "Share your data with Blackthornes to improve the Equipment AddOn.", no
@@ -547,22 +553,29 @@ whispers a hello (`Q<id>:<hash>`) to each name in `Contribute.RECIPIENTS`
 Tradeskills' lists, change all three together) 30 s after login and every
 half hour. Only those characters ask (`R<id>`), one sender at a time, each
 at most every half hour, and the sender answers only a recipient asking
-for its own id. The table (`K`, `{ q, v }` in the saved shapes) is checked
-field by field (`CleanQuest`, `CleanVendor`: plain text, spots 0 to 100,
-whole numbers in range) and kept apart on the receiver in `sharedData[id]
-= { at, hash, quests, vendors }`, each sender's newest replacing the last
+for its own id. The table (`K`, `{ q, v, d }` in the saved shapes; an
+older sender's has no `d`) is checked field by field (`CleanQuest`,
+`CleanVendor`, `CleanDungeonQuest`: plain text, spots 0 to 100, whole
+numbers in range) and kept apart on the receiver in `sharedData[id] = {
+at, hash, quests, vendors, dungeons }`, each sender's newest replacing the last
 (at most `MAX_SENDERS`); it never joins the receiver's own learned lists
 and nothing in the windows reads it. A chat line, a sound and a screen
-line say "Got 3 vendors and 5 quests from NAME.", and `sharedDataLog`
+line say "Got 3 vendors and 5 quests from NAME." (dungeon quests counted
+as quests), and `sharedDataLog`
 (`/beq share log`, the newest `LOG_KEEP`) keeps who sent. Never rename
 `shareDataId`, `sharedData` or `sharedDataLog`. At a release,
-`tools/forever_quests.py --shared` and `tools/forever_vendors.py --shared`
-fold `sharedData` in before the save's own records (the save is never
+`tools/forever_quests.py --shared`, `tools/forever_vendors.py --shared`
+and `tools/forever_dungeon_quests.py --shared` fold `sharedData` in before
+the save's own records (the save is never
 changed, sender ids never read as names). Never announce the fold-in.
+A table is kept under `Contribute.BUDGET` bytes (the lowest quest IDs
+left out first, Forever's own being the highest) and a transfer may take
+up to `SYNC_TIMEOUT` (30 minutes) at Comm's pace.
 `Core/Comm.lua` (prefix `BEQshare`) and `Core/Serialize.lua` are Farmer's
 copies of Tradeskills' files; a fix to the wire or the serializer belongs
 in all three. Tested in `tools/test_contribute.lua`,
-`tools/test_forever_quests.py` and `tools/test_forever_vendors.py`. Not
+`tools/test_forever_quests.py`, `tools/test_forever_vendors.py` and
+`tools/test_forever_dungeon_quests.py`. Not
 yet seen in game.
 
 ## The upgrade quest

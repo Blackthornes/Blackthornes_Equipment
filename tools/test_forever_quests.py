@@ -94,5 +94,28 @@ expect("a sender's quests are read from sharedData", any(90007 in s for s in sha
 expect("junk in sharedData is skipped", len(shares) == 1)
 expect("the save's own list is still empty", read(SHARED) == {})
 
+EXTRAS = """
+BlackthornesEquipmentDB = {
+    ["learnedQuests"] = {
+        [90010] = { title = "Bring Bread", level = 6, rewards = {},
+            items = { { 4540, 5, true }, { -3, 1, false } }, money = 250, xp = 300 },
+    },
+}
+"""
+extra = read(EXTRAS)[90010]
+expect("other reward items are read with their counts", extra["items"] == [(4540, 5, True)])
+expect("money and XP are read", extra["money"] == 250 and extra["xp"] == 300)
+expect("a quest with no gear Classic lacks is new", new_to_classic(90010, extra, quests, items))
+again = merge(extra, {"title": "Bring Bread", "rewards": [], "items": [(4541, 1, False)], "money": 999})
+expect("a newer reading adds an item", (4541, 1, False) in again["items"])
+expect("money stays as first read", again["money"] == 250)
+text = render({90010: extra})
+expect("the file keeps the items", "items = { { 4540, 5, true } }" in text)
+expect("and the money and XP", "money = 250" in text and "xp = 300" in text)
+lua = lua51.LuaRuntime(unpack_returned_tuples=True, register_eval=False)
+lua.execute("ns = {}")
+lua.execute(text.replace("local _, ns = ...", ""))
+expect("the file loads", lua.eval("ns.ForeverQuests[90010].items[1][2]") == 5)
+
 print(f"{checks - failures}/{checks} checks passed")
 sys.exit(1 if failures else 0)

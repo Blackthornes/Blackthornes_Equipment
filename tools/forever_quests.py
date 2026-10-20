@@ -8,7 +8,8 @@ Run from the repository root:
 A saved file is the addon's account save, Blackthornes_Equipment.lua from
 the game's WTF/Account/<account>/SavedVariables folder. Only its
 `learnedQuests` table is read (Logic/QuestLearn.lua: quest ID -> title,
-levels, who gave it and where, and the gear it rewards), so nothing about
+levels, who gave it and where, the gear it rewards and, for a quest the
+Classic data lacks, its other reward items, money and XP), so nothing about
 the player or their characters is copied.
 
 The quests already in Data/ForeverQuests.lua are kept, and a newer reading
@@ -73,6 +74,17 @@ def clean(raw):
             r = raw["rewards"][i]
             rewards.append((int(r[1]), int(r[2] or 0), int(r[3] or 0), bool(r[4])))
         rec["rewards"] = rewards
+        items = []
+        for i in sorted((raw["items"] or {}).keys()):
+            r = raw["items"][i]
+            item_id, count = int(r[1]), int(r[2] or 1)
+            if item_id > 0 and count > 0:
+                items.append((item_id, count, bool(r[3])))
+        if items:
+            rec["items"] = items
+        for key in ("money", "xp"):
+            if raw[key] is not None and int(raw[key]) > 0:
+                rec[key] = int(raw[key])
         return rec
     except (TypeError, ValueError, KeyError):
         return None
@@ -142,6 +154,15 @@ def merge(old, new):
         else:
             rewards[r[0]] = r
     rec["rewards"] = [rewards[k] for k in sorted(rewards)]
+    items = {r[0]: r for r in rec.get("items", [])}
+    for r in new.get("items", []):
+        have = items.get(r[0])
+        items[r[0]] = (r[0], have[1], have[2] or r[2]) if have else r
+    if items:
+        rec["items"] = [items[k] for k in sorted(items)]
+    for key in ("money", "xp"):
+        if key in new and key not in rec:
+            rec[key] = new[key]
     return rec
 
 
@@ -166,8 +187,10 @@ def render(records):
         "-- (Logic/QuestLearn.lua keeps one whenever a quest is offered or handed",
         "-- in). Do not edit by hand: rerun the tool. Each quest ID lists",
         "-- { title, level, min, giver, zone, x, y, side, rewards = { { itemID,",
-        "-- required level, item level, given }, ... } }, as Logic/QuestLearn.lua",
-        "-- keeps them. side is \"A\", \"H\" or \"AH\", the sides it was offered to.",
+        "-- required level, item level, given }, ... }, items = { { itemID, count,",
+        "-- given }, ... }, money, xp }, as Logic/QuestLearn.lua keeps them. side",
+        "-- is \"A\", \"H\" or \"AH\", the sides it was offered to. items, money and",
+        "-- xp are the rewards that are not gear, for quests the Classic data lacks.",
         "",
         "local _, ns = ...",
         "",
@@ -192,6 +215,13 @@ def render(records):
             for i, req, ilvl, given in rec["rewards"]
         )
         parts.append("rewards = { " + rewards + " }" if rewards else "rewards = {}")
+        if rec.get("items"):
+            parts.append("items = { " + ", ".join(
+                "{ %d, %d, %s }" % (i, count, "true" if given else "false")
+                for i, count, given in rec["items"]) + " }")
+        for key in ("money", "xp"):
+            if key in rec:
+                parts.append(f"{key} = {rec[key]}")
         lines.append(f"    [{quest_id}] = {{ " + ", ".join(parts) + " },")
     lines.append("}")
     return "\n".join(lines) + "\n"

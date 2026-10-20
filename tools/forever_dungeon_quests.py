@@ -26,6 +26,11 @@ is left out.
 
 Options:
     --stdout   print the file instead of writing it
+    --shared   also fold in the dungeon quests players sent (sharedData,
+               from Logic/Contribute.lua). Only each sender's quests are
+               read, never who sent them, and the save is never changed.
+               They go in before the save's own, so the owner's own
+               readings win.
 """
 
 import argparse
@@ -138,13 +143,36 @@ def from_cache(records, areas):
     return found
 
 
-def from_save(lua, path, keys):
-    """learnedDungeonQuests in one account save, checked field by field."""
+def read_save(lua, path):
     with open(path, encoding="utf-8") as f:
         db, why = lua.eval(READ_SAVE)(f.read())
     if why:
         print(f"could not read {path}: {why}", file=sys.stderr)
-    learned = db and db.learnedDungeonQuests
+    return db
+
+
+def from_save(lua, path, keys):
+    """learnedDungeonQuests in one account save, checked field by field."""
+    db = read_save(lua, path)
+    return rows_from(db and db.learnedDungeonQuests, keys)
+
+
+def shared_from_save(lua, path, keys):
+    """What players sent, by Logic/Contribute.lua, in one account save: each
+    sender's `dungeons` from `sharedData`. The sender ids are only keys."""
+    db = read_save(lua, path)
+    found = []
+    shared = db and db.sharedData
+    for sender in shared or {}:
+        try:
+            found.append(rows_from(shared[sender]["dungeons"], keys))
+        except (TypeError, KeyError):
+            print("skipped a share that could not be read", file=sys.stderr)
+    return found
+
+
+def rows_from(learned, keys):
+    """Dungeon quest rows in learnedDungeonQuests' shape, field by field."""
     found = {}
     for qid in learned or {}:
         raw = learned[qid]
@@ -229,6 +257,7 @@ def main(argv):
     ap.add_argument("--tables", required=True)
     ap.add_argument("--cache", action="append", default=[])
     ap.add_argument("--stdout", action="store_true")
+    ap.add_argument("--shared", action="store_true")
     ap.add_argument("saves", nargs="*")
     args = ap.parse_args(argv)
 
@@ -249,6 +278,10 @@ def main(argv):
             if not records:
                 print(f"{path} is not an English quest cache", file=sys.stderr)
             add(from_cache(records, areas))
+    if args.shared:
+        for path in args.saves:
+            for share in shared_from_save(lua, path, keys):
+                add(share)
     for path in args.saves:
         add(from_save(lua, path, keys))
 

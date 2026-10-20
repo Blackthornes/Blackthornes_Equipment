@@ -8,15 +8,23 @@
 -- `BlackthornesEquipmentDB.learnedQuests[questID]` (never rename it):
 --
 --   { title =, level =, min =, giver =, zone =, x =, y =, side =,
---     rewards = { { itemID, req, ilvl, given }, ... }, at = }
+--     rewards = { { itemID, req, ilvl, given }, ... },
+--     items = { { itemID, count, given }, ... }, money =, xp =, at = }
 --
 -- `side` is who was offered it: "A" (Alliance), "H" (Horde) or "AH" once
 -- both have been. A quest seen by one side only is offered to that side
 -- only; an older record without it is offered to both.
 --
 -- `given` is true for a reward handed over outright, false for one of the
--- choices. Only gear is kept, and only when it says something new: a quest
--- or reward the data already has is not saved again.
+-- choices. Gear goes in `rewards`, and only when it says something new: a
+-- quest or reward the data already has is not saved again.
+--
+-- For a quest the data does not have, everything else it gives is kept too
+-- (the owner asked 2026-10-20, so players can share every quest and its
+-- rewards): `items` for rewards that are not gear (potions, bags, reagents),
+-- with how many and `given` as above, and the copper (`money`) and XP
+-- (`xp`) the window shows, as first read. Only gear is laid over the data;
+-- the rest is kept for the shipped data and the other addons.
 --
 -- What is learned (and what ships in Data/ForeverQuests.lua, folded in from
 -- the owner's save by tools/forever_quests.py before a release) is laid over
@@ -231,15 +239,32 @@ function QuestLearn.Gear(itemID)
     return req or 0, ilvl or 0
 end
 
---- One reward as { itemID, required level, item level, given }, or nil for
---- anything that is not gear. `kind` is "choice" or "reward"; `linkOf`
---- gives the reward's link (the quest window's, or the quest log's).
-local function ReadReward(kind, index, linkOf)
+--- One reward. Gear comes back as { itemID, required level, item level,
+--- given }; anything else as nil and { itemID, count, given }. `kind` is
+--- "choice" or "reward"; `linkOf` gives the reward's link and `countOf` how
+--- many (the quest window's, or the quest log's).
+local function ReadReward(kind, index, linkOf, countOf)
     local itemID = ItemIDFromLink(Plain(Read(linkOf or _G.GetQuestItemLink, kind, index)))
     if not itemID then return nil end
     local req, ilvl = QuestLearn.Gear(itemID)
-    if not req then return nil end
-    return { itemID, req, ilvl, kind == "reward" }
+    if req then return { itemID, req, ilvl, kind == "reward" } end
+    local count = countOf and Number(countOf(kind, index))
+    count = count and math.floor(count) or 0
+    return nil, { itemID, count >= 1 and count or 1, kind == "reward" }
+end
+
+--- The third thing a client call answers (how many, from the reward info
+--- calls), or nil.
+local function Third(fn, ...)
+    local _, _, third = Read(fn, ...)
+    return third
+end
+
+--- Copper and XP a quest gives, kept on `rec` when above 0.
+local function NoteMoneyAndXP(rec, money, xp)
+    money, xp = Number(money), Number(xp)
+    if money and money > 0 then rec.money = math.floor(money) end
+    if xp and xp > 0 then rec.xp = math.floor(xp) end
 end
 
 --- What the open quest window says, without keeping it: the quest's ID,
@@ -248,15 +273,18 @@ function QuestLearn:Read(offer)
     local questID = Number(Read(_G.GetQuestID))
     local title = Plain(Read(_G.GetTitleText))
     if not questID or questID <= 0 or not title then return nil end
-    local rewards = {}
+    local rewards, items = {}, {}
+    local function CountOf(k, i) return Third(_G.GetQuestItemInfo, k, i) end
     for _, kind in ipairs({ "choice", "reward" }) do
         local count = Number(Read(kind == "choice" and _G.GetNumQuestChoices or _G.GetNumQuestRewards)) or 0
         for index = 1, math.min(count, REWARDS_MOST) do
-            local reward = ReadReward(kind, index)
+            local reward, other = ReadReward(kind, index, nil, CountOf)
             if reward then rewards[#rewards + 1] = reward end
+            if other then items[#items + 1] = other end
         end
     end
-    local rec = { title = title, rewards = rewards }
+    local rec = { title = title, rewards = rewards, items = items }
+    NoteMoneyAndXP(rec, Read(_G.GetRewardMoney), Read(_G.GetRewardXP))
     local level
     local log = _G.C_QuestLog
     if type(log) == "table" then
@@ -277,6 +305,40 @@ function QuestLearn:Read(offer)
     return questID, rec
 end
 
+local function ItemIn(list, itemID)
+    for _, have in ipairs(type(list) == "table" and list or {}) do
+        if type(have) == "table" and have[1] == itemID then return have end
+    end
+    return nil
+end
+
+--- Does a reading add rewards that are not gear, or copper or XP, to what
+--- is kept?
+function QuestLearn.AddsExtras(rec, seen)
+    rec = rec or {}
+    for _, item in ipairs(seen.items or {}) do
+        local have = ItemIn(rec.items, item[1])
+        if not have or (item[3] and not have[3]) then return true end
+    end
+    return (seen.money and not rec.money) or (seen.xp and not rec.xp) or false
+end
+
+--- Put a reading's rewards that are not gear, copper and XP on the record.
+--- Copper and XP are kept as first read.
+function QuestLearn.KeepExtras(rec, seen)
+    for _, item in ipairs(seen.items or {}) do
+        if type(rec.items) ~= "table" then rec.items = {} end
+        local have = ItemIn(rec.items, item[1])
+        if have then
+            have[3] = have[3] or item[3]
+        elseif #rec.items < REWARDS_MOST then
+            rec.items[#rec.items + 1] = { item[1], item[2], item[3] }
+        end
+    end
+    rec.money = rec.money or seen.money
+    rec.xp = rec.xp or seen.xp
+end
+
 --- Keep what is new about a quest. Returns true when anything was saved.
 function QuestLearn:Learn(questID, seen)
     local db = ns.db
@@ -294,12 +356,15 @@ function QuestLearn:Learn(questID, seen)
             fresh[#fresh + 1] = reward
         end
     end
-    if known and not known.learned and #fresh == 0 then return false end
+    -- A quest Classic's data has keeps only gear it lacks.
+    local classic = known and not known.learned
+    if classic and #fresh == 0 then return false end
     -- A record kept before sides were noted stays offered to both.
     local side = seen.side
     if rec then side = rec.side and QuestLearn.JoinSides(rec.side, seen.side) end
+    local extras = not classic and QuestLearn.AddsExtras(rec, seen)
     if known and known.learned and rec and #fresh == 0 and not (seen.giver and not rec.giver)
-        and side == rec.side then return false end
+        and side == rec.side and not extras then return false end
 
     if not rec then
         rec = { title = seen.title, rewards = {}, at = Number(Read(_G.time)) or 0 }
@@ -311,6 +376,7 @@ function QuestLearn:Learn(questID, seen)
     local at = seen.playerLevel
     if at and (not rec.min or at < rec.min) then rec.min = at end
     if seen.giver and not rec.giver then rec.giver, rec.zone, rec.x, rec.y = seen.giver, seen.zone, seen.x, seen.y end
+    if not classic then QuestLearn.KeepExtras(rec, seen) end
     for _, reward in ipairs(fresh) do
         local match
         for _, have in ipairs(rec.rewards) do
@@ -344,21 +410,29 @@ function QuestLearn:ReadLogQuest(line)
     if not questID or questID <= 0 or not title then return nil end
     local QL = ns.QuestLog
     local restore = QL and QL.Pick and QL.Pick(line)
-    local rewards = {}
+    local rewards, items = {}, {}
+    local money, xp
     pcall(function()
         for _, kind in ipairs({ "choice", "reward" }) do
             local counter = kind == "choice" and _G.GetNumQuestLogChoices or _G.GetNumQuestLogRewards
             local count = Number(Read(counter, questID)) or 0
             for index = 1, math.min(count, REWARDS_MOST) do
-                local reward = ReadReward(kind, index, function(k, i)
+                local reward, other = ReadReward(kind, index, function(k, i)
                     return _G.GetQuestLogItemLink(k, i, questID)
+                end, function(k, i)
+                    return Third(k == "choice" and _G.GetQuestLogChoiceInfo or _G.GetQuestLogRewardInfo,
+                        i, questID)
                 end)
                 if reward then rewards[#rewards + 1] = reward end
+                if other then items[#items + 1] = other end
             end
         end
+        money = Read(_G.GetQuestLogRewardMoney, questID)
+        xp = Read(_G.GetQuestLogRewardXP, questID)
     end)
     if restore then pcall(restore) end
-    local rec = { title = title, rewards = rewards }
+    local rec = { title = title, rewards = rewards, items = items }
+    NoteMoneyAndXP(rec, money, xp)
     -- In the log, so it opens at or below the character's level.
     rec.playerLevel = Number(Read(_G.UnitLevel, "player"))
     local level = Number(line.level)
