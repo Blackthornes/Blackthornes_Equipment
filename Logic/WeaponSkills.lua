@@ -220,6 +220,8 @@ end
 --- Every verdict on a weapon may have changed: redraw what shows them.
 local function Changed()
     if Weights and Weights.Changed then pcall(Weights.Changed, Weights) end
+    -- An upgrade quest already on an untrained weapon now hidden is let go.
+    if ns.UpgradeQuest then pcall(ns.UpgradeQuest.Check, ns.UpgradeQuest) end
     if ns.SettingsUI and ns.SettingsUI.Refresh then pcall(ns.SettingsUI.Refresh, ns.SettingsUI) end
 end
 
