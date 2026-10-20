@@ -446,9 +446,32 @@ function SettingsUI:BuildGear()
         L["Names the best enchant for a piece you wear."])
     controls.enchantTooltip = ShiftStepper(enchantRow, "enchantTooltip", "enchant")
 
-    local weaponsRow, weaponsButton = CommandRow(pages, "gear", 2, L["Untrained Weapons:"],
-        function() return SettingsUI:WeaponsHint() end, L["Show"], "weapons show")
-    controls.weapons = weaponsButton
+    -- Show or Hide for this character (a player's report, 2026-10-20: one
+    -- Show button that only cleared the banner's ignored types read as
+    -- broken). Hide also covers any type ignored from a banner; Show clears
+    -- both.
+    local weaponsRow = pages:Row("gear", 2, L["Untrained Weapons:"],
+        function() return SettingsUI:WeaponsHint() end)
+    local weaponNames = { [0] = L["Hide"], [1] = L["Show"] }
+    local function WeaponsShown()
+        local skills = ns.WeaponSkills
+        return (skills and skills:AnyHidden()) and 0 or 1
+    end
+    controls.weapons = Widgets.CreateStepper(weaponsRow, {
+        min = 0, max = 1, step = 1, value = WeaponsShown(),
+        format = function(value) return weaponNames[value] end,
+        onChange = function(value)
+            local skills = ns.WeaponSkills
+            if not skills then return end
+            if value == 1 then skills:ShowAll(true) else skills:HideAll(true) end
+            weaponsRow:SetDescription(SettingsUI:WeaponsHint())
+        end,
+    })
+    ns.SettingsPages.FitStepper(controls.weapons, weaponNames)
+    controls.weapons:SetPoint("TOPLEFT", CONTROL_X, -2)
+    function controls.weapons:Sync()
+        self:SetValue(WeaponsShown(), true)
+    end
     self.weaponsRow = weaponsRow
 
     pages:Section("gear", 2, L["CLASS TRAINING"])
@@ -541,6 +564,9 @@ end
 --- ignores, if any.
 function SettingsUI:WeaponsHint()
     local skills = ns.WeaponSkills
+    if skills and skills:HidesAll() then
+        return L["Weapons you haven't trained don't show as upgrades until you train them."]
+    end
     local names = skills and skills:IgnoredNames() or {}
     if #names == 0 then
         return L["Weapons you haven't trained still show as upgrades, with where to learn them."]
@@ -888,6 +914,7 @@ function SettingsUI:Refresh()
     controls.hideQuestTracker:SetChecked(ns.db.hideQuestTracker == true)
     self:RefreshQuestSize()
     if self.weaponsRow then self.weaponsRow:SetDescription(self:WeaponsHint()) end
+    controls.weapons:Sync()
     controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
     controls.questZoneSwap:SetChecked(ns.db.upgradeQuestZoneSwap ~= false)
     controls.questStepOnly:SetChecked(ns.db.upgradeQuestStepOnly == true)

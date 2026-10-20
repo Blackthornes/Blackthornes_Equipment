@@ -183,6 +183,26 @@ function WeaponSkills:IsIgnored(subclassID)
     return type(list) == "table" and subclassID ~= nil and list[subclassID] == true
 end
 
+--- Does this character hide every weapon it has not trained (Settings,
+--- "Untrained Weapons:" on Hide)? Kept per character, as the types are.
+function WeaponSkills:HidesAll()
+    local char = ns.charDB
+    return type(char) == "table" and char.hideUntrainedWeapons == true
+end
+
+--- Is an untrained weapon of this type kept out of the upgrades, by the
+--- Settings row or by its banner's Ignore?
+function WeaponSkills:IsHidden(subclassID)
+    return self:HidesAll() or self:IsIgnored(subclassID)
+end
+
+--- Does Settings read Hide: every untrained weapon hidden, or some types?
+function WeaponSkills:AnyHidden()
+    local char = ns.charDB
+    local list = type(char) == "table" and char.ignoredWeaponTypes
+    return self:HidesAll() or (type(list) == "table" and next(list) ~= nil)
+end
+
 --- The names of the weapon types this character ignores, sorted.
 function WeaponSkills:IgnoredNames()
     local names = {}
@@ -214,15 +234,32 @@ function WeaponSkills:Ignore(subclassID)
     return true
 end
 
---- Show every ignored weapon type again.
-function WeaponSkills:ShowAll()
+--- Show every untrained weapon again: the Settings row's Hide and every
+--- type ignored from a banner. `quiet` (Settings) says nothing in chat.
+function WeaponSkills:ShowAll(quiet)
     local list = IgnoredList()
-    if not list or next(list) == nil then
-        ns.Print(L["no weapon types are ignored."])
+    local char = ns.charDB
+    if not self:AnyHidden() then
+        if not quiet then ns.Print(L["no weapon types are ignored."]) end
         return false
     end
-    for key in pairs(list) do list[key] = nil end
-    ns.Print(L["untrained weapons show as upgrades again."])
+    if list then
+        for key in pairs(list) do list[key] = nil end
+    end
+    if type(char) == "table" then char.hideUntrainedWeapons = nil end
+    if not quiet then ns.Print(L["untrained weapons show as upgrades again."]) end
+    Changed()
+    return true
+end
+
+--- Hide every weapon this character has not trained until it is trained.
+--- `quiet` (Settings) says nothing in chat.
+function WeaponSkills:HideAll(quiet)
+    local char = ns.charDB
+    if type(char) ~= "table" then return false end
+    if char.hideUntrainedWeapons == true then return false end
+    char.hideUntrainedWeapons = true
+    if not quiet then ns.Print(L["untrained weapons won't show as upgrades until you train them."]) end
     Changed()
     return true
 end
@@ -293,10 +330,18 @@ function WeaponSkills:OnEnable()
     end
 end
 
-ns.RegisterCommand("weapons", L["weapon types you haven't trained (show: count ignored ones as upgrades again)"], function(rest)
+ns.RegisterCommand("weapons", L["weapons you haven't trained (show or hide them as upgrades)"], function(rest)
     rest = (rest or ""):lower()
     if rest:match("^show") then
         WeaponSkills:ShowAll()
+        return
+    end
+    if rest:match("^hide") then
+        WeaponSkills:HideAll()
+        return
+    end
+    if WeaponSkills:HidesAll() then
+        ns.Print(L["untrained weapons won't show as upgrades until you train them."])
         return
     end
     local names = WeaponSkills:IgnoredNames()

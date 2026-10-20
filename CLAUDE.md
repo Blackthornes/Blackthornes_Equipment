@@ -357,8 +357,13 @@ it is no upgrade anywhere until the skill is learned. Learning a skill
 (`WeaponSkills:Learned` on `SKILL_LINES_CHANGED` or `LEARNED_SPELL_IN_TAB`)
 judges again only the untrained upgrades the banner announced
 (`UpgradeChat:SkillsChanged`, a second later) and shows "Ready to wear"
-with Put it on. "Untrained weapons" in Settings and `/beq weapons [show]`
-list and clear the ignored types. Tested in `tools/test_untrained.lua`.
+with Put it on. "Untrained Weapons:" on the Gear page of Settings is a
+Show or Hide stepper (a player's report, 2026-10-20): Hide keeps every
+untrained weapon out of the upgrades for this character
+(`BlackthornesEquipmentCharDB.hideUntrainedWeapons`, never rename it;
+`WeaponSkills:HidesAll`, `IsHidden`, `HideAll`), and reads Hide too while a
+type is ignored from a banner; Show clears both (`ShowAll`). `/beq weapons
+[show|hide]` does the same. Tested in `tools/test_untrained.lua`.
 Not yet seen in game.
 
 Forever's own boss drops: `tools/forever_drops.py` reads Farmer's
