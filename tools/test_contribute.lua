@@ -116,8 +116,14 @@ ana.ns.db.learnedQuests = {
     [90001] = { title = "Skyfall Supplies", level = 12, min = 8, giver = "Vela Brightwind",
         zone = "Zephras Isle", x = 41.2, y = 55.8, side = "A",
         rewards = { { 210001, 10, 18, false }, { 210002, 10, 18, true } } },
-    [90002] = { title = "No rewards", rewards = {} },                       -- left out
+    [90002] = { title = "No gear", rewards = {}, items = { { 6948, 3, true }, { -1, 1 } },
+        money = 1500, xp = 420 },
     [90003] = { title = "Bad|cffff0000colour", rewards = { { 5, 1, 1 } } }, -- left out
+}
+ana.ns.db.learnedDungeonQuests = {
+    [91001] = { dungeon = "2601", title = "Into the Deep", level = 18, min = 14, side = "A",
+        giver = "Rell Stone", zone = "Zephras Isle", x = 12.5, y = 80.1, reward = 210004, at = 5 },
+    [91002] = { dungeon = "Deep", title = "Bad dungeon" },                -- left out
 }
 ana.ns.db.learnedVendors = {
     [800001] = { name = "Orin Gale", zone = "Zephras Isle", x = 30.5, y = 61.0, side = "A",
@@ -177,13 +183,22 @@ local quest = got.quests and got.quests[90001]
 check("a quest came whole", quest and quest.title, "Skyfall Supplies")
 check("with its giver's spot", quest and quest.x, 41.2)
 check("and both rewards", quest and #quest.rewards, 2)
-check("a quest with no rewards was left out", got.quests and got.quests[90002] == nil)
+local plain = got.quests and got.quests[90002]
+check("a quest with no gear still came", plain and plain.title, "No gear")
+check("with its other rewards and counts", plain and plain.items and plain.items[1][2], 3)
+check("a bad reward item was left out", plain and plain.items and #plain.items, 1)
+check("with its money", plain and plain.money, 1500)
+check("and its XP", plain and plain.xp, 420)
+local dungeon = got.dungeons and got.dungeons[91001]
+check("a dungeon quest came", dungeon and dungeon.title, "Into the Deep")
+check("with its dungeon", dungeon and dungeon.dungeon, "2601")
+check("a dungeon quest with a bad dungeon was left out", got.dungeons and got.dungeons[91002] == nil)
 check("a title with colour codes was left out", got.quests and got.quests[90003] == nil)
 local vendor = got.vendors and got.vendors[800001]
 check("a vendor came whole", vendor and vendor.name, "Orin Gale")
 check("with its stock", vendor and vendor.items[210010][1], 1500)
 check("a vendor off the map was left out", got.vendors and got.vendors[800002] == nil)
-check("one chat line names the sender", wither.chat[#wither.chat], "Got 1 vendor and 1 quest from Ana Smith.")
+check("one chat line names the sender", wither.chat[#wither.chat], "Got 1 vendor and 3 quests from Ana Smith.")
 check("with a sound", sounds, 1)
 check("and a line on screen", #flashes, 1)
 check("the sender heard nothing back", #ana.chat, chatBefore)
@@ -209,7 +224,7 @@ current = ana
 C:Hello()
 Run()
 check("new data is taken once", #wither.chat + #farmer.chat, lines + 1)
-check("and says how many", farmer.chat[#farmer.chat], "Got 1 vendor and 2 quests from Ana Smith.")
+check("and says how many", farmer.chat[#farmer.chat], "Got 1 vendor and 4 quests from Ana Smith.")
 check("and replaces the old", farmer.ns.db.sharedData[id].quests[90004] ~= nil)
 
 print("\nstrangers and junk")
@@ -225,8 +240,29 @@ farmer.ns.Contribute.current = nil
 farmer.ns.Contribute:OnTable("Ana Smith", { i = id, q = {}, v = {} }, "WHISPER")
 check("a table nobody asked for is not kept", farmer.ns.db.sharedData[id].quests[90004] ~= nil)
 check("junk is refused", farmer.ns.Contribute:Clean({ q = "x", v = {} }) == nil)
-check("a bad item ID is left out",
-    farmer.ns.Contribute.CleanQuest({ title = "T", rewards = { { -4, 1, 1 } } }) == nil)
+local bad = farmer.ns.Contribute.CleanQuest({ title = "T", rewards = { { -4, 1, 1 } } })
+check("a bad item ID is left out", bad and #bad.rewards, 0)
+check("an older sender with no dungeon quests is still taken",
+    farmer.ns.Contribute:Clean({ q = {}, v = {} }) ~= nil)
+
+print("\nfitting")
+local F = farmer.ns.Contribute
+local big = { q = {}, v = {}, d = {} }
+for questID = 1, 400 do
+    big.q[questID] = { title = string.rep("x", 60) .. questID, rewards = {} }
+end
+local budget = F.BUDGET
+F.BUDGET = 8000
+F.Fit(big)
+local kept, lowest = 0, nil
+for questID in pairs(big.q) do
+    kept = kept + 1
+    if not lowest or questID < lowest then lowest = questID end
+end
+check("a table past the budget is cut", kept < 400 and kept > 0)
+check("the lowest quest IDs go first", lowest, 400 - kept + 1)
+check("and it then fits", #farmer.ns.Serialize.Encode(big) <= 8000)
+F.BUDGET = budget
 
 print("\nthe words")
 local G = farmer.ns.Contribute.GotLine
@@ -237,7 +273,7 @@ check("many and one", G(3, 1, "Bo Lee"), "Got 3 vendors and 1 quest from Bo Lee.
 print("\nthe log")
 current = farmer
 farmer.ns.Contribute:PrintLog()
-check("lists who sent data", farmer.chat[#farmer.chat], "Oct 18 14:02: 1 vendor and 1 quest from Ana Smith.")
+check("lists who sent data", farmer.chat[#farmer.chat], "Oct 18 14:02: 1 vendor and 3 quests from Ana Smith.")
 farmer.ns.db.sharedDataLog = nil
 farmer.ns.Contribute:PrintLog()
 check("says when nobody has", farmer.chat[#farmer.chat], "Nobody has shared data with you yet.")

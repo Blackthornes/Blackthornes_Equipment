@@ -1,13 +1,16 @@
 -- Blackthornes Equipment -- Logic/Contribute.lua
--- What a player chooses to send to the addon's maker: the vendors and
--- quest rewards their Equipment learned that the shipped data lacks.
+-- What a player chooses to send to the addon's maker: the vendors, quests
+-- and dungeon quests their Equipment learned that the shipped data lacks.
 --
 -- Asked 2026-10-18 by the owner, as Farmer does for drops and Tradeskills
 -- for disenchants: players who opt in send their own `learnedVendors` and
 -- `learnedQuests`, so both can be folded into Data/ForeverVendors.lua and
 -- Data/ForeverQuests.lua at a release (tools/forever_vendors.py and
--- tools/forever_quests.py with --shared). Off by default: one tick box on
--- the About page of Settings. Never announced.
+-- tools/forever_quests.py with --shared). Since 2026-10-20 (the owner asked
+-- for every quest and its rewards) a quest goes with all it gives, not only
+-- gear, and `learnedDungeonQuests` goes too, for Data/ForeverDungeonQuests.lua
+-- (tools/forever_dungeon_quests.py --shared). Off by default: one tick box
+-- on the About page of Settings. Never announced.
 --
 -- The conversation, one way (Tradeskills' Logic/Contribute.lua):
 --   * A player with it ticked whispers a short hello ("Q<id>:<hash>") to
@@ -18,8 +21,10 @@
 --     they have not taken: "R<id>" asks for it. The sender answers only a
 --     recipient asking for its own id, at most every SEND_GAP, with one
 --     table ("K"). Nothing ever flows back to the player.
---   * What goes: the sender's own learned vendors and quests, in the shapes
---     Logic/NPCSpots.lua and Logic/QuestLearn.lua keep them. Nothing about
+--   * What goes: the sender's own learned vendors, quests and dungeon
+--     quests, in the shapes Logic/NPCSpots.lua, Logic/QuestLearn.lua and
+--     Logic/DungeonQuests.lua keep them, at most BUDGET bytes (newest quest
+--     IDs first past that). Nothing about
 --     the player or their characters, and nothing taken from anyone else.
 --   * On the receiving side each sender's latest table replaces the one
 --     before (`sharedData[id]`), so nothing is ever counted twice. It never
@@ -60,10 +65,13 @@ Contribute.REGION_NAME = "US"
 Contribute.HELLO_SECONDS = 1800   -- a hello every half hour
 Contribute.FIRST_HELLO = 30       -- and this long after login
 Contribute.SYNC_GAP = 1800        -- one sender taken at most this often
-Contribute.SYNC_TIMEOUT = 180     -- an ask left unanswered this long is given up
+Contribute.SYNC_TIMEOUT = 1800    -- an ask left unanswered this long is given up (a big
+                                  -- table takes a while at Comm's pace)
 Contribute.SEND_GAP = 600         -- a sender answers a recipient at most this often
 Contribute.MAX_SENDERS = 500
-Contribute.MAX_QUESTS = 3000      -- quests in one table
+Contribute.MAX_QUESTS = 6000      -- quests in one table
+Contribute.MAX_DUNGEON_QUESTS = 2000
+Contribute.BUDGET = 200000        -- bytes in one table, well under Comm.MAX_CHUNKS
 Contribute.MAX_VENDORS = 1000     -- vendors in one table
 Contribute.MAX_REWARDS = 12       -- rewards on one quest (QuestLearn's REWARDS_MOST)
 Contribute.MAX_STOCK = 200        -- items on one vendor (LearnStock reads 200)
@@ -71,6 +79,8 @@ Contribute.MAX_ID = 10000000      -- an ID past this is not one
 Contribute.MAX_LEVEL = 100
 Contribute.MAX_ITEM_LEVEL = 1000
 Contribute.MAX_PRICE = 1000000000 -- copper
+Contribute.MAX_XP = 1000000
+Contribute.MAX_COUNT = 1000       -- of one reward
 Contribute.MAX_TEXT = 100         -- a name or title longer than this is junk
 Contribute.LOG_KEEP = 100
 Contribute.LOG_SHOW = 20
@@ -201,7 +211,38 @@ function Contribute.CleanQuest(raw)
             end
         end
     end
-    if #rec.rewards == 0 then return nil end
+    if type(raw.items) == "table" then
+        for i = 1, math.min(#raw.items, Contribute.MAX_REWARDS) do
+            local r = raw.items[i]
+            if type(r) == "table" and WholeNumber(r[1], 1, Contribute.MAX_ID)
+                and WholeNumber(r[2] or 1, 1, Contribute.MAX_COUNT) then
+                rec.items = rec.items or {}
+                rec.items[#rec.items + 1] = { r[1], r[2] or 1, r[3] == true }
+            end
+        end
+    end
+    if WholeNumber(raw.money, 1, Contribute.MAX_PRICE) then rec.money = raw.money end
+    if WholeNumber(raw.xp, 1, Contribute.MAX_XP) then rec.xp = raw.xp end
+    return rec
+end
+
+--- One dungeon quest as Logic/DungeonQuests.lua keeps it, field by field;
+--- nil when it is unusable. The dungeon is a map ID, as a string.
+function Contribute.CleanDungeonQuest(raw)
+    if type(raw) ~= "table" then return nil end
+    local title = Text(raw.title)
+    local dungeon = type(raw.dungeon) == "string" and #raw.dungeon <= 10
+        and raw.dungeon:match("^%d+$") and raw.dungeon
+    if not (title and dungeon) then return nil end
+    local rec = { dungeon = dungeon, title = title }
+    if WholeNumber(raw.level, 1, Contribute.MAX_LEVEL) then rec.level = raw.level end
+    if WholeNumber(raw.min, 1, Contribute.MAX_LEVEL) then rec.min = raw.min end
+    if SIDES[raw.side] then rec.side = raw.side end
+    local giver, zone = Text(raw.giver), Text(raw.zone)
+    if giver and zone and Spot(raw.x) and Spot(raw.y) then
+        rec.giver, rec.zone, rec.x, rec.y = giver, zone, raw.x, raw.y
+    end
+    if WholeNumber(raw.reward, 1, Contribute.MAX_ID) then rec.reward = raw.reward end
     return rec
 end
 
@@ -243,17 +284,44 @@ function Contribute:Id()
     return ns.db.shareDataId
 end
 
---- What goes: the player's own learned quests ("q") and vendors ("v"), by
---- quest and NPC ID.
+--- Keys of a table as a list, highest first, so a cut keeps the same ones.
+local function KeysHighFirst(list)
+    local keys = {}
+    for key in pairs(type(list) == "table" and list or {}) do
+        if type(key) == "number" then keys[#keys + 1] = key end
+    end
+    table.sort(keys, function(a, b) return a > b end)
+    return keys
+end
+
+--- How long a table is once encoded, or nil.
+local function Size(value)
+    local ok, text = pcall(ns.Serialize.Encode, value)
+    return ok and type(text) == "string" and #text or nil
+end
+
+--- What goes: the player's own learned quests ("q"), vendors ("v") and
+--- dungeon quests ("d"), by quest and NPC ID. Past BUDGET bytes the lowest
+--- quest IDs are left out (Forever's own are the highest), so the same
+--- learned lists always make the same table.
 function Contribute:Payload()
-    local payload = { q = {}, v = {} }
+    local payload = { q = {}, v = {}, d = {} }
     local db = type(ns.db) == "table" and ns.db or {}
     local count = 0
-    for questID, raw in pairs(type(db.learnedQuests) == "table" and db.learnedQuests or {}) do
+    for _, questID in ipairs(KeysHighFirst(db.learnedQuests)) do
         if count >= self.MAX_QUESTS then break end
-        local rec = WholeNumber(questID, 1, self.MAX_ID) and self.CleanQuest(raw)
+        local rec = WholeNumber(questID, 1, self.MAX_ID) and self.CleanQuest(db.learnedQuests[questID])
         if rec then
             payload.q[questID] = rec
+            count = count + 1
+        end
+    end
+    count = 0
+    for _, questID in ipairs(KeysHighFirst(db.learnedDungeonQuests)) do
+        if count >= self.MAX_DUNGEON_QUESTS then break end
+        local rec = WholeNumber(questID, 1, self.MAX_ID) and self.CleanDungeonQuest(db.learnedDungeonQuests[questID])
+        if rec then
+            payload.d[questID] = rec
             count = count + 1
         end
     end
@@ -266,7 +334,22 @@ function Contribute:Payload()
             count = count + 1
         end
     end
+    self.Fit(payload)
     return payload
+end
+
+--- Leave out the lowest quest IDs until the table fits BUDGET.
+function Contribute.Fit(payload)
+    local size = Size(payload)
+    if not size or size <= Contribute.BUDGET then return end
+    local keys = KeysHighFirst(payload.q)
+    local keep = #keys
+    while keep > 0 and size and size > Contribute.BUDGET do
+        local cut = math.max(1, math.floor(keep * (1 - Contribute.BUDGET / size)) + 1)
+        for i = keep, math.max(1, keep - cut + 1), -1 do payload.q[keys[i]] = nil end
+        keep = math.max(0, keep - cut)
+        size = Size(payload)
+    end
 end
 
 function Contribute:Hash(payload)
@@ -274,9 +357,9 @@ function Contribute:Hash(payload)
     return ok and type(text) == "string" and Comm.Hash(text) or nil
 end
 
---- Nothing to send while both lists are empty.
+--- Nothing to send while every list is empty.
 local function Empty(payload)
-    return next(payload.q) == nil and next(payload.v) == nil
+    return next(payload.q) == nil and next(payload.v) == nil and next(payload.d) == nil
 end
 
 function Contribute:Hello()
@@ -353,7 +436,7 @@ end
 --- table that is not one, or holds far too much.
 function Contribute:Clean(value)
     if type(value) ~= "table" or type(value.q) ~= "table" or type(value.v) ~= "table" then return nil end
-    local clean, quests, vendors = { q = {}, v = {} }, 0, 0
+    local clean, quests, vendors, dungeons = { q = {}, v = {}, d = {} }, 0, 0, 0
     for questID, raw in pairs(value.q) do
         quests = quests + 1
         if quests > self.MAX_QUESTS then return nil end
@@ -365,6 +448,13 @@ function Contribute:Clean(value)
         if vendors > self.MAX_VENDORS then return nil end
         local rec = WholeNumber(npcID, 1, self.MAX_ID) and self.CleanVendor(raw)
         if rec then clean.v[npcID] = rec end
+    end
+    -- A sender from before dungeon quests went sends none.
+    for questID, raw in pairs(type(value.d) == "table" and value.d or {}) do
+        dungeons = dungeons + 1
+        if dungeons > self.MAX_DUNGEON_QUESTS then return nil end
+        local rec = WholeNumber(questID, 1, self.MAX_ID) and self.CleanDungeonQuest(raw)
+        if rec then clean.d[questID] = rec end
     end
     return clean
 end
@@ -401,11 +491,16 @@ function Contribute:OnTable(sender, value, channel)
             hash = type(value.h) == "string" and #value.h <= 12 and value.h or nil,
             quests = clean.q,
             vendors = clean.v,
+            dungeons = clean.d,
         }
         self:Trim(store)
         local name = Comm.Plain(sender) or "?"
         name = name:match("^([^%-]+)") or name
+        -- Dungeon quests count as quests in the line, each quest once.
         local vendors, quests = Count(clean.v), Count(clean.q)
+        for questID in pairs(clean.d) do
+            if clean.q[questID] == nil then quests = quests + 1 end
+        end
         self:Note(name, vendors, quests)
         local line = self.GotLine(vendors, quests, name)
         ns.Print(line)

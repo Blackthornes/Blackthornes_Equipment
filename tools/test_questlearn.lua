@@ -84,12 +84,33 @@ _G.C_Item.GetItemInfoInstant = function(id)
 end
 Learn:OnQuestWindow(false)
 suite.check("a hand-in window leaves out what is not gear", #rec.rewards == 2)
+suite.check("but keeps it apart, with how many", rec.items and #rec.items == 1
+    and rec.items[1][1] == 1003 and rec.items[1][2] == 1 and rec.items[1][3] == true)
+suite.check("and the reward is not laid over the data", S.ITEMS[1003] == nil)
+
+-- Copper, XP and how many of a reward that is not gear
+_G.GetQuestItemInfo = function(kind, i) return "Potion", 0, kind == "reward" and i == 2 and 5 or 1 end
+_G.GetRewardMoney = function() return 1500 end
+_G.GetRewardXP = function() return 420 end
+window.rewards = { "item:1002", "item:1004" }
+_G.C_Item.GetItemInfoInstant = function(id)
+    return id, "Armor", "Mail", (id == 1003 or id == 1004) and "INVTYPE_NON_EQUIP_IGNORE" or "INVTYPE_CHEST"
+end
+Learn:OnQuestWindow(false)
+suite.check("a new reward that is not gear is added with its count",
+    #rec.items == 2 and rec.items[2][1] == 1004 and rec.items[2][2] == 5)
+suite.check("and the copper and XP are kept", rec.money == 1500 and rec.xp == 420)
+_G.GetRewardMoney = function() return 9999 end
+Learn:OnQuestWindow(false)
+suite.check("copper is kept as first read", rec.money == 1500 and #rec.items == 2)
+_G.GetQuestItemInfo, _G.GetRewardMoney, _G.GetRewardXP = nil, nil, nil
 
 -- A Classic quest only gains rewards
 window.id, window.title, window.choices, window.rewards = 5, "Old Errand", { "item:1001" }, {}
 Learn:OnQuestWindow(true)
 suite.check("a Classic quest keeps its own row", S.QUESTS[5][1] == "Old Errand" and S.QUESTS[5][6] == "Ann")
 suite.check("and gains the reward", ns.db.learnedQuests[5] and S.ITEMS[1001].q[2] == 5)
+suite.check("but keeps nothing else for it", ns.db.learnedQuests[5].items == nil)
 
 -- Unreadable windows
 window.id = nil

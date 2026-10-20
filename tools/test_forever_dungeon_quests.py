@@ -8,7 +8,7 @@ import tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lupa import lua51  # noqa: E402
 from forever_dungeon_quests import (STRING_BITS, from_cache, from_save, known_dungeons,  # noqa: E402
-                                    merge, read_cache, render)
+                                    merge, read_cache, render, shared_from_save)
 
 checks = 0
 failures = 0
@@ -92,6 +92,28 @@ text = render({95002: row})
 expect("the row is written in the data's shape",
        '[95002] = { "2999", "Deeper Still", 21, 26, "H", 0, "Someone", "Tirisfal Glades", 61.5, 50.2, 0, 95001 },' in text)
 expect("nothing about the player is written", "Never Copied" not in text and "Player-1" not in text)
+
+shared_save = """BlackthornesEquipmentDB = {
+    learnedDungeonQuests = {},
+    sharedData = {
+        ["a1b2c3d4e5f6"] = { at = 5, quests = {}, vendors = {},
+            dungeons = { [95020] = { dungeon = "2999", title = "Sent Down", level = 24, side = "A" },
+                         [95021] = { dungeon = "nowhere", title = "Lost" } } },
+        ["olderolder12"] = { at = 4, quests = {}, vendors = {} },
+        ["badbadbadbad"] = "junk",
+    },
+    sharedDataLog = { { at = 5, name = "Somebody", vendors = 0, quests = 1 } },
+}"""
+with tempfile.NamedTemporaryFile("w", suffix=".lua", delete=False, encoding="utf-8") as f:
+    f.write(shared_save)
+    path = f.name
+try:
+    shares = shared_from_save(lua51.LuaRuntime(unpack_returned_tuples=True, register_eval=False), path, keys)
+finally:
+    os.remove(path)
+expect("a sender's dungeon quests are read", any(95020 in sh and sh[95020]["side"] == "A" for sh in shares))
+expect("an unknown dungeon in a share is left out", not any(95021 in sh for sh in shares))
+expect("an older sender with no dungeon quests is fine", len(shares) == 2)
 
 lua = lua51.LuaRuntime(unpack_returned_tuples=True, register_eval=False)
 lua.execute("ns = {}")
