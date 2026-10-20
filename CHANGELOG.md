@@ -4,6 +4,14 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.34.0
+
+For WoW: Forever (interface 16001). No files were added, so `/reload` is enough after updating.
+
+- **Where to Get Upgrades:** lists your slots down the left. Pick a slot to see every upgrade for it, and tick which sources to show. "Only what I can get now" hides what you can't get yet.
+- **Untrained Weapons:** on the Gear page of Settings it's now Show or Hide, set for each character.
+- **Bug fixes:** several bug fixes for the upgrade quest and class training.
+
 ## 0.33.0
 
 For WoW: Forever (interface 16001). Files were added and the TOC changed, so
