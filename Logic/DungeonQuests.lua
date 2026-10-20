@@ -4,7 +4,9 @@
 --
 -- Classic's dungeon quests that the Forever client still has come from
 -- Data/DungeonQuests.lua (tools/make_dungeon_quests.py, never by hand).
--- Forever's own are learned in game, since its tables hold quest IDs only:
+-- Forever's own are learned in game, since its tables hold quest IDs only
+-- (folded into Data/ForeverDungeonQuests.lua at each release by
+-- tools/forever_dungeon_quests.py, so every player gets them):
 -- a quest in the log under a heading that names a dungeon, or accepted
 -- while inside one, is kept account wide in
 -- `BlackthornesEquipmentDB.learnedDungeonQuests[questID]` (never rename
@@ -122,15 +124,27 @@ end
 function DQ:All()
     if self.all and self.allVersion == (self.version or 0) then return self.all end
     local all = {}
-    for questID, q in pairs(ns.DUNGEON_QUESTS or {}) do
-        all[questID] = { questID = questID, dungeon = q[1], title = q[2], min = q[3],
-            level = q[4], side = q[5], classes = q[6], giver = q[7], zone = q[8],
-            x = q[9], y = q[10], reward = q[11], prev = q[12] }
+    -- Classic's, then Forever's own as met in game and shipped at a release.
+    for _, data in ipairs({ ns.DUNGEON_QUESTS or {}, ns.FOREVER_DUNGEON_QUESTS or {} }) do
+        for questID, q in pairs(data) do
+            if not all[questID] then
+                all[questID] = { questID = questID, dungeon = q[1], title = q[2], min = q[3],
+                    level = q[4], side = q[5], classes = q[6],
+                    giver = q[7] ~= "" and q[7] or nil, zone = q[8] ~= "" and q[8] or nil,
+                    x = q[9], y = q[10], reward = q[11], prev = q[12] }
+            end
+        end
     end
     local learned = type(ns.db) == "table" and ns.db.learnedDungeonQuests
     for questID, rec in pairs(type(learned) == "table" and learned or {}) do
         questID = Number(questID)
-        if questID and not all[questID] and type(rec) == "table" and type(rec.dungeon) == "string"
+        local have = questID and all[questID]
+        if have and type(rec) == "table" and not have.giver and type(rec.giver) == "string" then
+            -- A shipped Forever quest whose giver the cache could not say.
+            have.giver, have.zone = rec.giver, rec.zone
+            have.x, have.y = Number(rec.x) or 0, Number(rec.y) or 0
+            if have.side == "" and (rec.side == "A" or rec.side == "H") then have.side = rec.side end
+        elseif questID and not have and type(rec) == "table" and type(rec.dungeon) == "string"
             and type(rec.title) == "string" then
             all[questID] = { questID = questID, dungeon = rec.dungeon, title = rec.title,
                 min = Number(rec.min) or Number(rec.level) or 0, level = Number(rec.level) or 0,

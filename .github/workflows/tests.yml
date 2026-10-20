@@ -59,6 +59,9 @@ jobs:
       - name: The Forever item tool keeps only what changed
         run: python tools/test_forever_items.py
 
+      - name: The Forever dungeon quest tool reads the cache and a save as data only
+        run: python tools/test_forever_dungeon_quests.py
+
       - name: The Forever drops tool keeps Forever's own dungeons
         run: python tools/test_forever_drops.py
 

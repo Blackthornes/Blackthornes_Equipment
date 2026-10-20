@@ -100,6 +100,24 @@ suite.check("a quest accepted inside a dungeon is learned for it",
     ns.db.learnedDungeonQuests[900003] and ns.db.learnedDungeonQuests[900003].dungeon == "389")
 _G.GetInstanceInfo = nil
 
+-- Forever's own, shipped at a release from quests met in game.
+local realForever = ns.FOREVER_DUNGEON_QUESTS
+ns.FOREVER_DUNGEON_QUESTS = {
+    [900010] = { forever, "Shipped Forever Quest", 18, 22, "", 0, "", "", 0, 0, 0, 0 },
+    [2] = { "389", "Not Over Classic's", 1, 1, "", 0, "", "", 0, 0, 0, 0 },
+}
+ns.db.learnedDungeonQuests[900010] = { dungeon = forever, title = "Shipped Forever Quest",
+    giver = "A Giver", zone = "Tirisfal Glades", x = 60, y = 50, side = "H" }
+DQ.version = DQ.version + 1
+local all = DQ:All()
+suite.check("a shipped Forever quest shows", all[900010] and all[900010].title == "Shipped Forever Quest")
+suite.check("it never covers Classic's own", all[2].title == "Hidden Enemies")
+suite.check("what this account learned fills in its giver and side",
+    all[900010].giver == "A Giver" and all[900010].zone == "Tirisfal Glades" and all[900010].side == "H")
+ns.FOREVER_DUNGEON_QUESTS = realForever
+ns.db.learnedDungeonQuests[900010] = nil
+DQ.version = DQ.version + 1
+
 -- The window.
 player.level = 14
 UI:Show()
