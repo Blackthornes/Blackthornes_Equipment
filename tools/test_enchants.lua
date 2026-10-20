@@ -225,12 +225,19 @@ E:Forget()
 UI:SetFilter("enchant")
 UI:Show()
 suite.check("the view is picked and kept", ns.db.finderShow == "enchant" and UI:ShowingEnchants())
-suite.check("one line per slot with something better", #UI.lines == 4, #UI.lines)
-suite.check("the gear controls step aside", not UI.ahead:IsShown() and not UI.solo:IsShown())
+local lit = 0
+for _, button in ipairs(UI.slotButtons) do
+    if button.count:GetText() == "1" then lit = lit + 1 end
+end
+suite.check("each slot with something better counts one", lit == 4, lit)
+suite.check("the first of them shows", #UI.lines == 1 and UI.listTitle:GetText() == "Chest", UI.listTitle:GetText())
+suite.check("the gear controls step aside", not UI.ahead:IsShown() and not UI.solo:IsShown()
+    and not UI.getNow:IsShown() and not UI.sourceBoxes[1]:IsShown())
+suite.check("and Enchants is marked", UI.enchantsButton.mark:IsShown())
 suite.check("the footer counts them", UI.footer:GetText():find("4 pieces you wear", 1, true) ~= nil,
     UI.footer:GetText())
 local row = UI.rows[1]
-suite.check("the first row is the chest", row.slot:GetText() == "Chest" and row.enchant ~= nil)
+suite.check("the row is the chest's enchant", row.enchant ~= nil and row.enchant.slot == 5)
 suite.check("it names the enchant and its gain", row.item:GetText() == "Enchant Chest - Agility"
     and row.gain:GetText() == "+50%", row.gain:GetText())
 suite.check("it says how to get it", row.source:GetText():find("You can learn it", 1, true) ~= nil,

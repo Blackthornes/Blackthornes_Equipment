@@ -472,13 +472,20 @@ local DEFAULTS = {
     classTraining = true,
     trainingDrawer = false,
 
-    -- The "Where to get upgrades" window: where it sits, and which sources
-    -- it shows ("all", "vendor", "quest" or "dungeon").
+    -- The "Where to get upgrades" window: where it sits, and whether it
+    -- shows gear ("all") or enchants ("enchant"); an older "vendor",
+    -- "quest", "dungeon" or "craft" reads as gear. Never rename it.
     finderPoint = "CENTER",
     finderRelativePoint = "CENTER",
     finderX = 40,
     finderY = 20,
     finderShow = "all",
+    -- "Only what I can get now": leave out gear waiting on a reputation or
+    -- on a craft nobody of yours can make yet. Off unless ticked. The
+    -- sources unticked are kept in finderSourcesOff ({ [kind] = true },
+    -- nil until one is), the slot last clicked in finderSlot. Never rename
+    -- them.
+    finderGetNow = false,
     -- How many levels ahead the finder looks (0 for now).
     finderAhead = 0,
     -- Only quests a player can do alone, in the finder and the upgrade

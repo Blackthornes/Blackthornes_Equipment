@@ -291,6 +291,26 @@ standing it needs (`Finder:Needs`, read through
 `C_Reputation.GetFactionDataByID` or `GetFactionInfoByID`). Not yet seen in
 game.
 
+Slot by slot (a player asked, the owner said build it from a mockup,
+2026-10-20): the window lists the slots down the left
+(`FinderUI.SLOT_GROUPS`, 15 lines; both rings are one line and both
+trinkets another, `GROUP_OF`), each with how many upgrades it has, and the
+slot picked shows every upgrade for it from `found.all`, best first
+(`Finder.Order`: gear waiting on a standing last, then the shown percent,
+then nearest), with "You wear:" and "N of M upgrades shown for this slot".
+`FinderUI:Groups` builds the lines once a scan; the tick boxes only
+re-present it. One scan covers every source: tick boxes for Vendor, Quest,
+Dungeons, Raids and Crafted (`FinderUI.SOURCE_BOXES`, a raid told by its
+dungeon row's 6th field) keep what is unticked in `finderSourcesOff`
+(`{ [kind] = true }`, nil until one is unticked), "Only what I can get
+now" (`finderGetNow`, off unless ticked; `FinderUI.GetsNow`) leaves out
+gear waiting on a standing, a level or a craft nobody of yours makes yet,
+and the slot last clicked is `finderSlot` (on open, an empty one gives way
+to the first slot with upgrades). `finderShow` is now "all" or "enchant";
+an older one-source value reads as gear. Enchants use the same slot
+column. All account wide; never rename them. Tested in
+`tools/test_finderslots.lua`.
+
 Solo quests (a player asked, the owner agreed 2026-10-06): a quest's
 11th field in `Sources.QUESTS` says what it needs besides the player
 ("group", "dungeon", "raid", "battleground", or nothing), worked out by
@@ -327,8 +347,8 @@ case `PLAYER_CONTROL_GAINED` never comes; and `PLAYER_ENTERING_WORLD`
 The finder has its own "This zone only" (a player asked, 2026-10-09;
 `finderZoneOnly`, account wide, off by default; `FinderUI:ZoneOnly`), kept
 apart from the panel's so ticking it never lets a quest go:
-`FinderUI:Lines` then reads `found.all` through `UpgradeQuest.InZone`, keeps
-`Finder.PER_SLOT` per slot, and `ZONE_CHANGED_NEW_AREA` refreshes the window.
+`FinderUI:Groups` then reads `found.all` through `UpgradeQuest.InZone`, and
+`ZONE_CHANGED_NEW_AREA` refreshes the window.
 Asked the same day: picks that show the same whole percent sort nearest
 first (`Finder.Nearness`: in the zone, by map distance when
 `Finder.Spot` can read where the character stands on that zone's own

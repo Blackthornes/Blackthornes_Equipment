@@ -249,8 +249,12 @@ suite.check("vendors only has none", Finder:Scan("vendor").count == 0)
 
 local UI = ns.FinderUI
 UI:Show()
-UI:SetFilter("craft")
-suite.check("the window has a Crafted filter", ns.db.finderShow == "craft" and UI.rows[1]:IsShown())
+for _, box in ipairs(UI.sourceBoxes) do
+    if box.kind ~= "craft" then box:GetScript("OnClick")(box) end
+end
+UI:PickSlot(5)
+suite.check("Crafted alone shows crafted gear", ns.db.finderSourcesOff.vendor == true
+    and ns.db.finderSourcesOff.craft == nil and UI.rows[1]:IsShown())
 suite.check("crafted rows say so", UI.rows[1].source:GetText():find("Crafted", 1, true) ~= nil,
     UI.rows[1].source:GetText())
 -- The row's second line wraps rather than being cut, and the materials
@@ -288,11 +292,14 @@ for _, row in ipairs(UI.rows) do
 end
 suite.check("the row says when it can be worn", later and later.gain:GetText():find("at 23", 1, true) == 1,
     later and later.gain:GetText())
+UI:PickSlot(1)
 suite.check("the head row is not dated: it can be worn now", UI.rows[1].gain:GetText() == "empty slot",
     UI.rows[1].gain:GetText())
-suite.check("and the footer by when", UI.footer:GetText():find("by level 25", 1, true) ~= nil, UI.footer:GetText())
 suite.check("the stepper reads as a level", UI.AheadText(5) == "Level 25" and UI.AheadText(0) == "Now")
 UI.ahead:SetValue(0)
-UI:SetFilter(nil)
+for _, box in ipairs(UI.sourceBoxes) do
+    if box.kind ~= "craft" then box:GetScript("OnClick")(box) end
+end
+suite.check("ticked again, every source shows", next(ns.db.finderSourcesOff) == nil)
 
 suite.done()

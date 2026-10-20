@@ -1,6 +1,5 @@
 -- Where to get upgrades' "This zone only": ticked, the list keeps to the
--- zone the character is in, looking past the few best anywhere; unticked,
--- it lists the best from anywhere. Its own setting, apart from the upgrade
+-- zone the character is in; unticked, it lists every upgrade from anywhere. Its own setting, apart from the upgrade
 -- quest panel's box.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
@@ -57,7 +56,7 @@ end
 
 suite.check("off by default", ns.db.finderZoneOnly == false and not UI:ZoneOnly())
 UI:Show()
-suite.check("off, the best three from anywhere", Listed() == "1104,1103,1102", Listed())
+suite.check("off, every one from anywhere, best first", Listed() == "1104,1103,1102,1101,1001", Listed())
 
 suite.check("the window has the tick box", UI.zone ~= nil and not UI.zone:GetChecked())
 suite.check("named as on the quest panel", UI.zone.label:GetText() == "This zone only")
@@ -68,14 +67,14 @@ UI.zone:GetScript("OnLeave")(UI.zone)
 
 UI.zone:GetScript("OnClick")(UI.zone)
 suite.check("ticking it saves it", ns.db.finderZoneOnly == true and UI:ZoneOnly())
-suite.check("only what Elwynn Forest has, though it is not in the best three", Listed() == "1001", Listed())
-suite.check("the footer says where", UI.footer:GetText():find("in Elwynn Forest", 1, true) ~= nil,
+suite.check("only what Elwynn Forest has", Listed() == "1001", Listed())
+suite.check("the footer says how many are left out", UI.footer:GetText() == "1 of 5 upgrades shown for this slot",
     UI.footer:GetText())
 suite.check("the upgrade quest's own box is left alone", ns.db.upgradeQuestZoneOnly == false)
 
 zone = "Westfall"
 UI:Refresh()
-suite.check("in Westfall, its best three", Listed() == "1104,1103,1102", Listed())
+suite.check("in Westfall, its four", Listed() == "1104,1103,1102,1101", Listed())
 
 zone = "Duskwood"
 UI:Refresh()
@@ -85,6 +84,6 @@ suite.check("and says how to look anywhere", UI.empty:GetText():find("Untick Thi
 
 UI.zone:GetScript("OnClick")(UI.zone)
 suite.check("unticked, the best from anywhere again", ns.db.finderZoneOnly == false
-    and Listed() == "1104,1103,1102", Listed())
+    and Listed() == "1104,1103,1102,1101,1001", Listed())
 
 suite.done()
