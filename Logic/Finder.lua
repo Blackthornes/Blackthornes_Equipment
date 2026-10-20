@@ -735,6 +735,26 @@ function Finder:JudgeOnce(judged, itemID)
     return best, ok, result
 end
 
+--- The order picks show in, best first: what can be had now before gear
+--- that waits on a reputation, both before gear someone else would have to
+--- make, then by the percent shown (an empty slot, which shows none, ahead
+--- of any), then nearest first, then by gain. The percent comes before
+--- nearness so a tie broken by nearness never fights the gain: mixing the
+--- two could order three picks in a circle, which table.sort may refuse
+--- with an error. Upgrades that show the same "+12%" come nearest first (a
+--- player asked, 2026-10-09). The finder window sorts its rings and
+--- trinkets, two slots shown as one, by it too.
+function Finder.Order(a, b)
+    if (a.needs == nil) ~= (b.needs == nil) then return a.needs == nil end
+    if a.remote ~= b.remote then return not a.remote end
+    local pa, pb = Finder.Shown(a.result), Finder.Shown(b.result)
+    if (pa == nil) ~= (pb == nil) then return pa == nil end
+    if pa and pa ~= pb then return pa > pb end
+    if (a.near or 0) ~= (b.near or 0) then return (a.near or 0) < (b.near or 0) end
+    if (a.gain or 0) ~= (b.gain or 0) then return (a.gain or 0) > (b.gain or 0) end
+    return a.itemID < b.itemID
+end
+
 --- Look for upgrades, from every kind of source or only `only` ("vendor",
 --- "quest", "dungeon" or "craft"), and `ahead` levels past the character's
 --- (0 or nil for now).
@@ -823,25 +843,9 @@ function Finder:Build(only, ahead, pause)
     local count, all = 0, {}
     local spot = Finder.Spot(player.zone)
     for slot, list in pairs(slots) do
-        -- What can be had now comes before gear that waits on a reputation,
-        -- and both before gear someone else would have to make.
-        -- Upgrades that show the same "+12%" come nearest first (a player
-        -- asked, 2026-10-09).
+        -- Best first, by Finder.Order.
         for _, pick in ipairs(list) do pick.near = Finder.Nearness(pick.sources, player.zone, spot) end
-        table.sort(list, function(a, b)
-            if (a.needs == nil) ~= (b.needs == nil) then return a.needs == nil end
-            if a.remote ~= b.remote then return not a.remote end
-            -- By the percent shown first (an empty slot, which shows none,
-            -- ahead of any), so a tie broken by nearness never fights the
-            -- gain: mixing the two could order three picks in a circle,
-            -- which table.sort may refuse with an error.
-            local pa, pb = Finder.Shown(a.result), Finder.Shown(b.result)
-            if (pa == nil) ~= (pb == nil) then return pa == nil end
-            if pa and pa ~= pb then return pa > pb end
-            if a.near ~= b.near then return a.near < b.near end
-            if a.gain ~= b.gain then return a.gain > b.gain end
-            return a.itemID < b.itemID
-        end)
+        table.sort(list, Finder.Order)
         local copy = {}
         for i, pick in ipairs(list) do copy[i] = pick end
         all[slot] = copy

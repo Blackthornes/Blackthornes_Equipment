@@ -262,15 +262,24 @@ UI:Show()
 suite.check("it opens", UI.frame:IsShown())
 suite.check("the header names the spec and level", UI.specLabel:GetText() == "Beast Mastery, level 20",
     UI.specLabel:GetText())
-suite.check("a row for each upgrade", UI.rows[1]:IsShown() and UI.rows[3]:IsShown() and not UI.rows[4]:IsShown())
-suite.check("chest first, in character sheet order", UI.rows[1].slot:GetText() == "Chest")
-suite.check("its second pick leaves the slot blank", UI.rows[2].slot:GetText() == "")
+suite.check("the first slot with upgrades shows, chest", UI.slot == 5 and UI.listTitle:GetText() == "Chest",
+    UI.listTitle:GetText())
+suite.check("a row for each of its upgrades", UI.rows[1]:IsShown() and UI.rows[2]:IsShown() and not UI.rows[3]:IsShown())
+suite.check("the heading says what is worn", UI.wornLabel:GetText():find("You wear:", 1, true) == 1,
+    UI.wornLabel:GetText())
 suite.check("the gain shows", UI.rows[1].gain:GetText() == "+200%", UI.rows[1].gain:GetText())
-suite.check("an empty slot says so", UI.rows[3].gain:GetText() == "empty slot")
 suite.check("the source line names the quest", UI.rows[1].source:GetText():find("Wolves of the Forest", 1, true) ~= nil,
     UI.rows[1].source:GetText())
-suite.check("the footer counts them", UI.footer:GetText() == "3 upgrades you can go and get now.",
+suite.check("the footer counts them", UI.footer:GetText() == "2 of 2 upgrades shown for this slot",
     UI.footer:GetText())
+
+local function Badge(key)
+    for _, button in ipairs(UI.slotButtons) do
+        if button.group == key then return button.count:GetText() end
+    end
+end
+suite.check("each slot counts its upgrades", Badge(5) == "2" and Badge(8) == "1" and Badge(1) == "0",
+    tostring(Badge(5)) .. " " .. tostring(Badge(8)))
 
 -- Hovering shows the item and every place to get it.
 local shown
@@ -282,23 +291,37 @@ suite.check("and where to get it", lines:find("Where to get it", 1, true) and li
     lines)
 suite.check("and the quest before it", lines:find("after Prowlers", 1, true) ~= nil)
 
--- Filters.
-UI:SetFilter("dungeon")
-suite.check("the filter is remembered", ns.db.finderShow == "dungeon")
-suite.check("dungeons only shows the drop", UI.rows[1].slot:GetText() == "Feet" and not UI.rows[2]:IsShown())
-UI:SetFilter("vendor")
-suite.check("vendors only shows the vendor's chest", UI.rows[1].pick.itemID == 1001)
-UI:SetFilter(nil)
-suite.check("everything again", ns.db.finderShow == "all" and UI.rows[3]:IsShown())
+-- A click on a slot shows its list, and is kept.
+for _, button in ipairs(UI.slotButtons) do
+    if button.group == 8 then button:GetScript("OnClick")(button) end
+end
+suite.check("a click on Feet shows the drop", UI.slot == 8 and ns.db.finderSlot == 8
+    and UI.rows[1].pick.itemID == 1005 and not UI.rows[2]:IsShown())
+suite.check("an empty slot says so", UI.rows[1].gain:GetText() == "empty slot")
+
+-- The source tick boxes.
+local function Box(kind)
+    for _, box in ipairs(UI.sourceBoxes) do if box.kind == kind then return box end end
+end
+suite.check("every source is ticked at first", Box("vendor"):GetChecked() and Box("raid"):GetChecked())
+UI:PickSlot(5)
+Box("quest"):GetScript("OnClick")(Box("quest"))
+suite.check("unticking Quest is kept", ns.db.finderSourcesOff.quest == true)
+suite.check("and leaves the vendor's chest", UI.rows[1].pick.itemID == 1001 and not UI.rows[2]:IsShown())
+suite.check("the footer says how many are hidden", UI.footer:GetText() == "1 of 2 upgrades shown for this slot",
+    UI.footer:GetText())
+Box("quest"):GetScript("OnClick")(Box("quest"))
+suite.check("ticked again, both", ns.db.finderSourcesOff.quest == nil and UI.rows[2]:IsShown())
 
 -- Nothing to offer.
 env.worn[5] = "item:1003"
 env.worn[8] = "item:1006"
-UI:SetFilter("quest")
-suite.check("an empty list says why", UI.empty:GetText() == "No quest open to you gives anything better than what you wear.",
+UI:Refresh()
+UI:PickSlot(5)
+suite.check("an empty list says why", UI.empty:GetText() == "Nothing on offer beats what you wear right now.",
     UI.empty:GetText())
-UI:SetFilter(nil)
 env.worn[5], env.worn[8] = "item:900", nil
+UI:Refresh()
 
 -- Long source lines are cut to fit, never run past the edge.
 local fitted = UI.Fit("tiny", ("x"):rep(200), 120)
@@ -314,16 +337,14 @@ local accented = UI.Fit("tiny", ("\195\169"):rep(100), 60)
 suite.check("never half a character", accented:gsub("%.%.%.$", ""):match("^[\195\169]*$") ~= nil
     and #accented:gsub("%.%.%.$", "") % 2 == 0, accented)
 
--- Many upgrades scroll.
-local LOCS = { "INVTYPE_HEAD", "INVTYPE_NECK", "INVTYPE_SHOULDER", "INVTYPE_CLOAK",
-    "INVTYPE_WRIST", "INVTYPE_HAND", "INVTYPE_WAIST", "INVTYPE_LEGS" }
+-- One slot with many upgrades scrolls: the list is every one, not the best few.
 for i = 1, 14 do
     local id = 2000 + i
-    local loc = LOCS[(i - 1) % #LOCS + 1]
-    ITEMS["item:" .. id] = { loc = loc, class = 4, subclass = 0, stats = Agi(i) }
+    ITEMS["item:" .. id] = { loc = "INVTYPE_CHEST", class = 4, subclass = 2, stats = Agi(10 + i) }
     S.ITEMS[id] = { 15, 18, 0, 0, 10, v = { 1, 0 } }
 end
 UI:Refresh()
+UI:PickSlot(5)
 suite.check("more than fits shows a scroll thumb", UI.thumb:IsShown())
 local before = UI.rows[1].pick.itemID
 UI.frame:GetScript("OnMouseWheel")(UI.frame, -1)
