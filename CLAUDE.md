@@ -707,7 +707,18 @@ table has them. The tables hold IDs only, no names, so Forever's own
 dungeon quests are learned in game (`Logic/DungeonQuests.lua`,
 `DQ:LearnLog`): a quest in the log under a heading naming a dungeon, or
 accepted while inside one, is kept account wide in
-`learnedDungeonQuests[questID]`. Other authors' Forever quest pages may be
+`learnedDungeonQuests[questID]`. At each release
+`tools/forever_dungeon_quests.py --tables <tables folder> --cache
+<questcache.wdb> [save]` folds them into `Data/ForeverDungeonQuests.lua`
+(`ns.FOREVER_DUNGEON_QUESTS`, the same row shape; never by hand), so every
+player gets them: from the game's English quest cache on the owner's PC
+(`Cache\WDB\enUS\questcache.wdb` beside `WTF`, read only: ID, title,
+levels, the area it is filed under, which counts when AreaTable puts it
+inside a dungeon the addon knows, and the quest after it), and from
+`learnedDungeonQuests` in his account save (side, giver, spot). Never
+commit the cache or name it in public. `DQ:All` reads Classic's, then the
+shipped Forever ones, then what this account learned (which fills in a
+shipped quest's giver). Tested in `tools/test_forever_dungeon_quests.py`. Other authors' Forever quest pages may be
 read as a checklist only, never copied into the data or named.
 Status is Done (`Finder:QuestDone`), In Log or To Do. `UI/DungeonQuestsWindow.lua`
 (`/beq dungeons`, the gear window's Dungeon Quests button, Settings >

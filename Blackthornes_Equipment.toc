@@ -38,6 +38,7 @@ Data\ForeverQuests.lua
 Data\ForeverGoneQuests.lua
 Data\ForeverVendors.lua
 Data\DungeonQuests.lua
+Data\ForeverDungeonQuests.lua
 Data\Crafts.lua
 Data\ForeverItems.lua
 Data\Rolls.lua
