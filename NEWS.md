@@ -23,6 +23,15 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.34.0
+
+- Where to Get Upgrades now lists your slots down the left. Pick a slot to see every upgrade for it, and tick which sources to show. "Only what I can get now" hides what you can't get yet.
+- Untrained Weapons on the Gear page of Settings is now Show or Hide, set for each character.
+
+Fixes and changes:
+
+- Several bug fixes for the upgrade quest and class training.
+
 ## 0.33.0
 
 - Each tooltip line Equipment adds can be Off, Shift or Always. You pick in Settings.
