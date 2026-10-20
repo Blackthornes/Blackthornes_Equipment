@@ -1242,6 +1242,13 @@ function UpgradeQuest:LighterArmor(quest)
     return ok and type(result) == "table" and result.lighterArmor == true
 end
 
+--- Is the quest's item a weapon this character hides until trained
+--- (Settings' Untrained Weapons on Hide, or its type ignored from a banner)?
+function UpgradeQuest:HiddenWeapon(quest)
+    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    return ok and type(result) == "table" and result.ignoredSkill ~= nil
+end
+
 --- Was the quest that gives this upgrade handed in, with the upgrade
 --- neither carried nor worn? Only after a few seconds of it missing, since
 --- the reward can reach the bags a moment after the hand-in.
@@ -1411,8 +1418,9 @@ function UpgradeQuest:Check()
                 end
             end
             if ns.Finder then ns.Finder:MarkStale() end
-        elseif quest and self:LighterArmor(quest) then
-            -- Best Armor Only was ticked after this was picked: let it go
+        elseif quest and (self:LighterArmor(quest) or self:HiddenWeapon(quest)) then
+            -- Best Armor Only was ticked, or an untrained weapon hidden,
+            -- after this was picked (followed by hand too): let it go
             -- quietly (not skipped), and the tab picks again.
             quests[tab.key] = nil
             if ns.Finder then ns.Finder:MarkStale() end

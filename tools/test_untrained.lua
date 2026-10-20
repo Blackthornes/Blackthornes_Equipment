@@ -180,6 +180,30 @@ suite.check("/beq weapons hide hides them", ns.charDB.hideUntrainedWeapons == tr
 ns.HandleSlash("weapons show")
 suite.check("/beq weapons show shows them", ns.charDB.hideUntrainedWeapons == nil)
 
+-- An upgrade quest already on the staff (followed by hand) is let go as
+-- soon as untrained weapons are hidden, and stays with them shown.
+ns.db.upgradeQuest = true
+local function StaffQuest()
+    ns.charDB.upgradeQuestTabs = { vendor = { itemID = 2, link = "item:2", followed = true,
+        source = { kind = "vendor" } } }
+end
+StaffQuest()
+ns.UpgradeQuest:Check()
+suite.check("shown, the staff quest stays", ns.charDB.upgradeQuestTabs.vendor ~= nil
+    and ns.charDB.upgradeQuestTabs.vendor.itemID == 2)
+ns.WeaponSkills:HideAll(true)
+local staffLeft = ns.charDB.upgradeQuestTabs.vendor
+suite.check("Hide lets the staff quest go", staffLeft == nil or staffLeft.itemID ~= 2)
+ns.WeaponSkills:ShowAll(true)
+StaffQuest()
+ns.charDB.ignoredWeaponTypes = { [10] = true }
+ns.UpgradeQuest:Check()
+staffLeft = ns.charDB.upgradeQuestTabs.vendor
+suite.check("a type ignored from a banner lets it go too", staffLeft == nil or staffLeft.itemID ~= 2)
+ns.WeaponSkills:ShowAll(true)
+ns.charDB.upgradeQuestTabs = {}
+ns.db.upgradeQuest = nil
+
 -- The Settings row is a Show or Hide stepper that follows the save.
 ns.SettingsUI:Show()
 local stepper = ns.SettingsUI.controls.weapons
