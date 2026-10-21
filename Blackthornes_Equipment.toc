@@ -3,7 +3,7 @@
 ## Notes: Looks at the gear in your bags and the quest rewards on offer, and says which is best for your class and spec.
 ## Author: Blackthornes
 ## Version: @project-version@
-## X-License: MIT
+## X-License: All Rights Reserved
 ## SavedVariables: BlackthornesEquipmentDB
 ## SavedVariablesPerCharacter: BlackthornesEquipmentCharDB
 ## IconTexture: Interface\Icons\INV_Chest_Chain
