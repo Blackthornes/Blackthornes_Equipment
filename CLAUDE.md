@@ -297,7 +297,16 @@ Slot by slot (a player asked, the owner said build it from a mockup,
 trinkets another, `GROUP_OF`), each with how many upgrades it has, and the
 slot picked shows every upgrade for it from `found.all`, best first
 (`Finder.Order`: gear waiting on a standing last, then the shown percent,
-then nearest), with "You wear:" and "N of M upgrades shown for this slot".
+then nearest), with "You wear:" and, when filters hide some, "Your
+filters hide N more." Headings over the rows (ITEM, LEVEL, WHERE, GAIN;
+`FinderUI.COLUMNS`, the owner approved the mockup 2026-10-21) sort it as
+Pets' compendium does: a click sorts, a second flips, a third goes back to
+best first (`FinderUI:SortBy`, `SortLines` on a copy, kept for the session
+only, nothing saved); the Sort line and the heading carry a small arrow
+(`Media/Frame/SortArrow.tga`, `tools/make_frame_art.py`). Level is
+`FinderUI.LevelOf` (the level waited for, else the client's, else the
+data's), Where is `WhereOf` (a drop's dungeon, a craft's profession, else
+the zone). The Enchants view hides the headings.
 `FinderUI:Groups` builds the lines once a scan; the tick boxes only
 re-present it. One scan covers every source: tick boxes for Vendor, Quest,
 Dungeons, Raids and Crafted (`FinderUI.SOURCE_BOXES`, a raid told by its
@@ -1099,9 +1108,11 @@ Every window wears the house size grip (2026-10-21, as Farmer's):
 left, right-click is normal size. Saved in percent, account wide, never
 renamed: `windowScale`, `finderScale`, `weightsScale`,
 `dungeonQuestsScale`, `ignoredScale`, `settingsScale` (the quest panel
-had its own before). A new window gets one too. Finder lines cut to fit
-end on a whole word with no "..." (`FinderUI.Fit`); the row's tooltip
-has the whole line.
+had its own before). A new window gets one too. The finder's rows show every line in full: each
+grows to fit (`FinderUI:FitRow`, at least `ROW_HEIGHT`) and `Draw`
+stacks them until the list is full; how far it scrolls is measured on a
+row kept out of sight (`MostOffset`). `FinderUI.Fit` (cut at a whole
+word, no "...") is left for the tracker and the character sheet's list.
 
 List rows in the gear window and the finder are dark glass (the owner
 picked it 2026-10-10 over a gold glow that lit every row; Tradeskills'

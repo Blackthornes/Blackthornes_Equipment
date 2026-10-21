@@ -36,9 +36,14 @@ local RIM = 6
 local FILTERS = 30
 -- The quest filters' row, under the source buttons.
 local QUEST_ROW = 28
+-- The shortest a row is; a row grows to show its lines in full (a
+-- player's long "where to get it" line was cut, 2026-10-21). The list's
+-- height holds VISIBLE rows at their shortest.
 local ROW_HEIGHT = 50
 local VISIBLE = 9
-local FOOTER = 48
+local AREA = VISIBLE * ROW_HEIGHT
+-- Room for the footer line and a hint that may wrap onto two lines.
+local FOOTER = 56
 local WIDTH = 900
 
 -- The slots down the left, and the gap between them and the list.
@@ -46,13 +51,14 @@ local SLOT_COLUMN = 150
 local COLUMN_GAP = 10
 -- The list's own heading: the slot, what is worn there, and the order.
 local LIST_HEAD = 30
-
--- The line under each item wraps onto a second line rather than being cut.
--- Wrapping breaks at spaces, so a little of each line goes unused.
-local SOURCE_LINES = 2
-local WRAP_SLACK = 60
+-- The column headings under it, which sort the list.
+local COLUMN_HEAD = 20
 
 local GAIN_WIDTH = 120
+-- The Level and Where columns, left of the gain.
+local LEVEL_WIDTH = 50
+local WHERE_WIDTH = 150
+local CELL_GAP = 10
 -- Queue it, under the gain on crafted rows.
 local QUEUE_WIDTH = 64
 local ICON = 28
@@ -63,10 +69,17 @@ local SCROLL_WIDTH = 4
 local LIST_X = PADDING + SLOT_COLUMN + COLUMN_GAP
 local INNER = WIDTH - LIST_X - PADDING - SCROLL_WIDTH - 6
 
+-- Where each column ends, from the row's right edge, and how wide the item
+-- column is between the icon and the Level column.
+local GAIN_RIGHT = 8
+local WHERE_RIGHT = GAIN_RIGHT + GAIN_WIDTH + CELL_GAP
+local LEVEL_RIGHT = WHERE_RIGHT + WHERE_WIDTH + CELL_GAP
+local ITEM_WIDTH = INNER - TEXT_X - LEVEL_RIGHT - LEVEL_WIDTH - CELL_GAP
+
 -- Some gear is sold by a dozen vendors; the tooltip lists this many.
 local TOOLTIP_SOURCES = 8
 
-local HEIGHT = HEADER + 10 + FILTERS + QUEST_ROW + 8 + LIST_HEAD + VISIBLE * ROW_HEIGHT + FOOTER
+local HEIGHT = HEADER + 10 + FILTERS + QUEST_ROW + 8 + LIST_HEAD + COLUMN_HEAD + AREA + FOOTER
 
 -- The tag in front of a source, in its own colour.
 local KIND_COLORS = { vendor = "accent", quest = "quest", dungeon = "dungeon", craft = "craft" }
@@ -98,7 +111,7 @@ end
 FinderUI.GROUP_OF = GROUP_OF
 
 -- Each slot's line runs the list's full height.
-local SLOT_ROW = math.floor((LIST_HEAD + VISIBLE * ROW_HEIGHT) / #SLOT_GROUPS)
+local SLOT_ROW = math.floor((LIST_HEAD + COLUMN_HEAD + AREA) / #SLOT_GROUPS)
 
 -- How many levels ahead the stepper can look.
 local MOST_AHEAD = 10
@@ -317,6 +330,7 @@ function FinderUI:BuildRow(index)
     local row = CreateFrame("Button", nil, self.frame)
     -- Above the well, whatever order the client draws siblings in.
     row:SetFrameLevel(self.well:GetFrameLevel() + 1)
+    -- Placed by Draw, which stacks the rows by their own heights.
     row:SetSize(inner, ROW_HEIGHT)
     row:SetPoint("TOPLEFT", LIST_X, self.rowsTop - (index - 1) * ROW_HEIGHT)
     row.restKey = index % 2 == 0 and "glassAlt" or "glass"
@@ -344,29 +358,43 @@ function FinderUI:BuildRow(index)
     wash:Hide()
     row.hoverWash = wash
 
+    -- At the top, level with the name, so a tall row still reads as one.
     local icon = Theme.CreateItemIcon(row, ICON)
-    icon:SetPoint("LEFT", 10, 0)
+    icon:SetPoint("TOPLEFT", 10, -(ROW_HEIGHT - ICON) / 2)
     row.icon = icon
 
+    -- Every line wraps and the row grows to fit, so nothing is cut.
     local item = Theme.CreateLabel(row, "normal", "text")
     item:SetPoint("TOPLEFT", TEXT_X, -6)
-    item:SetWidth(inner - TEXT_X - GAIN_WIDTH - 8)
+    item:SetWidth(ITEM_WIDTH)
+    item:SetWordWrap(true)
     row.item = item
-    row.itemRoom = inner - TEXT_X - 8
 
     local gain = Theme.CreateLabel(row, "normal", "good", "RIGHT")
-    gain:SetPoint("TOPRIGHT", -8, -6)
+    gain:SetPoint("TOPRIGHT", -GAIN_RIGHT, -6)
     gain:SetWidth(GAIN_WIDTH)
+    gain:SetWordWrap(true)
     row.gain = gain
 
+    local level = Theme.CreateLabel(row, "small", "text")
+    level:SetPoint("TOPRIGHT", -LEVEL_RIGHT, -7)
+    level:SetWidth(LEVEL_WIDTH)
+    row.level = level
+
+    local where = Theme.CreateLabel(row, "small", "text")
+    where:SetPoint("TOPRIGHT", -WHERE_RIGHT, -7)
+    where:SetWidth(WHERE_WIDTH)
+    where:SetWordWrap(true)
+    row.where = where
+
     local source = Theme.CreateLabel(row, "tiny", "muted")
-    source:SetPoint("TOPLEFT", TEXT_X, -23)
-    source:SetWidth(inner - TEXT_X - 8)
+    source:SetPoint("TOPLEFT", item, "BOTTOMLEFT", 0, -3)
+    source:SetWidth(ITEM_WIDTH)
     source:SetWordWrap(true)
-    pcall(source.SetMaxLines, source, SOURCE_LINES)
     row.source = source
-    row.sourceWidth = inner - TEXT_X - 8
-    row.fullSourceWidth = row.sourceWidth
+    row.sourceWidth = ITEM_WIDTH
+    -- The enchant view has no Level or Where: its lines take the width.
+    row.fullSourceWidth = inner - TEXT_X - 8
 
     -- Queue it, on crafted gear while Tradeskills is loaded: sends the craft,
     -- or what to buy, to Tradeskills' queue (Logic/TradeskillsQueue.lua).
@@ -382,7 +410,7 @@ function FinderUI:BuildRow(index)
             FinderUI:Draw()
         end
     end, { width = QUEUE_WIDTH, height = 18 })
-    queueIt:SetPoint("BOTTOMRIGHT", -8, 5)
+    queueIt:SetPoint("BOTTOMRIGHT", -GAIN_RIGHT, 5)
     queueIt:HookScript("OnEnter", function(self)
         local enchant = rawget(self, "enchant")
         if enchant and ns.Enchants then
@@ -539,8 +567,8 @@ function FinderUI:Build()
     self:BuildFilters()
 
     self.listTop = -(HEADER + 10 + FILTERS + QUEST_ROW + 8)
-    self.rowsTop = self.listTop - LIST_HEAD
-    local listHeight = LIST_HEAD + VISIBLE * ROW_HEIGHT
+    self.rowsTop = self.listTop - LIST_HEAD - COLUMN_HEAD
+    local listHeight = LIST_HEAD + COLUMN_HEAD + AREA
 
     self:BuildSlots(listHeight)
 
@@ -553,15 +581,19 @@ function FinderUI:Build()
     self.well = well
 
     self:BuildListHead()
+    self:BuildColumnHeads()
 
+    -- At most VISIBLE rows fit, each at least ROW_HEIGHT tall. One more,
+    -- never shown, measures lines for how far the list scrolls.
     self.rows = {}
     for index = 1, VISIBLE do self.rows[index] = self:BuildRow(index) end
+    self.measureRow = self:BuildRow(0)
 
     -- A thin track down the right of the list, and a thumb that shows where
     -- in it the view is. On the well, or the well would hide them.
     local track = well:CreateTexture(nil, "ARTWORK")
     track:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -PADDING, self.rowsTop)
-    track:SetSize(SCROLL_WIDTH, VISIBLE * ROW_HEIGHT)
+    track:SetSize(SCROLL_WIDTH, AREA)
     track:SetColorTexture(Theme.Unpack("rowAlt"))
     self.track = track
 
@@ -575,19 +607,22 @@ function FinderUI:Build()
     self.thumb = thumb
 
     local empty = Theme.CreateLabel(well, "normal", "muted", "CENTER")
-    empty:SetPoint("TOP", well, "TOP", 0, -(LIST_HEAD + 60))
+    empty:SetPoint("TOP", well, "TOP", 0, -(LIST_HEAD + COLUMN_HEAD + 60))
     empty:SetWidth(INNER - 40)
     empty:SetWordWrap(true)
     self.empty = empty
 
-    local footer = Theme.CreateLabel(frame, "small", "text")
-    footer:SetPoint("BOTTOMLEFT", PADDING, 26)
-    footer:SetWidth(WIDTH - PADDING * 2)
-    self.footer = footer
-
+    -- The hint wraps (German runs longer), and the footer sits on it.
     local hint = Theme.CreateLabel(frame, "tiny", "dim")
     hint:SetPoint("BOTTOMLEFT", PADDING, 10)
     hint:SetWidth(WIDTH - PADDING * 2)
+    hint:SetWordWrap(true)
+
+    local footer = Theme.CreateLabel(frame, "small", "text")
+    footer:SetPoint("BOTTOMLEFT", hint, "TOPLEFT", 0, 4)
+    footer:SetWidth(WIDTH - PADDING * 2)
+    self.footer = footer
+
     hint:SetText(L["Click a row to follow it. Right-click to track it."])
     self.hint = hint
 
@@ -673,6 +708,102 @@ function FinderUI:PaintSlot(button)
     button.count:SetTextColor(Theme.Unpack(picked and "ink" or some and "accent" or "dim"))
 end
 
+--- A small gold triangle, pointing down until flipped: which way a sorted
+--- column runs.
+local function SortArrow(parent)
+    local arrow = parent:CreateTexture(nil, "OVERLAY")
+    arrow:SetTexture(ns.Titanforged.MEDIA .. "SortArrow")
+    arrow:SetSize(10, 10)
+    arrow:SetVertexColor(Theme.Unpack("accent"))
+    arrow:Hide()
+    return arrow
+end
+
+--- Point an arrow down (first click) or up (flipped).
+local function PointArrow(arrow, flip)
+    if flip then arrow:SetTexCoord(0, 1, 1, 0) else arrow:SetTexCoord(0, 1, 0, 1) end
+end
+
+-- The headings over the rows, which sort the list: { key, heading, the
+-- name the Sort line uses, from the right edge or the left, width }.
+local COLUMNS = {
+    { key = "item", label = L["ITEM"], name = L["Item"], left = TEXT_X, width = ITEM_WIDTH },
+    { key = "level", label = L["LEVEL"], name = L["Level"], right = LEVEL_RIGHT, width = LEVEL_WIDTH },
+    { key = "where", label = L["WHERE"], name = L["Where"], right = WHERE_RIGHT, width = WHERE_WIDTH },
+    { key = "gain", label = L["GAIN"], name = L["Gain"], right = GAIN_RIGHT, width = GAIN_WIDTH, justify = "RIGHT" },
+}
+FinderUI.COLUMNS = COLUMNS
+
+--- The column headings: a click sorts by that column, a second flips the
+--- order, a third goes back to best first (the house rule, as Pets'
+--- compendium does it).
+function FinderUI:BuildColumnHeads()
+    self.columnHeads = {}
+    for _, column in ipairs(COLUMNS) do
+        local heading = CreateFrame("Button", nil, self.frame)
+        heading:SetFrameLevel(self.well:GetFrameLevel() + 1)
+        heading:SetSize(column.width, COLUMN_HEAD)
+        local x = column.left or (INNER - column.right - column.width)
+        heading:SetPoint("TOPLEFT", LIST_X + x, self.listTop - LIST_HEAD)
+        heading.key = column.key
+
+        local label = Theme.CreateLabel(heading, "tiny", "muted", column.justify)
+        label:SetText(column.label)
+        local arrow = SortArrow(heading)
+        if column.justify == "RIGHT" then
+            label:SetPoint("RIGHT", 0, 0)
+            arrow:SetPoint("RIGHT", label, "LEFT", -3, 0)
+        else
+            label:SetPoint("LEFT", 0, 0)
+            arrow:SetPoint("LEFT", label, "RIGHT", 3, 0)
+        end
+        heading.label, heading.arrow = label, arrow
+
+        heading:SetScript("OnClick", function(self) FinderUI:SortBy(self.key) end)
+        heading:SetScript("OnEnter", function(self) self.label:SetTextColor(Theme.Unpack("accentHi")) end)
+        heading:SetScript("OnLeave", function() FinderUI:PaintHeadings() end)
+        self.columnHeads[#self.columnHeads + 1] = heading
+    end
+    self:PaintHeadings()
+end
+
+--- A click on a heading: the first sorts by it, the second flips the
+--- order, the third goes back to best first. Kept while the game runs.
+function FinderUI:SortBy(key)
+    if self.sortKey ~= key then
+        self.sortKey, self.sortFlip = key, false
+    elseif not self.sortFlip then
+        self.sortFlip = true
+    else
+        self.sortKey, self.sortFlip = nil, false
+    end
+    self.offset = 0
+    self:PaintHeadings()
+    self:Redraw()
+end
+
+--- The headings and the Sort line as the order stands.
+function FinderUI:PaintHeadings()
+    local key, flip = self.sortKey, self.sortFlip == true
+    local name = L["Best first"]
+    for _, heading in ipairs(self.columnHeads or {}) do
+        local on = heading.key == key
+        heading.label:SetTextColor(Theme.Unpack(on and "accent" or "muted"))
+        heading.arrow:SetShown(on)
+        PointArrow(heading.arrow, flip)
+    end
+    for _, column in ipairs(COLUMNS) do
+        if column.key == key then name = column.name end
+    end
+    if self.sortLabel then
+        self.sortLabel:SetText(L.Format("Sort: %s", Colored("accent", name)))
+        -- Room for the arrow after it while a column sorts.
+        self.sortLabel:SetPoint("RIGHT", key and -24 or -10, 0)
+        self.sortArrow:SetShown(key ~= nil and self.sortLabel:IsShown())
+        PointArrow(self.sortArrow, flip)
+    end
+end
+
 --- The heading over the list: the slot's name, what is worn there, and the
 --- order the list runs in.
 function FinderUI:BuildListHead()
@@ -696,6 +827,8 @@ function FinderUI:BuildListHead()
     sort:SetPoint("RIGHT", -10, 0)
     sort:SetText(L.Format("Sort: %s", Colored("accent", L["Best first"])))
     self.sortLabel = sort
+    self.sortArrow = SortArrow(head)
+    self.sortArrow:SetPoint("LEFT", sort, "RIGHT", 4, 0)
 
     local worn = Theme.CreateLabel(head, "small", "muted")
     worn:SetPoint("LEFT", title, "RIGHT", 12, 0)
@@ -1090,6 +1223,7 @@ function FinderUI:SetListHead(lines)
         self.wornLabel:SetText("")
     end
     self.sortLabel:SetShown(not self:ShowingEnchants())
+    self:PaintHeadings()
 end
 
 local function Gain(result)
@@ -1098,6 +1232,115 @@ local function Gain(result)
     return L["better"]
 end
 
+--- How tall a label's text runs, wrapped at its width: the client's own
+--- answer, else a measure of its words.
+local function TextHeight(label, size)
+    local text = label:GetText() or ""
+    if text == "" then return 0 end
+    local ok, height = pcall(label.GetStringHeight, label)
+    if ok and type(height) == "number" and height > 0 then return height end
+    local width = math.max(1, label:GetWidth() or 1)
+    local lines = math.max(1, math.ceil(Theme.TextWidth(size, text) / width))
+    return lines * ((Theme.sizes[size] or 10) + 2)
+end
+
+--- Grow a filled row to show its lines in full: the name and the line under
+--- it, the Where column, and the gain with Queue it under it.
+function FinderUI:FitRow(row, gear)
+    local height = 6 + TextHeight(row.item, "normal") + 3 + TextHeight(row.source, "tiny") + 8
+    if gear then height = math.max(height, 7 + TextHeight(row.where, "small") + 8) end
+    local buttons = row.queueIt:IsShown() or row.showWay:IsShown()
+    height = math.max(height, 6 + TextHeight(row.gain, "normal") + (buttons and (4 + 18 + 5) or 8))
+    height = math.max(ROW_HEIGHT, math.ceil(height))
+    row:SetHeight(height)
+    return height
+end
+
+--- The level a pick can be worn from: the level it waits for, else the
+--- client's, else the data's. Nil when it asks for none.
+function FinderUI.LevelOf(pick)
+    if pick.at then return pick.at end
+    local info = (_G.C_Item and _G.C_Item.GetItemInfo) or _G.GetItemInfo
+    if type(info) == "function" then
+        local ok, _, _, _, _, level = pcall(info, pick.link or pick.itemID)
+        if ok and tonumber(level) and level > 0 then return level end
+    end
+    local item = ns.Sources and ns.Sources.ITEMS and ns.Sources.ITEMS[pick.itemID]
+    if item and tonumber(item[1]) and item[1] > 0 then return item[1] end
+    local craft = ns.Crafts and ns.Crafts.ITEMS and ns.Crafts.ITEMS[pick.itemID]
+    if craft and tonumber(craft[4]) and craft[4] > 0 then return craft[4] end
+    return nil
+end
+
+--- Where a line's first source is: the dungeon for a drop, the profession
+--- for a craft, else the zone. Nil when it has no place.
+function FinderUI.WhereOf(line)
+    local source = line.sources and line.sources[1]
+    if not source then return nil end
+    if source.kind == "dungeon" then return source.dungeon or source.zone end
+    if source.kind == "craft" then return source.profession end
+    return source.zone
+end
+
+--- A pick's name, for sorting.
+function FinderUI.ItemName(pick)
+    local name = type(pick.link) == "string" and pick.link:match("%[(.-)%]")
+    if not name then
+        local info = (_G.C_Item and _G.C_Item.GetItemNameByID) or nil
+        local ok, found = pcall(function() return info and info(pick.itemID) end)
+        name = ok and found or nil
+    end
+    return name or tostring(pick.link or pick.itemID or "")
+end
+
+--- What a line sorts by under a heading: nil sorts last.
+function FinderUI.SortValue(line, key)
+    local pick = line.pick
+    if key == "item" then return FinderUI.ItemName(pick):lower() end
+    if key == "level" then return FinderUI.LevelOf(pick) end
+    if key == "where" then
+        local where = FinderUI.WhereOf(line)
+        return where and where:lower() or nil
+    end
+    if key == "gain" then
+        if pick.result and pick.result.empty then return math.huge end
+        return pick.result and Finder.Shown(pick.result) or nil
+    end
+    return nil
+end
+
+--- `lines` sorted by a heading (`key` "item", "level", "where" or "gain"),
+--- the order flipped when `flip`; best first when `key` is nil. A new table:
+--- the slot's own list keeps its best-first order.
+function FinderUI.SortLines(lines, key, flip)
+    if not key then return lines end
+    local keyed = {}
+    for index, line in ipairs(lines) do
+        keyed[index] = { line = line, index = index, value = FinderUI.SortValue(line, key) }
+    end
+    table.sort(keyed, function(a, b)
+        local va, vb = a.value, b.value
+        if va ~= vb then
+            if va == nil then return false end
+            if vb == nil then return true end
+            -- The biggest gain first; names, levels and places A to Z, low to high.
+            if key == "gain" then return va > vb end
+            return va < vb
+        end
+        return a.index < b.index
+    end)
+    local sorted = {}
+    for index, entry in ipairs(keyed) do sorted[index] = entry.line end
+    if flip then
+        local flipped = {}
+        for index = #sorted, 1, -1 do flipped[#flipped + 1] = sorted[index] end
+        sorted = flipped
+    end
+    return sorted
+end
+
+--- Fill a row with a line, or hide it for none.
+-- @return the row's height, 0 for none
 function FinderUI:FillRow(row, line)
     row.enchant = nil
     row.showWay:Hide()
@@ -1105,7 +1348,7 @@ function FinderUI:FillRow(row, line)
     if not line then
         row.pick = nil
         row:Hide()
-        return
+        return 0
     end
     if line.enchant then return self:FillEnchantRow(row, line.enchant) end
 
@@ -1115,6 +1358,7 @@ function FinderUI:FillRow(row, line)
         gain = line.pick.gain,
     }
     Theme.SetItemIcon(row.icon, line.pick.link)
+    row.item:SetWidth(ITEM_WIDTH)
     row.item:SetText(ns.Items.ShowLink(line.pick.link))
     local gain = Gain(line.pick.result)
     -- A weapon whose skill is not learned yet says "Train" in red, so the
@@ -1127,16 +1371,20 @@ function FinderUI:FillRow(row, line)
     elseif line.pick.at then
         gain = L.Format("at %d: %s", line.pick.at, gain)
     end
+    -- A long gain ("at 23, Train: empty slot") wraps in its column.
+    row.gain:SetWidth(GAIN_WIDTH)
     row.gain:SetText(gain)
-    -- A long gain ("at 23, Train: empty slot") grows leftward rather than
-    -- being cut; the item's name gives it the room.
-    local gainWidth = math.max(GAIN_WIDTH, math.ceil(Theme.TextWidth("normal", gain or "")) + 4)
-    row.gain:SetWidth(gainWidth)
-    row.item:SetWidth(row.itemRoom - gainWidth)
     -- Gear that waits on a reputation, a level or a crafter is shown in
     -- amber, not green; gear that waits on a weapon trainer in red.
     row.edgeKey = (line.pick.needs or line.pick.at or line.pick.remote) and "warn" or "good"
     row.gain:SetTextColor(Theme.Unpack(train and "loss" or row.edgeKey))
+
+    local level = FinderUI.LevelOf(line.pick)
+    row.level:SetText(level and tostring(level) or "")
+    row.level:Show()
+    local where = FinderUI.WhereOf(line)
+    row.where:SetText(where and FinderUI.MarkZone(where, ns.UpgradeQuest and ns.UpgradeQuest.Zone()) or "")
+    row.where:Show()
 
     local text = FinderUI.SourceLine(line.sources[1])
     if ns.Tracking and ns.Tracking:IsTracked(line.pick.itemID) then
@@ -1149,43 +1397,44 @@ function FinderUI:FillRow(row, line)
         text = Colored("warn", L.Format("Needs %s with %s", line.pick.needs.standing,
             line.pick.needs.faction)) .. "  " .. text
     end
-    -- Queue it on crafted gear, with the line under the name kept clear of it.
+    -- Queue it on crafted gear, under the gain.
     local craft = ns.TradeskillsQueue and ns.TradeskillsQueue:Available()
         and ns.TradeskillsQueue.CraftSource(line.sources) or nil
     row.queueIt.source = craft
     if craft then
         row.queueIt:SetText(ns.TradeskillsQueue:Label(craft.itemID))
         row.queueIt:Show()
-        -- The button grows to fit its words (German runs longer).
-        row.sourceWidth = row.fullSourceWidth - math.max(QUEUE_WIDTH, row.queueIt:GetWidth() or 0) - 8
     else
         row.queueIt:Hide()
-        row.sourceWidth = row.fullSourceWidth
     end
+    row.sourceWidth = ITEM_WIDTH
     row.source:SetWidth(row.sourceWidth)
 
+    -- The whole line, wrapped: the row grows to fit it.
     local more = #line.sources - 1
     local tail = more > 0 and L.Format("  +%d more", more) or ""
-    local room = row.sourceWidth * SOURCE_LINES - WRAP_SLACK - Theme.TextWidth("tiny", tail)
-    row.source:SetText(FinderUI.Fit("tiny", text, room) .. Colored("dim", tail))
+    row.source:SetText(text .. Colored("dim", tail))
     row:Show()
+    return self:FitRow(row, true)
 end
 
 --- One row of the Enchants view: the slot, the piece you wear, the enchant
 --- to get, how much better, and how to get it.
+-- @return the row's height
 function FinderUI:FillEnchantRow(row, line)
     local Enchants = ns.Enchants
     local pick, source = line.pick, line.source
     row.pick = nil
     row.enchant = line
+    row.level:Hide()
+    row.where:Hide()
     Theme.SetItemIcon(row.icon, line.plan.link)
+    row.item:SetWidth(row.fullSourceWidth - GAIN_WIDTH - 8)
     row.item:SetText(Enchants:ShownName(pick.recipeID) or "")
 
     local gain = pick.percent and ("%+d%%"):format(math.floor(pick.percent + 0.5)) or L["better"]
+    row.gain:SetWidth(GAIN_WIDTH)
     row.gain:SetText(gain)
-    local gainWidth = math.max(GAIN_WIDTH, math.ceil(Theme.TextWidth("normal", gain)) + 4)
-    row.gain:SetWidth(gainWidth)
-    row.item:SetWidth(row.itemRoom - gainWidth)
     -- Amber while it needs more skill or someone else to make it.
     local state = source and source.state
     row.edgeKey = (state == "skill" or state == "other") and "warn" or "good"
@@ -1214,7 +1463,7 @@ function FinderUI:FillEnchantRow(row, line)
         if used > 0 then
             row.showWay:SetPoint("RIGHT", row.queueIt, "LEFT", -6, 0)
         else
-            row.showWay:SetPoint("BOTTOMRIGHT", -8, 5)
+            row.showWay:SetPoint("BOTTOMRIGHT", -GAIN_RIGHT, 5)
         end
         row.showWay.enchant = line
         row.showWay:Show()
@@ -1222,33 +1471,70 @@ function FinderUI:FillEnchantRow(row, line)
     end
     row.sourceWidth = row.fullSourceWidth - used
     row.source:SetWidth(row.sourceWidth)
-    row.source:SetText(FinderUI.Fit("tiny", text, row.sourceWidth * SOURCE_LINES - WRAP_SLACK))
+    row.source:SetText(text)
     row:Show()
+    return self:FitRow(row, false)
+end
+
+--- The furthest the list scrolls: the first line from which every line
+--- left fits. Measured on a row kept out of sight, once per list.
+function FinderUI:MostOffset()
+    local lines = self.lines or {}
+    if self.mostFor == lines then return self.most end
+    local used, index = 0, #lines
+    while index >= 1 do
+        local height = self:FillRow(self.measureRow, lines[index])
+        if used + height > AREA then break end
+        used = used + height
+        index = index - 1
+    end
+    self.measureRow:Hide()
+    self.mostFor, self.most = lines, math.max(0, math.min(index, #lines - 1))
+    return self.most
 end
 
 function FinderUI:ScrollBy(steps)
-    local most = math.max(0, #(self.lines or {}) - VISIBLE)
+    local most = self:MostOffset()
     self.offset = math.max(0, math.min(most, (self.offset or 0) + steps))
     self:Draw()
 end
 
+--- Draw the list from `offset` on: each row as tall as its lines, stacked
+--- until the list is full. A row that would run past the foot waits for a
+--- scroll.
 function FinderUI:Draw()
     local lines = self.lines or {}
     local offset = self.offset or 0
+    local used, shown, full = 0, 0, false
     for index, row in ipairs(self.rows) do
-        self:FillRow(row, lines[offset + index])
+        local line = not full and lines[offset + index] or nil
+        local height = self:FillRow(row, line)
+        if line and index > 1 and used + height > AREA then
+            row.pick, row.enchant = nil, nil
+            row:Hide()
+            full = true
+        elseif line then
+            row:SetPoint("TOPLEFT", LIST_X, self.rowsTop - used)
+            used = used + height
+            shown = shown + 1
+        end
         -- Scrolled under a still mouse: the tooltip follows the new item.
         if rawget(row, "over") == true then
-            if rawget(row, "pick") or rawget(row, "enchant") then ShowTooltip(row) else GameTooltip:Hide() end
+            if row:IsShown() and (rawget(row, "pick") or rawget(row, "enchant")) then
+                ShowTooltip(row)
+            else
+                GameTooltip:Hide()
+            end
         end
     end
+    self.shownCount = shown
 
     -- The thumb only shows when there is more than fits.
     local total = #lines
-    if total > VISIBLE then
-        local height = VISIBLE * ROW_HEIGHT
-        local size = math.max(16, height * VISIBLE / total)
-        local top = (height - size) * offset / (total - VISIBLE)
+    local most = self:MostOffset()
+    if most > 0 then
+        local size = math.max(16, AREA * shown / math.max(1, total))
+        local top = (AREA - size) * math.min(1, offset / most)
         self.thumb:SetHeight(size)
         self.thumb:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -PADDING, self.rowsTop - top)
         self.thumb:Show()
@@ -1297,9 +1583,11 @@ function FinderUI:MarkFilters()
     local gear = not enchants
     local controls = { self.showLabel, self.getNow, self.ahead, self.levelLabel, self.questLevels, self.solo, self.zone }
     for _, box in ipairs(self.sourceBoxes) do controls[#controls + 1] = box end
+    for _, heading in ipairs(self.columnHeads or {}) do controls[#controls + 1] = heading end
     for _, control in ipairs(controls) do control:SetShown(gear) end
     if gear then
-        self.hint:SetText(L["Click a row to follow it. Right-click to track it."])
+        self.hint:SetText(L["Click a row to follow it. Right-click to track it."] .. "  "
+            .. L["Click a heading to sort. Click it again to flip the order, and a third time for best first."])
     elseif ns.Enchants and ns.Enchants:CanQueue() then
         self.hint:SetText(L["The best enchant for each piece you wear, for your spec. Queue it sends it to Tradeskills."])
     else
@@ -1340,9 +1628,9 @@ function FinderUI:Present(found, why)
     local groups = self:Groups(found)
     self.groups = groups
     local group = groups[self:ChooseSlot(groups)]
-    self.lines = group.lines
-    local most = math.max(0, #self.lines - VISIBLE)
-    self.offset = math.min(self.offset or 0, most)
+    self.lines = FinderUI.SortLines(group.lines, self.sortKey, self.sortFlip)
+    self.mostFor = nil
+    self.offset = math.min(self.offset or 0, self:MostOffset())
     self:Draw()
     self:PaintSlots(groups)
     self:SetListHead(self.lines)
@@ -1405,8 +1693,8 @@ function FinderUI:PresentEnchants()
     end
     self.groups = groups
     self.lines = groups[self:ChooseSlot(groups)].lines
-    local most = math.max(0, #self.lines - VISIBLE)
-    self.offset = math.min(self.offset or 0, most)
+    self.mostFor = nil
+    self.offset = math.min(self.offset or 0, self:MostOffset())
     self:Draw()
     self:PaintSlots(groups)
     self:SetListHead(self.lines)
