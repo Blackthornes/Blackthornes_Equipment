@@ -565,7 +565,7 @@ function QuestLogUI:Fill()
     local width = ns.QuestPanel.WIDTH - ns.QuestPanel.PAD * 2
     local text
     if not data.how then
-        text = L["This game client's quest log can't be read. /beq probe lists the quest calls it has."]
+        text = L["Your quest log can't be shown here."]
     elseif data.count == 0 then
         text = L["Your quest log is empty."]
     elseif headIndex == 0 then

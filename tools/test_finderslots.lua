@@ -20,6 +20,10 @@ local ITEMS = {
     ["item:1101"] = Ring(20),
     ["item:1102"] = Ring(30),
 }
+-- The level each can be worn from, as the client says it.
+for id, level in pairs({ [1001] = 15, [1002] = 15, [1003] = 20, [1004] = 15 }) do
+    ITEMS["item:" .. id].minLevel = level
+end
 
 local ns = env.Load()
 _G.UnitClass = function() return "Hunter", "HUNTER", 3 end
@@ -88,17 +92,45 @@ suite.check("the slot counts them", Button(5).count:GetText() == "4")
 suite.check("the rings line counts both rings' upgrades once", Button(11).count:GetText() == "2",
     Button(11).count:GetText())
 suite.check("a slot with nothing counts 0", Button(1).count:GetText() == "0")
-suite.check("the footer counts the slot's", UI.footer:GetText() == "4 of 4 upgrades shown for this slot",
+suite.check("nothing hidden, the footer says nothing", UI.footer:GetText() == "",
     UI.footer:GetText())
 suite.check("the heading names the slot", UI.listTitle:GetText() == "Chest")
 suite.check("and the order", UI.sortLabel:GetText():find("Best first", 1, true) ~= nil)
+
+-- The headings sort: a click sorts, a second flips, a third goes back.
+local function Heading(key)
+    for _, heading in ipairs(UI.columnHeads) do if heading.key == key then return heading end end
+end
+suite.check("four headings, as approved", Heading("item").label:GetText() == "ITEM"
+    and Heading("level").label:GetText() == "LEVEL" and Heading("where").label:GetText() == "WHERE"
+    and Heading("gain").label:GetText() == "GAIN" and #UI.columnHeads == 4)
+Heading("level"):GetScript("OnClick")(Heading("level"))
+suite.check("Level sorts low to high", Listed() == "1002,1001,1004,1003", Listed())
+suite.check("the Sort line says so", UI.sortLabel:GetText():find("Level", 1, true) ~= nil
+    and UI.sortArrow:IsShown() and Heading("level").arrow:IsShown(), UI.sortLabel:GetText())
+Heading("level"):GetScript("OnClick")(Heading("level"))
+suite.check("a second click flips it", Listed() == "1003,1004,1001,1002" and UI.sortFlip == true, Listed())
+Heading("level"):GetScript("OnClick")(Heading("level"))
+suite.check("a third goes back to best first", Listed() == "1003,1002,1001,1004"
+    and UI.sortLabel:GetText():find("Best first", 1, true) ~= nil and not UI.sortArrow:IsShown(), Listed())
+Heading("where"):GetScript("OnClick")(Heading("where"))
+suite.check("Where sorts A to Z, a dungeon by its name", Listed() == "1001,1004,1003,1002", Listed())
+Heading("gain"):GetScript("OnClick")(Heading("gain"))
+suite.check("another heading starts again, Gain biggest first", Listed() == "1003,1002,1004,1001"
+    and UI.sortKey == "gain" and not UI.sortFlip and not Heading("where").arrow:IsShown(), Listed())
+Heading("gain"):GetScript("OnClick")(Heading("gain"))
+Heading("gain"):GetScript("OnClick")(Heading("gain"))
+suite.check("and back to best first", Listed() == "1003,1002,1001,1004" and UI.sortKey == nil, Listed())
+suite.check("each row shows its level and where", UI.rows[1].level:GetText() == "20"
+    and UI.rows[1].where:GetText():find("Molten Core", 1, true) ~= nil, UI.rows[1].level:GetText())
+suite.check("the hint says how", UI.hint:GetText():find("Click a heading to sort.", 1, true) ~= nil)
 
 -- Raids apart from dungeons.
 Box("raid"):GetScript("OnClick")(Box("raid"))
 suite.check("unticking Raids leaves the raid drop out", Listed() == "1002,1001,1004", Listed())
 suite.check("and is kept", ns.db.finderSourcesOff.raid == true and not ns.db.finderSourcesOff.dungeon)
 suite.check("the count follows", Button(5).count:GetText() == "3")
-suite.check("the footer says how many are left out", UI.footer:GetText() == "3 of 4 upgrades shown for this slot")
+suite.check("the footer says how many are left out", UI.footer:GetText() == "Your filters hide 1 more.")
 Box("dungeon"):GetScript("OnClick")(Box("dungeon"))
 suite.check("unticking Dungeons too leaves the vendors'", Listed() == "1001,1004", Listed())
 Box("raid"):GetScript("OnClick")(Box("raid"))

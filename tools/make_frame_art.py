@@ -398,6 +398,17 @@ def glow():
     render("Glow", 64, 64, shade)
 
 
+def sort_arrow():
+    """A small white triangle pointing down, tinted and flipped in game: the
+    finder's sort order."""
+    shape = [(2.0, 4.0), (14.0, 4.0), (8.0, 12.0)]
+
+    def shade(x, y):
+        return (1.0, 1.0, 1.0, 1.0) if inside(shape, x, y) else None
+
+    render("SortArrow", 16, 16, shade)
+
+
 def main():
     corner()
     portrait()
@@ -406,6 +417,7 @@ def main():
     title_plate()
     close_gem()
     glow()
+    sort_arrow()
 
 
 if __name__ == "__main__":

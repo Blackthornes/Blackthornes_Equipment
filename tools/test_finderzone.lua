@@ -68,7 +68,7 @@ UI.zone:GetScript("OnLeave")(UI.zone)
 UI.zone:GetScript("OnClick")(UI.zone)
 suite.check("ticking it saves it", ns.db.finderZoneOnly == true and UI:ZoneOnly())
 suite.check("only what Elwynn Forest has", Listed() == "1001", Listed())
-suite.check("the footer says how many are left out", UI.footer:GetText() == "1 of 5 upgrades shown for this slot",
+suite.check("the footer says how many are left out", UI.footer:GetText() == "Your filters hide 4 more.",
     UI.footer:GetText())
 suite.check("the upgrade quest's own box is left alone", ns.db.upgradeQuestZoneOnly == false)
 

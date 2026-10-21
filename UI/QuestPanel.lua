@@ -1021,7 +1021,9 @@ function QuestPanel:Refresh()
     for _, step in ipairs(steps) do
         if step.done then done = done + 1 end
     end
-    self.progress:SetText(quest and L.Format("Step %d of %d", math.min(current, #steps), #steps) or "")
+    -- How many steps are still to do, the one under way among them.
+    local left = math.max(0, #steps - done)
+    self.progress:SetText(quest and (left == 1 and L["1 step left"] or L.Format("%d steps left", left)) or "")
     local now = steps[current]
     self:SetBadge(now and not now.done and now.turnIn and TURN_IN_ICON or QUEST_ICON)
 

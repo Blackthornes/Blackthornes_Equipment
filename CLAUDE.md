@@ -297,7 +297,16 @@ Slot by slot (a player asked, the owner said build it from a mockup,
 trinkets another, `GROUP_OF`), each with how many upgrades it has, and the
 slot picked shows every upgrade for it from `found.all`, best first
 (`Finder.Order`: gear waiting on a standing last, then the shown percent,
-then nearest), with "You wear:" and "N of M upgrades shown for this slot".
+then nearest), with "You wear:" and, when filters hide some, "Your
+filters hide N more." Headings over the rows (ITEM, LEVEL, WHERE, GAIN;
+`FinderUI.COLUMNS`, the owner approved the mockup 2026-10-21) sort it as
+Pets' compendium does: a click sorts, a second flips, a third goes back to
+best first (`FinderUI:SortBy`, `SortLines` on a copy, kept for the session
+only, nothing saved); the Sort line and the heading carry a small arrow
+(`Media/Frame/SortArrow.tga`, `tools/make_frame_art.py`). Level is
+`FinderUI.LevelOf` (the level waited for, else the client's, else the
+data's), Where is `WhereOf` (a drop's dungeon, a craft's profession, else
+the zone). The Enchants view hides the headings.
 `FinderUI:Groups` builds the lines once a scan; the tick boxes only
 re-present it. One scan covers every source: tick boxes for Vendor, Quest,
 Dungeons, Raids and Crafted (`FinderUI.SOURCE_BOXES`, a raid told by its
@@ -1089,10 +1098,21 @@ the stat weights get the plate and close gem only, and so does the upgrade
 quest panel (asked 2026-10-04; its quest sits in a well too). The other
 panels that stay on screen while playing (tracker, toasts, the character
 sheet's slot list) keep `Theme.Window` and only share the restyled
-buttons. Equipment has no Window effects
-setting, so `Motion.Level()` is always full and the glint and the
-portrait's light always run; add the setting before anyone asks for them
-to stop.
+buttons. "Effects:" under EFFECTS on the General page (2026-10-21, as
+Farmer's) picks Full, Subtle or Off: `effectsLevel` (nil for Full, so
+nobody's windows changed; account wide, never rename it), read by
+`Motion.Level()`. Subtle drops the glint and the rise, Off holds still.
+
+Every window wears the house size grip (2026-10-21, as Farmer's):
+`Widgets.WindowGrip(frame, key, done)` scales it 50% to 150% from its top
+left, right-click is normal size. Saved in percent, account wide, never
+renamed: `windowScale`, `finderScale`, `weightsScale`,
+`dungeonQuestsScale`, `ignoredScale`, `settingsScale` (the quest panel
+had its own before). A new window gets one too. The finder's rows show every line in full: each
+grows to fit (`FinderUI:FitRow`, at least `ROW_HEIGHT`) and `Draw`
+stacks them until the list is full; how far it scrolls is measured on a
+row kept out of sight (`MostOffset`). `FinderUI.Fit` (cut at a whole
+word, no "...") is left for the tracker and the character sheet's list.
 
 List rows in the gear window and the finder are dark glass (the owner
 picked it 2026-10-10 over a gold glow that lit every row; Tradeskills'

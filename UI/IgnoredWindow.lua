@@ -80,6 +80,12 @@ function IgnoredUI:Build()
         self:StopMovingOrSizing()
         IgnoredUI:SavePosition()
     end)
+
+    -- The house size grip under the bottom right corner (Widgets.WindowGrip),
+    -- saved as `ignoredScale`.
+    self.sizeGrip = Widgets.WindowGrip(frame, "ignoredScale", function()
+        IgnoredUI:SavePosition()
+    end)
     frame:EnableMouseWheel(true)
     frame:SetScript("OnMouseWheel", function(_, delta) IgnoredUI:Scroll(-delta) end)
 
@@ -176,7 +182,8 @@ function IgnoredUI:BuildRow(index)
     row.name = Theme.CreateLabel(row, "small", "text")
     row.name:SetPoint("LEFT", row.icon, "RIGHT", 8, 0)
     row.name:SetPoint("RIGHT", row.restore, "LEFT", -8, 0)
-    row.name:SetWordWrap(false)
+    -- A long name wraps onto a second line rather than being cut.
+    row.name:SetWordWrap(true)
 
     row:SetScript("OnEnter", function(self)
         Motion:Blend(self, "hover", 1, 0.12, function(p) Widgets.SetRowLight(self, p) end)
@@ -230,8 +237,7 @@ function IgnoredUI:Fill()
     elseif total <= ROWS then
         self.count:SetText(total == 1 and L["1 item"] or L.Format("%d items", total))
     else
-        self.count:SetText(L.Format("%d-%d of %d, scroll for more",
-            self.offset + 1, math.min(total, self.offset + ROWS), total))
+        self.count:SetText(L["Scroll for more."])
     end
     for index, row in ipairs(self.rows) do
         local entry = list[self.offset + index]

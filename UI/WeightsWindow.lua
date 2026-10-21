@@ -246,6 +246,12 @@ function WeightsUI:Build()
         WeightsUI:SavePosition()
     end)
 
+    -- The house size grip under the bottom right corner (Widgets.WindowGrip),
+    -- saved as `weightsScale`.
+    self.sizeGrip = Widgets.WindowGrip(frame, "weightsScale", function()
+        WeightsUI:SavePosition()
+    end)
+
     if type(UISpecialFrames) == "table" then
         table.insert(UISpecialFrames, "BlackthornesEquipmentWeights")
     end

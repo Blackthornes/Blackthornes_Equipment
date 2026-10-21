@@ -111,7 +111,7 @@ suite.check("and Settings counts what is left", button.label:GetText() == "Ignor
 for id = 5001, 5015 do ns.charDB.upgradeQuestSkipped[id] = true end
 Ignored:Refresh()
 suite.check("ten rows show", Ignored.rows[10]:IsShown())
-suite.check("the count says there is more", Ignored.count:GetText():find("of 16", 1, true) ~= nil, Ignored.count:GetText())
+suite.check("the count says there is more", Ignored.count:GetText() == "Scroll for more.", Ignored.count:GetText())
 Ignored:Scroll(100)
 suite.check("the wheel stops at the end", Ignored.offset == 6, Ignored.offset)
 

@@ -259,9 +259,13 @@ suite.check("crafted rows say so", UI.rows[1].source:GetText():find("Crafted", 1
     UI.rows[1].source:GetText())
 -- The row's second line wraps rather than being cut, and the materials
 -- line on the tooltip is a light colour, passed whole.
-local long = ("word "):rep(math.floor(UI.rows[1].sourceWidth / 30) + 10)
+local long = ("word "):rep(math.floor(UI.rows[1].sourceWidth / 6) * 3)
+local tall = UI:FillRow(UI.measureRow, { pick = UI.lines[1].pick,
+    sources = { { kind = "vendor", name = long, zone = "Elwynn Forest" } } })
 suite.check("a line longer than the row still shows in full",
-    UI.Fit("tiny", long, UI.rows[1].sourceWidth * 2 - 60) == long)
+    UI.measureRow.source:GetText():find(long, 1, true) ~= nil and not UI.measureRow.source:GetText():find("...", 1, true))
+suite.check("and the row grows to fit it", tall > 50 and UI.measureRow:GetHeight() == tall, tall)
+UI.measureRow:Hide()
 local colours = {}
 local realAdd = _G.GameTooltip.AddLine
 _G.GameTooltip.AddLine = function(self, text, r, g, b, wrap)

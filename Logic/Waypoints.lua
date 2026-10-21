@@ -258,7 +258,7 @@ end
 
 local WHY = {
     nospot = L["no exact spot is known for that one"],
-    noclient = L["this client cannot put a pin on the map"],
+    noclient = L["Couldn't put a pin on the map."],
     nomap = L["the map for that zone could not be found"],
 }
 
@@ -280,7 +280,10 @@ function Waypoints:Show(place, what)
         if not inFight and type(_G.OpenWorldMap) == "function" then pcall(_G.OpenWorldMap, mapID) end
     else
         local reason = WHY[why] or why
-        if place and place.zone then
+        if why == "noclient" then
+            -- A whole sentence of its own: no place would help.
+            ns.Print(reason)
+        elseif place and place.zone then
             ns.Print(L.Format("can't pin %s (%s): %s", what or L["that"], place.zone, reason))
         else
             ns.Print(L.Format("can't pin %s: %s", what or L["that"], reason))

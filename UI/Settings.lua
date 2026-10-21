@@ -185,6 +185,12 @@ function SettingsUI:Build()
         SettingsUI:SavePosition()
     end)
 
+    -- The house size grip under the bottom right corner (Widgets.WindowGrip),
+    -- saved as `settingsScale`.
+    self.sizeGrip = Widgets.WindowGrip(frame, "settingsScale", function()
+        SettingsUI:SavePosition()
+    end)
+
     -- Escape closes it, like the game's own windows.
     if type(UISpecialFrames) == "table" then
         table.insert(UISpecialFrames, "BlackthornesEquipmentSettings")
@@ -779,6 +785,27 @@ function SettingsUI:BuildGeneral()
     local styleRow = pages:Row("general", 1, L["Window Style:"], "")
     controls.windowStyle = self:WindowStyleControl(styleRow)
 
+    -- How much the windows move: they rise in, glow and glint at Full,
+    -- only fade at Subtle and stay still at Off. Full until picked.
+    pages:Section("general", 1, L["EFFECTS"])
+    local effectsRow = pages:Row("general", 1, L["Effects:"], nil)
+    local Motion = ns.Motion
+    local effectNames = { full = L["Full"], subtle = L["Subtle"], off = L["Off"] }
+    local function EffectIndex()
+        local level = Motion.Level()
+        for index, name in ipairs(Motion.LEVELS) do
+            if name == level then return index end
+        end
+        return 1
+    end
+    controls.effects = Widgets.CreateStepper(effectsRow, {
+        min = 1, max = #Motion.LEVELS, step = 1, value = EffectIndex(),
+        format = function(index) return effectNames[Motion.LEVELS[index]] end,
+        onChange = function(index) Motion.SetLevel(Motion.LEVELS[index]) end,
+    })
+    controls.effects:SetPoint("TOPLEFT", CONTROL_X, 0)
+    controls.effectsIndex = EffectIndex
+
     pages:Section("general", 2, L["ADVANCED"])
 
     local debugRow = pages:Row("general", 2, L["Debug:"],
@@ -942,6 +969,7 @@ function SettingsUI:Refresh()
 
     controls.textSize:Sync()
     controls.windowStyle:Sync()
+    controls.effects:SetValue(controls.effectsIndex(), true)
     self.pages:Refresh()
 end
 
