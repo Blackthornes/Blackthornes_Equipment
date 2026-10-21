@@ -124,7 +124,7 @@ UI:Show()
 suite.check("the window opens", UI.frame and UI.frame:IsShown())
 suite.check("it picks a dungeon with something to do", ns.db.dungeonQuestsPick ~= nil)
 UI:Pick("389")
-suite.check("the total reads as a count", UI.total:GetText() ~= nil and UI.total:GetText():find("of") ~= nil,
+suite.check("the total reads as a count", UI.total:GetText() ~= nil and UI.total:GetText():find("still to do", 1, true) ~= nil,
     UI.total:GetText())
 local shown = 0
 for _, row in ipairs(UI.questRows) do if row:IsShown() then shown = shown + 1 end end

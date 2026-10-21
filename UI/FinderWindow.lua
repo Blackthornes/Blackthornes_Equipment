@@ -107,7 +107,8 @@ local MOST_AHEAD = 10
 -- Text that fits
 --------------------------------------------------------------------------------
 
---- `text` cut down with "..." until it fits in `width` pixels at `size`.
+--- `text` cut back to the last whole word that fits in `width` pixels at
+-- `size`, with no "..." (the row's tooltip has the whole line).
 -- Measured, never guessed: the game's font runs wider than it looks.
 -- Colour codes take no room and are kept whole, so a cut line keeps its
 -- green zone, its source colour and its tags; a colour left open by the
@@ -116,7 +117,7 @@ function FinderUI.Fit(size, text, width)
     if Theme.TextWidth(size, text) <= width then return text end
 
     -- The text as pieces: a colour code, a colour end, or one character.
-    local pieces, visible = {}, 0
+    local pieces, chars = {}, {}
     local index = 1
     while index <= #text do
         local code = text:match("^|c%x%x%x%x%x%x%x%x", index)
@@ -131,13 +132,14 @@ function FinderUI.Fit(size, text, width)
             -- but a name with an accent is two bytes).
             local char = text:match("^[\194-\244][\128-\191]*", index) or text:sub(index, index)
             pieces[#pieces + 1] = { char, char = true }
-            visible = visible + 1
+            chars[#chars + 1] = char
             index = index + #char
         end
     end
 
-    -- The first `count` characters, with every code before them.
-    local function Prefix(count)
+    -- The first `count` characters, with every code before them, trailing
+    -- spaces and commas taken off and an open colour closed.
+    local function Line(count)
         local out, seen, open = {}, 0, false
         for _, piece in ipairs(pieces) do
             if piece.char then
@@ -150,15 +152,16 @@ function FinderUI.Fit(size, text, width)
             end
             out[#out + 1] = piece[1]
         end
-        local cut = table.concat(out):gsub("%s+$", "")
-        return cut, open
-    end
-    local function Line(count)
-        local cut, open = Prefix(count)
-        return cut .. "..." .. (open and "|r" or "")
+        local cut = table.concat(out)
+        local trimmed
+        repeat
+            trimmed = cut
+            cut = cut:gsub("[%s,;:]+$", ""):gsub("[%s,;:]+(|r)$", "%1")
+        until cut == trimmed
+        return cut .. (open and "|r" or "")
     end
 
-    local low, high = 0, visible
+    local low, high = 0, #chars
     while low < high do
         local mid = math.ceil((low + high) / 2)
         if Theme.TextWidth(size, Line(mid)) <= width then
@@ -166,6 +169,13 @@ function FinderUI.Fit(size, text, width)
         else
             high = mid - 1
         end
+    end
+    -- Back to the last word that ends whole, unless the cut already ends
+    -- one or no word fits whole.
+    if low < #chars and not chars[low + 1]:match("[%s,;:]") then
+        local back = low
+        while back > 0 and not chars[back]:match("%s") do back = back - 1 end
+        if back > 0 then low = back end
     end
     return Line(low)
 end
@@ -510,6 +520,13 @@ function FinderUI:Build()
         if ns.db then ns.db.finderMoved = true end
         FinderUI:SavePosition()
     end)
+
+    -- The house size grip under the bottom right corner (Widgets.WindowGrip),
+    -- saved as `finderScale`.
+    self.sizeGrip = Widgets.WindowGrip(frame, "finderScale", function()
+        if ns.db then ns.db.finderMoved = true end
+        FinderUI:SavePosition()
+    end)
     frame:EnableMouseWheel(true)
     frame:SetScript("OnMouseWheel", function(_, delta) FinderUI:ScrollBy(-delta) end)
 
@@ -683,7 +700,8 @@ function FinderUI:BuildListHead()
     local worn = Theme.CreateLabel(head, "small", "muted")
     worn:SetPoint("LEFT", title, "RIGHT", 12, 0)
     worn:SetPoint("RIGHT", sort, "LEFT", -12, 0)
-    worn:SetWordWrap(false)
+    -- A long name wraps onto a second line rather than being cut.
+    worn:SetWordWrap(true)
     self.wornLabel = worn
 end
 
@@ -1346,9 +1364,13 @@ function FinderUI:Present(found, why)
         self.empty:Hide()
     end
 
-    local text = L.Format("%d of %d upgrades shown for this slot", shown, group.total)
+    -- Only when the tick boxes hide some: how many more there are.
+    local hidden = math.max(0, (group.total or 0) - shown)
+    local text = hidden == 1 and L["Your filters hide 1 more."]
+        or hidden > 1 and L.Format("Your filters hide %d more.", hidden) or ""
     if found.waiting > 0 then
-        text = text .. Colored("muted", L.Format("  Still asking the server about %d items.", found.waiting))
+        local asking = L.Format("  Still asking the server about %d items.", found.waiting):gsub("^%s+", "")
+        text = text ~= "" and (text .. "  " .. Colored("muted", asking)) or Colored("muted", asking)
     end
     self.footer:SetText(text)
 

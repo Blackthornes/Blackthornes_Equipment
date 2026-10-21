@@ -1089,10 +1089,19 @@ the stat weights get the plate and close gem only, and so does the upgrade
 quest panel (asked 2026-10-04; its quest sits in a well too). The other
 panels that stay on screen while playing (tracker, toasts, the character
 sheet's slot list) keep `Theme.Window` and only share the restyled
-buttons. Equipment has no Window effects
-setting, so `Motion.Level()` is always full and the glint and the
-portrait's light always run; add the setting before anyone asks for them
-to stop.
+buttons. "Effects:" under EFFECTS on the General page (2026-10-21, as
+Farmer's) picks Full, Subtle or Off: `effectsLevel` (nil for Full, so
+nobody's windows changed; account wide, never rename it), read by
+`Motion.Level()`. Subtle drops the glint and the rise, Off holds still.
+
+Every window wears the house size grip (2026-10-21, as Farmer's):
+`Widgets.WindowGrip(frame, key, done)` scales it 50% to 150% from its top
+left, right-click is normal size. Saved in percent, account wide, never
+renamed: `windowScale`, `finderScale`, `weightsScale`,
+`dungeonQuestsScale`, `ignoredScale`, `settingsScale` (the quest panel
+had its own before). A new window gets one too. Finder lines cut to fit
+end on a whole word with no "..." (`FinderUI.Fit`); the row's tooltip
+has the whole line.
 
 List rows in the gear window and the finder are dark glass (the owner
 picked it 2026-10-10 over a gold glow that lit every row; Tradeskills'

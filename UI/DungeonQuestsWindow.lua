@@ -136,6 +136,12 @@ function DQUI:Build()
         self:StopMovingOrSizing()
         DQUI:SavePosition()
     end)
+
+    -- The house size grip under the bottom right corner (Widgets.WindowGrip),
+    -- saved as `dungeonQuestsScale`.
+    self.sizeGrip = Widgets.WindowGrip(frame, "dungeonQuestsScale", function()
+        DQUI:SavePosition()
+    end)
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, NAME) end
     self.frame = frame
     self.dungeonOffset, self.questOffset = 0, 0
@@ -417,7 +423,8 @@ end
 
 function DQUI:Fill()
     local data = self.data
-    self.total:SetText(L.Format("%d of %d done", data.done, data.all))
+    local toDo = math.max(0, data.all - data.done)
+    self.total:SetText(toDo == 1 and L["1 still to do"] or L.Format("%d still to do", toDo))
     self.share = data.all > 0 and data.done / data.all or 0
     self:FillBar()
     self:FillDungeons()

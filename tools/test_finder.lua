@@ -270,7 +270,7 @@ suite.check("the heading says what is worn", UI.wornLabel:GetText():find("You we
 suite.check("the gain shows", UI.rows[1].gain:GetText() == "+200%", UI.rows[1].gain:GetText())
 suite.check("the source line names the quest", UI.rows[1].source:GetText():find("Wolves of the Forest", 1, true) ~= nil,
     UI.rows[1].source:GetText())
-suite.check("the footer counts them", UI.footer:GetText() == "2 of 2 upgrades shown for this slot",
+suite.check("nothing hidden, the footer says nothing", UI.footer:GetText() == "",
     UI.footer:GetText())
 
 local function Badge(key)
@@ -308,7 +308,7 @@ UI:PickSlot(5)
 Box("quest"):GetScript("OnClick")(Box("quest"))
 suite.check("unticking Quest is kept", ns.db.finderSourcesOff.quest == true)
 suite.check("and leaves the vendor's chest", UI.rows[1].pick.itemID == 1001 and not UI.rows[2]:IsShown())
-suite.check("the footer says how many are hidden", UI.footer:GetText() == "1 of 2 upgrades shown for this slot",
+suite.check("the footer says how many are hidden", UI.footer:GetText() == "Your filters hide 1 more.",
     UI.footer:GetText())
 Box("quest"):GetScript("OnClick")(Box("quest"))
 suite.check("ticked again, both", ns.db.finderSourcesOff.quest == nil and UI.rows[2]:IsShown())
@@ -325,17 +325,19 @@ UI:Refresh()
 
 -- Long source lines are cut to fit, never run past the edge.
 local fitted = UI.Fit("tiny", ("x"):rep(200), 120)
-suite.check("a long line is cut", fitted:sub(-3) == "..." and #fitted * 6 <= 120, fitted)
+suite.check("a long line is cut", #fitted * 6 <= 120 and not fitted:find("...", 1, true), fitted)
 suite.check("a short line is left alone", UI.Fit("tiny", "short", 120) == "short")
+local words = UI.Fit("tiny", "Vendor in Elwynn Forest, Quest in Westfall", 120)
+suite.check("a cut ends on a whole word", words == "Vendor in Elwynn", words)
 local coloured = "|cff33ff33Elwynn Forest|r, " .. ("x"):rep(200)
 local cut = UI.Fit("tiny", coloured, 120)
-suite.check("a cut line keeps its colours", cut:find("|cff33ff33Elwynn Forest|r", 1, true) == 1, cut)
+suite.check("a cut line keeps its colours", cut == "|cff33ff33Elwynn Forest|r", cut)
 local openCut = UI.Fit("tiny", "|cffff8800" .. ("y"):rep(200) .. "|r", 120)
-suite.check("a colour the cut leaves open is closed", openCut:sub(-5) == "...|r"
-    and openCut:find("|cffff8800", 1, true) == 1, openCut)
+suite.check("a colour the cut leaves open is closed", openCut:sub(-2) == "|r"
+    and openCut:find("|cffff8800", 1, true) == 1 and not openCut:find("...", 1, true), openCut)
 local accented = UI.Fit("tiny", ("\195\169"):rep(100), 60)
-suite.check("never half a character", accented:gsub("%.%.%.$", ""):match("^[\195\169]*$") ~= nil
-    and #accented:gsub("%.%.%.$", "") % 2 == 0, accented)
+suite.check("never half a character", accented:match("^[\195\169]*$") ~= nil
+    and #accented % 2 == 0, accented)
 
 -- One slot with many upgrades scrolls: the list is every one, not the best few.
 for i = 1, 14 do

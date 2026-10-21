@@ -137,6 +137,12 @@ function UI:Build()
         UI:SavePosition()
     end)
 
+    -- The house size grip under the bottom right corner (Widgets.WindowGrip),
+    -- saved as `windowScale`.
+    self.sizeGrip = Widgets.WindowGrip(frame, "windowScale", function()
+        UI:SavePosition()
+    end)
+
     if type(UISpecialFrames) == "table" then
         table.insert(UISpecialFrames, "BlackthornesEquipmentWindow")
     end

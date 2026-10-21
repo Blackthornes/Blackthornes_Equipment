@@ -45,6 +45,16 @@ local controls = SettingsUI.controls
 -- The spec stepper.
 suite.check("the spec starts on Auto", controls.spec:GetValue() == 1)
 suite.check("which reads Auto", controls.spec.text:GetText() == "Auto", controls.spec.text:GetText())
+
+-- Effects: Full until picked, so nobody's windows change.
+suite.check("effects start at Full", ns.Motion.Level() == "full" and controls.effects.text:GetText() == "Full",
+    controls.effects.text:GetText())
+controls.effects:SetValue(2)
+suite.check("Subtle is kept", ns.db.effectsLevel == "subtle" and ns.Motion.Level() == "subtle")
+controls.effects:SetValue(3)
+suite.check("Off is kept", ns.db.effectsLevel == "off" and ns.Motion.Level() == "off")
+controls.effects:SetValue(1)
+suite.check("Full saves nothing", ns.db.effectsLevel == nil and ns.Motion.Level() == "full")
 suite.check("and says what Auto means now",
     SettingsUI.specRow.hint:GetText():find("Beast Mastery until your talents", 1, true),
     SettingsUI.specRow.hint:GetText())

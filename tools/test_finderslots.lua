@@ -88,7 +88,7 @@ suite.check("the slot counts them", Button(5).count:GetText() == "4")
 suite.check("the rings line counts both rings' upgrades once", Button(11).count:GetText() == "2",
     Button(11).count:GetText())
 suite.check("a slot with nothing counts 0", Button(1).count:GetText() == "0")
-suite.check("the footer counts the slot's", UI.footer:GetText() == "4 of 4 upgrades shown for this slot",
+suite.check("nothing hidden, the footer says nothing", UI.footer:GetText() == "",
     UI.footer:GetText())
 suite.check("the heading names the slot", UI.listTitle:GetText() == "Chest")
 suite.check("and the order", UI.sortLabel:GetText():find("Best first", 1, true) ~= nil)
@@ -98,7 +98,7 @@ Box("raid"):GetScript("OnClick")(Box("raid"))
 suite.check("unticking Raids leaves the raid drop out", Listed() == "1002,1001,1004", Listed())
 suite.check("and is kept", ns.db.finderSourcesOff.raid == true and not ns.db.finderSourcesOff.dungeon)
 suite.check("the count follows", Button(5).count:GetText() == "3")
-suite.check("the footer says how many are left out", UI.footer:GetText() == "3 of 4 upgrades shown for this slot")
+suite.check("the footer says how many are left out", UI.footer:GetText() == "Your filters hide 1 more.")
 Box("dungeon"):GetScript("OnClick")(Box("dungeon"))
 suite.check("unticking Dungeons too leaves the vendors'", Listed() == "1001,1004", Listed())
 Box("raid"):GetScript("OnClick")(Box("raid"))

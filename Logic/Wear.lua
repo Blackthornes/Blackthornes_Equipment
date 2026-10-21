@@ -49,11 +49,15 @@ function Wear.Find(link)
     if sameItem then return sameItem[1], sameItem[2] end
 end
 
+-- Said on its own, as a whole sentence, when the game won't let an addon
+-- put gear on.
+Wear.NO_EQUIP = L["Couldn't put it on. Try it from your bags."]
+
 --- Can `link` be put on with a click now? True, or false and why.
 function Wear:Can(link)
     if InCombat() then return false, L["you're in combat, so put it on after the fight"] end
     if not (Global("C_Item.EquipItemByName") or Global("EquipItemByName")) then
-        return false, L["this game client can't equip from an addon"]
+        return false, Wear.NO_EQUIP
     end
     if not Wear.Find(link) then return false, L["it's not in your bags"] end
     local ok, result = pcall(ns.Compare.JudgeCarried, ns.Compare, link)
@@ -69,7 +73,11 @@ end
 function Wear:PutOn(link)
     local can, why, result = self:Can(link)
     if not can then
-        ns.Print(L.Format("can't put that on: %s.", why))
+        if why == Wear.NO_EQUIP then
+            ns.Print(why)
+        else
+            ns.Print(L.Format("can't put that on: %s.", why))
+        end
         return false, why
     end
     local equip = Global("C_Item.EquipItemByName") or Global("EquipItemByName")

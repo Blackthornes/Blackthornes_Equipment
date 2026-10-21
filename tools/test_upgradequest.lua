@@ -113,7 +113,7 @@ S.ITEMS[1002].g = { 10 }
 suite.check("a given reward is got, not chosen", StepTexts():find("Hand it in to get item:1002", 1, true), StepTexts())
 S.ITEMS[1002].g = nil
 suite.check("without it, a reward is one of a choice", ns.Finder.Given(1002, 10) == false)
-suite.check("the panel counts the steps", Panel.progress:GetText() == "Step 2 of 5", Panel.progress:GetText())
+suite.check("the panel counts the steps", Panel.progress:GetText() == "4 steps left", Panel.progress:GetText())
 suite.check("the step to do now is lit", Panel.steps[2].now and not Panel.steps[1].now)
 suite.check("steps to come are numbered", Panel.steps[3].number:GetText() == "3.")
 suite.check("Show on map is offered", Panel.mapButton:IsShown())
@@ -122,7 +122,7 @@ suite.check("Show on map is offered", Panel.mapButton:IsShown())
 onQuest = true
 Quest:Update()
 suite.check("taking the quest ticks off picking it up", select(2, Quest:Steps()) == 3)
-suite.check("the panel follows", Panel.progress:GetText() == "Step 3 of 5", Panel.progress:GetText())
+suite.check("the panel follows", Panel.progress:GetText() == "3 steps left", Panel.progress:GetText())
 ready = true
 suite.check("its objectives done", select(2, Quest:Steps()) == 4)
 onQuest, ready, turnedIn = false, false, true

@@ -241,7 +241,12 @@ function ArrowUI:ShowTooltip(owner)
     local target = state and state.target
     if target and target.text then GameTooltip:AddLine(target.text, 1, 1, 1, true) end
     if state and state.count and state.count > 1 then
-        GameTooltip:AddLine(L.Format("Place %d of %d", state.index or 1, state.count), 1, 1, 1)
+        local after = state.count - (state.index or 1)
+        if after == 1 then
+            GameTooltip:AddLine(L["1 more place after this one"], 1, 1, 1)
+        elseif after > 1 then
+            GameTooltip:AddLine(L.Format("%d more places after this one", after), 1, 1, 1)
+        end
     end
     GameTooltip:AddLine(L["Click for the next tab's upgrade quest."], 0.9, 0.9, 0.9)
     GameTooltip:AddLine(L["Right-click for the next place."], 0.9, 0.9, 0.9)
