@@ -17,6 +17,11 @@ Two kinds of reading, both from the owner's own game, both read only:
   `learnedDungeonQuests` table (Logic/DungeonQuests.lua), which adds the
   side, who gives it and where.
 
+Before both, tools/forever_facts.json: dungeon quests checked by hand
+before anyone here met them in game, each kept only when the client's
+QuestV2 table has its ID. The game's own readings fill in and win over
+them.
+
 Nothing about the player or their characters is copied. Never commit the
 cache or a save, and never edit the output by hand.
 
@@ -43,7 +48,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lupa import lua51  # noqa: E402
 
 import make_sources as ms  # noqa: E402
-from forever_drops import FOREVER_DUNGEONS  # noqa: E402
+from forever_drops import FOREVER_DUNGEONS, load_facts  # noqa: E402
 from forever_npcs import READ_SAVE, lua_string, num, run_file  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -143,6 +148,27 @@ def from_cache(records, areas):
     return found
 
 
+def table_quests(tables):
+    """Every quest ID in the client's QuestV2 table."""
+    with open(os.path.join(tables, "QuestV2.csv"), encoding="utf-8") as f:
+        return {int(r["ID"]) for r in csv.DictReader(f)}
+
+
+def from_facts(facts, keys, known):
+    """The quests in tools/forever_facts.json the client has, field by field."""
+    fields = ("dungeon", "title", "level", "min", "reward", "giver", "zone", "x", "y", "side")
+    quests = {qid: {k: q.get(k) for k in fields} for qid, q in (facts.get("quests") or {}).items()
+              if isinstance(q, dict)}
+    found = rows_from(quests, keys)
+    for qid, row in found.items():
+        classes = (facts["quests"].get(str(qid)) or {}).get("classes")
+        if isinstance(classes, int) and classes > 0:
+            row["classes"] = classes
+        if not row.get("level") and row.get("min"):
+            row["level"] = row["min"]
+    return {qid: row for qid, row in found.items() if qid in known}
+
+
 def read_save(lua, path):
     with open(path, encoding="utf-8") as f:
         db, why = lua.eval(READ_SAVE)(f.read())
@@ -192,7 +218,7 @@ def rows_from(learned, keys):
             if raw["side"] in ("A", "H"):
                 row["side"] = str(raw["side"])
             found[int(qid)] = row
-        except (TypeError, ValueError, KeyError):
+        except (TypeError, ValueError, KeyError, AttributeError):
             print(f"skipped a row that could not be read: {qid}", file=sys.stderr)
     return found
 
@@ -270,6 +296,7 @@ def main(argv):
         for qid, row in found.items():
             rows[qid] = merge(rows[qid], row) if qid in rows else row
 
+    add(from_facts(load_facts(), keys, table_quests(args.tables)))
     if args.cache:
         areas = area_maps(args.tables, keys)
         for path in args.cache:

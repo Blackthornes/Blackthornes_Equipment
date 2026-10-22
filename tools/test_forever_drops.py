@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lupa import lua51  # noqa: E402
-from forever_drops import collect, render  # noqa: E402
+from forever_drops import FACTS, collect, load_facts, render  # noqa: E402
 
 checks = 0
 failures = 0
@@ -70,7 +70,38 @@ lua.execute(text.replace("local _, ns = ...", "local ns = ..."), ns)
 expect("loaded, the Forever dungeon is in Sources.DUNGEONS", ns.Sources.DUNGEONS["2999"][1] == "Ruins of Lordaeron")
 expect("and its drop in Sources.FOREVER", ns.Sources.FOREVER[200][1][2] == "2999")
 
+# Facts known before anyone here looted them (tools/forever_facts.json).
+sources = lua.execute("""
+    return {
+        DUNGEONS = { ["43"] = { "Wailing Caverns", 17, 24, "The Barrens", "" } },
+        BOSSES = { [1] = { "Mutanus the Devourer", "43" } },
+        ITEMS = { [500] = { 1, 20, 0, 0, 0, d = { 3654, 10 } }, [501] = { 1, 20, 0, 0, 0, q = { 1 } } },
+    }
+""")
+facts = {
+    "dungeons": {"3065": {"low": 13, "high": 18}, "2999": {"low": 15, "high": 20}},
+    "loot": {
+        "3065": {"Magmatus": [700, 701]},
+        "2999": {"Scourge Ghoul": [200], "The Baron": [702]},
+        "43": {"Mutanus the Devourer": [500, 501]},
+        "9999": {"Nobody": [703]},
+    },
+}
+drops, added = collect(sources, items, facts, known={200, 500, 501, 700, 702, 703})
+expect("a fact's boss drop is added with no rate", drops[700] == {("Magmatus", "3065"): 0})
+expect("an item the client lacks is left out", 701 not in drops)
+expect("a fact never replaces what Farmer saw", drops[200][("Scourge Ghoul", "2999")] == 3)
+expect("a new boss in a looted dungeon is added", drops[702] == {("The Baron", "2999"): 0})
+expect("a dungeon only the facts know is added, at the known levels",
+       added["3065"][1:3] == (13, 18) and added["3065"][3] == "Ironforge")
+expect("the known range beats the looted mobs' levels", added["2999"][1:3] == (15, 20))
+expect("a Classic drop Classic already lists is not added", 500 not in drops)
+expect("new gear at a Classic boss is", drops[501] == {("Mutanus the Devourer", "43"): 0})
+expect("a dungeon the addon does not know is skipped", 703 not in drops)
+
 nothing, none = collect(sources, lua.execute("return {}"))
+expect("the facts file is in the repo and names no site",
+       load_facts()["dungeons"] and "http" not in open(FACTS, encoding="utf-8").read())
 expect("with no Forever dungeon seen, nothing is added", none == {} and "DUNGEONS[" not in render(nothing, none))
 
 print(f"{checks - failures}/{checks} checks passed")

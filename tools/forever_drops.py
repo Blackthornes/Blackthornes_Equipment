@@ -22,15 +22,27 @@ is written into Sources.DUNGEONS too, with its level range from the levels
 of the mobs Farmer looted there (1 to 60 when none could be read). A new
 Forever dungeon needs one line in FOREVER_DUNGEONS.
 
+Some of what Forever changed is known before anyone here loots it: a new
+dungeon's level range and door, and which boss drops which new gear.
+tools/forever_facts.json holds those facts, each checked by hand, item IDs
+checked against the Forever client's game tables (pass --tables to check
+them again). A fact never replaces what Farmer saw: Farmer's rate wins,
+and a fact's drop has no rate (0). For Classic's dungeons only gear
+Classic's data never had as a drop is added.
+
 Everything Farmer saw is kept, gear or not: the game itself says what an
 item is, and the finder only judges what can be worn. Item stats are never
 copied from anywhere: the finder always reads them from the game, so gear
 whose stats Forever changed is judged as it is now.
 
 Options:
-    --stdout   print the file instead of writing it
+    --stdout          print the file instead of writing it
+    --tables <folder> the Forever client's game tables: leave out a fact's
+                      item the tables do not have
 """
 
+import csv
+import json
 import os
 import re
 import sys
@@ -39,6 +51,7 @@ from lupa import lua51
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT = os.path.join(ROOT, "Data", "ForeverDrops.lua")
+FACTS = os.path.join(ROOT, "tools", "forever_facts.json")
 
 
 # Forever's own dungeons and raids, by map ID: name as the game gives it
@@ -53,10 +66,10 @@ FOREVER_DUNGEONS = {
     2817: ("Starfall Barrow Den", None, False),
     2875: ("Karazhan Crypts", "Deadwind Pass", False),
     2902: ("The Scarab Dais", None, False),
-    2959: ("City of Dalaran", None, False),
+    2959: ("City of Dalaran", "Alterac Mountains", False),
     2998: ("Excavation Site: Wetlands", "Wetlands", False),
     2999: ("Ruins of Lordaeron", "Tirisfal Glades", False),
-    3065: ("The Hall of Thanes", None, False),
+    3065: ("The Hall of Thanes", "Ironforge", False),
     3109: ("Manor Mistmantle", None, False),
     2720: ("The Searing Basin", None, False),
     2789: ("The Tainted Scar", "Blasted Lands", True),
@@ -99,9 +112,27 @@ def load_harvest(lua, farmer):
     return lua.eval("harvested")
 
 
-def collect(sources, items):
+def load_facts(path=FACTS):
+    """tools/forever_facts.json, or nothing when it is missing."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def table_items(tables):
+    """Every item ID in the client's Item table."""
+    with open(os.path.join(tables, "Item.csv"), encoding="utf-8") as f:
+        return {int(r["ID"]) for r in csv.DictReader(f)}
+
+
+def collect(sources, items, facts=None, known=None):
     """What dungeons and raids were seen dropping on Forever, and the Forever
-    dungeons among them: ({itemID: {(mob, key): chance}}, {key: row})."""
+    dungeons among them: ({itemID: {(mob, key): chance}}, {key: row}).
+    `facts` adds what tools/forever_facts.json knows; `known`, when given,
+    is the item IDs the client has, and a fact's item outside it is left
+    out."""
+    facts = facts or {}
     dungeons = {}          # plain name -> key
     for key in sources.DUNGEONS:
         name = sources.DUNGEONS[key][1]
@@ -142,11 +173,34 @@ def collect(sources, items):
             chance = float(source.chance) if source.chance else 0
             drops.setdefault(int(item.id), {})[(mob, key)] = chance
 
+    forever_keys = set(forever.values())
+    for key, by_boss in (facts.get("loot") or {}).items():
+        base = re.sub(r"[A-Za-z]+$", "", key)
+        if base not in forever_keys and base not in sources.DUNGEONS:
+            continue
+        for mob, ids in by_boss.items():
+            where = key if base in forever_keys else bosses.get((plain(mob), base), key)
+            for itemID in ids:
+                itemID = int(itemID)
+                if known is not None and itemID not in known:
+                    continue
+                classic = sources.ITEMS and sources.ITEMS[itemID]
+                if base not in forever_keys and classic and classic.d:
+                    continue
+                if base in forever_keys:
+                    levels.setdefault(base, [None, None])
+                seen = drops.setdefault(itemID, {})
+                if not any(plain(m) == plain(mob) and re.sub(r"[A-Za-z]+$", "", k) == base
+                           for m, k in seen):
+                    seen[(mob, where)] = 0
+
+    places = facts.get("dungeons") or {}
     added = {}
     for key, (low, high) in levels.items():
         name, door, raid = FOREVER_DUNGEONS[int(key)]
-        low = low or LOWEST
-        high = max(high or HIGHEST, low)
+        place = places.get(key) or {}
+        low = place.get("low") or low or LOWEST
+        high = max(place.get("high") or high or HIGHEST, low)
         added[key] = (name, low, high, door or name, raid)
     return drops, added
 
@@ -161,9 +215,10 @@ def render(drops, added):
         "-- What dungeon and raid mobs have been seen dropping on WoW: Forever.",
         "--",
         "-- Generated by tools/forever_drops.py from Blackthornes Farmer's loot",
-        "-- records (its Data/Data_Harvested.lua). Do not edit by hand: the next",
-        "-- import overwrites this file. Each item lists { mob, dungeon, drop chance %",
-        "-- (0 when too few corpses were counted for a rate) }.",
+        "-- records (its Data/Data_Harvested.lua) and tools/forever_facts.json. Do",
+        "-- not edit by hand: the next import overwrites this file. Each item lists",
+        "-- { mob, dungeon, drop chance % (0 when too few corpses were counted for a",
+        "-- rate, or no one here has looted it yet) }.",
         "",
         "local _, ns = ...",
         "",
@@ -171,8 +226,9 @@ def render(drops, added):
     if added:
         out += [
             "-- Dungeons and raids Forever added, laid beside Classic's: name, levels",
-            "-- of the mobs looted there, the zone the door is in (its own name when",
-            "-- not known), \"\" for both sides, and true for a raid.",
+            "-- (the known range, else those of the mobs looted there), the zone the",
+            "-- door is in (its own name when not known), \"\" for both sides, and true",
+            "-- for a raid.",
         ]
         for key in sorted(added, key=int):
             name, low, high, door, raid = added[key]
@@ -191,11 +247,17 @@ def render(drops, added):
 
 
 def main(argv):
+    tables = None
+    if "--tables" in argv:
+        at = argv.index("--tables")
+        tables = argv[at + 1]
+        argv = argv[:at] + argv[at + 2:]
     farmer = next((a for a in argv if not a.startswith("--")),
                   os.path.join(os.path.dirname(ROOT), "Blackthornes_Farmer"))
     lua = lua51.LuaRuntime(unpack_returned_tuples=True)
     sources = load_sources(lua)
-    drops, added = collect(sources, load_harvest(lua, farmer))
+    known = table_items(tables) if tables else None
+    drops, added = collect(sources, load_harvest(lua, farmer), load_facts(), known)
     text = render(drops, added)
 
     if "--stdout" in argv:

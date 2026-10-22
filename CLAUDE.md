@@ -404,6 +404,23 @@ harvest up to date from his saved data first (he attaches it; see Farmer's
 `tools/harvest_import.py`), then rerun this. Stats always come from the
 game, never from data, so a Forever stat change needs nothing.
 
+Facts known before anyone here loots them (the owner said pull them in,
+2026-10-22): `tools/forever_facts.json` holds Forever dungeons' level
+ranges, which boss drops which new gear (by item ID) and dungeon quests
+(by quest ID, with side, giver, spot and reward). Each was looked up by
+hand, one at a time, and kept only when the Forever client's game tables
+have its ID (`--tables` checks items again; `forever_dungeon_quests.py`
+checks quests against QuestV2). Never name where a fact came from, and
+never fill it from another author's addon. `forever_drops.py` lays the
+loot in at rate 0 (Farmer's own rate always wins; at Classic's
+dungeons only gear Classic never listed as a drop) and the ranges on the
+`Sources.DUNGEONS` row; `forever_dungeon_quests.py` reads the quests
+first, so the game's own readings win. `DQ.Dungeon` takes a Forever
+dungeon's levels, and a door its place lacks, from that row. Hall of
+Thanes' door is Ironforge and City of Dalaran's Alterac Mountains
+(`FOREVER_DUNGEONS`). Tested in `tools/test_forever_drops.py`,
+`tools/test_forever_dungeon_quests.py` and `tools/test_dungeonquests.lua`.
+
 Forever's own dungeons and raids (the owner asked 2026-10-14, after
 "can equipment learn drops inside a new dungeon?"): Classic's list in
 `Sources.DUNGEONS` lacks them, so their drops used to be thrown away.

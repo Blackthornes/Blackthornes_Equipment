@@ -1,0 +1,1756 @@
+{
+ "dungeons": {
+  "2959": {
+   "high": 33,
+   "low": 28
+  },
+  "2998": {
+   "high": 29,
+   "low": 24
+  },
+  "2999": {
+   "high": 20,
+   "low": 15
+  },
+  "3065": {
+   "high": 18,
+   "low": 13
+  }
+ },
+ "loot": {
+  "189Graveyard": {
+   "Bloodmage Thalnos": [
+    274291
+   ]
+  },
+  "189Library": {
+   "Houndmaster Loksey": [
+    274292
+   ]
+  },
+  "2959": {
+   "Arcane Anomaly": [
+    273031,
+    273034,
+    273035
+   ],
+   "Arcanic Enigma": [
+    273043,
+    273044,
+    273045
+   ],
+   "Atrexis the Grave Knight": [
+    273032,
+    273033,
+    273036
+   ],
+   "Fel Ancient": [
+    273037,
+    273038,
+    273039
+   ],
+   "Lyn the Ignored": [
+    273053,
+    273054,
+    273055
+   ],
+   "Mana Devourer": [
+    273040,
+    273041,
+    273042
+   ],
+   "Shade of the Archmage": [
+    273049,
+    273051,
+    273052,
+    273103
+   ],
+   "Unstable Sentinel": [
+    273046,
+    273047,
+    273048,
+    273099
+   ]
+  },
+  "2998": {
+   "Relic Guardian": [
+    273028,
+    273029,
+    273030,
+    273097
+   ],
+   "Saltspine": [
+    273022,
+    273023,
+    273024
+   ],
+   "Shadetooth": [
+    273025,
+    273026,
+    273027,
+    273106
+   ]
+  },
+  "2999": {
+   "Bjork": [
+    271209,
+    271210,
+    271217
+   ],
+   "Rath'mael": [
+    271213,
+    271214,
+    271215,
+    273085
+   ],
+   "The Abandoned": [
+    271207,
+    271208,
+    271216
+   ],
+   "The Baron": [
+    271204,
+    271205,
+    271206
+   ],
+   "Viktor the Vile": [
+    271211,
+    271212
+   ],
+   "Witherfang": [
+    271201,
+    271202,
+    271203
+   ]
+  },
+  "3065": {
+   "Durgen Dirgehammer": [
+    270256,
+    270260,
+    270261
+   ],
+   "Faldrim Anvilmar": [
+    270227,
+    271096,
+    271097
+   ],
+   "Magmatus": [
+    270230,
+    270231,
+    271095
+   ],
+   "Plunder": [
+    270228,
+    271098
+   ]
+  },
+  "33": {
+   "Baron Silverlaine": [
+    273637
+   ],
+   "Commander Springvale": [
+    273105,
+    273643
+   ],
+   "Fenrus the Devourer": [
+    273646
+   ],
+   "Razorclaw the Butcher": [
+    273096
+   ],
+   "Rethilgore": [
+    273457
+   ],
+   "Wolf Master Nandos": [
+    273647
+   ]
+  },
+  "34": {
+   "Bazil Thredd": [
+    273824,
+    273825,
+    273827,
+    273829
+   ],
+   "Dextren Ward": [
+    273817,
+    273819,
+    273820
+   ],
+   "Hamhock": [
+    273810,
+    273811
+   ],
+   "Kam Deepfury": [
+    273807,
+    273808
+   ],
+   "Targorr the Dread": [
+    273804,
+    273805,
+    273806
+   ]
+  },
+  "36": {
+   "Cookie": [
+    273102,
+    273298
+   ],
+   "Gilnid": [
+    273086,
+    273297
+   ],
+   "Mr. Smite": [
+    284715
+   ],
+   "Rhahk'Zor": [
+    273289
+   ],
+   "Sneed": [
+    273092,
+    273293
+   ]
+  },
+  "389": {
+   "Bazzalan": [
+    273003,
+    273005,
+    273007
+   ],
+   "Oggleflint": [
+    272996,
+    272998,
+    272999
+   ]
+  },
+  "43": {
+   "Kresh": [
+    273084
+   ],
+   "Lady Anacondra": [
+    273088,
+    273098
+   ],
+   "Lord Pythas": [
+    273089
+   ],
+   "Lord Serpentis": [
+    273087
+   ]
+  },
+  "47": {
+   "Agathelos the Raging": [
+    274160
+   ],
+   "Aggem Thorncurse": [
+    274158
+   ],
+   "Overlord Ramtusk": [
+    274161
+   ],
+   "Roogug": [
+    274149,
+    274152,
+    274155
+   ]
+  },
+  "48": {
+   "Gelihast": [
+    273141,
+    273840
+   ],
+   "Ghamoo-ra": [
+    273839
+   ],
+   "Lorgus Jett": [
+    273841,
+    273842,
+    273843
+   ]
+  },
+  "90": {
+   "Crowd Pummeler 9-60": [
+    274049,
+    274068
+   ],
+   "Grubbis": [
+    274043
+   ]
+  }
+ },
+ "quests": {
+  "1013": {
+   "dungeon": "33",
+   "giver": "Keeper Bel'dugur",
+   "level": 26,
+   "min": 16,
+   "reward": 6335,
+   "side": "H",
+   "title": "The Book of Ur",
+   "x": 54,
+   "y": 54.6,
+   "zone": "Undercity"
+  },
+  "1014": {
+   "dungeon": "33",
+   "giver": "Dalar Dawnweaver",
+   "level": 27,
+   "min": 18,
+   "reward": 6414,
+   "side": "H",
+   "title": "Arugal Must Die",
+   "x": 44.2,
+   "y": 39.8,
+   "zone": "Silverpine Forest"
+  },
+  "1048": {
+   "dungeon": "189",
+   "giver": "Varimathras",
+   "level": 42,
+   "min": 33,
+   "reward": 6802,
+   "side": "H",
+   "title": "Into The Scarlet Monastery",
+   "x": 56.2,
+   "y": 92.4,
+   "zone": "Undercity"
+  },
+  "1049": {
+   "dungeon": "189",
+   "giver": "Sage Truthseeker",
+   "level": 38,
+   "min": 28,
+   "reward": 7747,
+   "side": "H",
+   "title": "Compendium of the Fallen",
+   "x": 34.4,
+   "y": 47.2,
+   "zone": "Thunder Bluff"
+  },
+  "1050": {
+   "dungeon": "189",
+   "giver": "Librarian Mae Paledust",
+   "level": 38,
+   "min": 28,
+   "reward": 7746,
+   "side": "A",
+   "title": "Mythology of the Titans",
+   "x": 74.6,
+   "y": 12.4,
+   "zone": "Ironforge"
+  },
+  "1051": {
+   "dungeon": "189",
+   "giver": "Vorrel Sengutz",
+   "level": 33,
+   "min": 25,
+   "reward": 7750,
+   "side": "H",
+   "title": "Vorrel's Revenge",
+   "zone": "Scarlet Monastery"
+  },
+  "1053": {
+   "dungeon": "189",
+   "giver": "Raleigh the Devout",
+   "level": 40,
+   "min": 34,
+   "reward": 6829,
+   "side": "A",
+   "title": "In the Name of the Light",
+   "x": 51.5,
+   "y": 58.4,
+   "zone": "Hillsbrad Foothills"
+  },
+  "1098": {
+   "dungeon": "33",
+   "giver": "High Executor Hadrec",
+   "level": 25,
+   "min": 18,
+   "reward": 3324,
+   "side": "H",
+   "title": "Deathstalkers in Shadowfang",
+   "x": 43.4,
+   "y": 40.9,
+   "zone": "Silverpine Forest"
+  },
+  "1101": {
+   "dungeon": "47",
+   "giver": "Falfindel Waywarder",
+   "level": 34,
+   "min": 29,
+   "reward": 4197,
+   "side": "A",
+   "title": "The Crone of the Kraul",
+   "x": 89.6,
+   "y": 46.6,
+   "zone": "Feralas"
+  },
+  "1102": {
+   "dungeon": "47",
+   "giver": "Auld Stonespire",
+   "level": 34,
+   "min": 29,
+   "reward": 274084,
+   "side": "H",
+   "title": "A Vengeful Fate",
+   "x": 36.2,
+   "y": 59.8,
+   "zone": "Thunder Bluff"
+  },
+  "1109": {
+   "dungeon": "47",
+   "giver": "Master Apothecary Faranell",
+   "level": 33,
+   "min": 30,
+   "side": "H",
+   "title": "Going, Going, Guano!",
+   "x": 48.6,
+   "y": 69.4,
+   "zone": "Undercity"
+  },
+  "1113": {
+   "dungeon": "189",
+   "giver": "Master Apothecary Faranell",
+   "level": 33,
+   "min": 30,
+   "side": "H",
+   "title": "Hearts of Zeal",
+   "x": 48.6,
+   "y": 69.4,
+   "zone": "Undercity"
+  },
+  "1139": {
+   "dungeon": "70",
+   "giver": "Advisor Belgrum",
+   "level": 45,
+   "min": 35,
+   "side": "A",
+   "title": "The Lost Tablets of Will",
+   "x": 77.2,
+   "y": 10,
+   "zone": "Ironforge"
+  },
+  "1142": {
+   "dungeon": "47",
+   "giver": "Heralath Fallowbrook",
+   "level": 30,
+   "min": 25,
+   "reward": 6751,
+   "side": "A",
+   "title": "Mortality Wanes",
+   "zone": "Razorfen Kraul"
+  },
+  "1144": {
+   "dungeon": "47",
+   "giver": "Willix the Importer",
+   "level": 30,
+   "min": 22,
+   "reward": 6748,
+   "side": "",
+   "title": "Willix the Importer",
+   "zone": "Razorfen Kraul"
+  },
+  "1160": {
+   "dungeon": "189",
+   "giver": "Parqual Fintallas",
+   "level": 36,
+   "min": 26,
+   "side": "H",
+   "title": "Test of Lore",
+   "x": 57.6,
+   "y": 65.6,
+   "zone": "Undercity"
+  },
+  "1198": {
+   "dungeon": "48",
+   "giver": "Dawnwatcher Shaedlass",
+   "level": 24,
+   "min": 18,
+   "side": "A",
+   "title": "In Search of Thaelrid",
+   "x": 55.4,
+   "y": 24.6,
+   "zone": "Darnassus"
+  },
+  "1199": {
+   "dungeon": "48",
+   "giver": "Argent Guard Manados",
+   "level": 25,
+   "min": 20,
+   "reward": 6998,
+   "side": "A",
+   "title": "Twilight Falls",
+   "x": 55.2,
+   "y": 23.6,
+   "zone": "Darnassus"
+  },
+  "1200": {
+   "dungeon": "48",
+   "giver": "Argent Guard Thaelrid",
+   "level": 27,
+   "min": 18,
+   "reward": 7001,
+   "side": "A",
+   "title": "Blackfathom Villainy",
+   "zone": "Blackfathom Deeps"
+  },
+  "1221": {
+   "dungeon": "47",
+   "giver": "Mebok Mizzyrix",
+   "level": 26,
+   "min": 20,
+   "reward": 6755,
+   "side": "",
+   "title": "Blueleaf Tubers",
+   "x": 62.4,
+   "y": 37.6,
+   "zone": "The Barrens"
+  },
+  "1275": {
+   "dungeon": "48",
+   "giver": "Gershala Nightwhisper",
+   "level": 24,
+   "min": 18,
+   "reward": 7003,
+   "side": "A",
+   "title": "Researching the Corruption",
+   "x": 38.3,
+   "y": 43,
+   "zone": "Darkshore"
+  },
+  "1360": {
+   "dungeon": "70",
+   "giver": "Krom Stoutarm",
+   "level": 43,
+   "min": 33,
+   "side": "A",
+   "title": "Reclaimed Treasures",
+   "x": 74.4,
+   "y": 9.4,
+   "zone": "Ironforge"
+  },
+  "1486": {
+   "dungeon": "43",
+   "giver": "Nalpak",
+   "level": 17,
+   "min": 13,
+   "reward": 918,
+   "side": "",
+   "title": "Deviate Hides",
+   "x": 46,
+   "y": 35.7,
+   "zone": "The Barrens"
+  },
+  "1487": {
+   "dungeon": "43",
+   "giver": "Ebru",
+   "level": 21,
+   "min": 15,
+   "reward": 6476,
+   "side": "",
+   "title": "Deviate Eradication",
+   "x": 46,
+   "y": 35.7,
+   "zone": "The Barrens"
+  },
+  "1491": {
+   "dungeon": "43",
+   "giver": "Mebok Mizzyrix",
+   "level": 18,
+   "min": 13,
+   "side": "",
+   "title": "Smart Drinks",
+   "x": 62.4,
+   "y": 37.6,
+   "zone": "The Barrens"
+  },
+  "1654": {
+   "classes": 2,
+   "dungeon": "33",
+   "giver": "Jordan Stilwell",
+   "level": 22,
+   "min": 20,
+   "side": "A",
+   "title": "The Test of Righteousness",
+   "x": 52.5,
+   "y": 36.9,
+   "zone": "Dun Morogh"
+  },
+  "166": {
+   "dungeon": "36",
+   "giver": "Gryan Stoutmantle",
+   "level": 22,
+   "min": 14,
+   "reward": 6087,
+   "side": "A",
+   "title": "The Defias Brotherhood",
+   "x": 56.3,
+   "y": 47.5,
+   "zone": "Westfall"
+  },
+  "167": {
+   "dungeon": "36",
+   "giver": "Wilder Thistlenettle",
+   "level": 20,
+   "min": 15,
+   "reward": 1893,
+   "side": "A",
+   "title": "Oh Brother...",
+   "x": 70.2,
+   "y": 40.8,
+   "zone": "Stormwind City"
+  },
+  "168": {
+   "dungeon": "36",
+   "giver": "Wilder Thistlenettle",
+   "level": 18,
+   "min": 14,
+   "reward": 2037,
+   "side": "A",
+   "title": "Collecting Memories",
+   "x": 70.2,
+   "y": 40.8,
+   "zone": "Stormwind City"
+  },
+  "17": {
+   "dungeon": "70",
+   "giver": "Ghak Healtouch",
+   "level": 42,
+   "min": 36,
+   "side": "A",
+   "title": "Uldaman Reagent Run",
+   "x": 37.07,
+   "y": 49.38,
+   "zone": "Loch Modan"
+  },
+  "1701": {
+   "classes": 1,
+   "dungeon": "47",
+   "giver": "Furen Longbeard",
+   "level": 28,
+   "min": 20,
+   "side": "A",
+   "title": "Fire Hardened Mail",
+   "x": 64.4,
+   "y": 37.2,
+   "zone": "Stormwind City"
+  },
+  "1740": {
+   "classes": 256,
+   "dungeon": "33",
+   "giver": "Doan Karhan",
+   "level": 25,
+   "min": 20,
+   "reward": 6898,
+   "side": "",
+   "title": "The Orb of Soran'ruk",
+   "x": 49.3,
+   "y": 57.2,
+   "zone": "The Barrens"
+  },
+  "1838": {
+   "classes": 1,
+   "dungeon": "47",
+   "giver": "Thun'grim Firegaze",
+   "level": 30,
+   "min": 20,
+   "side": "H",
+   "title": "Brutal Armor",
+   "x": 57.2,
+   "y": 30.3,
+   "zone": "The Barrens"
+  },
+  "1951": {
+   "classes": 128,
+   "dungeon": "189",
+   "giver": "Magus Tirth",
+   "level": 40,
+   "min": 30,
+   "side": "",
+   "title": "Rituals of Power",
+   "x": 78.3,
+   "y": 75.7,
+   "zone": "Thousand Needles"
+  },
+  "1956": {
+   "classes": 128,
+   "dungeon": "70",
+   "giver": "Tabetha",
+   "level": 40,
+   "min": 35,
+   "side": "",
+   "title": "Power in Uldaman",
+   "x": 46.06,
+   "y": 57.09,
+   "zone": "Dustwallow Marsh"
+  },
+  "2040": {
+   "dungeon": "36",
+   "giver": "Shoni the Shilent",
+   "level": 20,
+   "min": 15,
+   "reward": 7606,
+   "side": "A",
+   "title": "Underground Assault",
+   "x": 62.6,
+   "y": 34.2,
+   "zone": "Stormwind City"
+  },
+  "214": {
+   "dungeon": "36",
+   "giver": "Scout Riell",
+   "level": 17,
+   "min": 14,
+   "reward": 2074,
+   "side": "A",
+   "title": "Red Silk Bandanas",
+   "x": 56.7,
+   "y": 47.4,
+   "zone": "Westfall"
+  },
+  "2198": {
+   "dungeon": "70",
+   "giver": "Shattered Necklace",
+   "level": 41,
+   "min": 37,
+   "side": "A",
+   "title": "The Shattered Necklace",
+   "x": 41.8,
+   "y": 12.5,
+   "zone": "Badlands"
+  },
+  "2199": {
+   "dungeon": "70",
+   "giver": "Talvash del Kissel",
+   "level": 41,
+   "min": 37,
+   "side": "A",
+   "title": "Lore for a Price",
+   "x": 36,
+   "y": 3.4,
+   "zone": "Ironforge"
+  },
+  "2200": {
+   "dungeon": "70",
+   "giver": "Talvash del Kissel",
+   "level": 42,
+   "min": 37,
+   "side": "A",
+   "title": "Back to Uldaman",
+   "x": 36,
+   "y": 3.4,
+   "zone": "Ironforge"
+  },
+  "2201": {
+   "dungeon": "70",
+   "giver": "Remains of a Paladin",
+   "level": 43,
+   "min": 40,
+   "side": "A",
+   "title": "Find the Gems",
+   "zone": "Uldaman"
+  },
+  "2202": {
+   "dungeon": "70",
+   "giver": "Jarkal Mossmeld",
+   "level": 42,
+   "min": 36,
+   "side": "H",
+   "title": "Uldaman Reagent Run",
+   "x": 2.42,
+   "y": 46.06,
+   "zone": "Badlands"
+  },
+  "2204": {
+   "dungeon": "70",
+   "giver": "Talvash's Scrying Bowl",
+   "level": 44,
+   "min": 37,
+   "side": "A",
+   "title": "Restoring the Necklace"
+  },
+  "2240": {
+   "dungeon": "70",
+   "giver": "Baelog",
+   "level": 40,
+   "min": 35,
+   "side": "A",
+   "title": "The Hidden Chamber",
+   "zone": "Uldaman"
+  },
+  "2278": {
+   "dungeon": "70",
+   "giver": "The Discs of Norgannon",
+   "level": 47,
+   "min": 40,
+   "side": "",
+   "title": "The Platinum Discs",
+   "zone": "Uldaman"
+  },
+  "2279": {
+   "dungeon": "70",
+   "giver": "The Discs of Norgannon",
+   "min": 40,
+   "side": "A",
+   "title": "The Platinum Discs",
+   "zone": "Uldaman"
+  },
+  "2280": {
+   "dungeon": "70",
+   "giver": "The Discs of Norgannon",
+   "level": 47,
+   "min": 40,
+   "side": "H",
+   "title": "The Platinum Discs",
+   "zone": "Uldaman"
+  },
+  "2283": {
+   "dungeon": "70",
+   "giver": "Dran Droffers",
+   "level": 41,
+   "min": 37,
+   "side": "H",
+   "title": "Necklace Recovery",
+   "x": 59.6,
+   "y": 36.6,
+   "zone": "Orgrimmar"
+  },
+  "2284": {
+   "dungeon": "70",
+   "giver": "Dran Droffers",
+   "level": 41,
+   "min": 37,
+   "side": "H",
+   "title": "Necklace Recovery, Take 2",
+   "x": 59.6,
+   "y": 36.6,
+   "zone": "Orgrimmar"
+  },
+  "2318": {
+   "dungeon": "70",
+   "giver": "Remains of a Paladin",
+   "level": 42,
+   "min": 37,
+   "side": "H",
+   "title": "Translating the Journal",
+   "zone": "Uldaman"
+  },
+  "2338": {
+   "dungeon": "70",
+   "giver": "Jarkal Mossmeld",
+   "level": 42,
+   "min": 37,
+   "side": "H",
+   "title": "Translating the Journal",
+   "x": 2.42,
+   "y": 46.06,
+   "zone": "Badlands"
+  },
+  "2339": {
+   "dungeon": "70",
+   "giver": "Jarkal Mossmeld",
+   "level": 44,
+   "min": 37,
+   "side": "H",
+   "title": "Find the Gems and Power Source",
+   "x": 2.42,
+   "y": 46.06,
+   "zone": "Badlands"
+  },
+  "2340": {
+   "dungeon": "70",
+   "giver": "Jarkal Mossmeld",
+   "level": 44,
+   "min": 37,
+   "side": "H",
+   "title": "Deliver the Gems",
+   "x": 2.42,
+   "y": 46.06,
+   "zone": "Badlands"
+  },
+  "2341": {
+   "dungeon": "70",
+   "giver": "Dran Droffers",
+   "level": 44,
+   "min": 40,
+   "side": "H",
+   "title": "Necklace Recovery, Take 3",
+   "x": 59.6,
+   "y": 36.6,
+   "zone": "Orgrimmar"
+  },
+  "2342": {
+   "dungeon": "70",
+   "giver": "Patrick Garrett",
+   "level": 43,
+   "min": 33,
+   "side": "H",
+   "title": "Reclaimed Treasures",
+   "x": 62.4,
+   "y": 48.6,
+   "zone": "Undercity"
+  },
+  "2361": {
+   "dungeon": "70",
+   "giver": "Talvash del Kissel",
+   "level": 44,
+   "min": 37,
+   "side": "A",
+   "title": "Restoring the Necklace",
+   "x": 36,
+   "y": 3.4,
+   "zone": "Ironforge"
+  },
+  "2398": {
+   "dungeon": "70",
+   "giver": "Prospector Stormpike",
+   "level": 40,
+   "min": 35,
+   "side": "A",
+   "title": "The Lost Dwarves",
+   "x": 74.6,
+   "y": 12,
+   "zone": "Ironforge"
+  },
+  "2418": {
+   "dungeon": "70",
+   "giver": "Rigglefuzz",
+   "level": 36,
+   "min": 30,
+   "side": "",
+   "title": "Power Stones",
+   "x": 42.39,
+   "y": 52.93,
+   "zone": "Badlands"
+  },
+  "2841": {
+   "dungeon": "90",
+   "giver": "Nogg",
+   "level": 35,
+   "min": 25,
+   "side": "H",
+   "title": "Rig Wars",
+   "x": 75.8,
+   "y": 25.2,
+   "zone": "Orgrimmar"
+  },
+  "2904": {
+   "dungeon": "90",
+   "giver": "Kernobee",
+   "level": 30,
+   "min": 20,
+   "reward": 9535,
+   "side": "",
+   "title": "A Fine Mess",
+   "zone": "Gnomeregan"
+  },
+  "2922": {
+   "dungeon": "90",
+   "giver": "Tinkmaster Overspark",
+   "level": 26,
+   "min": 20,
+   "side": "A",
+   "title": "Save Techbot's Brain!",
+   "x": 69.4,
+   "y": 50.4,
+   "zone": "Ironforge"
+  },
+  "2924": {
+   "dungeon": "90",
+   "giver": "Klockmort Spannerspan",
+   "level": 30,
+   "min": 24,
+   "side": "A",
+   "title": "Essential Artificials",
+   "x": 68.2,
+   "y": 46.2,
+   "zone": "Ironforge"
+  },
+  "2928": {
+   "dungeon": "90",
+   "giver": "Shoni the Shilent",
+   "level": 30,
+   "min": 20,
+   "reward": 9608,
+   "side": "A",
+   "title": "Gyrodrillmatic Excavationators",
+   "x": 62.6,
+   "y": 34.2,
+   "zone": "Stormwind City"
+  },
+  "2929": {
+   "dungeon": "90",
+   "giver": "High Tinker Mekkatorque",
+   "level": 35,
+   "min": 25,
+   "reward": 9623,
+   "side": "A",
+   "title": "The Grand Betrayal",
+   "x": 69,
+   "y": 49,
+   "zone": "Ironforge"
+  },
+  "2930": {
+   "dungeon": "90",
+   "giver": "Master Mechanic Castpipe",
+   "level": 30,
+   "min": 25,
+   "reward": 9605,
+   "side": "A",
+   "title": "Data Rescue",
+   "x": 69.8,
+   "y": 48.4,
+   "zone": "Ironforge"
+  },
+  "2945": {
+   "dungeon": "90",
+   "giver": "Grime-Encrusted Ring",
+   "level": 34,
+   "min": 28,
+   "side": "",
+   "title": "Grime-Encrusted Ring",
+   "zone": "Gnomeregan"
+  },
+  "2951": {
+   "dungeon": "90",
+   "giver": "The Sparklematic 5200",
+   "level": 30,
+   "min": 25,
+   "side": "",
+   "title": "The Sparklematic 5200!",
+   "zone": "Gnomeregan"
+  },
+  "2962": {
+   "dungeon": "90",
+   "giver": "Ozzie Togglevolt",
+   "level": 30,
+   "min": 20,
+   "side": "A",
+   "title": "The Only Cure is More Green Glow",
+   "x": 45.9,
+   "y": 49.4,
+   "zone": "Dun Morogh"
+  },
+  "3341": {
+   "dungeon": "129",
+   "giver": "Andrew Brownell",
+   "level": 42,
+   "min": 37,
+   "side": "H",
+   "title": "Bring the End",
+   "x": 74,
+   "y": 32.8,
+   "zone": "Undercity"
+  },
+  "3523": {
+   "dungeon": "129",
+   "giver": "Belnistrasz",
+   "level": 37,
+   "min": 32,
+   "side": "",
+   "title": "Scourge of the Downs",
+   "zone": "Razorfen Downs"
+  },
+  "3525": {
+   "dungeon": "129",
+   "giver": "Belnistrasz",
+   "level": 37,
+   "min": 32,
+   "side": "",
+   "title": "Extinguishing the Idol",
+   "zone": "Razorfen Downs"
+  },
+  "3636": {
+   "dungeon": "129",
+   "giver": "Archbishop Benedictus",
+   "level": 42,
+   "min": 39,
+   "side": "A",
+   "title": "Bring the Light",
+   "x": 50.3,
+   "y": 45.5,
+   "zone": "Stormwind City"
+  },
+  "373": {
+   "dungeon": "36",
+   "giver": "An Unsent Letter",
+   "level": 22,
+   "min": 16,
+   "side": "A",
+   "title": "The Unsent Letter",
+   "zone": "The Deadmines"
+  },
+  "377": {
+   "dungeon": "34",
+   "giver": "Councilman Millstipe",
+   "level": 26,
+   "min": 22,
+   "reward": 2033,
+   "side": "A",
+   "title": "Crime and Punishment",
+   "x": 71.9,
+   "y": 47.8,
+   "zone": "Duskwood"
+  },
+  "378": {
+   "dungeon": "34",
+   "giver": "Motley Garmason",
+   "level": 27,
+   "min": 22,
+   "reward": 3562,
+   "side": "A",
+   "title": "The Fury Runs Deep",
+   "x": 49.7,
+   "y": 18.2,
+   "zone": "Wetlands"
+  },
+  "386": {
+   "dungeon": "34",
+   "giver": "Guard Berton",
+   "level": 25,
+   "min": 22,
+   "reward": 3400,
+   "side": "A",
+   "title": "What Comes Around...",
+   "x": 21.2,
+   "y": 46.6,
+   "zone": "Redridge Mountains"
+  },
+  "387": {
+   "dungeon": "34",
+   "giver": "Warden Thelwater",
+   "level": 26,
+   "min": 22,
+   "side": "A",
+   "title": "Quell the Uprising",
+   "x": 51.6,
+   "y": 69.4,
+   "zone": "Stormwind City"
+  },
+  "388": {
+   "dungeon": "34",
+   "giver": "Nikova Raskol",
+   "level": 26,
+   "min": 22,
+   "side": "A",
+   "title": "The Color of Blood",
+   "x": 73.8,
+   "y": 54.6,
+   "zone": "Stormwind City"
+  },
+  "391": {
+   "dungeon": "34",
+   "giver": "Warden Thelwater",
+   "level": 29,
+   "min": 16,
+   "side": "A",
+   "title": "The Stockade Riots",
+   "x": 51.6,
+   "y": 69.4,
+   "zone": "Stormwind City"
+  },
+  "5722": {
+   "dungeon": "389",
+   "giver": "Rahauro",
+   "level": 16,
+   "min": 9,
+   "side": "H",
+   "title": "Searching for the Lost Satchel",
+   "x": 70,
+   "y": 29.2,
+   "zone": "Thunder Bluff"
+  },
+  "5723": {
+   "dungeon": "389",
+   "giver": "Rahauro",
+   "level": 15,
+   "min": 9,
+   "side": "H",
+   "title": "Testing an Enemy's Strength",
+   "x": 70,
+   "y": 29.2,
+   "zone": "Thunder Bluff"
+  },
+  "5725": {
+   "dungeon": "389",
+   "giver": "Varimathras",
+   "level": 16,
+   "min": 9,
+   "reward": 15449,
+   "side": "H",
+   "title": "The Power to Destroy...",
+   "x": 56.2,
+   "y": 92.4,
+   "zone": "Undercity"
+  },
+  "5728": {
+   "dungeon": "389",
+   "giver": "Thrall",
+   "level": 16,
+   "min": 9,
+   "side": "H",
+   "title": "Hidden Enemies",
+   "x": 32,
+   "y": 37.8,
+   "zone": "Orgrimmar"
+  },
+  "5761": {
+   "dungeon": "389",
+   "giver": "Neeru Fireblade",
+   "level": 16,
+   "min": 9,
+   "side": "H",
+   "title": "Slaying the Beast",
+   "x": 49.4,
+   "y": 50.6,
+   "zone": "Orgrimmar"
+  },
+  "6521": {
+   "dungeon": "129",
+   "giver": "Varimathras",
+   "level": 36,
+   "min": 28,
+   "side": "H",
+   "title": "An Unholy Alliance",
+   "x": 56.2,
+   "y": 92.4,
+   "zone": "Undercity"
+  },
+  "6522": {
+   "dungeon": "47",
+   "giver": "Small Scroll",
+   "level": 36,
+   "min": 28,
+   "side": "H",
+   "title": "An Unholy Alliance",
+   "zone": "Razorfen Kraul"
+  },
+  "6561": {
+   "dungeon": "48",
+   "giver": "Argent Guard Thaelrid",
+   "level": 27,
+   "min": 18,
+   "side": "H",
+   "title": "Blackfathom Villainy",
+   "zone": "Blackfathom Deeps"
+  },
+  "6563": {
+   "dungeon": "48",
+   "giver": "Je'neu Sancrea",
+   "level": 22,
+   "min": 17,
+   "side": "H",
+   "title": "The Essence of Aku'Mai",
+   "x": 11.6,
+   "y": 34.3,
+   "zone": "Ashenvale"
+  },
+  "6564": {
+   "dungeon": "48",
+   "giver": "Damp Note",
+   "level": 22,
+   "min": 17,
+   "side": "H",
+   "title": "Allegiance to the Old Gods",
+   "x": 13.8,
+   "y": 10.7,
+   "zone": "Ashenvale"
+  },
+  "6565": {
+   "dungeon": "48",
+   "giver": "Je'neu Sancrea",
+   "level": 26,
+   "min": 17,
+   "reward": 17694,
+   "side": "H",
+   "title": "Allegiance to the Old Gods",
+   "x": 11.6,
+   "y": 34.3,
+   "zone": "Ashenvale"
+  },
+  "6626": {
+   "dungeon": "129",
+   "giver": "Myriam Moonsinger",
+   "level": 35,
+   "min": 28,
+   "side": "",
+   "title": "A Host of Evil",
+   "x": 49.01,
+   "y": 94.94,
+   "zone": "The Barrens"
+  },
+  "6921": {
+   "dungeon": "48",
+   "giver": "Je'neu Sancrea",
+   "level": 27,
+   "min": 21,
+   "side": "H",
+   "title": "Amongst the Ruins",
+   "x": 11.6,
+   "y": 34.3,
+   "zone": "Ashenvale"
+  },
+  "6922": {
+   "dungeon": "48",
+   "giver": "Strange Water Globe",
+   "level": 30,
+   "min": 21,
+   "reward": 16886,
+   "side": "H",
+   "title": "Baron Aquanis",
+   "zone": "Blackfathom Deeps"
+  },
+  "6981": {
+   "dungeon": "43",
+   "giver": "Glowing Shard",
+   "level": 26,
+   "min": 15,
+   "side": "",
+   "title": "The Glowing Shard",
+   "zone": "Wailing Caverns"
+  },
+  "704": {
+   "dungeon": "70",
+   "giver": "Prospector Ironband",
+   "level": 38,
+   "min": 30,
+   "side": "A",
+   "title": "Agmond's Fate",
+   "x": 65.93,
+   "y": 65.62,
+   "zone": "Loch Modan"
+  },
+  "709": {
+   "dungeon": "70",
+   "giver": "Theldurin the Lost",
+   "level": 40,
+   "min": 30,
+   "side": "",
+   "title": "Solution to Doom",
+   "x": 51.39,
+   "y": 76.87,
+   "zone": "Badlands"
+  },
+  "721": {
+   "dungeon": "70",
+   "giver": "Prospector Ryedol",
+   "level": 35,
+   "min": 35,
+   "side": "A",
+   "title": "A Sign of Hope",
+   "x": 53.42,
+   "y": 43.39,
+   "zone": "Badlands"
+  },
+  "722": {
+   "dungeon": "70",
+   "giver": "Hammertoe Grez",
+   "level": 40,
+   "min": 35,
+   "side": "A",
+   "title": "Amulet of Secrets",
+   "x": 37.28,
+   "y": 85.78,
+   "zone": "Loch Modan"
+  },
+  "914": {
+   "dungeon": "43",
+   "giver": "Nara Wildmane",
+   "level": 22,
+   "min": 10,
+   "reward": 6505,
+   "side": "H",
+   "title": "Leaders of the Fang",
+   "x": 75.6,
+   "y": 31.6,
+   "zone": "Thunder Bluff"
+  },
+  "92401": {
+   "dungeon": "2999",
+   "giver": "Tabitha Heartweaver",
+   "level": 22,
+   "min": 15,
+   "reward": 251485,
+   "side": "H",
+   "title": "A Frightened Request",
+   "x": 44.4,
+   "y": 42.8,
+   "zone": "Silverpine Forest"
+  },
+  "92415": {
+   "dungeon": "2999",
+   "giver": "Blood-Stained Letter",
+   "level": 22,
+   "min": 15,
+   "side": "A",
+   "title": "Remember That I Love You",
+   "zone": "Ruins of Lordaeron"
+  },
+  "92421": {
+   "dungeon": "2999",
+   "giver": "Morbin Lightbane",
+   "level": 22,
+   "min": 15,
+   "reward": 279874,
+   "side": "H",
+   "title": "Light's Justice",
+   "x": 57.6,
+   "y": 89.8,
+   "zone": "Undercity"
+  },
+  "92422": {
+   "dungeon": "2999",
+   "giver": "Deathguard Kristof",
+   "level": 22,
+   "min": 15,
+   "reward": 251533,
+   "side": "H",
+   "title": "The Wrath of Rath'mael",
+   "x": 65.2,
+   "y": 60.2,
+   "zone": "Tirisfal Glades"
+  },
+  "92456": {
+   "dungeon": "2959",
+   "giver": "Shylamiir",
+   "level": 33,
+   "min": 24,
+   "reward": 279835,
+   "side": "A",
+   "title": "A Green Sample",
+   "x": 31.4,
+   "y": 62.8,
+   "zone": "Stormwind City"
+  },
+  "92457": {
+   "dungeon": "2959",
+   "giver": "Image of Archmage Modera",
+   "level": 33,
+   "min": 24,
+   "reward": 279837,
+   "side": "",
+   "title": "Starving Arcane",
+   "x": 68.5,
+   "y": 45.3,
+   "zone": "Silverpine Forest"
+  },
+  "92458": {
+   "dungeon": "2959",
+   "giver": "Image of Archmage Modera",
+   "level": 33,
+   "min": 24,
+   "reward": 279839,
+   "side": "A",
+   "title": "Heart of Disruption",
+   "x": 68.5,
+   "y": 45.3,
+   "zone": "Silverpine Forest"
+  },
+  "92489": {
+   "dungeon": "2959",
+   "giver": "High Sorcerer Andromath",
+   "level": 33,
+   "min": 24,
+   "reward": 251962,
+   "side": "A",
+   "title": "Power Overwhelming",
+   "x": 48.8,
+   "y": 87.6,
+   "zone": "Stormwind City"
+  },
+  "92753": {
+   "dungeon": "36",
+   "giver": "Alba Fairmoon",
+   "level": 18,
+   "min": 9,
+   "side": "A",
+   "title": "Destruction in Deadmines",
+   "zone": "Westfall"
+  },
+  "95189": {
+   "dungeon": "2999",
+   "giver": "Crest of Lordaeron",
+   "level": 22,
+   "min": 16,
+   "reward": 280567,
+   "side": "A",
+   "title": "Crest of Lordaeron",
+   "zone": "Ruins of Lordaeron"
+  },
+  "95195": {
+   "dungeon": "2999",
+   "giver": "Bloodied Insignia",
+   "level": 22,
+   "min": 16,
+   "reward": 279868,
+   "side": "A",
+   "title": "Bloodied Insignia",
+   "zone": "Ruins of Lordaeron"
+  },
+  "95204": {
+   "dungeon": "2999",
+   "giver": "Crest of Lordaeron",
+   "level": 22,
+   "min": 16,
+   "side": "H",
+   "title": "Crest of Lordaeron",
+   "zone": "Ruins of Lordaeron"
+  },
+  "95216": {
+   "dungeon": "2999",
+   "giver": "Theodore Griffs",
+   "level": 22,
+   "min": 16,
+   "reward": 279876,
+   "side": "H",
+   "title": "The New Plague",
+   "x": 46.4,
+   "y": 71.4,
+   "zone": "Undercity"
+  },
+  "95250": {
+   "dungeon": "2999",
+   "giver": "Captain Truman",
+   "level": 21,
+   "min": 16,
+   "reward": 279864,
+   "side": "A",
+   "title": "Abominable Creatures",
+   "zone": "Ruins of Lordaeron"
+  },
+  "95646": {
+   "dungeon": "2998",
+   "giver": "Rethiel the Greenwarden",
+   "level": 31,
+   "min": 24,
+   "reward": 271667,
+   "side": "A",
+   "title": "Horrors in the Highland",
+   "x": 56.2,
+   "y": 40.5,
+   "zone": "Wetlands"
+  },
+  "95647": {
+   "dungeon": "2998",
+   "giver": "Caitlin Grassman",
+   "level": 31,
+   "min": 24,
+   "side": "A",
+   "title": "Lost in the Thicket Things",
+   "x": 11.8,
+   "y": 58.6,
+   "zone": "Wetlands"
+  },
+  "95664": {
+   "dungeon": "2998",
+   "giver": "Titan Relic",
+   "level": 31,
+   "min": 24,
+   "side": "H",
+   "title": "Elder Knowledge",
+   "zone": "Excavation Site: Wetlands"
+  },
+  "95682": {
+   "dungeon": "2998",
+   "giver": "Deathstalker Agent",
+   "level": 31,
+   "min": 24,
+   "reward": 271740,
+   "side": "H",
+   "title": "Open the Maw",
+   "zone": "Wetlands"
+  },
+  "95697": {
+   "dungeon": "2998",
+   "level": 31,
+   "min": 24,
+   "reward": 280805,
+   "side": "H",
+   "title": "Changing Tastes"
+  },
+  "95772": {
+   "dungeon": "2998",
+   "giver": "Dorin Songblade",
+   "level": 31,
+   "min": 24,
+   "side": "A",
+   "title": "Songblade Search",
+   "x": 25.7,
+   "y": 46.5,
+   "zone": "Redridge Mountains"
+  },
+  "95810": {
+   "dungeon": "2998",
+   "giver": "Titan Relic",
+   "level": 31,
+   "min": 24,
+   "side": "A",
+   "title": "Lost Relic Carry",
+   "zone": "Excavation Site: Wetlands"
+  },
+  "959": {
+   "dungeon": "43",
+   "giver": "Crane Operator Bigglefuzz",
+   "level": 18,
+   "min": 14,
+   "side": "",
+   "title": "Trouble at the Docks",
+   "x": 63.1,
+   "y": 37.6,
+   "zone": "The Barrens"
+  },
+  "962": {
+   "dungeon": "43",
+   "giver": "Apothecary Zamah",
+   "level": 18,
+   "min": 14,
+   "reward": 10919,
+   "side": "H",
+   "title": "Serpentbloom",
+   "x": 23,
+   "y": 21,
+   "zone": "Thunder Bluff"
+  },
+  "96393": {
+   "dungeon": "3065",
+   "giver": "Earthseer Farsen",
+   "level": 16,
+   "min": 9,
+   "reward": 279894,
+   "side": "A",
+   "title": "Old Ironforge Incursion",
+   "x": 64.8,
+   "y": 58.4,
+   "zone": "Dun Morogh"
+  },
+  "96394": {
+   "dungeon": "3065",
+   "giver": "Afadra Dunwall",
+   "level": 15,
+   "min": 10,
+   "reward": 279897,
+   "side": "A",
+   "title": "The Restless Dead",
+   "x": 34,
+   "y": 48.8,
+   "zone": "Ironforge"
+  },
+  "96395": {
+   "dungeon": "3065",
+   "giver": "Ghostly Attendant",
+   "level": 15,
+   "min": 10,
+   "reward": 279899,
+   "side": "",
+   "title": "An Ancient Grudge",
+   "zone": "The Hall of Thanes"
+  },
+  "96403": {
+   "dungeon": "3065",
+   "giver": "Thom Filch",
+   "level": 15,
+   "min": 10,
+   "reward": 279898,
+   "side": "A",
+   "title": "Important Heirlooms",
+   "x": 32.6,
+   "y": 44.6,
+   "zone": "Ironforge"
+  },
+  "96800": {
+   "dungeon": "189",
+   "giver": "Magus Olvek",
+   "level": 38,
+   "min": 30,
+   "reward": 276898,
+   "side": "A",
+   "title": "Past Due",
+   "x": 9.6,
+   "y": 62.3,
+   "zone": "Alterac Mountains"
+  },
+  "96984": {
+   "dungeon": "2959",
+   "giver": "Image of Archmage Modera",
+   "level": 33,
+   "min": 24,
+   "reward": 279842,
+   "side": "H",
+   "title": "Heart of Disruption",
+   "x": 68.5,
+   "y": 45.3,
+   "zone": "Silverpine Forest"
+  },
+  "96986": {
+   "dungeon": "2959",
+   "giver": "Melisara",
+   "level": 33,
+   "min": 24,
+   "reward": 251963,
+   "side": "H",
+   "title": "The Grave Knight",
+   "x": 62.5,
+   "y": 20.5,
+   "zone": "Hillsbrad Foothills"
+  },
+  "96987": {
+   "dungeon": "2959",
+   "giver": "Rexxie Copperclutch",
+   "level": 33,
+   "min": 24,
+   "reward": 279845,
+   "side": "H",
+   "title": "Opportunistic Education",
+   "zone": "Alterac Mountains"
+  },
+  "96988": {
+   "dungeon": "2959",
+   "giver": "Doctor Martin Felben",
+   "level": 33,
+   "min": 24,
+   "reward": 279847,
+   "side": "H",
+   "title": "Source of Power",
+   "x": 46.4,
+   "y": 74.6,
+   "zone": "Undercity"
+  },
+  "971": {
+   "dungeon": "48",
+   "giver": "Gerrig Bonegrip",
+   "level": 23,
+   "min": 18,
+   "reward": 6743,
+   "side": "A",
+   "title": "Knowledge in the Deeps",
+   "x": 50.6,
+   "y": 5.4,
+   "zone": "Ironforge"
+  },
+  "97288": {
+   "dungeon": "2999",
+   "giver": "Abominable Head",
+   "level": 21,
+   "min": 16,
+   "side": "H",
+   "title": "Unending Torment",
+   "zone": "Ruins of Lordaeron"
+  },
+  "98423": {
+   "dungeon": "3065",
+   "giver": "Treaty of Understanding",
+   "level": 16,
+   "min": 9,
+   "side": "A",
+   "title": "The Treaty of Understanding",
+   "zone": "The Hall of Thanes"
+  },
+  "98815": {
+   "dungeon": "2998",
+   "level": 28,
+   "min": 24,
+   "side": "A",
+   "title": "Highland Hides"
+  }
+ }
+}
