@@ -714,6 +714,26 @@ the latest claim is drawn; the others wait hidden. The lines are the same
 in each dial's file (`ArrowUI:Claim`, `ArrowUI.Wins`); a change to them
 belongs in all three.
 
+## The way there (arrows across zones and the sea)
+
+The owner said build it (2026-10-21, from a mockup) in every addon with an
+arrow: a quest arrow aimed at a place in another zone or on the other
+continent leads the way step by step (flights this character knows, the
+boats and zeppelins of its side, its Hearthstone, walks through the zones
+between) instead of pointing straight over mountains and sea. Off unless
+ticked: "Guide Me:" on the Upgrade quest page (`arrowRoute`, account wide,
+never rename it) and `/beq arrow route [on|off]`. `Logic/Travel.lua`,
+`Data/Travel.lua`, `Data/TravelZones.lua`, `UI/TravelCard.lua`,
+`UI/TravelMap.lua`, `Media/Frame/TravelDot.tga`, `tools/make_travel.py`
+and `tools/make_travel_zones.py` are Farmer's files, the same in every
+addon (a fix to one belongs in all; Farmer's `CLAUDE.md` has the details).
+What differs is `ns.TravelHost` at the end of `Logic/QuestArrow.lua`;
+`QuestArrow:TripState` turns a trip into the dial's words and gives
+`trip.point` its `mx`/`my`, which TomTom gets (`TomTomLink.Point`). Every
+copy reads the flights, crossings and Hearthstone spot the others saved
+(`travelFlights`, `travelCrossings`, `travelHearth`, never renamed).
+Tested in `tools/test_travel.lua`. Not yet seen in game.
+
 ## Dungeon Quests
 
 The owner said build it (2026-10-20, from a mockup): every quest done
