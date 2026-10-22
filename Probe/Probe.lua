@@ -311,6 +311,12 @@ function Probe:Run()
     if ns.DungeonQuests then
         local ok, text = pcall(ns.DungeonQuests.Describe, ns.DungeonQuests)
         Line("dungeon quests", ok and text or "could not read")
+        local okTitles, titles = pcall(ns.DungeonQuests.DescribeTitles, ns.DungeonQuests)
+        Line("quest names", okTitles and titles or "could not read")
+    end
+    if ns.DungeonDoors then
+        local ok, text = pcall(ns.DungeonDoors.Describe, ns.DungeonDoors)
+        Line("dungeon doors", ok and text or "could not read")
     end
 
     local spec, why = Weights:CurrentSpec()

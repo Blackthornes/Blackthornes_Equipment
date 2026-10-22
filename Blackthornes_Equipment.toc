@@ -67,6 +67,7 @@ Logic\Travel.lua
 Logic\QuestArrow.lua
 Logic\QuestLog.lua
 Logic\DungeonQuests.lua
+Logic\DungeonDoors.lua
 Logic\TomTom.lua
 Logic\Contribute.lua
 

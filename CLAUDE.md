@@ -790,6 +790,24 @@ unless ticked), `dungeonQuestsMyLevel` (false when unticked),
 has a "dungeon quests" line. Tested in `tools/test_dungeonquests.lua` and
 `tools/test_make_dungeon_quests.py`. Not yet seen in game.
 
+Names and doors from the game (the owner picked them, 2026-10-22): a
+quest's row and the arrow show the game's own title
+(`DQ:TitleOf`: `C_QuestLog.GetTitleForQuestID`, kept for the session,
+else the data's; one the game has not loaded is asked for once with
+`RequestLoadQuestByID`, and `QUEST_DATA_LOAD_RESULT` redraws a shown
+window). Sorting still uses the data's title. `Logic/DungeonDoors.lua`
+learns where each door stands: the spot as a loading screen starts
+(`PLAYER_LEAVING_WORLD`, `QuestArrow:Here`) is kept when the next
+`PLAYER_ENTERING_WORLD` is inside a dungeon the addon knows
+(`DQ.Inside`), account wide in `dungeonDoors[key].spots` (at most
+`KEEP`; never rename it). A spot counts only in the door zone the data
+names, or, with none named, once two agree (`NEAR`), so a hearth or a
+summon is never taken for a door. `DungeonDoors:Fill` lays it on the
+upgrade quest's door places (a dungeon drop, a boss that starts or ends
+a quest), which were a zone's middle. `/beq probe` has "quest names" and
+"dungeon doors" lines. Nothing new is shown to players in words. Tested
+in `tools/test_dungeonquests.lua`. Not yet seen in game.
+
 ## The Quest log tab
 
 The owner asked (2026-10-10) for the game's quest tracker inside the

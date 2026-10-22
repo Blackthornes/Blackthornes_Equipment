@@ -765,6 +765,12 @@ local function EndPlace(p)
             if dungeon[1] == place.dungeon then place.zone = dungeon[4] end
         end
         if not place.zone then return nil end
+        -- A boss's own spot is inside; the arrow aims at the learned door.
+        if ns.DungeonDoors then
+            local door = { zone = place.zone }
+            ns.DungeonDoors:Fill(door, place.dungeon)
+            if door.x then place.x, place.y = door.x, door.y end
+        end
     end
     place.item = p[6]
     return place
@@ -939,6 +945,7 @@ function UpgradeQuest:Steps(quest)
             local place
             if first.kind == "boss" then
                 place = first.door and { zone = first.door, name = first.zone } or nil
+                if place and ns.DungeonDoors then ns.DungeonDoors:Fill(place, first.zone) end
             else
                 place = { zone = first.zone, x = first.x, y = first.y, name = first.name }
             end
@@ -1111,6 +1118,7 @@ function UpgradeQuest:Steps(quest)
         if onQuest and not (have or turnedIn) then steps[#steps].questID = questID end
     elseif source.kind == "dungeon" then
         local door = source.zone and { zone = source.zone, name = source.dungeon } or nil
+        if door and ns.DungeonDoors then ns.DungeonDoors:Fill(door, source.dungeon) end
         if door and door.zone ~= source.dungeon then Travel(door) end
         local range = (not source.raid and source.minLevel)
             and L.Format(" (levels %d to %d)", source.minLevel, source.maxLevel or source.minLevel) or ""
