@@ -80,7 +80,7 @@ suite.check("the quest panel opens on it", Panel.frame and Panel.frame:IsShown()
     and Panel.name:GetText() == "item:1001", Panel.name and Panel.name:GetText())
 suite.check("the chat says so", env.ChatText():find("following item:1001", 1, true) ~= nil)
 vendorRow = RowFor(1001)
-suite.check("the row is marked Quest", vendorRow.source:GetText():find("Quest", 1, true) ~= nil,
+suite.check("the row is marked Following", vendorRow.source:GetText():find("Following", 1, true) ~= nil,
     vendorRow.source:GetText())
 suite.check("and hovering says it is the quest", TooltipText(vendorRow):find("Your upgrade quest", 1, true) ~= nil)
 suite.check("and how to drop it", TooltipText(vendorRow):find("To drop it, click Ignore on the quest panel", 1, true) ~= nil)

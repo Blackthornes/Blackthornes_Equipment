@@ -230,6 +230,10 @@ function SettingsUI:Build()
     end
     self.pages:Fit()
 
+    -- Upgrades, Enchants and Settings hang under it as under the gear
+    -- window, so the two read as one (the owner approved it 2026-10-22).
+    self.tabStrip = ns.FinderUI and ns.FinderUI:HangTabs(frame, "settings")
+
     local footer = Theme.CreateLabel(frame, "tiny", "dim")
     footer:SetPoint("BOTTOMLEFT", PADDING, 14)
     footer:SetPoint("BOTTOMRIGHT", -PADDING, 14)
@@ -1049,6 +1053,8 @@ end
 
 function SettingsUI:Show()
     self:Build()
+    -- Opened on its own; the Settings tab marks it as standing in after.
+    self.asTab = false
 
     if not self.frame:IsShown() then
         self:RestorePosition()

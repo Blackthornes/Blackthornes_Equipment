@@ -39,6 +39,7 @@ local function CreateLine(parent, index)
     local restKey = index % 2 == 0 and "glassAlt" or "glass"
     local row = CreateFrame("Button", nil, parent)
     row:SetHeight(ROW)
+    row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     row.background = Theme.Fill(row, restKey)
 
     local rule = row:CreateTexture(nil, "BACKGROUND", nil, 1)
@@ -100,6 +101,8 @@ local function CreateLine(parent, index)
                 line = L.Format("Costs %s at the trainer", ns.ClassTraining.Money(self.spell.cost))
             end
             GameTooltip:AddLine(line, Theme.Unpack("muted"))
+            GameTooltip:AddLine(self.skipped and L["Right-click to bring it back."]
+                or L["Right-click to skip this spell."], Theme.Unpack("good"))
             GameTooltip:Show()
         elseif self.link then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -112,10 +115,26 @@ local function CreateLine(parent, index)
         Motion:Blend(self, "hover", 0, 0.18, self.Light)
         GameTooltip:Hide()
     end)
-    row:SetScript("OnClick", function(self)
+    row:SetScript("OnClick", function(self, button)
+        if button == "RightButton" then
+            if self.spell then Drawer:Skip(self.spell, not self.skipped) end
+            return
+        end
         if self.link and ns.WeaponSkills then ns.WeaponSkills:ShowMaster(self.link) end
     end)
     return row
+end
+
+--- Skip a spell (a right-click on it), or bring a skipped one back. It
+--- leaves the lists and costs here and in Butler; nothing is bought or
+--- forgotten.
+function Drawer:Skip(spell, on)
+    local training = ns.ClassTraining
+    if not (training and spell and spell.id) then return end
+    training:SetSkipped(spell.id, on)
+    GameTooltip:Hide()
+    self.key = nil
+    self:Refresh()
 end
 
 --- The game's own spell tooltip, where the client has the call.
@@ -228,6 +247,14 @@ function Drawer:Lines()
         end
     end
 
+    if plan.skipped and #plan.skipped > 0 then
+        lines[#lines + 1] = { heading = true, text = L["SKIPPED"] }
+        for _, spell in ipairs(plan.skipped) do
+            lines[#lines + 1] = { text = training.Label(spell.entry), icon = training.Icon(spell.entry), spell = spell,
+                skipped = true, color = "muted" }
+        end
+    end
+
     local others = training:Others()
     if #others > 0 then
         lines[#lines + 1] = { heading = true, text = L["YOUR OTHER CHARACTERS"] }
@@ -270,7 +297,7 @@ function Drawer:Refresh()
         end
         if line then
             row.Rest(line.heading)
-            row.spell, row.link = line.spell, line.link
+            row.spell, row.link, row.skipped = line.spell, line.link, line.skipped == true
             row.text:SetText(line.text)
             row.text:SetTextColor(Theme.Unpack(line.heading and "accent" or line.color or "text"))
             row.right:SetText(line.right or "")

@@ -24,6 +24,18 @@ suite.check("and that this is the spec gear is judged by",
     WeightsUI.status:GetText():find("judged by this spec", 1, true))
 suite.check("there is nothing to reset yet", not WeightsUI.reset:IsShown())
 
+-- Picks an option the way a click does: open the menu, click its line.
+local function Pick(dropdown, value)
+    dropdown:Toggle()
+    for _, entry in ipairs(dropdown.entries) do
+        if entry.option and entry.option.value == value then
+            entry:GetScript("OnClick")(entry)
+            return
+        end
+    end
+    error("no option " .. tostring(value))
+end
+
 local function Row(key)
     for _, row in ipairs(WeightsUI.rows) do
         if row.entry.key == key then return row end
@@ -79,20 +91,20 @@ suite.check("escape throws away what was typed", Weights:Get("HUNTER", "beast").
     and box:GetText() == "7.5", box:GetText())
 
 -- Other specs and classes.
-WeightsUI.specPicker:SetValue(2)
-suite.check("stepping the spec shows Marksmanship", WeightsUI.spec == "marks"
+Pick(WeightsUI.specPicker, "marks")
+suite.check("picking the spec shows Marksmanship", WeightsUI.spec == "marks"
     and Row("crit").box:GetText() == "15", Row("crit").box:GetText())
 suite.check("which is untouched", not WeightsUI.reset:IsShown())
 suite.check("and not the spec gear is judged by",
     not WeightsUI.status:GetText():find("judged by this spec", 1, true))
 
-WeightsUI.classPicker:SetValue(7)
-suite.check("stepping the class to Mage", WeightsUI.class == "MAGE" and WeightsUI.spec == "arcane",
+Pick(WeightsUI.classPicker, "MAGE")
+suite.check("picking the class to Mage", WeightsUI.class == "MAGE" and WeightsUI.spec == "arcane",
     WeightsUI.class .. " " .. tostring(WeightsUI.spec))
 suite.check("lists spell power", Row("spellPower"):IsShown())
 suite.check("and not ranged attack power", not Row("rangedAttackPower"):IsShown())
 
-WeightsUI.classPicker:SetValue(3)
+Pick(WeightsUI.classPicker, "HUNTER")
 suite.check("back on Hunter it opens on the spec gear is judged by", WeightsUI.spec == "beast")
 
 -- Reset.
@@ -113,6 +125,8 @@ for _, row in ipairs(WeightsUI.rows) do
     suite.check(row.entry.name .. " fits its label", row.label:GetWidth() >= #text * 6,
         row.label:GetWidth() .. " < " .. #text * 6)
 end
+suite.check("the spec dropdown lists only this class's specs", #WeightsUI.specPicker.options == 3,
+    #WeightsUI.specPicker.options)
 suite.check("both columns fit the window",
     WeightsUI.columnWidth * 2 + 22 + 36 <= WeightsUI.width, WeightsUI.width)
 

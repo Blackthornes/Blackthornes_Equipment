@@ -9,14 +9,14 @@ local suite = env.NewSuite("locale")
 -- English first.
 local ns = env.Load()
 local L = ns.L
-suite.check("English shows English", L["Find upgrades"] == "Find upgrades")
+suite.check("English shows English", L["Upgrades"] == "Upgrades")
 suite.check("a stat's name in English", ns.Weights.Label("Strength") == "Strength")
 suite.check("English formats as before", L.Format("Upgrade for %s: %s", "Ana", "+5%") == "Upgrade for Ana: +5%")
 
 -- A German client.
 ns = env.Load("deDE")
 L = ns.L
-suite.check("a button in Deutsch", L["Find upgrades"] == "Verbesserungen finden", L["Find upgrades"])
+suite.check("a button in Deutsch", L["Upgrades"] == "Verbesserungen", L["Upgrades"])
 suite.check("a stat's name in Deutsch", ns.Weights.Label("Strength") == "Stärke", ns.Weights.Label("Strength"))
 suite.check("a German line formats", L.Format("Upgrade for %s: %s", "Ana", "+5%") == "Verbesserung für Ana: +5%")
 suite.check("a word with no German line falls back to English",
@@ -27,7 +27,7 @@ suite.check("values named by place go in order", L.Format("%2$s then %1$d", 7, "
 -- A zhCN client.
 ns = env.Load("zhCN")
 L = ns.L
-suite.check("zhCN: a button translated", L["Find upgrades"] == "找升级", L["Find upgrades"])
+suite.check("zhCN: a button translated", L["Upgrades"] == "升级", L["Upgrades"])
 suite.check("zhCN: a stat's name translated", ns.Weights.Label("Strength") == "力量", ns.Weights.Label("Strength"))
 suite.check("zhCN: a word with no line falls back to English",
     L["A string nobody translated"] == "A string nobody translated")
@@ -35,7 +35,7 @@ suite.check("zhCN: a word with no line falls back to English",
 -- A frFR client.
 ns = env.Load("frFR")
 L = ns.L
-suite.check("frFR: a button translated", L["Find upgrades"] == "Trouver des améliorations", L["Find upgrades"])
+suite.check("frFR: a button translated", L["Upgrades"] == "Améliorations", L["Upgrades"])
 suite.check("frFR: a stat's name translated", ns.Weights.Label("Strength") == "Force", ns.Weights.Label("Strength"))
 suite.check("frFR: a word with no line falls back to English",
     L["A string nobody translated"] == "A string nobody translated")
@@ -43,7 +43,7 @@ suite.check("frFR: a word with no line falls back to English",
 -- A esES client.
 ns = env.Load("esES")
 L = ns.L
-suite.check("esES: a button translated", L["Find upgrades"] == "Buscar mejoras", L["Find upgrades"])
+suite.check("esES: a button translated", L["Upgrades"] == "Mejoras", L["Upgrades"])
 suite.check("esES: a stat's name translated", ns.Weights.Label("Strength") == "Fuerza", ns.Weights.Label("Strength"))
 suite.check("esES: a word with no line falls back to English",
     L["A string nobody translated"] == "A string nobody translated")
@@ -51,7 +51,7 @@ suite.check("esES: a word with no line falls back to English",
 -- A esMX client.
 ns = env.Load("esMX")
 L = ns.L
-suite.check("esMX: a button translated", L["Find upgrades"] == "Buscar mejoras", L["Find upgrades"])
+suite.check("esMX: a button translated", L["Upgrades"] == "Mejoras", L["Upgrades"])
 suite.check("esMX: a stat's name translated", ns.Weights.Label("Strength") == "Fuerza", ns.Weights.Label("Strength"))
 suite.check("esMX: a word with no line falls back to English",
     L["A string nobody translated"] == "A string nobody translated")
@@ -59,14 +59,14 @@ suite.check("esMX: a word with no line falls back to English",
 -- A ruRU client.
 ns = env.Load("ruRU")
 L = ns.L
-suite.check("ruRU: a button translated", L["Find upgrades"] == "Найти улучшения", L["Find upgrades"])
+suite.check("ruRU: a button translated", L["Upgrades"] == "Улучшения", L["Upgrades"])
 suite.check("ruRU: a stat's name translated", ns.Weights.Label("Strength") == "Сила", ns.Weights.Label("Strength"))
 suite.check("ruRU: a word with no line falls back to English",
     L["A string nobody translated"] == "A string nobody translated")
 
 -- Another language that has no file shows English.
 ns = env.Load("itIT")
-suite.check("a client in a language with no file shows English", ns.L["Find upgrades"] == "Find upgrades")
+suite.check("a client in a language with no file shows English", ns.L["Upgrades"] == "Upgrades")
 
 _G.GetLocale = nil
 suite.done()

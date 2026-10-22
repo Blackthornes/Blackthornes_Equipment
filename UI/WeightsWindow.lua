@@ -316,17 +316,16 @@ function WeightsUI:BuildPickers()
     classLabel:SetPoint("TOPLEFT", PADDING, top - 3)
     classLabel:SetText(L["Class"])
 
-    self.classPicker = Widgets.CreateStepper(frame, {
-        min = 1, max = #CLASSES, step = 1, value = 1,
-        format = function(index) return CLASSES[index] and CLASSES[index][2] or "" end,
-        onChange = function(index) WeightsUI:PickClass(CLASSES[index][1]) end,
-    })
-    -- Wide enough for the longest class name, in the client's language.
-    local widestClass = 0
+    -- Dropdowns (a player asked, 2026-10-22): a pick is one click, not a
+    -- walk through every class one step at a time.
+    local classOptions = {}
     for _, entry in ipairs(CLASSES) do
-        widestClass = math.max(widestClass, Theme.TextWidth("small", entry[2]))
+        classOptions[#classOptions + 1] = { text = entry[2], value = entry[1] }
     end
-    self.classPicker:SetWidth(BUTTON * 2 + 8 + math.max(BOX, widestClass + 12))
+    local classWidth = Widgets.DropdownWidth(classOptions, BOX)
+    self.classPicker = Widgets.CreateDropdown(frame, classOptions, function(class)
+        WeightsUI:PickClass(class)
+    end, { width = classWidth })
     self.classPicker:SetPoint("TOPLEFT", PADDING + Theme.TextWidth("small", L["Class"]) + 10, top)
 
     local specLabel = Theme.CreateLabel(frame, "small", "text")
@@ -334,26 +333,17 @@ function WeightsUI:BuildPickers()
     specLabel:SetText(L["Spec"])
 
     -- Wide enough for the longest spec name of any class.
-    local widest = 0
+    local specNames = {}
     for _, specs in pairs(Weights.SPECS) do
         for _, key in ipairs(specs.order) do
-            widest = math.max(widest, Theme.TextWidth("small", Weights.Label(specs[key].name)))
+            specNames[#specNames + 1] = { text = Weights.Label(specs[key].name) }
         end
     end
 
-    self.specPicker = Widgets.CreateStepper(frame, {
-        min = 1, max = 3, step = 1, value = 1,
-        format = function(index)
-            local order, specs = WeightsUI:Specs()
-            local key = order[index]
-            return key and Weights.Label(specs[key].name) or ""
-        end,
-        onChange = function(index)
-            local order = WeightsUI:Specs()
-            if order[index] then WeightsUI:PickSpec(order[index]) end
-        end,
-    })
-    self.specPicker:SetWidth(BUTTON * 2 + 8 + widest + 16)
+    local specWidth = Widgets.DropdownWidth(specNames, BOX)
+    self.specPicker = Widgets.CreateDropdown(frame, {}, function(spec)
+        WeightsUI:PickSpec(spec)
+    end, { width = specWidth })
     self.specPicker:SetPoint("LEFT", specLabel, "RIGHT", 10, 0)
 
     self.allStats = Widgets.CreateCheckbox(frame, L["Every stat"], function()
@@ -362,8 +352,8 @@ function WeightsUI:BuildPickers()
     self.allStats:SetPoint("TOPRIGHT", -PADDING, top - 1)
 
     -- Everything on this line must fit side by side; the window widens for it.
-    local needed = PADDING + Theme.TextWidth("small", L["Class"]) + 10 + self.classPicker:GetWidth()
-        + 22 + Theme.TextWidth("small", L["Spec"]) + 10 + self.specPicker:GetWidth()
+    local needed = PADDING + Theme.TextWidth("small", L["Class"]) + 10 + classWidth
+        + 22 + Theme.TextWidth("small", L["Spec"]) + 10 + specWidth
         + 24 + self.allStats:GetWidth() + PADDING
     if needed > self.width then
         self.width = needed
@@ -632,13 +622,14 @@ function WeightsUI:Refresh()
     if not (self.frame and self.frame:IsShown()) then return end
     if not (self.class and Weights.SPECS[self.class]) then return end
 
-    for index, entry in ipairs(CLASSES) do
-        if entry[1] == self.class then self.classPicker:SetValue(index, true) end
+    self.classPicker:SetValue(self.class)
+    local order, specs = self:Specs()
+    local specOptions = {}
+    for _, key in ipairs(order) do
+        specOptions[#specOptions + 1] = { text = Weights.Label(specs[key].name), value = key }
     end
-    local order = self:Specs()
-    for index, key in ipairs(order) do
-        if key == self.spec then self.specPicker:SetValue(index, true) end
-    end
+    self.specPicker.options = specOptions
+    self.specPicker:SetValue(self.spec)
 
     self.status:SetText(self:StatusText())
     self.reset:SetShown(Weights:IsCustom(self.class, self.spec)

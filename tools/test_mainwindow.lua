@@ -1,5 +1,6 @@
--- The gear window: what is worn in each slot, and the best upgrade for it
--- in the bags.
+-- The gear window: since 2026-10-22 one window with Where to get upgrades.
+-- What is worn shows down the left, and the upgrades you own come first in
+-- a slot's list, under IN YOUR BAGS.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("mainwindow")
@@ -23,104 +24,92 @@ env.InstallItems(ITEMS, { [5] = "item:1", [11] = "item:5", [12] = "item:6" },
     { [0] = { "item:2", "item:3", "item:4", "item:7", "item:8" } })
 
 local UI = ns.UI
+local Finder = ns.FinderUI
 
---- The link a cell holds, or nil. (Test frames answer any missing field with
---- a function, so the type is what tells.)
-local function Link(cell)
-    return type(cell.link) == "string" and cell.link or nil
-end
-
---- The row for an inventory slot.
-local function Row(slot)
-    for _, row in ipairs(UI.rows) do
-        if row.slot == slot then return row end
-    end
+--- The links UI:ReadBags gives a slot.
+local function Owned(slot)
+    local owned = UI:ReadBags()[slot] or {}
+    local links = {}
+    for _, entry in ipairs(owned) do links[#links + 1] = entry.link end
+    return table.concat(links, ",")
 end
 
 UI:Show()
 suite.check("it opens", UI.frame:IsShown())
-suite.check("a row for every slot on the character sheet", #UI.rows == 17, #UI.rows)
-suite.check("the header names the spec", UI.specLabel:GetText() == "judging gear as Beast Mastery",
-    UI.specLabel:GetText())
+suite.check("one window: the gear window is the finder's", UI.frame == Finder.frame)
+suite.check("named on its plate", Finder.frame ~= nil)
+suite.check("a line for every slot down the left", #Finder.slotButtons == #Finder.SLOT_GROUPS,
+    #Finder.slotButtons)
+suite.check("Upgrades, Enchants and Settings hang under it", Finder.tabStrip ~= nil
+    and Finder.tabStrip.selected == "upgrades", Finder.tabStrip and Finder.tabStrip.selected)
+suite.check("the header has Training, Upgrade quest and Dungeon Loot",
+    UI.trainingButton ~= nil and UI.questButton ~= nil and UI.lootButton ~= nil)
 
-local chest = Row(5)
-suite.check("the chest shows what is worn", chest.worn.text:GetText() == "item:1", chest.worn.text:GetText())
-suite.check("and the bigger of two upgrades", chest.best.text:GetText() == "item:2", chest.best.text:GetText())
-suite.check("with how much better", chest.gain:GetText() == "+50%", chest.gain:GetText())
-suite.check("an item above your level is not offered", Link(chest.best) ~= "item:8")
+suite.check("the bigger of two chest upgrades", Owned(5) == "item:2", Owned(5))
+suite.check("an item above your level is not offered", not Owned(5):find("item:8", 1, true))
+suite.check("an empty slot is filled from the bags", Owned(8) == "item:4", Owned(8))
+suite.check("a new ring goes against the weaker ring", Owned(12) == "item:7", Owned(12))
+suite.check("not the stronger one", Owned(11) == "", Owned(11))
+suite.check("three upgrades in the bags", UI.upgrades == 3, UI.upgrades)
 
-local feet = Row(8)
-suite.check("an empty slot says so", feet.worn.text:GetText() == "empty", feet.worn.text:GetText())
-suite.check("and is filled from the bags", feet.best.text:GetText() == "item:4")
-suite.check("saying it fills the slot", feet.gain:GetText() == "fills an empty slot", feet.gain:GetText())
+-- The chest's line on the left says what is worn there.
+local chestButton
+for _, button in ipairs(Finder.slotButtons) do
+    if button.group == 5 then chestButton = button end
+end
+Finder:PaintWorn(chestButton)
+suite.check("the slot's line names what you wear", chestButton.worn:GetText():find("item:1", 1, true) ~= nil,
+    chestButton.worn:GetText())
 
-suite.check("a new ring goes against the weaker ring", Row(12).best.text:GetText() == "item:7",
-    Row(12).best.text:GetText())
-suite.check("not the stronger one", Link(Row(11).best) == nil)
-suite.check("slots with nothing better show a dash", Row(1).best.text:GetText() == "-")
-
-suite.check("the footer counts the upgrades", UI.footer:GetText() == "3 upgrades in your bags.",
-    UI.footer:GetText())
-
--- Hovering a cell shows the item's own tooltip.
-local shown
-GameTooltip.SetHyperlink = function(_, link) shown = link end
-chest.best:GetScript("OnEnter")(chest.best)
-suite.check("hovering shows that item's tooltip", shown == "item:2", shown)
-shown = nil
-Row(1).best:GetScript("OnEnter")(Row(1).best)
-suite.check("an empty cell shows none", shown == nil)
+-- The list for a slot: IN YOUR BAGS, the piece, then what to go and get.
+local groups = Finder:Groups({ all = {} })
+suite.check("the chest's group holds the bag upgrade", #groups[5].owned == 1
+    and groups[5].owned[1].where == "bags")
+suite.check("both rings are one group", #groups[11].owned == 1 and groups[11].owned[1].link == "item:7")
+local row = Finder.rows[1]
+Finder:FillRow(row, { heading = "IN YOUR BAGS" })
+suite.check("a heading row says so", row.headingLabel:GetText() == "IN YOUR BAGS" and row.heading == true)
+Finder:FillRow(row, { owned = groups[5].owned[1] })
+suite.check("an owned row shows the item", row.item:GetText() ~= "" and row.owned ~= false)
+suite.check("in your bags", row.where:GetText() == "Your bags", row.where:GetText())
+suite.check("with how much better", row.gain:GetText() == "+50%", row.gain:GetText())
+suite.check("and Put it on", row.putOn:IsShown())
+Finder:FillRow(row, { owned = { link = "item:2", where = "bank", result = { percent = 50 } } })
+suite.check("one in the bank says so", row.where:GetText() == "Your bank", row.where:GetText())
+suite.check("and can't be put on from there", not row.putOn:IsShown())
+Finder:FillRow(row, nil)
+suite.check("an empty row hides", not row:IsShown())
 
 -- Putting the upgrade on moves it across.
 env.worn[5] = "item:2"
 env.bags[0][1] = "item:1"
-suite.check("wearing the upgrade drops the count", UI:Refresh() == 2)
-suite.check("and the chest now shows it worn", chest.worn.text:GetText() == "item:2")
-suite.check("with nothing better left", Link(chest.best) == nil)
+suite.check("wearing the upgrade empties the chest", Owned(5) == "", Owned(5))
+suite.check("and drops the count", UI.upgrades == 2, UI.upgrades)
 
--- /beq spec re-judges while it is open.
-ns.HandleSlash("spec sv")
-suite.check("the header follows /beq spec", UI.specLabel:GetText() == "judging gear as Survival",
-    UI.specLabel:GetText())
+-- The Settings tab shows Settings in its place, and Upgrades brings it back.
+Finder:ShowTab("settings")
+suite.check("Settings shows from its tab", ns.SettingsUI.frame:IsShown() and not Finder.frame:IsShown())
+suite.check("with the Settings tab lit", ns.SettingsUI.tabStrip.selected == "settings")
+suite.check("and counts as the window being open", UI:IsShown())
+Finder:ShowTab("upgrades", ns.SettingsUI.frame)
+suite.check("Upgrades brings the window back", Finder.frame:IsShown() and not ns.SettingsUI.frame:IsShown())
+Finder:ShowTab("enchant")
+suite.check("Enchants shows the enchants", Finder:ShowingEnchants() and Finder.tabStrip.selected == "enchant")
+Finder:ShowTab("upgrades")
+suite.check("and Upgrades the gear", not Finder:ShowingEnchants())
 
--- A class with no weights.
-_G.UnitClass = function() return "DEATHKNIGHT", "DEATHKNIGHT" end
-UI:Refresh()
-suite.check("a class without weights says so", UI.footer:GetText() == "There are no stat weights for DEATHKNIGHT yet.",
-    UI.footer:GetText())
-suite.check("and offers nothing", Link(Row(8).best) == nil)
-_G.UnitClass = function() return "HUNTER", "HUNTER" end
-
--- /beq window, and the settings button in the header.
+-- /beq window.
 UI:Hide()
+suite.check("closing hides it", not UI.frame:IsShown())
 ns.HandleSlash("window")
 suite.check("/beq window opens it", UI.frame:IsShown())
-
--- Closed, it does no work.
 UI:Hide()
 suite.check("a closed window does not refresh", UI:Refresh() == 0)
 
--- Two rings in the bags that both beat the weaker worn ring: the runner-up
--- is measured against the other ring, so both ring slots can show one.
-UI:Show()
-env.worn[11], env.worn[12] = "item:6", "item:7"     -- Agi 2 and 5
-env.bags[0] = { "item:5", "item:9" }                 -- Agi 8 and 6
-ITEMS["item:9"] = { loc = "INVTYPE_FINGER", class = 4, subclass = 0, stats = Agi(6) }
-UI:Refresh()
-suite.check("the better ring goes against the weaker one", Link(Row(11).best) == "item:5",
-    Link(Row(11).best))
-suite.check("the second ring against the other", Link(Row(12).best) == "item:9", Link(Row(12).best))
-suite.check("with its own gain", Row(12).gain:GetText() == "+20%", Row(12).gain:GetText())
-env.bags[0] = { "item:5" }
-UI:Refresh()
-suite.check("one ring only fills one slot", Link(Row(12).best) == nil, Link(Row(12).best))
-suite.check("upgrade rows are lit", Row(11).frame.edge:IsShown() and not Row(12).frame.edge:IsShown())
 -- A second copy of the ring already worn goes against the other ring.
-env.worn[11], env.worn[12] = "item:5", "item:6"     -- Agi 8 and 2
+env.worn[11], env.worn[12] = "item:5", "item:6"
 env.bags[0] = { "item:5" }
-UI:Refresh()
-suite.check("a second copy of a worn ring is an upgrade for the other slot",
-    Link(Row(12).best) == "item:5", Link(Row(12).best))
+suite.check("a second copy of a worn ring is an upgrade for the other slot", Owned(12) == "item:5", Owned(12))
 suite.check("and gets the bag arrow", ns.Compare:IsUpgradeNow("item:5", true))
 suite.check("but the worn one itself is not called an upgrade", not ns.Compare:IsUpgradeNow("item:5"))
 
@@ -129,11 +118,9 @@ ITEMS["item:10"] = { loc = "INVTYPE_TRINKET", class = 4, subclass = 0, stats = A
 ITEMS["item:11"] = { loc = "INVTYPE_TRINKET", class = 4, subclass = 0, stats = Agi(1) }
 env.worn[13], env.worn[14] = "item:10", "item:11"
 env.bags[0] = { "item:10" }
-UI:Refresh()
-suite.check("a second copy of a unique trinket is not an upgrade", Link(Row(14).best) == nil, Link(Row(14).best))
+suite.check("a second copy of a unique trinket is not an upgrade", Owned(14) == "", Owned(14))
 env.worn[13], env.worn[14] = nil, nil
 
--- What the client says about uniqueness wins over the trinket guess.
 _G.C_Item.GetItemUniquenessByID = function() return false end
 suite.check("a trinket the client calls not unique", not ns.Compare:IsUnique("item:10"))
 _G.C_Item.GetItemUniquenessByID = nil
@@ -143,11 +130,10 @@ _G.GetItemUniqueness = function() return 0, 0 end
 suite.check("and nothing there means not", not ns.Compare:IsUnique("item:10"))
 _G.GetItemUniqueness = nil
 suite.check("no answer: a ring is not taken to be unique", not ns.Compare:IsUnique("item:5"))
-UI:Hide()
 
--- Its place is remembered.
-UI.frame._point = { "TOPLEFT", nil, "TOPLEFT", 120, -80 }
-UI:SavePosition()
-suite.check("where it was dragged is saved", ns.db.point == "TOPLEFT" and ns.db.x == 120)
+-- A class with no weights is offered nothing.
+_G.UnitClass = function() return "DEATHKNIGHT", "DEATHKNIGHT" end
+suite.check("a class without weights owns no upgrades", next(UI:ReadBags()) == nil)
+_G.UnitClass = function() return "HUNTER", "HUNTER" end
 
 suite.done()

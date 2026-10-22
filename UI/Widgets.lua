@@ -801,6 +801,536 @@ function Widgets.CreateSearchBox(parent, placeholder, onChange, onAccept, opts)
 end
 
 --------------------------------------------------------------------------------
+-- Dropdown
+--
+-- Pets' (itself Tradeskills', trimmed to one choice). Here for the stat
+-- weights window's Class and Spec pickers, which a player found slow to step
+-- through one at a time.
+--------------------------------------------------------------------------------
+
+-- Rows a menu shows at once; a longer list scrolls with the mouse wheel.
+local MENU_ROWS = 12
+local MENU_ROW_HEIGHT = 20
+
+--- A box that opens a menu of options, each { text, value }; a click on one
+--- picks it and calls onSelect(value, option). opts.width sets the box's
+--- width; Widgets.DropdownWidth measures one that fits every option.
+function Widgets.CreateDropdown(parent, options, onSelect, opts)
+    opts = opts or {}
+
+    local dropdown = Theme.CreatePanel(parent, "row")
+    dropdown:SetSize(opts.width or 140, 22)
+    dropdown:EnableMouse(true)
+    Theme.TopSheen(dropdown)
+
+    local label = Theme.CreateLabel(dropdown, "small", "text")
+    label:SetPoint("LEFT", 6, 0)
+    label:SetPoint("RIGHT", -18, 0)
+    dropdown.text = label
+
+    -- A small solid arrow pointing down, four rows of plain colour (7, 5, 3
+    -- and 1 pixels wide), so it needs no texture file.
+    local arrow = {}
+    for row = 0, 3 do
+        local bar = dropdown:CreateTexture(nil, "ARTWORK")
+        bar:SetSize(7 - row * 2, 1)
+        bar:SetPoint("TOPLEFT", dropdown, "RIGHT", -13 + row, 2 - row)
+        bar:SetColorTexture(Theme.Unpack("muted"))
+        arrow[#arrow + 1] = bar
+    end
+
+    local menu = Theme.CreatePanel(parent, "panel", "borderLit")
+    menu:SetFrameStrata("FULLSCREEN_DIALOG")
+    menu:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 0, -2)
+    menu:SetPoint("TOPRIGHT", dropdown, "BOTTOMRIGHT", 0, -2)
+    menu:EnableMouse(true)
+    menu:Hide()
+    dropdown.menu = menu
+
+    -- The first option a long menu shows, and a slim bar saying how far
+    -- through the list that is.
+    menu.first = 1
+    local thumb = menu:CreateTexture(nil, "OVERLAY")
+    thumb:SetWidth(3)
+    thumb:SetColorTexture(Theme.Unpack("borderLit"))
+    thumb:Hide()
+
+    dropdown.options = options or {}
+    dropdown.selected = nil
+
+    local entries = {}
+    dropdown.entries = entries
+
+    local function Rebuild()
+        local count = #dropdown.options
+        local shown = math.min(count, MENU_ROWS)
+        local scrolls = count > shown
+        menu.first = math.max(1, math.min(menu.first or 1, count - shown + 1))
+
+        for index, option in ipairs(dropdown.options) do
+            local entry = entries[index]
+            if not entry then
+                entry = CreateFrame("Button", nil, menu)
+                entry:SetHeight(MENU_ROW_HEIGHT)
+                -- Drawn in full and faded with SetAlpha: made with a colour
+                -- alpha of 0, no hover ever showed (Tradeskills).
+                entry.highlight = Theme.Fill(entry, "rowHover", nil, "ARTWORK")
+                entry.highlight:SetAlpha(0)
+                entry.label = Theme.CreateLabel(entry, "small", "text")
+                entry.label:SetPoint("LEFT", 8, 0)
+                entry.label:SetPoint("RIGHT", -8, 0)
+                entry.mark = Theme.AccentStripe(entry, 2)
+                entry.mark:Hide()
+
+                local function Light(value) entry.highlight:SetAlpha(value) end
+                entry:SetScript("OnEnter", function(self) Motion:Blend(self, "hover", 1, 0.08, Light) end)
+                entry:SetScript("OnLeave", function(self) Motion:Blend(self, "hover", 0, 0.15, Light) end)
+                entries[index] = entry
+            end
+
+            local slot = index - menu.first
+            if slot >= 0 and slot < shown then
+                local y = -4 - slot * MENU_ROW_HEIGHT
+                entry:SetPoint("TOPLEFT", 1, y)
+                entry:SetPoint("TOPRIGHT", scrolls and -7 or -1, y)
+                entry.label:SetText(option.text)
+                local on = option.value == dropdown.selected
+                entry.label:SetTextColor(Theme.Unpack(on and "accent" or "text"))
+                entry.mark:SetShown(on)
+                entry.option = option
+                entry:Show()
+            else
+                entry:Hide()
+            end
+
+            entry:SetScript("OnClick", function()
+                dropdown:SetValue(option.value)
+                menu:Hide()
+                if onSelect then onSelect(option.value, option) end
+            end)
+        end
+        for index = count + 1, #entries do entries[index]:Hide() end
+
+        menu:SetHeight(math.max(8, shown * MENU_ROW_HEIGHT + 8))
+
+        thumb:SetShown(scrolls)
+        if scrolls then
+            local track = shown * MENU_ROW_HEIGHT
+            local size = math.max(12, math.floor(track * shown / count))
+            local offset = math.floor((track - size) * (menu.first - 1) / (count - shown) + 0.5)
+            thumb:SetHeight(size)
+            thumb:ClearAllPoints()
+            thumb:SetPoint("TOPRIGHT", -2, -4 - offset)
+        end
+    end
+
+    --- New options; the choice stays when it is still one of them.
+    function dropdown:SetOptions(newOptions)
+        self.options = newOptions or {}
+        local value = self.options[1] and self.options[1].value
+        for _, option in ipairs(self.options) do
+            if option.value == self.selected then value = self.selected break end
+        end
+        self:SetValue(value)
+        if menu:IsShown() then Rebuild() end
+    end
+
+    --- Show `value` as the choice, without calling onSelect.
+    function dropdown:SetValue(value)
+        self.selected = value
+        for _, option in ipairs(self.options) do
+            if option.value == value then
+                label:SetText(option.text)
+                return
+            end
+        end
+        label:SetText(opts.placeholder or "")
+    end
+
+    function dropdown:GetValue()
+        return self.selected
+    end
+
+    --- Down from the box, or up from it when the screen has no room below.
+    local function Place()
+        local up = false
+        pcall(function()
+            local scale = dropdown:GetEffectiveScale()
+            local need = (menu:GetHeight() + 2) * scale
+            local below = dropdown:GetBottom() * scale
+            local above = UIParent:GetTop() * UIParent:GetEffectiveScale() - dropdown:GetTop() * scale
+            up = below < need and above >= need
+        end)
+        menu:ClearAllPoints()
+        if up then
+            menu:SetPoint("BOTTOMLEFT", dropdown, "TOPLEFT", 0, 2)
+            menu:SetPoint("BOTTOMRIGHT", dropdown, "TOPRIGHT", 0, 2)
+        else
+            menu:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 0, -2)
+            menu:SetPoint("TOPRIGHT", dropdown, "BOTTOMRIGHT", 0, -2)
+        end
+    end
+
+    function dropdown:Toggle()
+        if menu:IsShown() then
+            menu:Hide()
+            return
+        end
+        -- A long menu opens with the choice in view, near its middle.
+        menu.first = 1
+        for index, option in ipairs(self.options) do
+            if option.value == self.selected then
+                menu.first = index - math.floor(MENU_ROWS / 2)
+                break
+            end
+        end
+        Rebuild()
+        Place()
+        menu:Show()
+        menu:Raise()
+        Motion:Run(menu, "open", 0.12, function(p) menu:SetAlpha(p) end)
+    end
+
+    dropdown:SetScript("OnMouseDown", function(self) self:Toggle() end)
+
+    -- The wheel moves a long menu a row at a time.
+    menu:EnableMouseWheel(true)
+    menu:SetScript("OnMouseWheel", function(_, delta)
+        local count = #dropdown.options
+        if count <= MENU_ROWS then return end
+        local step = (tonumber(delta) or 0) > 0 and -1 or 1
+        local first = math.max(1, math.min(count - MENU_ROWS + 1, menu.first + step))
+        if first ~= menu.first then
+            menu.first = first
+            Rebuild()
+        end
+    end)
+
+    -- A click anywhere else closes the menu, as the game's own menus do. The
+    -- event is asked for only while the menu is open, and inside a pcall: a
+    -- client that does not know it raises, and the menu then stays open
+    -- until picked from or clicked shut.
+    menu:SetScript("OnShow", function(self) pcall(self.RegisterEvent, self, "GLOBAL_MOUSE_DOWN") end)
+    menu:SetScript("OnHide", function(self) pcall(self.UnregisterEvent, self, "GLOBAL_MOUSE_DOWN") end)
+    menu:SetScript("OnEvent", function(self)
+        if self:IsMouseOver() or dropdown:IsMouseOver() then return end
+        self:Hide()
+    end)
+
+    -- Its window closing takes the menu with it.
+    dropdown:SetScript("OnHide", function() menu:Hide() end)
+
+    --- How lit the box is under the mouse: its edge and its arrow.
+    local function Light(p)
+        local r, g, b = Motion.Mix("border", "borderLit", p)
+        for _, edge in ipairs(dropdown.borderTextures or {}) do edge:SetColorTexture(r, g, b, 1) end
+        local ar, ag, ab = Motion.Mix("muted", "accent", p)
+        for _, bar in ipairs(arrow) do bar:SetColorTexture(ar, ag, ab, 1) end
+    end
+    dropdown:SetScript("OnEnter", function(self) Motion:Blend(self, "hover", 1, 0.12, Light) end)
+    dropdown:SetScript("OnLeave", function(self) Motion:Blend(self, "hover", 0, 0.18, Light) end)
+
+    dropdown:SetValue(nil)
+    return dropdown
+end
+
+--- A dropdown width that fits every option's words, never below `least`.
+function Widgets.DropdownWidth(options, least)
+    local widest = 0
+    for _, option in ipairs(options or {}) do
+        widest = math.max(widest, Theme.TextWidth("small", option.text))
+    end
+    return math.max(least or 0, math.ceil(widest) + 30)
+end
+
+--------------------------------------------------------------------------------
+-- Tab strip
+--
+-- Farmer's tab strip (itself Tradeskills'), brought over for the hanging
+-- tabs under the gear window: Upgrades, Enchants and Settings (a player
+-- asked, the owner approved the mockup 2026-10-22).
+--------------------------------------------------------------------------------
+
+-- Room either side of a tab's name, and the narrowest a tab gets, when the
+-- tabs are sized to their names.
+local TAB_PAD = 20
+local TAB_MIN = 56
+
+--- Widths for tabs sized to their names: each name measured with room either
+--- side, and what is left of `room` shared out, a little each, so a strip of
+--- a few tabs does not stretch them wide. Nil when a name cannot be measured,
+--- or when they do not all fit `room`.
+local function NameWidths(buttons, room)
+    local widths, total = {}, 0
+    for index, button in ipairs(buttons) do
+        local width = Theme.TextWidth(button.labelSize, button.label:GetText())
+        if not width or width <= 0 then return nil end
+        widths[index] = math.max(TAB_MIN, math.ceil(width) + TAB_PAD)
+        total = total + widths[index]
+    end
+
+    if room and total > room then return nil end
+
+    local extra = room and math.min(24, math.floor((room - total) / #buttons)) or 0
+    for index in ipairs(widths) do widths[index] = widths[index] + extra end
+    return widths
+end
+
+-- Hanging tabs (opts.hanging): how tall a tab is, and how far the one
+-- showing reaches up over the window's rim to join it.
+local HANG_HEIGHT = 26
+local HANG_JOIN = 5
+
+--- The metal edge round a hanging tab: down both sides and along the foot.
+local function HangingEdges(button)
+    local Gradient = ns.Titanforged and ns.Titanforged.Gradient
+    local metalLo, metal = { 0.357, 0.267, 0.086 }, { 0.690, 0.545, 0.235 }
+    local hi = { 0.941, 0.831, 0.541 }
+
+    local function Edge(a, b, width, height)
+        local edge = button:CreateTexture(nil, "BORDER", nil, 2)
+        edge:SetPoint(a)
+        edge:SetPoint(b)
+        if width then edge:SetWidth(width) else edge:SetHeight(height) end
+        return edge
+    end
+
+    local left = Edge("TOPLEFT", "BOTTOMLEFT", 2)
+    local right = Edge("TOPRIGHT", "BOTTOMRIGHT", 2)
+    local foot = Edge("BOTTOMLEFT", "BOTTOMRIGHT", nil, 2)
+    button.edges = { left, right, foot }
+
+    if Gradient then
+        Gradient(left, "VERTICAL", hi, metalLo)
+        Gradient(right, "VERTICAL", metal, metalLo)
+        Gradient(foot, "HORIZONTAL", metal, hi)
+    else
+        for _, edge in ipairs({ left, right, foot }) do edge:SetColorTexture(Theme.Unpack("metal")) end
+    end
+end
+
+--- A row of tabs, Tradeskills' tab strip. Each tab is { key, text, width };
+--- a tab given no width is as wide as its name needs, and opts.width is the
+--- room all of them have. opts.hanging hangs them below the strip's top
+--- edge, as the game's own windows wear their tabs (Titanforged): anchor the
+--- strip's top to the window's bottom.
+function Widgets.CreateTabStrip(parent, tabs, onSelect, opts)
+    opts = opts or {}
+    local hanging = opts.hanging and true or false
+
+    local strip = CreateFrame("Frame", nil, parent)
+    strip:SetHeight(28)
+
+    strip.tabs = {}
+    -- False rather than nil until set: Farmer's test frames answer a field
+    -- they were never given.
+    strip.selected = false
+    strip.lineX, strip.lineWidth = false, false
+
+    -- In the Blizzard window style a resting tab's name is the game's gold,
+    -- and hanging tabs wear the character window's tab art.
+    local Look = ns.BlizzardLook
+    local blizzard = Look and Look.On()
+    local restKey = blizzard and "gilt" or "muted"
+
+    --- How lit a tab is under the mouse, 0 to 1: its wash, its underline
+    --- and its label.
+    local function Hover(button, p)
+        button.hover:SetAlpha(p)
+        button.underline:SetAlpha(p)
+        if strip.selected ~= button.key then
+            button.label:SetTextColor(Motion.Mix(restKey, "text", p))
+        end
+    end
+
+    for index, tab in ipairs(tabs) do
+        local button = CreateFrame("Button", nil, strip)
+        button:SetHeight(hanging and HANG_HEIGHT or 28)
+
+        button.background = Theme.Fill(button, "panel")
+        button.hover = Theme.Fill(button, "rowHover", 0.45, "BORDER")
+        button.hover:SetAlpha(0)
+
+        if hanging then
+            HangingEdges(button)
+            -- Each tab glows faintly gold when it is the one showing.
+            if Theme.Halo then Theme.Halo(button, 6, 0) end
+        end
+
+        -- The tab showing sits in a soft gold light rising from its line.
+        button.lit = button:CreateTexture(nil, "BORDER", nil, 1)
+        button.lit:SetAllPoints(button)
+        Theme.SetGradientAlpha(button.lit, "VERTICAL", "accent", hanging and 0.28 or 0.14, 0)
+        button.lit:Hide()
+
+        -- Under the mouse, a faint line along the tab's foot echoes the gold
+        -- one under the tab showing. It is inset from the tab's edges and
+        -- drawn on the tab, below the layer the gold line rides on, so the
+        -- gold line passes over it as it slides, and the tab showing never
+        -- lights its own.
+        button.underline = button:CreateTexture(nil, "ARTWORK")
+        button.underline:SetPoint("BOTTOMLEFT", 10, 0)
+        button.underline:SetPoint("BOTTOMRIGHT", -10, 0)
+        button.underline:SetHeight(1)
+        button.underline:SetColorTexture(Theme.Unpack("muted"))
+        button.underline:SetAlpha(0)
+
+        -- A step smaller on a narrow tab given its width, so its name stays
+        -- inside it. Tabs sized to their names are sized below.
+        button.labelSize = tab.width and tab.width < 90 and "small" or "normal"
+        button.label = Theme.CreateLabel(button, button.labelSize, restKey, "CENTER")
+        button.label:SetPoint("CENTER", 0, 0)
+        button.label:SetText(tab.text)
+
+        if blizzard and hanging then Look.Tab(button) end
+
+        button.key = tab.key
+        button.fixedWidth = tab.width or false
+
+        button:SetScript("OnClick", function(self)
+            strip:Select(self.key)
+            if onSelect then onSelect(self.key) end
+        end)
+
+        button:SetScript("OnEnter", function(self)
+            if strip.selected == self.key then return end
+            Motion:Blend(self, "hover", 1, 0.12, function(p) Hover(self, p) end)
+        end)
+
+        button:SetScript("OnLeave", function(self)
+            Motion:Blend(self, "hover", 0, 0.18, function(p) Hover(self, p) end)
+        end)
+
+        strip.tabs[index] = button
+    end
+
+    -- Tabs given no width are as wide as their names, at the full size when
+    -- all of them fit opts.width and a step smaller when not. When a name
+    -- cannot be measured they share the room equally.
+    local sized, room = {}, opts.width
+    for _, button in ipairs(strip.tabs) do
+        if button.fixedWidth then
+            if room then room = room - button.fixedWidth end
+        else
+            sized[#sized + 1] = button
+        end
+    end
+
+    local widths = {}
+    if #sized > 0 then
+        local named = NameWidths(sized, room)
+        if not named then
+            for _, button in ipairs(sized) do
+                button.labelSize = "small"
+                button.label:SetFont(Theme.FONT, Theme.sizes.small, "")
+            end
+            named = NameWidths(sized, room)
+        end
+
+        for index, button in ipairs(sized) do
+            widths[button] = named and named[index]
+                or (room and math.min(96, math.floor(room / #sized)) or 96)
+        end
+    end
+
+    -- Hanging tabs stand a little apart, so each reads as its own tab.
+    local gap = hanging and 3 or 0
+    local x = 0
+    for _, button in ipairs(strip.tabs) do
+        local width = button.fixedWidth or widths[button]
+        if hanging then
+            button:SetPoint("TOPLEFT", x, 0)
+            width = math.max(1, width - gap)
+        else
+            button:SetPoint("BOTTOMLEFT", x, 0)
+        end
+        button:SetWidth(width)
+        button.left, button.span = x, width
+        x = x + width + gap
+    end
+
+    strip:SetWidth(math.max(x, 1))
+
+    -- One gold line for the whole strip, gliding to the tab picked, with a
+    -- soft glow over it. Both ride on a layer of their own above the tabs:
+    -- drawn on the strip itself they sat under every tab's fill (a frame's
+    -- children draw over it) and never showed.
+    local layer = CreateFrame("Frame", nil, strip)
+    layer:SetAllPoints(strip)
+    local ok, level = pcall(strip.GetFrameLevel, strip)
+    if ok and type(level) == "number" then layer:SetFrameLevel(level + 3) end
+    pcall(layer.EnableMouse, layer, false)
+    strip.lineLayer = layer
+
+    local line = layer:CreateTexture(nil, "OVERLAY")
+    line:SetHeight(2)
+    line:SetColorTexture(Theme.Unpack("accent"))
+    line:Hide()
+    strip.line = line
+
+    local glow = layer:CreateTexture(nil, "ARTWORK")
+    glow:SetHeight(7)
+    glow:SetPoint("BOTTOMLEFT", line, "BOTTOMLEFT", -2, 0)
+    glow:SetPoint("BOTTOMRIGHT", line, "BOTTOMRIGHT", 2, 0)
+    Theme.SetGradientAlpha(glow, "VERTICAL", "accent", 0.32, 0)
+    pcall(glow.SetBlendMode, glow, "ADD")
+    glow:Hide()
+    strip.lineGlow = glow
+    if blizzard and hanging then Look.TabStrip(strip) end
+
+    --- Put the line under `button`, sliding there from wherever it is now,
+    --- so a tab picked mid-slide turns the line round rather than making it
+    --- jump back first.
+    local function MarkTab(button)
+        local fromX, fromWidth = strip.lineX or button.left, strip.lineWidth or button.span
+        local still = fromX == button.left and fromWidth == button.span
+
+        line:Show()
+        glow:Show()
+
+        -- Hung from the tab it is heading for, so it lands exactly under it;
+        -- only the distance still to go is worked out.
+        Motion:Run(line, "slide", still and 0 or 0.22, function(p)
+            local x = fromX + (button.left - fromX) * p
+            local width = fromWidth + (button.span - fromWidth) * p
+            strip.lineX, strip.lineWidth = x, width
+
+            line:ClearAllPoints()
+            line:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", x - button.left, 0)
+            line:SetWidth(math.max(1, width))
+        end)
+    end
+
+    function strip:Select(key)
+        self.selected = key
+
+        for _, button in ipairs(self.tabs) do
+            local active = button.key == key
+            button.selected = active
+            Motion:Stop(button, "hover")
+            Motion:SetValue(button, "hover", 0)
+            button.hover:SetAlpha(0)
+            button.underline:SetAlpha(0)
+            button.lit:SetShown(active)
+            button.label:SetTextColor(Theme.Unpack(active and (hanging and "accentHi" or "accent") or restKey))
+            button.background:SetColorTexture(Theme.Unpack(active and "header" or (hanging and "window" or "panel")))
+            if hanging then
+                -- The tab showing is taller, reaching up over the window's
+                -- rim so it joins the window, and glows.
+                button:ClearAllPoints()
+                button:SetPoint("TOPLEFT", strip, "TOPLEFT", button.left, active and HANG_JOIN or 0)
+                button:SetHeight(HANG_HEIGHT + (active and HANG_JOIN or 0))
+                if rawget(button, "haloTextures") then Theme.SetHalo(button, active and 0.22 or 0) end
+            end
+            if active then MarkTab(button) end
+            if blizzard then Look.SelectTab(button, active) end
+        end
+    end
+
+    return strip
+end
+
+--------------------------------------------------------------------------------
 -- Size grip
 --
 -- The house size grip, brought over from Farmer's Widgets.lua (the owner,

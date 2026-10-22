@@ -375,7 +375,7 @@ check("which closes it", addon.UI.frame:IsShown(), false)
 
 local finder = Titan(addon.FinderUI.frame)
 check("the finder wears it too", finder ~= nil and rawget(finder, "portrait") ~= nil, true)
-check("named on its plate", finder.plate.label._text, "Where to get upgrades")
+check("named on its plate", finder.plate.label._text, "Blackthornes Equipment")
 
 for _, entry in ipairs({ { "settings", addon.SettingsUI }, { "the stat weights", addon.WeightsUI } }) do
     local dressed = Titan(entry[2].frame)
