@@ -132,6 +132,7 @@ local POSITION_KEYS = {
     { "questArrowX", "questArrowY" },
     { "ignoredPoint", "ignoredRelativePoint", "ignoredX", "ignoredY" },
     { "dungeonQuestsPoint", "dungeonQuestsRelPoint", "dungeonQuestsX", "dungeonQuestsY" },
+    { "dungeonLootPoint", "dungeonLootRelPoint", "dungeonLootX", "dungeonLootY" },
 }
 
 --- Put every Equipment window back where it started: the gear window, this
@@ -142,7 +143,7 @@ function SettingsUI:ResetPositions()
     for _, keys in ipairs(POSITION_KEYS) do
         for _, key in ipairs(keys) do ns.db[key] = nil end
     end
-    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI, ns.IgnoredUI, ns.DungeonQuestsUI }) do
+    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI, ns.IgnoredUI, ns.DungeonQuestsUI, ns.DungeonLootUI }) do
         if module and module.frame and module.RestorePosition then module:RestorePosition() end
     end
 end
@@ -453,6 +454,9 @@ function SettingsUI:BuildGear()
         L["Names the best enchant for a piece you wear."])
     controls.enchantTooltip = ShiftStepper(enchantRow, "enchantTooltip", "enchant")
 
+    local dropsRow = pages:Row("gear", 2, L["Boss Drops:"], nil)
+    controls.dropsTooltip = ShiftStepper(dropsRow, "dropsTooltip", "drops")
+
     -- Show or Hide for this character (a player's report, 2026-10-20: one
     -- Show button that only cleared the banner's ignored types read as
     -- broken). Hide also covers any type ignored from a banner; Show clears
@@ -762,6 +766,11 @@ function SettingsUI:BuildQuest()
     local _, dungeonsButton = CommandRow(pages, "quest", 2, L["Dungeon Quests:"], nil,
         L["Open"], "dungeons")
     controls.dungeonQuests = dungeonsButton
+
+    -- What each dungeon's bosses drop (UI/DungeonLootWindow.lua).
+    local _, lootButton = CommandRow(pages, "quest", 2, L["Dungeon Loot:"], nil,
+        L["Open"], "loot")
+    controls.dungeonLoot = lootButton
 end
 
 --- General: windows and text on the left, help and problems on the right.
@@ -944,6 +953,7 @@ function SettingsUI:Refresh()
     controls.suffixLine:Sync()
     controls.altTooltipLine:Sync()
     controls.enchantTooltip:Sync()
+    controls.dropsTooltip:Sync()
     self:RefreshSkip()
     controls.classTraining:SetChecked(ns.ClassTraining:IsOn())
     for _, entry in ipairs(HUNTING) do

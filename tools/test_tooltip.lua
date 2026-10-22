@@ -127,4 +127,29 @@ local ok = pcall(tip._scripts.OnTooltipSetItem, tip)
 suite.check("a secret link does not raise", ok)
 suite.check("and adds nothing", #tip._lines == 0, #tip._lines)
 
+-- Boss drops: which boss drops it, and where.
+local S = ns.Sources
+S.ITEMS[7001] = { d = { 9001, 12, 9002, 30 } }
+S.BOSSES[9001] = { "Lord Cobrahn", "test_wc", 20 }
+S.BOSSES[9002] = { "Mutanus", "test_wc", 22 }
+S.DUNGEONS.test_wc = S.DUNGEONS.test_wc or { "Wailing Caverns", 17, 24, "The Barrens" }
+suite.check("the boss most likely to drop it is named", ns.Tooltip.DropLine(7001) == "Drops from Mutanus in Wailing Caverns",
+    ns.Tooltip.DropLine(7001))
+S.FOREVER = S.FOREVER or {}
+S.FOREVER[7001] = { { "Lady Anacondra", "test_wc", 5 } }
+suite.check("a drop seen on Forever wins", ns.Tooltip.DropLine(7001) == "Drops from Lady Anacondra in Wailing Caverns",
+    ns.Tooltip.DropLine(7001))
+suite.check("nothing for an item no boss drops", ns.Tooltip.DropLine(7002) == nil)
+local function DropLines(link)
+    local count = 0
+    for _, line in ipairs(ns.Tooltip:MoreLines(link)) do
+        if line.key == "drops" then count = count + 1 end
+    end
+    return count
+end
+suite.check("the line goes on the tooltip", DropLines("item:7001") == 1, DropLines("item:7001"))
+ns.db.dropsTooltip = false
+suite.check("and the setting takes it off", DropLines("item:7001") == 0)
+ns.db.dropsTooltip = nil
+
 suite.done()

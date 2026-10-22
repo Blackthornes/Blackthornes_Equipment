@@ -790,6 +790,51 @@ unless ticked), `dungeonQuestsMyLevel` (false when unticked),
 has a "dungeon quests" line. Tested in `tools/test_dungeonquests.lua` and
 `tools/test_make_dungeon_quests.py`. Not yet seen in game.
 
+Names and doors from the game (the owner picked them, 2026-10-22): a
+quest's row and the arrow show the game's own title
+(`DQ:TitleOf`: `C_QuestLog.GetTitleForQuestID`, kept for the session,
+else the data's; one the game has not loaded is asked for once with
+`RequestLoadQuestByID`, and `QUEST_DATA_LOAD_RESULT` redraws a shown
+window). Sorting still uses the data's title. `Logic/DungeonDoors.lua`
+learns where each door stands: the spot as a loading screen starts
+(`PLAYER_LEAVING_WORLD`, `QuestArrow:Here`) is kept when the next
+`PLAYER_ENTERING_WORLD` is inside a dungeon the addon knows
+(`DQ.Inside`), account wide in `dungeonDoors[key].spots` (at most
+`KEEP`; never rename it). A spot counts only in the door zone the data
+names, or, with none named, once two agree (`NEAR`), so a hearth or a
+summon is never taken for a door. `DungeonDoors:Fill` lays it on the
+upgrade quest's door places (a dungeon drop, a boss that starts or ends
+a quest), which were a zone's middle. `/beq probe` has "quest names" and
+"dungeon doors" lines. Nothing new is shown to players in words. Tested
+in `tools/test_dungeonquests.lua`. Not yet seen in game.
+
+Boss drops on the tooltip (the owner approved the words, 2026-10-22):
+"Drops from BOSS in DUNGEON" under the item's other lines
+(`Tooltip.DropLine`: Forever's own drop with the best rate from
+`Sources.FOREVER`, else the Classic boss most likely to drop it from the
+item's `d`, the dungeon named by `DQ.Dungeon`). "Boss Drops:" on the
+Gear page, Off, Shift or Always (`dropsTooltip`, on unless unticked,
+never rename it; Shift key "drops"). Tested in `tools/test_tooltip.lua`.
+
+Dungeon Loot (the owner said build it, 2026-10-22, from a mockup whose
+words he approved): what each dungeon's bosses drop, upgrades marked.
+`Logic/DungeonLoot.lua` lays the drops out by dungeon once
+(`DungeonLoot:Index`, Classic's from each item's `d`, Forever's own from
+`Sources.FOREVER`, which wins) and judges each piece through the finder's
+kept verdicts (`Finder:JudgeOnce`, `Compare.WearableUpgrade`), asking the
+server for items not loaded (`ASK` a list). `UI/DungeonLootWindow.lua`
+(`/beq loot`, the gear window's Dungeon Loot button, Settings > Upgrade
+quest) lists the dungeons for this side on the left; the picked one shows
+its door and levels, Armor: and Stat: chips (cloth, leather and mail chips
+leave out other body armor only), Upgrades Only, sortable ITEM, SLOT,
+BOSS, GAIN heads (a third click is best first), "N shown. M are upgrades
+for you.", Follow (the quest arrow to the door, `DungeonDoors` spot when
+learned) and Show the Way (the map pin). Chips, the tick box and the sort
+last the session. Saved, account wide, never rename them:
+`dungeonLootPick`, `dungeonLootScale`, `dungeonLootPoint`,
+`dungeonLootRelPoint`, `dungeonLootX`, `dungeonLootY`. Tested in
+`tools/test_dungeonloot.lua`. Not yet seen in game.
+
 ## The Quest log tab
 
 The owner asked (2026-10-10) for the game's quest tracker inside the
@@ -1055,8 +1100,9 @@ was off reads Off; only a Shift pick is new, kept account wide in
 `tooltipShift[key] = true` (never rename it). Equipment's keys
 (`TooltipShift.KEYS` in `UI/Tooltip.lua`): "upgrade" (Tooltip Line,
 `tooltipLine`: the verdict and the weapon master line), "suffix" (Random
-Roll Names, `suffixLine`), "alt" (Upgrades for Alts, `altTooltipLine`) and
-"enchant" (Best Enchant, `enchantTooltip`). Each line carries `line.key`;
+Roll Names, `suffixLine`), "alt" (Upgrades for Alts, `altTooltipLine`),
+"enchant" (Best Enchant, `enchantTooltip`) and "drops" (Boss Drops,
+`dropsTooltip`). Each line carries `line.key`;
 `Tooltip:Decorate` asks `TooltipShift:Shows` as it adds them, so the kept
 lines (`LinesFor`) never hold the Shift answer, and a line held back adds
 "Hold Shift for more." once (`TooltipShift:Held`). The shared frame redraws

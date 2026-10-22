@@ -67,6 +67,8 @@ Logic\Travel.lua
 Logic\QuestArrow.lua
 Logic\QuestLog.lua
 Logic\DungeonQuests.lua
+Logic\DungeonLoot.lua
+Logic\DungeonDoors.lua
 Logic\TomTom.lua
 Logic\Contribute.lua
 
@@ -98,6 +100,7 @@ UI\MoreMarks.lua
 UI\QuestPanel.lua
 UI\QuestLogTab.lua
 UI\DungeonQuestsWindow.lua
+UI\DungeonLootWindow.lua
 UI\IgnoredWindow.lua
 UI\QuestArrow.lua
 UI\TravelCard.lua

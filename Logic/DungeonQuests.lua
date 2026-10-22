@@ -304,7 +304,7 @@ function DQ:Follow(quest)
     -- A quest not in the log goes in with no ID, or the quest log tab lets
     -- it go as gone from the log.
     local id = self:InLog()[quest.questID] and quest.questID or nil
-    local ok, aimed = pcall(arrow.AimAtQuest, arrow, id, quest.title, place)
+    local ok, aimed = pcall(arrow.AimAtQuest, arrow, id, DQ:TitleOf(quest), place)
     return ok and aimed == true
 end
 
@@ -314,6 +314,63 @@ function DQ:ShowTheWay(quest)
     if not (place and ns.Waypoints) then return false end
     local ok, shown = pcall(ns.Waypoints.Show, ns.Waypoints, place, quest.giver or quest.title)
     return ok and shown == true
+end
+
+--------------------------------------------------------------------------------
+-- Names from the game
+--------------------------------------------------------------------------------
+
+-- The game's own title for each quest, kept for the session (it is in the
+-- client's language, and Forever's wording wins over the data's).
+DQ.titles = {}
+DQ.asked = {}
+
+--- The quest's name as the game gives it, else the data's. A quest the
+--- game has not loaded is asked for once; QUEST_DATA_LOAD_RESULT redraws.
+function DQ:TitleOf(quest)
+    local id = quest and Number(quest.questID)
+    if not id then return quest and quest.title or "" end
+    local kept = self.titles[id]
+    if kept then return kept end
+    local log = _G.C_QuestLog
+    local title = Plain(Read(log and log.GetTitleForQuestID, id))
+    if title then
+        self.titles[id] = title
+        return title
+    end
+    if not self.asked[id] and log and type(log.RequestLoadQuestByID) == "function" then
+        self.asked[id] = true
+        pcall(log.RequestLoadQuestByID, id)
+    end
+    return quest.title or ""
+end
+
+--- A quest the game just loaded: redraw once, a moment later, if shown.
+function DQ:TitleLoaded(questID, success)
+    questID = Number(questID)
+    if not (questID and self.asked[questID] and success) then return end
+    if self.titleRedraw then return end
+    local after = _G.C_Timer and _G.C_Timer.After
+    if type(after) ~= "function" then
+        self:Changed()
+        return
+    end
+    self.titleRedraw = true
+    after(DQ.SETTLE, function()
+        DQ.titleRedraw = false
+        local ui = ns.DungeonQuestsUI
+        if ui and ui.Showing and ui:Showing() then DQ:Changed() end
+    end)
+end
+
+--- For /beq probe: whether the game names quests by ID, and quest 166's.
+function DQ:DescribeTitles()
+    local log = _G.C_QuestLog
+    local has = log and type(log.GetTitleForQuestID) == "function"
+    local load = log and type(log.RequestLoadQuestByID) == "function"
+    local title = Plain(Read(log and log.GetTitleForQuestID, 166))
+    return ("title call %s, load call %s, quest 166 %s"):format(
+        has and "found" or "missing", load and "found" or "missing", title or "not loaded")
 end
 
 --------------------------------------------------------------------------------
@@ -418,6 +475,9 @@ function DQ:OnEnable()
         local questID = Number(b) or Number(a)
         DQ:LogMoved()
         if _G.C_Timer then _G.C_Timer.After(1, function() DQ:LearnLog(questID) end) end
+    end)
+    ns.RegisterEvent(self, "QUEST_DATA_LOAD_RESULT", function(_, _, questID, success)
+        DQ:TitleLoaded(questID, success)
     end)
     if _G.C_Timer then _G.C_Timer.After(8, function() DQ:LearnLog() end) end
 end

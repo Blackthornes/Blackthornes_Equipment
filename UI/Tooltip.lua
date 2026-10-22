@@ -26,11 +26,12 @@ local TOOLTIP_NAMES = { "GameTooltip", "ItemRefTooltip" }
 -- Each line's key for Off, Shift or Always (UI/TooltipShift.lua): the
 -- verdict and the weapon master under it ("upgrade", tooltipLine), a random
 -- roll's name ("suffix", suffixLine), an alt's upgrade ("alt",
--- altTooltipLine) and the best enchant ("enchant", enchantTooltip). A line
+-- altTooltipLine), the best enchant ("enchant", enchantTooltip) and the
+-- boss that drops it ("drops", dropsTooltip). A line
 -- carries its key as `line.key`; the Shift answer is asked as the lines go
 -- on the tooltip, never kept with them.
 if ns.TooltipShift then
-    ns.TooltipShift.KEYS = { "upgrade", "suffix", "alt", "enchant" }
+    ns.TooltipShift.KEYS = { "upgrade", "suffix", "alt", "enchant", "drops" }
 end
 
 local function Field(object, key)
@@ -134,6 +135,10 @@ function Tooltip:MoreLines(link)
         end
     end
     local itemID = tonumber(link:match("item:(%d+)"))
+    if itemID and not (ns.db and ns.db.dropsTooltip == false) then
+        local drop = Tooltip.DropLine(itemID)
+        if drop then lines[#lines + 1] = { drop, "muted", key = "drops" } end
+    end
     if itemID and ns.Crafting then
         local text, color = ns.Crafting:TooltipLine(itemID)
         if text then lines[#lines + 1] = { text, color } end
@@ -173,6 +178,43 @@ function Tooltip:AltLine(link, result)
     local how = alt.gain and ("%+d%%"):format(alt.gain) or L["fills an empty slot"]
     if alt.level then return L.Format("Upgrade for %s at level %d: %s", name, alt.level, how) end
     return L.Format("Upgrade for %s: %s", name, how)
+end
+
+--- "Drops from BOSS in DUNGEON" for gear a dungeon drops, or nil (the
+--- owner picked it, 2026-10-22). What Farmer saw drop on Forever comes
+--- first, the best rate leading; else Classic's boss with the best chance.
+function Tooltip.DropLine(itemID)
+    local S = ns.Sources
+    if not S then return nil end
+    local DQ = ns.DungeonQuests
+    local function DungeonName(key)
+        local dungeon = DQ and DQ.Dungeon and DQ.Dungeon(key)
+        if dungeon then return dungeon.name end
+        local row = S.DUNGEONS and S.DUNGEONS[key]
+        return type(row) == "table" and row[1] or nil
+    end
+    local best, bestRate
+    for _, drop in ipairs(S.FOREVER and S.FOREVER[itemID] or {}) do
+        local where = type(drop) == "table" and DungeonName(drop[2])
+        local rate = type(drop) == "table" and tonumber(drop[3]) or 0
+        if where and drop[1] and (not best or rate > bestRate) then
+            best, bestRate = { drop[1], where }, rate
+        end
+    end
+    if not best then
+        local item = S.ITEMS and S.ITEMS[itemID]
+        local drops = type(item) == "table" and item.d or {}
+        for i = 1, #drops, 2 do
+            local boss = S.BOSSES and S.BOSSES[drops[i]]
+            local where = boss and DungeonName(boss[2])
+            local rate = tonumber(drops[i + 1]) or 0
+            if where and (not best or rate > bestRate) then
+                best, bestRate = { boss[1], where }, rate
+            end
+        end
+    end
+    if not best then return nil end
+    return L.Format("Drops from %s in %s", best[1], best[2])
 end
 
 --- The lines for one item, worked out afresh.

@@ -161,4 +161,60 @@ suite.check("Hall of Thanes says where its door is", DQ.Dungeon("3065").door == 
 ns.DUNGEON_QUESTS, ns.FOREVER_DUNGEON_QUESTS = realData, realForever
 suite.check("the probe line reads", type(DQ:Describe()) == "string")
 
+-- Quest names come from the game when it has them, the data's otherwise;
+-- a quest it has not loaded is asked for once and redrawn when it comes.
+local realLog = _G.C_QuestLog
+local asked, titles = {}, { [7001] = "Forever's Own Name" }
+_G.C_QuestLog = setmetatable({
+    GetTitleForQuestID = function(id) return titles[id] end,
+    RequestLoadQuestByID = function(id) asked[#asked + 1] = id end,
+}, { __index = realLog })
+DQ.titles, DQ.asked = {}, {}
+suite.check("the game's name wins", DQ:TitleOf({ questID = 7001, title = "Old" }) == "Forever's Own Name")
+suite.check("the data's name stands in", DQ:TitleOf({ questID = 7002, title = "Data Name" }) == "Data Name")
+DQ:TitleOf({ questID = 7002, title = "Data Name" })
+suite.check("a quest not loaded is asked for once", #asked == 1 and asked[1] == 7002, #asked)
+titles[7002] = "Loaded Now"
+DQ:TitleLoaded(7002, true)
+suite.check("once loaded, the game's name shows", DQ:TitleOf({ questID = 7002, title = "Data Name" }) == "Loaded Now")
+suite.check("the quest names probe line reads", DQ:DescribeTitles():find("title call found", 1, true) ~= nil,
+    DQ:DescribeTitles())
+_G.C_QuestLog = realLog
+DQ.titles, DQ.asked = {}, {}
+
+-- Dungeon doors are learned as the character walks in.
+local Doors = ns.DungeonDoors
+local realHere, realInside, realDQInside = ns.QuestArrow.Here, ns.QuestArrow.Inside, DQ.Inside
+ns.db.dungeonDoors = nil
+ns.QuestArrow.Inside = function() return false end
+ns.QuestArrow.Here = function() return { zone = "Ironforge", x = 0.42, y = 0.31 } end
+DQ.Inside = function() return "3065" end
+Doors:Leaving()
+suite.check("walking in keeps the door", Doors:Arrived() == true)
+local spot = Doors:Spot("3065")
+suite.check("a spot in the door's own zone is used", spot and spot.zone == "Ironforge"
+    and spot.x == 42 and spot.y == 31, spot and (spot.zone .. " " .. spot.x .. " " .. spot.y))
+suite.check("it is found by the dungeon's name too", Doors:SpotByName(DQ.Dungeon("3065").name) ~= nil)
+local place = Doors:Fill({ zone = "Ironforge" }, DQ.Dungeon("3065").name)
+suite.check("a door place gets the spot", place.x == 42 and place.y == 31)
+Doors:Keep("3065", "Dun Morogh", 10, 10)
+suite.check("a hearth elsewhere is not used", Doors:Spot("3065").zone == "Ironforge")
+suite.check("arriving with nothing noted keeps nothing", Doors:Arrived() == false)
+DQ.Inside = function() return nil end
+Doors:Leaving()
+suite.check("arriving outside a dungeon keeps nothing", Doors:Arrived() == false)
+
+-- A dungeon whose door zone the data lacks waits for two spots that agree.
+ns.FOREVER_DUNGEON_PLACES["9902"] = { "Doorless Hall", "" }
+Doors:Keep("9902", "Elwynn Forest", 50, 50)
+suite.check("one spot alone is not trusted", Doors:Spot("9902") == nil)
+Doors:Keep("9902", "Elwynn Forest", 51, 49)
+suite.check("two that agree are", Doors:Spot("9902") ~= nil)
+ns.FOREVER_DUNGEON_PLACES["9902"] = nil
+for i = 1, 8 do Doors:Keep("3065", "Ironforge", 40, 30 + i) end
+suite.check("only a few spots are kept", #ns.db.dungeonDoors["3065"].spots == Doors.KEEP)
+suite.check("the doors probe line reads", type(Doors:Describe()) == "string")
+ns.QuestArrow.Here, ns.QuestArrow.Inside, DQ.Inside = realHere, realInside, realDQInside
+ns.db.dungeonDoors = nil
+
 suite.done()

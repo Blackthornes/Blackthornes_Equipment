@@ -95,7 +95,11 @@ lines = ns.Tooltip:MoreLines("item:4000::::::4")
 suite.check("or describes it", lines[1] and lines[1][1] == "Random roll: +4 Agility, +4 Spirit, +2 Stamina")
 suite.check("nothing for gear without a roll", #ns.Tooltip:MoreLines("item:900") == 0)
 ns.db.suffixLine = false
-suite.check("and nothing with the setting off", #ns.Tooltip:MoreLines("item:4000::::::1") == 0)
+local suffixLines = 0
+for _, line in ipairs(ns.Tooltip:MoreLines("item:4000::::::1")) do
+    if line.key == "suffix" then suffixLines = suffixLines + 1 end
+end
+suite.check("and nothing with the setting off", suffixLines == 0, suffixLines)
 ns.db.suffixLine = true
 
 suite.done()
