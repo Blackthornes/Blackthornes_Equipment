@@ -453,6 +453,9 @@ function SettingsUI:BuildGear()
         L["Names the best enchant for a piece you wear."])
     controls.enchantTooltip = ShiftStepper(enchantRow, "enchantTooltip", "enchant")
 
+    local dropsRow = pages:Row("gear", 2, L["Boss Drops:"], nil)
+    controls.dropsTooltip = ShiftStepper(dropsRow, "dropsTooltip", "drops")
+
     -- Show or Hide for this character (a player's report, 2026-10-20: one
     -- Show button that only cleared the banner's ignored types read as
     -- broken). Hide also covers any type ignored from a banner; Show clears
@@ -944,6 +947,7 @@ function SettingsUI:Refresh()
     controls.suffixLine:Sync()
     controls.altTooltipLine:Sync()
     controls.enchantTooltip:Sync()
+    controls.dropsTooltip:Sync()
     self:RefreshSkip()
     controls.classTraining:SetChecked(ns.ClassTraining:IsOn())
     for _, entry in ipairs(HUNTING) do

@@ -808,6 +808,14 @@ a quest), which were a zone's middle. `/beq probe` has "quest names" and
 "dungeon doors" lines. Nothing new is shown to players in words. Tested
 in `tools/test_dungeonquests.lua`. Not yet seen in game.
 
+Boss drops on the tooltip (the owner approved the words, 2026-10-22):
+"Drops from BOSS in DUNGEON" under the item's other lines
+(`Tooltip.DropLine`: Forever's own drop with the best rate from
+`Sources.FOREVER`, else the Classic boss most likely to drop it from the
+item's `d`, the dungeon named by `DQ.Dungeon`). "Boss Drops:" on the
+Gear page, Off, Shift or Always (`dropsTooltip`, on unless unticked,
+never rename it; Shift key "drops"). Tested in `tools/test_tooltip.lua`.
+
 ## The Quest log tab
 
 The owner asked (2026-10-10) for the game's quest tracker inside the
@@ -1073,8 +1081,9 @@ was off reads Off; only a Shift pick is new, kept account wide in
 `tooltipShift[key] = true` (never rename it). Equipment's keys
 (`TooltipShift.KEYS` in `UI/Tooltip.lua`): "upgrade" (Tooltip Line,
 `tooltipLine`: the verdict and the weapon master line), "suffix" (Random
-Roll Names, `suffixLine`), "alt" (Upgrades for Alts, `altTooltipLine`) and
-"enchant" (Best Enchant, `enchantTooltip`). Each line carries `line.key`;
+Roll Names, `suffixLine`), "alt" (Upgrades for Alts, `altTooltipLine`),
+"enchant" (Best Enchant, `enchantTooltip`) and "drops" (Boss Drops,
+`dropsTooltip`). Each line carries `line.key`;
 `Tooltip:Decorate` asks `TooltipShift:Shows` as it adds them, so the kept
 lines (`LinesFor`) never hold the Shift answer, and a line held back adds
 "Hold Shift for more." once (`TooltipShift:Held`). The shared frame redraws
