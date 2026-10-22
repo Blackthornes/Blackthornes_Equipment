@@ -1,0 +1,63 @@
+-- The quest arrow's way there (Logic/Travel.lua, the same file in every
+-- addon, with Equipment's host at the end of Logic/QuestArrow.lua).
+--
+-- What matters: it is off until ticked; across the sea the dial reads
+-- "Step 1 of 3" and points at the flight master, not straight over the
+-- water; TomTom gets that stop; the setting and the arrow command turn it
+-- on and off.
+
+local env = dofile(lfs_cwd .. "/tools/testenv.lua")
+local suite = env.NewSuite("travel")
+
+local clock = 100
+local ns = env.Load()
+local Travel, QuestArrow = ns.Travel, ns.QuestArrow
+
+_G.GetTime = function() return clock end
+_G.UnitFactionGroup = function() return "Alliance" end
+_G.UnitOnTaxi = function() return false end
+_G.InCombatLockdown = function() return false end
+
+local DATA = Travel.DATA
+DATA.flights = {
+    [1] = { "Stormwind, Elwynn", "A", 0, 0, -200, "Elwynn" },
+    [2] = { "Menethil Harbor, Wetlands", "A", 0, 3000, 1000, "Wetlands" },
+}
+DATA.paths = { 1, 2 }
+DATA.docks = {
+    menethil = { "Menethil Harbor", 0, 3050, 1000, "Wetlands" },
+    theramore = { "Theramore", 1, -3000, -3000, "Dustwallow Marsh" },
+}
+DATA.rides = { { "menethil", "theramore", "boat", "A" } }
+
+local here = { map = 1429, x = 0.5, y = 0.5, continent = 0, north = 0, west = 0, zone = "Elwynn Forest" }
+local place = { continent = 1, north = -3200, west = -3000, zone = "Dustwallow Marsh", name = "Mirefin camp" }
+Travel.WorldOf = function() return place end
+local target = { name = "Mirefin camp", zone = "Dustwallow Marsh", map = 1445, mx = 0.4, my = 0.6 }
+ns.db.travelFlights = { [UnitGUID("player")] = { [1] = true, [2] = true } }
+
+suite.check("Equipment's host is used", Travel.Host.Here ~= nil and ns.TravelHost ~= nil)
+suite.check("off unless ticked", Travel:Use(target, here, clock) == nil)
+
+ns.db.arrowRoute = true
+local trip = Travel:Use(target, here, clock)
+suite.check("on: a trip of three steps", trip and trip.count == 3, trip and trip.count)
+
+Travel.MapPos = function() return { map = 1429, x = 0.5, y = 0.45 } end
+local state = QuestArrow:TripState({}, trip, here)
+suite.check("the dial says the step", state.distance == "Step 1 of 3" and state.place == "Fly to Menethil Harbor",
+    tostring(state.place))
+suite.check("and points at the flight master", state.mode == "point" and state.yards ~= nil)
+suite.check("the next stop carries map spots for TomTom", trip.point and trip.point.mx == 0.5 and trip.point.my == 0.45)
+
+local point = ns.TomTom.Point({ trip = trip, target = target })
+suite.check("TomTom gets the stop, not the far place", point == trip.point)
+
+suite.check("the host's key names the place", ns.TravelHost.Key(target):find("Mirefin camp") ~= nil)
+
+ns.commands.arrow.fn("route off")
+suite.check("/beq arrow route off", not Travel.IsOn())
+ns.commands.arrow.fn("route on")
+suite.check("/beq arrow route on", Travel.IsOn())
+
+suite.done()

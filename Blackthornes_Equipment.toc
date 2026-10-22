@@ -44,6 +44,8 @@ Data\ForeverItems.lua
 Data\Rolls.lua
 Data\ClassSpells.lua
 Data\Enchants.lua
+Data\Travel.lua
+Data\TravelZones.lua
 
 Logic\Weights.lua
 Logic\Compare.lua
@@ -61,6 +63,7 @@ Logic\Finder.lua
 Logic\Tracking.lua
 Logic\Waypoints.lua
 Logic\UpgradeQuest.lua
+Logic\Travel.lua
 Logic\QuestArrow.lua
 Logic\QuestLog.lua
 Logic\DungeonQuests.lua
@@ -97,6 +100,8 @@ UI\QuestLogTab.lua
 UI\DungeonQuestsWindow.lua
 UI\IgnoredWindow.lua
 UI\QuestArrow.lua
+UI\TravelCard.lua
+UI\TravelMap.lua
 
 # Answers for Blackthornes Butler, after the gear judging and bag icons it reads.
 Logic\Butler.lua

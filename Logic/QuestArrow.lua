@@ -666,6 +666,11 @@ function QuestArrow:State(clock)
     state.place = QuestArrow.Place(target, here)
     state.note, state.noteColor = QuestArrow.Note(target)
 
+    -- A place in another zone or on the other continent: the way there,
+    -- step by step, the arrow on the next stop (Logic/Travel.lua).
+    local trip = ns.Travel and ns.Travel:Use(target, here, clock)
+    if trip then return self:TripState(state, trip, here) end
+
     if target.far then
         state.mode = "far"
         state.distance = target.zone or L["Far away"]
@@ -706,6 +711,33 @@ function QuestArrow:State(clock)
     return state
 end
 
+--- The dial's words and turn for a step of a trip.
+function QuestArrow:TripState(state, trip, here)
+    state.trip = trip
+    state.distance = L.Format("Step %d of %d", trip.index, trip.count)
+    state.place = trip.line
+    state.note, state.noteColor = trip.small, "muted"
+
+    if trip.continent and trip.continent == here.continent and not trip.onTaxi then
+        local yards, bearing = QuestArrow.Measure(trip.north - here.north, trip.west - here.west)
+        state.yards, state.bearing = yards, bearing
+        local facing = QuestArrow.Facing()
+        state.turn = QuestArrow.Turn(bearing, facing)
+        state.facing = facing ~= nil
+        state.mode = "point"
+        local point = ns.Travel.MapPos(trip.continent, trip.north, trip.west)
+        if point then point.mx, point.my = point.x, point.y end
+        trip.point = point
+        if not trip.atStop then
+            local far = QuestArrow.Yards(yards)
+            state.note = state.note ~= "" and (state.note .. ", " .. far) or far
+        end
+        return state
+    end
+    state.mode = "trip"
+    return state
+end
+
 --------------------------------------------------------------------------------
 -- Checking what the client allows
 --------------------------------------------------------------------------------
@@ -741,6 +773,14 @@ function QuestArrow:Check()
 
     ns.PrintRaw(("  in an instance: %s"):format(QuestArrow.Inside() and "yes, so the arrow hides" or "no"))
     if ns.TomTom then ns.PrintRaw(ns.TomTom.CheckLine()) end
+    if ns.Travel then
+        local count = 0
+        for _ in pairs(ns.Travel:AllFlights()) do count = count + 1 end
+        ns.PrintRaw(("  way there: %s, %d flight paths known%s"):format(ns.Travel.IsOn() and "on" or "off", count,
+            count == 0 and " (open a flight master's map to read them)" or ""))
+        local map = _G.C_Map
+        ns.PrintRaw(("  world to map: %s"):format(YesNo(map and type(map.GetMapPosFromWorldPos) == "function")))
+    end
 
     local state = self:State(Number(Read(_G.GetTime)) or 0)
     if state.quest then
@@ -769,7 +809,7 @@ local function Status()
     end
 end
 
-ns.RegisterCommand("arrow", L["an arrow to the upgrade quest's next place (on, off, next, check, tomtom, reset)"], function(rest)
+ns.RegisterCommand("arrow", L["an arrow to the upgrade quest's next place (on, off, next, check, tomtom, route, reset)"], function(rest)
     local word = (rest or ""):lower():match("^%s*(%a*)") or ""
     if word == "" then
         QuestArrow:SetOn(not QuestArrow.IsOn())
@@ -788,10 +828,46 @@ ns.RegisterCommand("arrow", L["an arrow to the upgrade quest's next place (on, o
         ns.KeepCheck("arrow check", QuestArrow.Check, QuestArrow)
     elseif word == "tomtom" then
         ns.TomTom:Command((rest or ""):lower():match("^%s*%a+%s+(%a+)"))
+    elseif word == "route" then
+        local Travel = ns.Travel
+        local switch = (rest or ""):lower():match("^%s*%a+%s+(%a+)")
+        if switch == "on" or switch == "off" then Travel:SetOn(switch == "on") else Travel:SetOn(not Travel.IsOn()) end
+        if Travel.IsOn() then
+            ns.Print(L["The arrow leads you step by step to places far away."])
+        else
+            ns.Print(L["The arrow points straight at places far away."])
+        end
+        if ns.SettingsUI and ns.SettingsUI.Refresh then pcall(ns.SettingsUI.Refresh, ns.SettingsUI) end
     elseif word == "reset" then
         if ns.QuestArrowUI and ns.QuestArrowUI.ResetPosition then ns.QuestArrowUI:ResetPosition() end
         ns.Print(L["quest arrow put back where it started."])
     else
-        ns.Print(L["/beq arrow on, off, next, check, tomtom or reset."])
+        ns.Print(L["/beq arrow on, off, next, check, tomtom, route or reset."])
     end
 end)
+
+--------------------------------------------------------------------------------
+-- What Logic/Travel.lua (the same file in every addon) asks of Equipment
+--------------------------------------------------------------------------------
+
+ns.TravelHost = {
+    DB = function() return ns.db end,
+    Owner = function() return ns.Alts and ns.Alts.PlayerGUID and ns.Alts.PlayerGUID() or nil end,
+    ZoneOf = function(zone)
+        local name = zone
+        if type(zone) == "string" and ns.Waypoints and ns.Waypoints.DataZone then
+            local ok, english = pcall(ns.Waypoints.DataZone, ns.Waypoints, zone)
+            if ok and type(english) == "string" then name = english end
+        end
+        return ns.Travel.Defaults.ZoneOf(name)
+    end,
+    Here = function() return QuestArrow:Here() end,
+    InInstance = function() return QuestArrow.Inside() end,
+    Key = function(target)
+        return ("%s|%s|%s|%s"):format(tostring(target.zone), tostring(target.name), tostring(target.x), tostring(target.y))
+    end,
+    Changed = function() QuestArrow:Changed() end,
+    Refresh = function() if ns.QuestArrowUI and ns.QuestArrowUI.Refresh then ns.QuestArrowUI:Refresh() end end,
+    State = function() return ns.QuestArrowUI and ns.QuestArrowUI.state end,
+    Print = function(text) ns.Print(text) end,
+}
