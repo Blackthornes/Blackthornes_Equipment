@@ -1391,7 +1391,7 @@ function FinderUI:FillRow(row, line)
         text = Colored("accent", L["Tracking"]) .. "  " .. text
     end
     if ns.UpgradeQuest and ns.UpgradeQuest:IsFollowing(line.pick.itemID) then
-        text = Colored("good", L["Quest"]) .. "  " .. text
+        text = Colored("good", L["Following"]) .. "  " .. text
     end
     if line.pick.needs then
         text = Colored("warn", L.Format("Needs %s with %s", line.pick.needs.standing,

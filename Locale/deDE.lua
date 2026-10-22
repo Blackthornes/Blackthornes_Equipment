@@ -41,6 +41,7 @@ L["Upgrade for %s: %s"] = "Verbesserung für %s: %s"
 -- ======================================================================
 L["Vendor"] = "Händler"
 L["Quest"] = "Quest"
+L["Following"] = "Verfolgt"
 L["Dungeons and Raids"] = "Instanzen"
 L["Crafted"] = "Hergestellt"
 L["No vendor sells an upgrade right now."] = "Gerade verkauft kein Händler eine Verbesserung."

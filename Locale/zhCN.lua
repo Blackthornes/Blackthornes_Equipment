@@ -41,6 +41,7 @@ L["Upgrade for %s: %s"] = "对%s是升级：%s"
 -- ======================================================================
 L["Vendor"] = "商人"
 L["Quest"] = "任务"
+L["Following"] = "追踪中"
 L["Dungeons and Raids"] = "地下城和团队副本"
 L["Crafted"] = "制造"
 L["No vendor sells an upgrade right now."] = "现在没有商人卖升级装备。"
