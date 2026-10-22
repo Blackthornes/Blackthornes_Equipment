@@ -132,6 +132,7 @@ local POSITION_KEYS = {
     { "questArrowX", "questArrowY" },
     { "ignoredPoint", "ignoredRelativePoint", "ignoredX", "ignoredY" },
     { "dungeonQuestsPoint", "dungeonQuestsRelPoint", "dungeonQuestsX", "dungeonQuestsY" },
+    { "dungeonLootPoint", "dungeonLootRelPoint", "dungeonLootX", "dungeonLootY" },
 }
 
 --- Put every Equipment window back where it started: the gear window, this
@@ -142,7 +143,7 @@ function SettingsUI:ResetPositions()
     for _, keys in ipairs(POSITION_KEYS) do
         for _, key in ipairs(keys) do ns.db[key] = nil end
     end
-    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI, ns.IgnoredUI, ns.DungeonQuestsUI }) do
+    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI, ns.IgnoredUI, ns.DungeonQuestsUI, ns.DungeonLootUI }) do
         if module and module.frame and module.RestorePosition then module:RestorePosition() end
     end
 end
@@ -765,6 +766,11 @@ function SettingsUI:BuildQuest()
     local _, dungeonsButton = CommandRow(pages, "quest", 2, L["Dungeon Quests:"], nil,
         L["Open"], "dungeons")
     controls.dungeonQuests = dungeonsButton
+
+    -- What each dungeon's bosses drop (UI/DungeonLootWindow.lua).
+    local _, lootButton = CommandRow(pages, "quest", 2, L["Dungeon Loot:"], nil,
+        L["Open"], "loot")
+    controls.dungeonLoot = lootButton
 end
 
 --- General: windows and text on the left, help and problems on the right.

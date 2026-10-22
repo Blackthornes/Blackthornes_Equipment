@@ -167,16 +167,24 @@ function UI:Build()
     dungeons:SetPoint("RIGHT", find, "LEFT", -8, 0)
     self.dungeonButton = dungeons
 
+    -- What each dungeon's bosses drop, upgrades marked
+    -- (UI/DungeonLootWindow.lua, the owner said build it 2026-10-22).
+    local loot = Widgets.CreateButton(frame, L["Dungeon Loot"], function()
+        if ns.DungeonLootUI then ns.DungeonLootUI:Toggle() end
+    end, { width = 100, height = 24 })
+    loot:SetPoint("RIGHT", dungeons, "LEFT", -8, 0)
+    self.lootButton = loot
+
     local footer = Theme.CreateLabel(frame, "normal", "muted")
     footer:SetPoint("BOTTOMLEFT", PADDING, 26)
-    footer:SetPoint("BOTTOMRIGHT", dungeons, "BOTTOMLEFT", -10, 14)
+    footer:SetPoint("BOTTOMRIGHT", loot, "BOTTOMLEFT", -10, 14)
     self.footer = footer
 
     -- The installed version, small and faint at the end of the hint's line
     -- beside Find upgrades, so a player can see at a glance which one they
     -- run.
     local version = Theme.CreateLabel(frame, "tiny", "dim", "RIGHT")
-    version:SetPoint("BOTTOMRIGHT", dungeons, "BOTTOMLEFT", -10, -1)
+    version:SetPoint("BOTTOMRIGHT", loot, "BOTTOMLEFT", -10, -1)
     version:SetText(ns.VersionLabel())
     self.versionLabel = version
 

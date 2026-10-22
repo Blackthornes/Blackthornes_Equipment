@@ -816,6 +816,25 @@ item's `d`, the dungeon named by `DQ.Dungeon`). "Boss Drops:" on the
 Gear page, Off, Shift or Always (`dropsTooltip`, on unless unticked,
 never rename it; Shift key "drops"). Tested in `tools/test_tooltip.lua`.
 
+Dungeon Loot (the owner said build it, 2026-10-22, from a mockup whose
+words he approved): what each dungeon's bosses drop, upgrades marked.
+`Logic/DungeonLoot.lua` lays the drops out by dungeon once
+(`DungeonLoot:Index`, Classic's from each item's `d`, Forever's own from
+`Sources.FOREVER`, which wins) and judges each piece through the finder's
+kept verdicts (`Finder:JudgeOnce`, `Compare.WearableUpgrade`), asking the
+server for items not loaded (`ASK` a list). `UI/DungeonLootWindow.lua`
+(`/beq loot`, the gear window's Dungeon Loot button, Settings > Upgrade
+quest) lists the dungeons for this side on the left; the picked one shows
+its door and levels, Armor: and Stat: chips (cloth, leather and mail chips
+leave out other body armor only), Upgrades Only, sortable ITEM, SLOT,
+BOSS, GAIN heads (a third click is best first), "N shown. M are upgrades
+for you.", Follow (the quest arrow to the door, `DungeonDoors` spot when
+learned) and Show the Way (the map pin). Chips, the tick box and the sort
+last the session. Saved, account wide, never rename them:
+`dungeonLootPick`, `dungeonLootScale`, `dungeonLootPoint`,
+`dungeonLootRelPoint`, `dungeonLootX`, `dungeonLootY`. Tested in
+`tools/test_dungeonloot.lua`. Not yet seen in game.
+
 ## The Quest log tab
 
 The owner asked (2026-10-10) for the game's quest tracker inside the
