@@ -1126,3 +1126,4 @@ L["When the place is in another zone or across the sea, the arrow leads you ther
 L["The arrow leads you step by step to places far away."] = "La flecha te lleva paso a paso a lugares lejanos."
 L["The arrow points straight at places far away."] = "La flecha apunta en línea recta a lugares lejanos."
 L["Step %d of %d"] = "Paso %d de %d"
+L["The way to your %s trainer, with a pin on the first stop:"] = "El camino a tu instructor de %s, con una marca en la primera parada:"

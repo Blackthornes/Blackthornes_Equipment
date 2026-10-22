@@ -1126,3 +1126,4 @@ L["When the place is in another zone or across the sea, the arrow leads you ther
 L["The arrow leads you step by step to places far away."] = "La flèche te mène étape par étape aux endroits lointains."
 L["The arrow points straight at places far away."] = "La flèche pointe tout droit vers les endroits lointains."
 L["Step %d of %d"] = "Étape %d sur %d"
+L["The way to your %s trainer, with a pin on the first stop:"] = "Le chemin vers ton maître %s, avec un repère sur la première étape :"

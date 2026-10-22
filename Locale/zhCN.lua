@@ -1126,3 +1126,4 @@ L["When the place is in another zone or across the sea, the arrow leads you ther
 L["The arrow leads you step by step to places far away."] = "箭头会一步一步带你去远处的地点。"
 L["The arrow points straight at places far away."] = "箭头会直接指向远处的地点。"
 L["Step %d of %d"] = "第 %d 步，共 %d 步"
+L["The way to your %s trainer, with a pin on the first stop:"] = "前往你的%s训练师的路线，第一站已标在地图上："

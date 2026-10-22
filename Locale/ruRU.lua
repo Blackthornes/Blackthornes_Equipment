@@ -1125,3 +1125,4 @@ L["When the place is in another zone or across the sea, the arrow leads you ther
 L["The arrow leads you step by step to places far away."] = "Стрелка ведет тебя шаг за шагом в дальние места."
 L["The arrow points straight at places far away."] = "Стрелка показывает прямо на дальние места."
 L["Step %d of %d"] = "Шаг %d из %d"
+L["The way to your %s trainer, with a pin on the first stop:"] = "Путь к твоему учителю (%s), метка стоит на первой остановке:"
