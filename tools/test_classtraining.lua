@@ -127,6 +127,47 @@ CT:Data().learned["Player-1-AAA"] = nil
 services[2] = { "Frost Nova", "", "available", 200 }
 handler(_G.BlackthornesEquipmentEventFrame, "TRAINER_SHOW")
 
+-- 5. Skipping a spell (a player asked, the owner said yes, 2026-10-22).
+local function RowFor(name)
+    for _, row in ipairs(Drawer.lines) do
+        if row:IsShown() and row.text:GetText() == name then return row end
+    end
+end
+local told = {}
+local butlerSkips = { ["Player-1-AAA"] = { [4] = 50 } }
+_G.BlackthornesButler = { ClassTraining = {
+    KeepSkip = function(_, guid, id, at) told[#told + 1] = { guid, id, at } end,
+    OwnSkips = function(_, guid) return butlerSkips[guid] end,
+} }
+local before = CT:Plan().cost
+local nova = RowFor("Frost Nova (Rank 1)")
+suite.check("Frost Nova is ready to train", nova ~= nil, Texts())
+nova:GetScript("OnClick")(nova, "RightButton")
+text = Texts()
+suite.check("a right-click skips it", CT:IsSkipped(3))
+suite.check("no longer under ready", #CT:Plan().ready == 1, #CT:Plan().ready)
+suite.check("and listed under SKIPPED", text:find("SKIPPED", 1, true) ~= nil and RowFor("Frost Nova (Rank 1)").skipped, text)
+suite.check("its cost leaves the total", CT:Plan().cost == before - 200, CT:Plan().cost)
+suite.check("Butler's copy is told", told[1] and told[1][1] == "Player-1-AAA" and told[1][2] == 3 and told[1][3] > 0)
+suite.check("Train all leaves it out", (function()
+    CT.trainerOpen, CT.atClassTrainer = true, true
+    for _, service in ipairs(CT:Buyable()) do
+        if service.entry[1] == 3 then return false end
+    end
+    return true
+end)())
+suite.check("a skip made in Butler counts here too", CT:IsSkipped(4))
+butlerSkips["Player-1-AAA"][4] = -60
+CT:Changed()
+suite.check("and the newest change wins", not CT:IsSkipped(4))
+
+nova = RowFor("Frost Nova (Rank 1)")
+nova:GetScript("OnClick")(nova, "RightButton")
+suite.check("a right-click brings it back", not CT:IsSkipped(3) and #CT:Plan().ready == 2)
+suite.check("Butler's copy hears that too", told[2] and told[2][3] < 0)
+_G.BlackthornesButler = nil
+CT.trainerOpen, CT.atClassTrainer = false, false
+
 -- 4. Turned off.
 ns.HandleSlash("training off")
 suite.check("off is saved", ns.db.classTraining == false)
