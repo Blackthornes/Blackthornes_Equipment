@@ -7,8 +7,8 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lupa import lua51  # noqa: E402
-from forever_dungeon_quests import (STRING_BITS, from_cache, from_save, known_dungeons,  # noqa: E402
-                                    merge, read_cache, render, shared_from_save)
+from forever_dungeon_quests import (STRING_BITS, from_cache, from_facts, from_save,  # noqa: E402
+                                    known_dungeons, merge, read_cache, render, shared_from_save)
 
 checks = 0
 failures = 0
@@ -114,6 +114,22 @@ finally:
 expect("a sender's dungeon quests are read", any(95020 in sh and sh[95020]["side"] == "A" for sh in shares))
 expect("an unknown dungeon in a share is left out", not any(95021 in sh for sh in shares))
 expect("an older sender with no dungeon quests is fine", len(shares) == 2)
+
+facts = {"quests": {
+    "95030": {"dungeon": "3065", "title": "Checked Ahead", "min": 10, "level": 15, "side": "A",
+              "giver": "Someone", "zone": "Ironforge", "x": 32.6, "y": 44.6, "reward": 279898},
+    "95031": {"dungeon": "3065", "title": "Not in the Client", "min": 10, "level": 15},
+    "95032": {"dungeon": "nowhere", "title": "Lost", "min": 1},
+    "95033": {"dungeon": "2999", "title": "Class Only", "min": 16, "classes": 2},
+}}
+checked = from_facts(facts, keys, {95030, 95032, 95033})
+expect("a fact the client has is read", checked[95030]["giver"] == "Someone" and checked[95030]["reward"] == 279898)
+expect("a fact the client lacks is left out", 95031 not in checked)
+expect("a fact in an unknown dungeon is left out", 95032 not in checked)
+expect("a class quest keeps its classes", checked[95033]["classes"] == 2)
+expect("a quest with no level takes its lowest", checked[95033]["level"] == 16)
+later = merge(checked[95030], {"dungeon": "3065", "title": "Checked Ahead", "level": 16, "min": 11})
+expect("the game's own reading wins over a fact", later["level"] == 16 and later["giver"] == "Someone")
 
 lua = lua51.LuaRuntime(unpack_returned_tuples=True, register_eval=False)
 lua.execute("ns = {}")

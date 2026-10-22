@@ -77,7 +77,15 @@ function DQ.Dungeon(key)
     local row = ns.Sources and ns.Sources.DUNGEONS and ns.Sources.DUNGEONS[key]
     local place = ns.FOREVER_DUNGEON_PLACES and ns.FOREVER_DUNGEON_PLACES[key]
     if place then
-        return { key = key, name = place[1], door = place[2] ~= "" and place[2] or nil,
+        -- Levels, and a door the place lacks, from the row ForeverDrops.lua
+        -- laid in Sources.DUNGEONS (a door that only repeats the name is none).
+        local door = place[2] ~= "" and place[2] or nil
+        local low, high
+        if type(row) == "table" then
+            low, high = row[2], row[3]
+            if not door and row[4] ~= "" and row[4] ~= place[1] then door = row[4] end
+        end
+        return { key = key, name = place[1], low = low, high = high, door = door,
             raid = place[3] == true, forever = true }
     end
     if type(row) ~= "table" then return nil end

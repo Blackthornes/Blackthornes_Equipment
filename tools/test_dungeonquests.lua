@@ -20,9 +20,15 @@ for _, q in pairs(ns.DUNGEON_QUESTS) do
     if not DQ.Dungeon(q[1]) then unknown = unknown + 1 end
 end
 suite.check("every quest names a dungeon the addon knows", unknown == 0, unknown)
+unknown = 0
+for _, q in pairs(ns.FOREVER_DUNGEON_QUESTS) do
+    if not DQ.Dungeon(q[1]) then unknown = unknown + 1 end
+end
+suite.check("so does every Forever quest", unknown == 0, unknown)
 
 -- A pretend data set and character, so the counts can be checked.
-local realData = ns.DUNGEON_QUESTS
+local realData, realForever = ns.DUNGEON_QUESTS, ns.FOREVER_DUNGEON_QUESTS
+ns.FOREVER_DUNGEON_QUESTS = {}
 ns.DUNGEON_QUESTS = {
     [1] = { "389", "Searching for the Lost Satchel", 9, 16, "H", 0, "Rahauro", "Thunder Bluff", 70, 30, 0, 0 },
     [2] = { "389", "Hidden Enemies", 10, 16, "H", 0, "Thrall", "Orgrimmar", 31, 37, 5000, 0 },
@@ -140,7 +146,19 @@ suite.check("/beq dungeons opens it", UI.frame:IsShown())
 UI:Hide()
 suite.check("the gear window has a Dungeon Quests button", ns.UI.dungeonButton ~= nil or ns.UI.frame == nil)
 
-ns.DUNGEON_QUESTS = realData
+-- A Forever dungeon whose place has no door takes the levels and door of
+-- the row Data/ForeverDrops.lua laid in Sources.DUNGEONS.
+ns.FOREVER_DUNGEON_PLACES["9901"] = { "Test Hall", "" }
+ns.Sources.DUNGEONS["9901"] = { "Test Hall", 13, 18, "Ironforge", "" }
+local hall = DQ.Dungeon("9901")
+suite.check("a Forever dungeon takes its door from the drops' row", hall.door == "Ironforge", hall.door)
+suite.check("and its levels", hall.low == 13 and hall.high == 18)
+ns.Sources.DUNGEONS["9901"] = { "Test Hall", 1, 60, "Test Hall", "" }
+suite.check("a door that only repeats the name is no door", DQ.Dungeon("9901").door == nil)
+ns.FOREVER_DUNGEON_PLACES["9901"], ns.Sources.DUNGEONS["9901"] = nil, nil
+suite.check("Hall of Thanes says where its door is", DQ.Dungeon("3065").door == "Ironforge")
+
+ns.DUNGEON_QUESTS, ns.FOREVER_DUNGEON_QUESTS = realData, realForever
 suite.check("the probe line reads", type(DQ:Describe()) == "string")
 
 suite.done()

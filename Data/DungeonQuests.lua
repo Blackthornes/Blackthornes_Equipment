@@ -317,9 +317,9 @@ ns.FOREVER_DUNGEON_PLACES = {
     ["2856"] = { "Scarlet Enclave", "Eastern Plaguelands", true },
     ["2875"] = { "Karazhan Crypts", "Deadwind Pass" },
     ["2902"] = { "The Scarab Dais", "" },
-    ["2959"] = { "City of Dalaran", "" },
+    ["2959"] = { "City of Dalaran", "Alterac Mountains" },
     ["2998"] = { "Excavation Site: Wetlands", "Wetlands" },
     ["2999"] = { "Ruins of Lordaeron", "Tirisfal Glades" },
-    ["3065"] = { "The Hall of Thanes", "" },
+    ["3065"] = { "The Hall of Thanes", "Ironforge" },
     ["3109"] = { "Manor Mistmantle", "" },
 }
