@@ -313,6 +313,69 @@ function Compare:SetBestArmorOnly(on)
     if ns.UpgradeQuest then pcall(ns.UpgradeQuest.Check, ns.UpgradeQuest) end
 end
 
+-- Each class's bit in an item's class mask (Classic's numbers, which the
+-- Forever client's tables keep).
+local CLASS_BITS = {
+    WARRIOR = 1, PALADIN = 2, HUNTER = 4, ROGUE = 8, PRIEST = 16,
+    SHAMAN = 64, MAGE = 128, WARLOCK = 256, DRUID = 1024,
+}
+Compare.CLASS_BITS = CLASS_BITS
+
+local function HasBit(mask, bit)
+    return math.floor(mask / bit) % 2 == 1
+end
+
+--- The class mask the data gives an item: the Forever client's own first,
+--- then Classic's sources, then crafted gear. 0 for all classes, nil when
+--- no data knows the item.
+function Compare.ClassMask(itemID)
+    local forever = ns.ForeverItems and ns.ForeverItems[itemID]
+    if forever and tonumber(forever[3]) then return forever[3] end
+    local item = ns.Sources and ns.Sources.ITEMS and ns.Sources.ITEMS[itemID]
+    if item and tonumber(item[3]) then return item[3] end
+    local craft = ns.Crafts and ns.Crafts.ITEMS and ns.Crafts.ITEMS[itemID]
+    if craft and tonumber(craft[6]) then return craft[6] end
+    return nil
+end
+
+--- The names the client gives a class, lower case, for matching an item's
+--- "Classes:" line.
+local function ClassNames(class)
+    local names = {}
+    for _, list in ipairs({ _G.LOCALIZED_CLASS_NAMES_MALE, _G.LOCALIZED_CLASS_NAMES_FEMALE }) do
+        local name = type(list) == "table" and list[class]
+        if type(name) == "string" then names[#names + 1] = name:lower() end
+    end
+    if class == Weights:PlayerClass() then
+        local ok, name = pcall(function() return (_G.UnitClass("player")) .. "" end)
+        if ok and name then names[#names + 1] = name:lower() end
+    end
+    names[#names + 1] = class:lower()
+    return names
+end
+
+--- May this class wear the item, by the classes it is limited to? Gear
+--- marked for other classes only ("Classes: Hunter") is never an upgrade
+--- for anyone else. False only when the data or the item's own tooltip
+--- says so; anything not known is allowed.
+function Compare:ClassAllows(class, link)
+    local bit = CLASS_BITS[class]
+    local itemID = type(link) == "string" and tonumber(link:match("item:(%d+)")) or tonumber(link)
+    if not bit or not itemID then return true end
+    local mask = Compare.ClassMask(itemID)
+    if mask and mask > 0 then
+        -- A mask holding every class (some rows say so outright) limits no one.
+        return HasBit(mask, bit)
+    end
+    if mask == 0 then return true end
+    local ok, listed = pcall(Items.ClassesOnTooltip, Items, itemID)
+    if not ok or type(listed) ~= "table" then return true end
+    for _, name in ipairs(ClassNames(class)) do
+        if listed[name] then return true end
+    end
+    return false
+end
+
 --- The verdict on one item for this character.
 --
 -- @return nil when the item is not gear this addon judges, or its details are
@@ -342,6 +405,8 @@ function Compare:Judge(link)
     }
 
     local usable, fromLevel = Weights:CanUse(class, info.classID, info.subclassID, info.equipLoc)
+    -- Gear limited to other classes ("Classes: Hunter") is not for it.
+    if usable and not self:ClassAllows(class, link) then usable = false end
     -- An off-hand-only weapon needs dual wield, which most classes never
     -- get and the rest learn from a trainer. The client has the last word
     -- when it says this character can.

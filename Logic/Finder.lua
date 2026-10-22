@@ -619,6 +619,7 @@ local function Wearable(class, itemID)
     if not info then return nil end
     if not Compare.SLOTS[info.equipLoc] then return false end
     local usable = Weights:CanUse(class, info.classID, info.subclassID, info.equipLoc)
+        and Compare:ClassAllows(class, itemID)
     return usable and true or false
 end
 Finder.Wearable = Wearable
