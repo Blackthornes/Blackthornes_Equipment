@@ -1,6 +1,9 @@
 -- Blackthornes Equipment -- UI/FinderWindow.lua
--- The "Where to get upgrades" window: the slots down the left, each with
--- how many upgrades it has, and for the slot picked every piece a vendor
+-- The Equipment window (one window since 2026-10-22: a player asked for
+-- fewer windows, the owner approved the mockup). The slots down the left,
+-- each with what you wear there and how many upgrades it has, and for the
+-- slot picked first what you already own that beats it (in your bags, your
+-- bank or on another character), then every piece a vendor
 -- sells, a quest gives, a dungeon or raid drops or a crafter makes that
 -- beats what is worn, best first, and where to go for it (a player asked,
 -- 2026-10-20, for a list per slot and a choice of sources). Tick boxes
@@ -11,10 +14,11 @@
 -- (Logic/UpgradeQuest.lua), right-click to track it (Logic/Tracking.lua),
 -- Alt-click to pin its spot on the map (Logic/Waypoints.lua).
 --
--- Opened from the gear window's "Find upgrades" button and /beq find. Built
--- like the gear window (same header, palette and rows). Logic/Finder.lua does
--- the looking; this only lays it out, and scans again as the server answers
--- about items the client had not seen yet.
+-- Opened from the minimap button, /beq and /beq find. Hanging tabs under it
+-- switch between Upgrades, Enchants and Settings (UI/Settings.lua, which
+-- takes the window's place). ns.UI (UI/MainWindow.lua) reads the bags for
+-- it. Logic/Finder.lua does the looking; this only lays it out, and scans
+-- again as the server answers about items the client had not seen yet.
 
 local _, ns = ...
 local L = ns.L
@@ -44,10 +48,11 @@ local VISIBLE = 9
 local AREA = VISIBLE * ROW_HEIGHT
 -- Room for the footer line and a hint that may wrap onto two lines.
 local FOOTER = 56
-local WIDTH = 900
+local WIDTH = 1040
 
--- The slots down the left, and the gap between them and the list.
-local SLOT_COLUMN = 150
+-- The slots down the left, with what is worn in each, and the gap between
+-- them and the list.
+local SLOT_COLUMN = 290
 local COLUMN_GAP = 10
 -- The list's own heading: the slot, what is worn there, and the order.
 local LIST_HEAD = 30
@@ -110,8 +115,25 @@ for _, group in ipairs(SLOT_GROUPS) do
 end
 FinderUI.GROUP_OF = GROUP_OF
 
--- Each slot's line runs the list's full height.
-local SLOT_ROW = math.floor((LIST_HEAD + COLUMN_HEAD + AREA) / #SLOT_GROUPS)
+-- The slot column's headings (SLOT, YOU WEAR, UP), then each slot's line,
+-- the lines running the list's full height.
+local SLOT_HEAD = 20
+local SLOT_ROW = math.floor((LIST_HEAD + COLUMN_HEAD + AREA - SLOT_HEAD) / #SLOT_GROUPS)
+-- Where what is worn starts on a slot's line, and how wide its name is.
+local WORN_X = 88
+local WORN_ICON = 18
+local WORN_WIDTH = SLOT_COLUMN - WORN_X - WORN_ICON - 4 - 42
+
+-- A heading row in the list (IN YOUR BAGS, TO GO AND GET).
+local HEADING_ROW = 24
+
+-- The hanging tabs under the window, and how far in they start.
+local TAB_INSET = 18
+local TABS = {
+    { key = "upgrades", text = L["Upgrades"] },
+    { key = "enchant", text = L["Enchants"] },
+    { key = "settings", text = L["Settings"] },
+}
 
 -- How many levels ahead the stepper can look.
 local MOST_AHEAD = 10
@@ -261,7 +283,23 @@ local function ShowEnchantTooltip(row, line)
     GameTooltip:Show()
 end
 
+--- Gear you own that beats what you wear: its tooltip, and where it is.
+local function ShowOwnedTooltip(row, owned)
+    GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
+    pcall(GameTooltip.SetHyperlink, GameTooltip, owned.link)
+    GameTooltip:AddLine(" ")
+    if FinderUI.CanPutOn(owned) then
+        GameTooltip:AddLine(L["Click to put it on"], Theme.Unpack("good"))
+    elseif owned.where ~= "bags" and ns.UI then
+        GameTooltip:AddLine(ns.UI.WhereText(owned.where), Theme.Unpack("accent"))
+    end
+    GameTooltip:Show()
+end
+
 local function ShowTooltip(row)
+    if rawget(row, "heading") then return end
+    local owned = rawget(row, "owned")
+    if owned then return ShowOwnedTooltip(row, owned) end
     local enchant = rawget(row, "enchant")
     if enchant then return ShowEnchantTooltip(row, enchant) end
     local pick = row.pick
@@ -450,6 +488,21 @@ function FinderUI:BuildRow(index)
     showWay:Hide()
     row.showWay = showWay
 
+    -- Put it on, on an upgrade in your bags: the gold button of the row.
+    local putOn = Widgets.CreateButton(row, L["Put it on"], function(self)
+        local owned = rawget(self, "owned")
+        if owned and ns.Wear then ns.Wear:PutOn(owned.link) end
+    end, { width = 78, height = 20, primary = true })
+    putOn:SetPoint("BOTTOMRIGHT", -GAIN_RIGHT, 5)
+    putOn:Hide()
+    row.putOn = putOn
+
+    -- A heading's own label, in place of the item's.
+    local headingLabel = Theme.CreateLabel(row, "small", "accent")
+    headingLabel:SetPoint("LEFT", 12, 0)
+    headingLabel:Hide()
+    row.headingLabel = headingLabel
+
     local function Light(p)
         row.background:SetColorTexture(Motion.Mix(row.restKey, "glassHover", p))
         row.edge:SetColorTexture(Theme.Unpack(rawget(row, "edgeKey") or "good", p))
@@ -458,6 +511,7 @@ function FinderUI:BuildRow(index)
 
     row:SetScript("OnEnter", function(self)
         self.over = true
+        if rawget(self, "heading") then return end
         Motion:Blend(self, "hover", 1, 0.12, Light)
         ShowTooltip(self)
     end)
@@ -467,6 +521,20 @@ function FinderUI:BuildRow(index)
         GameTooltip:Hide()
     end)
     row:SetScript("OnClick", function(self, button)
+        if rawget(self, "heading") then return end
+        -- Gear you own: Shift-click links it, a click puts on one in your bags.
+        local owned = rawget(self, "owned")
+        if owned then
+            if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
+                local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
+                if ok and chatLink then
+                    pcall(ChatEdit_InsertLink, owned.link)
+                    return
+                end
+            end
+            if button ~= "RightButton" and FinderUI.CanPutOn(owned) and ns.Wear then ns.Wear:PutOn(owned.link) end
+            return
+        end
         -- An enchant row's buttons do its work; Shift-click links its recipe.
         local enchant = rawget(self, "enchant")
         if enchant then
@@ -528,7 +596,7 @@ function FinderUI:Build()
     -- The house frame, as the gear window wears it (UI/Titanforged.lua).
     if ns.Titanforged then
         local trim = ns.Titanforged:Dress(frame, {
-            title = L["Where to get upgrades"],
+            title = "Blackthornes Equipment",
             portrait = true,
             close = function() FinderUI:Hide() end,
         })
@@ -618,20 +686,104 @@ function FinderUI:Build()
     hint:SetWidth(WIDTH - PADDING * 2)
     hint:SetWordWrap(true)
 
+    -- The installed version, small and faint at the right of the footer's
+    -- line, so a player can see at a glance which one they run.
+    local version = Theme.CreateLabel(frame, "tiny", "dim", "RIGHT")
+    version:SetPoint("BOTTOMRIGHT", -PADDING, 10)
+    version:SetText(ns.VersionLabel and ns.VersionLabel() or "")
+    self.versionLabel = version
+    hint:SetWidth(WIDTH - PADDING * 2 - 90)
+
+    -- How many upgrades in all: in your bags, and to go and get.
+    local summary = Theme.CreateLabel(frame, "small", "good")
+    summary:SetPoint("BOTTOMLEFT", hint, "TOPLEFT", 0, 4)
+    self.summary = summary
+
     local footer = Theme.CreateLabel(frame, "small", "text")
     footer:SetPoint("BOTTOMLEFT", hint, "TOPLEFT", 0, 4)
-    footer:SetWidth(WIDTH - PADDING * 2)
     self.footer = footer
 
     hint:SetText(L["Click a row to follow it. Right-click to track it."])
     self.hint = hint
 
+    -- Upgrades, Enchants and Settings, hanging under the window.
+    self.tabStrip = self:HangTabs(frame, "upgrades")
+
     frame:Hide()
+    -- The gear window's module keeps its parts by their old names.
+    if ns.UI and ns.UI.Build then ns.UI:Build() end
     return frame
 end
 
---- The slots down the left: a dark glass line each, its name and how many
---- upgrades it has, the one picked lit gold. A click shows its list.
+--- The hanging tabs under `frame`, `selected` lit: this window's, and the
+--- Settings window's while it stands in for it.
+function FinderUI:HangTabs(frame, selected)
+    if not Widgets.CreateTabStrip then return nil end
+    local ok, frameWidth = pcall(frame.GetWidth, frame)
+    if not (ok and type(frameWidth) == "number" and frameWidth > 0) then frameWidth = WIDTH end
+    local width = frameWidth - TAB_INSET * 2
+    local strip = Widgets.CreateTabStrip(frame, TABS, function(key)
+        FinderUI:ShowTab(key, frame)
+    end, { hanging = true, width = width })
+    strip:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", TAB_INSET, 0)
+    strip:Select(selected)
+    return strip
+end
+
+--- The top left corner of `frame` in screen pixels, or nil.
+local function Corner(frame)
+    local ok, left, top, scale = pcall(function()
+        return frame:GetLeft(), frame:GetTop(), frame:GetEffectiveScale()
+    end)
+    if ok and type(left) == "number" and type(top) == "number" and type(scale) == "number" then
+        return left * scale, top * scale
+    end
+    return nil
+end
+
+--- Put `frame`'s top left corner at a spot in screen pixels.
+local function PlaceAt(frame, x, y)
+    if not x then return end
+    local ok, scale = pcall(frame.GetEffectiveScale, frame)
+    if not (ok and type(scale) == "number" and scale > 0) then return end
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x / scale, y / scale)
+end
+
+--- A tab clicked, under this window (`from` nil or this frame) or under
+--- Settings: Upgrades and Enchants show this window, Settings shows the
+--- Settings window in its place, at the same spot.
+function FinderUI:ShowTab(key, from)
+    local settings = ns.SettingsUI
+    if key == "settings" then
+        if not settings then return end
+        local x, y = Corner(self.frame)
+        local shown = self.frame and self.frame:IsShown()
+        self:Hide()
+        settings:Show()
+        if shown then PlaceAt(settings.frame, x, y) end
+        settings.asTab = true
+        if settings.tabStrip then settings.tabStrip:Select("settings") end
+        return
+    end
+    local settingsFrame = settings and settings.frame
+    local fromSettings = settingsFrame ~= nil and from == settingsFrame
+    local x, y
+    if fromSettings then
+        x, y = Corner(settingsFrame)
+        settings:Hide()
+    end
+    if ns.db then ns.db.finderShow = key == "enchant" and "enchant" or "all" end
+    self.offset = 0
+    local wasShown = self.frame and self.frame:IsShown()
+    self:Show()
+    if fromSettings and not wasShown then PlaceAt(self.frame, x, y) end
+    if self.tabStrip then self.tabStrip:Select(key == "enchant" and "enchant" or "upgrades") end
+end
+
+--- The slots down the left: a dark glass line each, its name, what you
+--- wear there and how many upgrades it has, the one picked lit gold. A
+--- click shows its list.
 function FinderUI:BuildSlots(height)
     local frame = self.frame
     local column = Theme.CreatePanel(frame, "panel", "border")
@@ -640,12 +792,25 @@ function FinderUI:BuildSlots(height)
     Theme.Recess(column)
     self.slotWell = column
 
+    -- SLOT, YOU WEAR and UP over the lines.
+    local heads = { { 12, L["SLOT"], "LEFT" }, { WORN_X, L["YOU WEAR"], "LEFT" }, { -8, L["UP"], "RIGHT" } }
+    for _, head in ipairs(heads) do
+        local label = Theme.CreateLabel(frame, "tiny", "muted", head[3])
+        if head[3] == "RIGHT" then
+            label:SetPoint("TOPRIGHT", frame, "TOPLEFT", PADDING + SLOT_COLUMN + head[1], self.listTop - 5)
+        else
+            label:SetPoint("TOPLEFT", PADDING + head[1], self.listTop - 5)
+        end
+        label:SetText(head[2])
+    end
+    local slotsTop = self.listTop - SLOT_HEAD
+
     self.slotButtons = {}
     for index, group in ipairs(SLOT_GROUPS) do
         local button = CreateFrame("Button", nil, frame)
         button:SetFrameLevel(column:GetFrameLevel() + 1)
         button:SetSize(SLOT_COLUMN, SLOT_ROW)
-        button:SetPoint("TOPLEFT", PADDING, self.listTop - (index - 1) * SLOT_ROW)
+        button:SetPoint("TOPLEFT", PADDING, slotsTop - (index - 1) * SLOT_ROW)
         button.group = group[1]
         button.restKey = index % 2 == 0 and "glassAlt" or "glass"
         button.background = Theme.Fill(button, button.restKey)
@@ -675,19 +840,37 @@ function FinderUI:BuildSlots(height)
         count:SetPoint("CENTER", 0, 0)
         button.badge, button.count = badge, count
 
-        local name = Theme.CreateLabel(button, "normal", "text")
+        local name = Theme.CreateLabel(button, "small", "text")
         name:SetPoint("LEFT", 12, 0)
-        name:SetPoint("RIGHT", badge, "LEFT", -4, 0)
+        name:SetWidth(WORN_X - 16)
         name:SetText(group[2])
         button.name = name
+
+        -- What you wear there: its icon and its name in its rarity colour,
+        -- both for rings and trinkets.
+        local wornIcon = Theme.CreateItemIcon(button, WORN_ICON)
+        wornIcon:SetPoint("LEFT", WORN_X, 0)
+        button.wornIcon = wornIcon
+        local worn = Theme.CreateLabel(button, "tiny", "dim")
+        worn:SetPoint("LEFT", WORN_X + WORN_ICON + 4, 0)
+        worn:SetWidth(WORN_WIDTH)
+        worn:SetWordWrap(true)
+        button.worn = worn
 
         button:SetScript("OnEnter", function(self)
             self.over = true
             FinderUI:PaintSlot(self)
+            local link = rawget(self, "wornLink")
+            if type(link) == "string" then
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                pcall(GameTooltip.SetHyperlink, GameTooltip, link)
+                GameTooltip:Show()
+            end
         end)
         button:SetScript("OnLeave", function(self)
             self.over = false
             FinderUI:PaintSlot(self)
+            GameTooltip:Hide()
         end)
         button:SetScript("OnClick", function(self) FinderUI:PickSlot(self.group) end)
         self.slotButtons[index] = button
@@ -849,9 +1032,57 @@ function FinderUI:BuildHeader()
     header:SetPoint("TOPRIGHT", -RIM, 0)
     header:SetHeight(HEADER)
 
+    -- Dungeon Loot, Upgrade quest and Training, right to left, clear of
+    -- the close gem.
+    local loot = Widgets.CreateButton(header, L["Dungeon Loot"], function()
+        if ns.DungeonLootUI then ns.DungeonLootUI:Toggle() end
+    end, { width = 100, height = 20 })
+    loot:SetPoint("RIGHT", -(PADDING + 16 - RIM), -4)
+    self.lootButton = loot
+
+    -- Closes the upgrade quest, or brings it back with its quests as they
+    -- were. Its label is green while the quest is up.
+    local quest = Widgets.CreateButton(header, L["Upgrade quest"], function()
+        if ns.UpgradeQuest then ns.UpgradeQuest:Toggle() end
+    end, { width = 104, height = 20 })
+    quest:SetPoint("RIGHT", loot, "LEFT", -6, 0)
+    quest:HookScript("OnEnter", function(self)
+        local on = ns.UpgradeQuest and ns.UpgradeQuest:IsEnabled()
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(L["Upgrade quest"], Theme.Unpack("accent"))
+        GameTooltip:AddLine(on and L["Closes the upgrade quest. Your quests stay saved."]
+            or L["Brings back the upgrade quest, with the steps to your next upgrade."], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    quest:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    self.questButton = quest
+
+    -- Opens the Training drawer beside the window (UI/TrainingDrawer.lua):
+    -- class spells to train and what they cost. It says how many wait.
+    local training = Widgets.CreateButton(header, L["Training"], function()
+        if ns.TrainingDrawer then ns.TrainingDrawer:Toggle() end
+    end, { width = 80, height = 20 })
+    training:SetPoint("RIGHT", quest, "LEFT", -6, 0)
+    training:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(L["Class training"], Theme.Unpack("accent"))
+        GameTooltip:AddLine(L["Spells you can train, what they cost and where your trainer is."], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    training:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    self.trainingButton = training
+
+    -- The gear window's module paints these (ns.UI).
+    if ns.UI then
+        ns.UI.lootButton, ns.UI.questButton, ns.UI.trainingButton = loot, quest, training
+        ns.UI:OnUpgradeQuestToggled()
+        ns.UI:OnTrainingToggled()
+    end
+
+    -- Stops short of the buttons, so a long spec name never runs under them.
     local spec = Theme.CreateLabel(header, "small", "muted")
     spec:SetPoint("LEFT", 58 - RIM, -4)
-    spec:SetPoint("RIGHT", -(PADDING + 16 - RIM), -4)
+    spec:SetPoint("RIGHT", training, "LEFT", -10, 0)
     self.specLabel = spec
 
     -- A gold rule under it, bright at the left and fading out to the right.
@@ -898,20 +1129,6 @@ function FinderUI:BuildFilters()
     })
     ahead:SetPoint("TOPRIGHT", -PADDING, -(HEADER + 14))
     self.ahead = ahead
-
-    -- The Enchants view: enchants for what you wear, slot by slot. A second
-    -- click goes back to gear; a gold bar under it while it shows.
-    local enchants = Widgets.CreateButton(self.frame, L["Enchants"], function()
-        FinderUI:SetFilter(not FinderUI:ShowingEnchants() and "enchant" or nil)
-    end, { width = 80, height = 22 })
-    enchants:SetPoint("RIGHT", ahead, "LEFT", -14, 0)
-    local mark = enchants:CreateTexture(nil, "OVERLAY")
-    mark:SetPoint("BOTTOMLEFT", 1, 1)
-    mark:SetPoint("BOTTOMRIGHT", -1, 1)
-    mark:SetHeight(2)
-    mark:SetColorTexture(Theme.Unpack("accent"))
-    enchants.mark = mark
-    self.enchantsButton = enchants
 
     -- The second row: what to leave out on the left, how far above the
     -- character a quest may be on the right. The upgrade quest follows the
@@ -1138,6 +1355,9 @@ function FinderUI:Groups(found)
     local on = {}
     for _, entry in ipairs(SOURCE_BOXES) do on[entry[1]] = self:SourceOn(entry[1]) end
     local all = type(found.all) == "table" and found.all or found.slots or {}
+    -- Better gear you own already: in your bags, your bank or on another
+    -- of your characters (UI:ReadBags).
+    local ownedBySlot = ns.UI and ns.UI.ReadBags and ns.UI:ReadBags() or {}
     for _, group in ipairs(SLOT_GROUPS) do
         -- Both rings, or both trinkets, as one list: each item once.
         local picks, seen = {}, {}
@@ -1162,7 +1382,16 @@ function FinderUI:Groups(found)
             end
             if #sources > 0 then lines[#lines + 1] = { pick = pick, sources = sources } end
         end
-        groups[group[1]] = { lines = lines, total = #picks }
+        local owned, links = {}, {}
+        for _, slot in ipairs({ group[1], group[3] }) do
+            for _, entry in ipairs(ownedBySlot[slot] or {}) do
+                if not links[entry.link] then
+                    links[entry.link] = true
+                    owned[#owned + 1] = entry
+                end
+            end
+        end
+        groups[group[1]] = { lines = lines, total = #picks, owned = owned }
     end
     return groups
 end
@@ -1173,7 +1402,10 @@ function FinderUI:ChooseSlot(groups)
     local saved = tonumber(ns.db and ns.db.finderSlot)
     if saved and GROUP_OF[saved] ~= saved then saved = nil end
     local slot = self.slot or saved
-    local function Has(key) return groups[key] and #groups[key].lines > 0 end
+    local function Has(key)
+        local group = groups[key]
+        return group and (#group.lines > 0 or (group.owned and #group.owned > 0))
+    end
     if not self.slotChosen and not (slot and Has(slot)) then
         for _, group in ipairs(SLOT_GROUPS) do
             if Has(group[1]) then
@@ -1196,11 +1428,51 @@ function FinderUI:PickSlot(key)
     self:Redraw()
 end
 
---- The slots' counts and which is picked. `groups` nil blanks the counts.
+--- An item's name in its rarity colour, from its link: plain text, so it
+--- can be cut to fit.
+function FinderUI.ItemText(link)
+    if type(link) ~= "string" then return "" end
+    local name = link:match("%[(.-)%]") or link
+    local color = link:match("|c(%x%x%x%x%x%x%x%x)")
+    return color and ("|c" .. color .. name .. "|r") or name
+end
+
+--- Can a click put this owned piece on? Only one in the bags, and never
+--- a weapon whose skill is not trained yet.
+function FinderUI.CanPutOn(owned)
+    return type(owned) == "table" and owned.where == "bags"
+        and not (owned.result and owned.result.skill)
+end
+
+--- What a slot's line says you wear: one name, or both rings or trinkets,
+--- each on its own line and cut to fit.
+function FinderUI:PaintWorn(button)
+    local slots = { button.group }
+    for _, group in ipairs(SLOT_GROUPS) do
+        if group[1] == button.group and group[3] then slots[2] = group[3] end
+    end
+    local Items = ns.Items
+    local texts, first = {}, nil
+    for _, slot in ipairs(slots) do
+        local link = Items and Items:Equipped(slot)
+        if link then
+            first = first or link
+            local text = FinderUI.ItemText(link)
+            texts[#texts + 1] = #slots > 1 and FinderUI.Fit("tiny", text, WORN_WIDTH) or text
+        end
+    end
+    button.wornLink = first or false
+    Theme.SetItemIcon(button.wornIcon, first)
+    button.worn:SetText(#texts > 0 and table.concat(texts, "\n") or "-")
+end
+
+--- The slots' counts, what is worn in each and which is picked. `groups`
+--- nil blanks the counts.
 function FinderUI:PaintSlots(groups)
     for _, button in ipairs(self.slotButtons or {}) do
         local group = groups and groups[button.group]
-        button.count:SetText(tostring(group and #group.lines or 0))
+        button.count:SetText(tostring(group and ((group.owned and #group.owned or 0) + #group.lines) or 0))
+        self:PaintWorn(button)
         self:PaintSlot(button)
     end
 end
@@ -1343,13 +1615,20 @@ end
 -- @return the row's height, 0 for none
 function FinderUI:FillRow(row, line)
     row.enchant = nil
+    row.heading, row.owned = false, false
     row.showWay:Hide()
+    row.putOn:Hide()
+    row.putOn.owned = nil
+    row.headingLabel:Hide()
     row.queueIt.enchant = nil
     if not line then
         row.pick = nil
         row:Hide()
         return 0
     end
+    row.background:SetColorTexture(Theme.Unpack(row.restKey))
+    if line.heading then return self:FillHeadingRow(row, line.heading) end
+    if line.owned then return self:FillOwnedRow(row, line.owned) end
     if line.enchant then return self:FillEnchantRow(row, line.enchant) end
 
     row.pick = {
@@ -1416,6 +1695,72 @@ function FinderUI:FillRow(row, line)
     row.source:SetText(text .. Colored("dim", tail))
     row:Show()
     return self:FitRow(row, true)
+end
+
+--- A heading across the list: IN YOUR BAGS, or TO GO AND GET.
+-- @return the row's height
+function FinderUI:FillHeadingRow(row, text)
+    row.pick = nil
+    row.heading = true
+    Theme.SetItemIcon(row.icon, nil)
+    for _, label in ipairs({ row.item, row.gain, row.level, row.where, row.source }) do label:SetText("") end
+    row.queueIt:Hide()
+    row.headingLabel:SetText(text)
+    row.headingLabel:Show()
+    row:SetHeight(HEADING_ROW)
+    row:Show()
+    return HEADING_ROW
+end
+
+--- Where a piece you own is, in a few words.
+function FinderUI.OwnedWhere(where)
+    if where == "bags" then return L["Your bags"] end
+    if where == "bank" then return L["Your bank"] end
+    local name = ns.Alts and ns.Alts:NameOf(where) or nil
+    return L.Format("On %s", name or L["another of your characters"])
+end
+
+--- A piece you own that beats what you wear: in your bags with Put it on,
+--- or in your bank or on another character.
+-- @return the row's height
+function FinderUI:FillOwnedRow(row, owned)
+    row.pick = nil
+    row.owned = owned
+    Theme.SetItemIcon(row.icon, owned.link)
+    row.item:SetWidth(ITEM_WIDTH)
+    row.item:SetText(ns.Items.ShowLink(owned.link))
+    local result = owned.result or {}
+    local gain = Gain(result)
+    if result.skill then gain = L.Format("Train: %s", gain) end
+    row.gain:SetWidth(GAIN_WIDTH)
+    row.gain:SetText(gain)
+    row.edgeKey = "good"
+    row.gain:SetTextColor(Theme.Unpack(result.skill and "loss" or "good"))
+    local level = FinderUI.LevelOf({ link = owned.link })
+    row.level:SetText(level and tostring(level) or "")
+    row.level:Show()
+    row.where:SetText(FinderUI.OwnedWhere(owned.where))
+    row.where:Show()
+    row.queueIt:Hide()
+    row.sourceWidth = ITEM_WIDTH
+    row.source:SetWidth(ITEM_WIDTH)
+    local canPutOn = FinderUI.CanPutOn(owned)
+    if canPutOn then
+        row.source:SetText(Colored("good", L["Click to put it on"]))
+    elseif owned.where ~= "bags" and ns.UI and ns.UI.WhereText then
+        row.source:SetText(Colored("muted", ns.UI.WhereText(owned.where)))
+    else
+        row.source:SetText("")
+    end
+    row.putOn.owned = owned
+    row.putOn:SetShown(canPutOn)
+    row:Show()
+    local height = self:FitRow(row, true)
+    if canPutOn then
+        height = math.max(height, 6 + TextHeight(row.gain, "normal") + 4 + 20 + 5)
+        row:SetHeight(height)
+    end
+    return height
 end
 
 --- One row of the Enchants view: the slot, the piece you wear, the enchant
@@ -1520,7 +1865,7 @@ function FinderUI:Draw()
         end
         -- Scrolled under a still mouse: the tooltip follows the new item.
         if rawget(row, "over") == true then
-            if row:IsShown() and (rawget(row, "pick") or rawget(row, "enchant")) then
+            if row:IsShown() and (rawget(row, "pick") or rawget(row, "enchant") or rawget(row, "owned")) then
                 ShowTooltip(row)
             else
                 GameTooltip:Hide()
@@ -1574,12 +1919,11 @@ function FinderUI:RefreshInBackground()
     end)
 end
 
---- The gold bar under Enchants while it shows, and the controls only gear
---- uses.
+--- The tab lit for the view showing, and the controls only gear uses.
 function FinderUI:MarkFilters()
     local enchants = self:ShowingEnchants()
-    self.enchantsButton.mark:SetShown(enchants)
-    self.enchantsButton:SetLabelColor(enchants and "accent" or "text")
+    if self.tabStrip then self.tabStrip:Select(enchants and "enchant" or "upgrades") end
+    if self.summary then self.summary:SetShown(not enchants) end
     local gear = not enchants
     local controls = { self.showLabel, self.getNow, self.ahead, self.levelLabel, self.questLevels, self.solo, self.zone }
     for _, box in ipairs(self.sourceBoxes) do controls[#controls + 1] = box end
@@ -1592,6 +1936,18 @@ function FinderUI:MarkFilters()
         self.hint:SetText(L["The best enchant for each piece you wear, for your spec. Queue it sends it to Tradeskills."])
     else
         self.hint:SetText(L["The best enchant for each piece you wear, for your spec."])
+    end
+end
+
+--- The filters' note after the summary, on the same line, or alone.
+function FinderUI:PlaceFooter()
+    local footer, summary = self.footer, self.summary
+    footer:ClearAllPoints()
+    local text = summary:IsShown() and summary:GetText() or ""
+    if type(text) == "string" and text ~= "" then
+        footer:SetPoint("LEFT", summary, "RIGHT", 12, 0)
+    else
+        footer:SetPoint("BOTTOMLEFT", self.hint, "TOPLEFT", 0, 4)
     end
 end
 
@@ -1612,6 +1968,8 @@ function FinderUI:Present(found, why)
         end
         self.empty:Show()
         self.footer:SetText("")
+        self.summary:SetText("")
+        self:PlaceFooter()
         self.specLabel:SetText("")
         return nil
     end
@@ -1619,24 +1977,33 @@ function FinderUI:Present(found, why)
     local spec, _, class = Weights:CurrentSpec()
     local specName = spec and Weights:SpecName(class, spec) or ""
     if found.reach > found.player.level then
-        self.specLabel:SetText(L.Format("%s, level %d, planning for %d", specName, found.player.level, found.reach))
+        self.specLabel:SetText(L.Format("Judging gear as %s, level %d, planning for %d", specName, found.player.level, found.reach))
     else
-        self.specLabel:SetText(L.Format("%s, level %d", specName, found.player.level))
+        self.specLabel:SetText(L.Format("Judging gear as %s, level %d", specName, found.player.level))
     end
     if self.ahead then self.ahead:SetValue(self:Ahead(), true) end
 
     local groups = self:Groups(found)
     self.groups = groups
     local group = groups[self:ChooseSlot(groups)]
-    self.lines = FinderUI.SortLines(group.lines, self.sortKey, self.sortFlip)
+    -- What you own first, under IN YOUR BAGS, then TO GO AND GET.
+    local gear = FinderUI.SortLines(group.lines, self.sortKey, self.sortFlip)
+    local lines = {}
+    if group.owned and #group.owned > 0 then
+        lines[1] = { heading = L["IN YOUR BAGS"] }
+        for _, entry in ipairs(group.owned) do lines[#lines + 1] = { owned = entry } end
+        if #gear > 0 then lines[#lines + 1] = { heading = L["TO GO AND GET"] } end
+    end
+    for _, line in ipairs(gear) do lines[#lines + 1] = line end
+    self.lines = lines
     self.mostFor = nil
     self.offset = math.min(self.offset or 0, self:MostOffset())
     self:Draw()
     self:PaintSlots(groups)
     self:SetListHead(self.lines)
 
-    local shown = #self.lines
-    if shown == 0 then
+    local shown = #gear
+    if #self.lines == 0 then
         local here = self:Here(found)
         if ns.Alts and ns.Alts:PlayerSkipped() then
             self.empty:SetText(L["Upgrades are skipped for this character. Untick it in Settings, or type /beq skip off."])
@@ -1662,6 +2029,22 @@ function FinderUI:Present(found, why)
     end
     self.footer:SetText(text)
 
+    -- How many upgrades in all, every slot: in your bags, to go and get.
+    local inBags, toGet = 0, 0
+    for _, entry in pairs(groups) do
+        for _, owned in ipairs(entry.owned or {}) do
+            if owned.where == "bags" then inBags = inBags + 1 end
+        end
+        toGet = toGet + #entry.lines
+    end
+    local parts = {}
+    if inBags == 1 then parts[#parts + 1] = L["1 upgrade in your bags."]
+    elseif inBags > 1 then parts[#parts + 1] = L.Format("%d upgrades in your bags.", inBags) end
+    if toGet == 1 then parts[#parts + 1] = L["1 upgrade you can go and get."]
+    elseif toGet > 1 then parts[#parts + 1] = L.Format("%d upgrades you can go and get.", toGet) end
+    self.summary:SetText(table.concat(parts, " "))
+    self:PlaceFooter()
+
     self.found = found
     return found
 end
@@ -1677,7 +2060,7 @@ function FinderUI:PresentEnchants()
     local spec, _, class = Weights:CurrentSpec()
     local specName = spec and Weights:SpecName(class, spec) or ""
     local level = ns.Items and ns.Items:PlayerLevel()
-    self.specLabel:SetText(level and L.Format("%s, level %d", specName, level) or specName)
+    self.specLabel:SetText(level and L.Format("Judging gear as %s, level %d", specName, level) or specName)
 
     local groups, count = {}, 0
     for _, group in ipairs(SLOT_GROUPS) do groups[group[1]] = { lines = {}, total = 0 } end
@@ -1720,6 +2103,7 @@ function FinderUI:PresentEnchants()
     else
         self.footer:SetText("")
     end
+    self:PlaceFooter()
     self.found = nil
     return self.lines
 end
@@ -1754,17 +2138,15 @@ function FinderUI:RestorePosition()
     if not self.frame then return end
     local db = ns.db or {}
     self.frame:ClearAllPoints()
-    -- Until it is dragged somewhere, it opens beside the gear window rather
-    -- than over its title, far enough off that its portrait clears the gear
-    -- window's close gem.
-    local gear = ns.UI and ns.UI.frame
-    local okShown, shown = pcall(function() return gear and gear:IsShown() end)
-    if not db.finderMoved and okShown and shown then
-        self.frame:SetPoint("TOPLEFT", gear, "TOPRIGHT", 30, 0)
-        return
+    -- Where it was left; else where the old gear window was; else the middle.
+    if db.finderPoint then
+        self.frame:SetPoint(db.finderPoint, UIParent, db.finderRelativePoint or db.finderPoint,
+            db.finderX or 0, db.finderY or 0)
+    elseif db.point then
+        self.frame:SetPoint(db.point, UIParent, db.relativePoint or db.point, db.x or 0, db.y or 0)
+    else
+        self.frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
     end
-    self.frame:SetPoint(db.finderPoint or "CENTER", UIParent, db.finderRelativePoint or "CENTER",
-        db.finderX or 40, db.finderY or 20)
 end
 
 function FinderUI:Show()
@@ -1781,6 +2163,7 @@ function FinderUI:Show()
         if ns.Titanforged then ns.Titanforged:Opened(self.frame) end
     end
     self:Refresh()
+    if ns.TrainingDrawer then ns.TrainingDrawer:WindowShown() end
 end
 
 function FinderUI:Hide()

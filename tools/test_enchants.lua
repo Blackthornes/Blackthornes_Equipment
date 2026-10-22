@@ -233,7 +233,7 @@ suite.check("each slot with something better counts one", lit == 4, lit)
 suite.check("the first of them shows", #UI.lines == 1 and UI.listTitle:GetText() == "Chest", UI.listTitle:GetText())
 suite.check("the gear controls step aside", not UI.ahead:IsShown() and not UI.solo:IsShown()
     and not UI.getNow:IsShown() and not UI.sourceBoxes[1]:IsShown())
-suite.check("and Enchants is marked", UI.enchantsButton.mark:IsShown())
+suite.check("and the Enchants tab is lit", UI.tabStrip.selected == "enchant", UI.tabStrip.selected)
 suite.check("the footer counts them", UI.footer:GetText():find("4 pieces you wear", 1, true) ~= nil,
     UI.footer:GetText())
 local row = UI.rows[1]

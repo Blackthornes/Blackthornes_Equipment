@@ -260,7 +260,7 @@ cached[1003], cached[1005] = nil, nil
 local UI = ns.FinderUI
 UI:Show()
 suite.check("it opens", UI.frame:IsShown())
-suite.check("the header names the spec and level", UI.specLabel:GetText() == "Beast Mastery, level 20",
+suite.check("the header names the spec and level", UI.specLabel:GetText() == "Judging gear as Beast Mastery, level 20",
     UI.specLabel:GetText())
 suite.check("the first slot with upgrades shows, chest", UI.slot == 5 and UI.listTitle:GetText() == "Chest",
     UI.listTitle:GetText())
@@ -393,6 +393,6 @@ end
 
 -- The gear window has a button for it.
 ns.UI:Show()
-suite.check("the gear window has a Find upgrades button", ns.UI.findButton ~= nil)
+suite.check("the gear window is this window", ns.UI.frame == UI.frame)
 
 suite.done()
