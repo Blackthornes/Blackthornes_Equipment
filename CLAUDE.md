@@ -1028,6 +1028,19 @@ picked for lighter armor is let go quietly (`UpgradeQuest:LighterArmor`).
 Alts keep `Weights:IsBestArmor` as before. Tested in
 `tools/test_bestarmor.lua`.
 
+## Gear for other classes only
+
+A player's report (2026-10-22): a druid was told Hunter-only shoulders
+were an upgrade. `Compare:ClassAllows(class, link)` reads the item's class
+mask (`Compare.ClassMask`: `ForeverItems`, then `Sources.ITEMS`, then
+`Crafts.ITEMS`), else, for gear no data knows, the item's own "Classes:"
+tooltip line (`Items:ClassesOnTooltip`, by `ITEM_CLASSES_ALLOWED`, kept per
+item ID), and lets anything unknown through. `Judge` answers "cantuse" for
+gear limited to other classes (so the tooltip, bag arrows, finder, Butler
+and Tradeskills follow), `Alts:Judge` never offers it to an alt of another
+class, and `Finder.Wearable` leaves it out. Tested in
+`tools/test_classonly.lua`.
+
 ## Ratings, the hit cap and racials
 
 Asked 2026-10-16, after the 10-15 patch changed the racials. Forever gear

@@ -179,6 +179,44 @@ function Items:SchoolDamage(link)
     return found
 end
 
+-- The classes an item's tooltip names on its "Classes:" line, by item ID:
+-- a set of lower case names, or false when it names none. Only kept once
+-- the whole tooltip was read.
+local classLines = {}
+
+--- The class names on an item's "Classes: Hunter" line, as a set of lower
+--- case names; false when the tooltip has no such line; nil while the
+--- client has not loaded the item. For gear none of the data knows.
+function Items:ClassesOnTooltip(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return nil end
+    local known = classLines[itemID]
+    if known ~= nil then return known end
+
+    local format = type(_G.ITEM_CLASSES_ALLOWED) == "string" and _G.ITEM_CLASSES_ALLOWED or "Classes: %s"
+    local pattern = "^" .. format:gsub("([%%%(%)%.%+%-%*%?%[%]%^%$])", "%%%1"):gsub("%%%%s", "(.+)") .. "$"
+    local data = Call({ "C_TooltipInfo.GetItemByID" }, itemID)
+    if type(data) ~= "table" or type(data.lines) ~= "table" then return nil end
+
+    local found, lines = false, 0
+    for _, line in ipairs(data.lines) do
+        lines = lines + 1
+        local list = LineText(line)
+        list = list and list:match(pattern)
+        if list then
+            found = {}
+            -- Chinese clients part the names with a wide comma or 、.
+            list = list:gsub("\239\188\140", ","):gsub("\227\128\129", ",")
+            for name in list:gmatch("[^,]+") do
+                name = name:match("^%s*(.-)%s*$")
+                if name ~= "" then found[name:lower()] = true end
+            end
+        end
+    end
+    if lines > 1 then classLines[itemID] = found end
+    return found
+end
+
 --- True once SchoolDamage has read `link`'s whole tooltip and kept it.
 function Items:SchoolDamageKnown(link)
     link = self.PlainLink(link)
