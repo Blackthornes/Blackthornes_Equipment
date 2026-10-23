@@ -43,6 +43,7 @@ local APIS = {
     "C_Map.GetBestMapForUnit", "C_Map.GetMapInfo", "C_Map.GetMapChildrenInfo",
     "C_Map.SetUserWaypoint", "UiMapPoint.CreateFromCoordinates",
     "C_SuperTrack.SetSuperTrackedUserWaypoint", "OpenWorldMap",
+    "C_Map.CanSetUserWaypointOnMap", "C_Map.GetMapRectOnMap", "C_Map.HasUserWaypoint",
     "GetMerchantItemLink", "MerchantFrame_UpdateMerchantInfo", "GetLootSlotLink", "LootFrame_Update",
     -- The upgrade quest: is a quest in the log, are its objectives done,
     -- and how many of an item the bags hold.
@@ -462,7 +463,13 @@ function Probe:Upgrades()
     if ns.Waypoints then
         local zone = _G.GetRealZoneText and select(2, pcall(_G.GetRealZoneText))
         local mapID = type(zone) == "string" and ns.Waypoints:MapFor(zone)
-        Line("map pin", ns.Waypoints:CanPin() and ("can pin; this zone's map " .. tostring(mapID or "not found"))
+        local takes = ""
+        local map = _G.C_Map
+        if mapID and map and type(map.CanSetUserWaypointOnMap) == "function" then
+            local ok, can = pcall(map.CanSetUserWaypointOnMap, mapID)
+            takes = ok and (can == false and ", takes no pin" or ", takes a pin") or ""
+        end
+        Line("map pin", ns.Waypoints:CanPin() and ("can pin; this zone's map " .. tostring(mapID or "not found") .. takes)
             or "this client cannot pin")
     end
     if ns.NPCSpots then
