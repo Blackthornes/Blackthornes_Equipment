@@ -736,6 +736,11 @@ so the one-arrow rule holds. The files are the same apart from names
 (Farmer's reads the goal arrow's `x`/`y`, the others `mx`/`my`); a fix to
 one belongs in all three.
 
+The dial takes no clicks and shows no hover text (the owner,
+2026-10-23: the clicks confused players): drag moves it, the red gem
+closes it, and nothing else. Never add a click or tooltip to it again
+unasked; the same in every addon with an arrow.
+
 Only one Blackthornes arrow is on screen at a time (the owner asked
 2026-10-08): Farmer's goal arrow, Equipment's quest arrow and Pets' beast
 arrow agree through one global table, `_G.BlackthornesArrows`
@@ -868,7 +873,7 @@ the wider panel: `QuestPanel.WIDTH` is 384 (was 340) so a fifth tab fits. `Logic
 does the actions: track, share, abandon (only through the game's own
 `ABANDON_QUEST` box), open in the log, show on map, aim the arrow
 (`QuestArrow:AimAtQuest`, a quest log quest the arrow follows until a step
-is aimed at, the dial is clicked for the next tab, or the quest leaves the
+is aimed at, the next tab is picked, or the quest leaves the
 log). `UI/QuestLogTab.lua` draws it. The tab is not one of
 `UpgradeQuest.TABS`: it shows while the character's `questLogTab` is set,
 and `UpgradeQuest:SelectTab` clears it. Folded zones are per character in
