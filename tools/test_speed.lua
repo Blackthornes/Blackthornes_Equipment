@@ -197,18 +197,11 @@ env.chat = {}
 Perf:Report(10)
 suite.check("and says when nothing is measured yet", env.ChatText():find("nothing measured yet", 1, true) ~= nil)
 
--- The Settings buttons do what the commands do.
+-- The speed check is typed only (the owner, 2026-10-23): no Settings row.
 ns.SettingsUI:Show()
-local controls = ns.SettingsUI.controls
-slow:Work(5)
-env.chat = {}
-controls.perfShow:GetScript("OnClick")(controls.perfShow)
-suite.check("the Show button lists them", env.ChatText():find("Slow:Work", 1, true) ~= nil)
-controls.perfClear:GetScript("OnClick")(controls.perfClear)
-suite.check("the Clear button clears them", Perf.rows["Slow:Work"] == nil)
-for _, key in ipairs({ "perfShow", "perfClear" }) do
-    suite.check(key .. " has a tooltip", pcall(controls[key]:GetScript("OnEnter"), controls[key]))
-end
+suite.check("Settings has no speed check row",
+    ns.SettingsUI.controls.perfShow == nil and ns.SettingsUI.controls.perfClear == nil)
+ns.SettingsUI:Hide()
 
 _G.debugprofilestop = nil
 env.chat = {}

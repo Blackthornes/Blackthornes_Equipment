@@ -707,7 +707,8 @@ function SettingsUI:BuildQuest()
     controls.questStepOnly:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- The quest arrow, as the Arrow button on the quest panel and /beq
-    -- arrow switch it, and /beq arrow check and next as buttons.
+    -- arrow switch it, and /beq arrow next as a button. /beq arrow check is
+    -- typed only (the owner, 2026-10-23).
     pages:Section("quest", 2, L["QUEST ARROW"])
 
     local arrowRow = pages:Row("quest", 2, L["Quest Arrow:"],
@@ -716,12 +717,6 @@ function SettingsUI:BuildQuest()
         if ns.QuestArrow then ns.QuestArrow:SetOn(checked) end
     end, false)
     controls.questArrow:SetPoint("TOPLEFT", CONTROL_X, -2)
-    controls.questArrowCheck = Widgets.CreateButton(arrowRow, L["Check"], function()
-        ns.HandleSlash("arrow check")
-    end, { width = 64, height = 20 })
-    controls.questArrowCheck:SetPoint("TOPLEFT", CONTROL_X + math.max(96, controls.questArrow:GetWidth() + 12), 0)
-    Explain(controls.questArrowCheck, L["Check the quest arrow"],
-        L["Lists in chat what the arrow can read where you stand."])
 
     local _, nextButton = CommandRow(pages, "quest", 2, L["Next Place:"],
         L["Points the arrow at the next step's place."],
@@ -830,9 +825,8 @@ function SettingsUI:BuildGeneral()
 
     pages:Section("general", 2, L["ADVANCED"])
 
-    local debugRow = pages:Row("general", 2, L["Debug:"],
-        L["Extra chat messages to help track down a problem."])
-    controls.debug = Tick(debugRow, L["On"], "debug", false)
+    -- Debug, the speed check and the client check are typed only (/beq
+    -- debug, perf, probe; the owner, 2026-10-23): players don't need them.
 
     -- Core/SisterNote.lua: one chat line, once, naming the Blackthornes
     -- addons the player does not have. Off here is off in all of them.
@@ -861,25 +855,6 @@ function SettingsUI:BuildGeneral()
         ns.WhatsNew:SetMotionOn(checked)
     end, true)
     controls.whatsNewMotion:SetPoint("TOPLEFT", CONTROL_X, -2)
-
-    -- /beq perf and /beq perf clear as buttons.
-    local speedRow = pages:Row("general", 2, L["Speed Check:"],
-        L["If the game hitches, lists in chat what took longest."])
-    controls.perfShow = Widgets.CreateButton(speedRow, L["Show"], function()
-        ns.HandleSlash("perf")
-    end, { width = 64, height = 20 })
-    controls.perfShow:SetPoint("TOPLEFT", CONTROL_X, 0)
-    controls.perfClear = Widgets.CreateButton(speedRow, L["Clear"], function()
-        ns.HandleSlash("perf clear")
-    end, { width = 64, height = 20 })
-    controls.perfClear:SetPoint("LEFT", controls.perfShow, "RIGHT", 12, 0)
-    Explain(controls.perfClear, L["Start the count again"],
-        L["The next Show counts from now."])
-
-    local _, probeButton = CommandRow(pages, "general", 2, L["Client Check:"],
-        L["Lists in chat what the game lets Equipment read."],
-        L["Check"], "probe")
-    controls.probe = probeButton
 end
 
 -- The window styles, in the order the stepper steps through them.
@@ -941,7 +916,6 @@ function SettingsUI:Refresh()
     if not (self.frame and self.frame:IsShown() and ns.db) then return end
 
     local controls = self.controls
-    controls.debug:SetChecked(ns.db.debug == true)
     if controls.shareData then controls.shareData:SetChecked(ns.db.shareData == true) end
     controls.sisters:SetChecked(ns.SisterNote:IsOn())
     controls.whatsNewPopup:SetChecked(ns.WhatsNew:IsOn())

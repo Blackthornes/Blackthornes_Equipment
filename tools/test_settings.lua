@@ -97,9 +97,18 @@ _G.BlackthornesTS = nil
 -- row here.
 suite.check("there is no minimap box", controls.minimap == nil)
 
--- Debug.
-controls.debug:GetScript("OnClick")(controls.debug)
-suite.check("the debug box sets debug", ns.db.debug == true)
+-- Debug, the speed check and the client check are typed only (the owner,
+-- 2026-10-23): no row for them, and help leaves them out.
+suite.check("there is no debug box", controls.debug == nil and controls.probe == nil)
+ns.HandleSlash("debug")
+suite.check("/beq debug turns debug on", ns.db.debug == true)
+ns.HandleSlash("debug off")
+suite.check("/beq debug off turns it off", ns.db.debug == false)
+local listed = {}
+for _, name in ipairs(ns.commandOrder) do listed[name] = true end
+suite.check("help leaves out debug, probe and perf",
+    not listed.debug and not listed.probe and not listed.perf
+    and ns.commands.debug and ns.commands.probe and ns.commands.perf)
 
 -- The sister note (Core/SisterNote.lua).
 suite.check("the sister addons box starts ticked", controls.sisters:GetChecked())
@@ -210,19 +219,19 @@ suite.check("sizes read through the step", ns.Theme.sizes.small == ns.Theme.BASE
 local ran = {}
 local realSlash = ns.HandleSlash
 ns.HandleSlash = function(text) ran[#ran + 1] = text end
-for _, key in ipairs({ "openWindow", "find", "questArrowNext", "probe", "whatsnew" }) do
+for _, key in ipairs({ "openWindow", "find", "questArrowNext", "whatsnew" }) do
     controls[key]:GetScript("OnClick")(controls[key])
 end
 ns.HandleSlash = realSlash
 suite.check("the command buttons run their commands",
-    table.concat(ran, ",") == "window,find,arrow next,probe,whatsnew", table.concat(ran, ","))
+    table.concat(ran, ",") == "window,find,arrow next,whatsnew", table.concat(ran, ","))
 
 -- Every command registered has a control here, but for the ones that are
 -- typed only (the owner, 2026-10-15): commands that only list things in
 -- chat, or only do what a panel already has a button for.
 local covered = { sisters = true, whatsnew = true,
     window = true, find = true, quest = true, arrow = true,
-    probe = true, perf = true, spec = true, weights = true,
+    spec = true, weights = true,
     settings = true, weapons = true, training = true, skip = true, autoequip = true,
     dungeons = true, loot = true,
 }
