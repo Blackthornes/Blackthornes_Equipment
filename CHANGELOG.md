@@ -4,6 +4,20 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.35.0
+
+For WoW: Forever (interface 16001). Files were added and the TOC changed, so
+restart the game fully after updating (`/reload` is not enough).
+
+- **Dungeon Quests:** lists every quest done inside a dungeon or raid, and which ones you've done. Show the Way points you to the quest.
+- **Dungeon Loot:** shows what each dungeon's bosses drop, with the upgrades for you marked.
+- **One gear window:** Upgrades, Enchants, Dungeon Quests, Dungeon Loot and Settings are tabs in the same window, and it keeps one size across them.
+- **Boss Drops:** an item's tooltip says which boss drops it and where. It's on the Gear page of Settings, under Boss Drops.
+- **Window size:** every window has a size grip, and the General page has an Effects choice of Full, Subtle or Off.
+- **Where to Get Upgrades:** the headings sort the list, and every line shows in full.
+- **Class training:** right-click a spell in the Training drawer to skip it.
+- **Bug fixes:** gear made for other classes is no longer called an upgrade, and several bug fixes for stat weights, the Following tag and Settings.
+
 ## 0.34.0
 
 For WoW: Forever (interface 16001). No files were added, so `/reload` is enough after updating.
