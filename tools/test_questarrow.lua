@@ -224,6 +224,9 @@ clock = clock + 5
 suite.check("another map: no arrow", Arrow:State(clock).mode == "far", Arrow:State(clock).mode)
 worldCoords = true
 
+-- With "Guide Me:" unticked the arrow only names a zone across the sea
+-- (test_travel.lua has it ticked).
+ns.db.arrowRoute = false
 -- The other continent.
 zone = "Durotar"
 where = { map = 1, x = 0.5, y = 0.5 }

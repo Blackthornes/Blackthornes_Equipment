@@ -37,7 +37,10 @@ local target = { name = "Mirefin camp", zone = "Dustwallow Marsh", map = 1445, m
 ns.db.travelFlights = { [UnitGUID("player")] = { [1] = true, [2] = true } }
 
 suite.check("Equipment's host is used", Travel.Host.Here ~= nil and ns.TravelHost ~= nil)
-suite.check("off unless ticked", Travel:Use(target, here, clock) == nil)
+ns.db.arrowRoute = nil
+suite.check("on when never set", Travel.IsOn())
+ns.db.arrowRoute = false
+suite.check("off once unticked", Travel:Use(target, here, clock) == nil and not Travel.IsOn())
 
 ns.db.arrowRoute = true
 local trip = Travel:Use(target, here, clock)

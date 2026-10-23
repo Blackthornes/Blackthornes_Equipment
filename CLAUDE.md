@@ -751,8 +751,8 @@ The owner said build it (2026-10-21, from a mockup) in every addon with an
 arrow: a quest arrow aimed at a place in another zone or on the other
 continent leads the way step by step (flights this character knows, the
 boats and zeppelins of its side, its Hearthstone, walks through the zones
-between) instead of pointing straight over mountains and sea. Off unless
-ticked: "Guide Me:" on the Upgrade quest page (`arrowRoute`, account wide,
+between) instead of pointing straight over mountains and sea. On unless
+unticked: "Guide Me:" on the Upgrade quest page (`arrowRoute`, account wide,
 never rename it) and `/beq arrow route [on|off]`. `Logic/Travel.lua`,
 `Data/Travel.lua`, `Data/TravelZones.lua`, `UI/TravelCard.lua`,
 `UI/TravelMap.lua`, `Media/Frame/TravelDot.tga`, `tools/make_travel.py`
