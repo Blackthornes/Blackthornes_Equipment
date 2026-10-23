@@ -278,6 +278,7 @@ function DQUI:BuildQuests()
 
     local first = HEAD + COLUMNS
     self.questRows = {}
+    self.questTop = first
     for index = 1, QUEST_ROWS do
         local row = GlassRow(well, index, QUEST_ROW)
         row:SetPoint("TOPLEFT", 1, -(first + (index - 1) * QUEST_ROW))
@@ -303,12 +304,16 @@ function DQUI:BuildQuests()
         row.level = Theme.CreateLabel(row, "normal", "text", "CENTER")
         row.level:SetWidth(LEVEL_WIDTH)
         row.level:SetPoint("RIGHT", row.reward, "LEFT", -6, 0)
+        -- The name and the line under it wrap, and the row grows to fit
+        -- them (DQUI:FitQuestRow), so neither is ever cut short.
         row.name = Theme.CreateLabel(row, "normal", "text")
-        row.name:SetPoint("TOPLEFT", 13 + STATUS_WIDTH, -4)
+        row.name:SetPoint("TOPLEFT", 13 + STATUS_WIDTH, -5)
         row.name:SetPoint("RIGHT", row.level, "LEFT", -6, 0)
+        row.name:SetWordWrap(true)
         row.from = Theme.CreateLabel(row, "tiny", "muted")
-        row.from:SetPoint("BOTTOMLEFT", 13 + STATUS_WIDTH, 5)
+        row.from:SetPoint("TOPLEFT", row.name, "BOTTOMLEFT", 0, -2)
         row.from:SetPoint("RIGHT", row.level, "LEFT", -6, 0)
+        row.from:SetWordWrap(true)
         row:SetScript("OnClick", function(self)
             if self.quest then DQUI:PickQuest(self.quest.questID) end
         end)
@@ -417,7 +422,10 @@ end
 function DQUI:ScrollQuests(rows)
     local dungeon = self:Picked()
     local total = dungeon and #dungeon.quests or 0
-    self.questOffset = math.min(math.max(0, total - QUEST_ROWS), math.max(0, self.questOffset + rows))
+    -- Rows grow to fit their lines, so how many show changes: stop once
+    -- the last quest is in sight.
+    if rows > 0 and self.questOffset + (self.questShown or 0) >= total then return end
+    self.questOffset = math.min(math.max(0, total - 1), math.max(0, self.questOffset + rows))
     self:FillQuests()
 end
 
@@ -460,6 +468,31 @@ function DQUI:FillDungeons()
     end
 end
 
+local function TextHeight(label, size)
+    local text = label:GetText() or ""
+    if text == "" then return 0 end
+    local ok, height = pcall(label.GetStringHeight, label)
+    if ok and type(height) == "number" and height > 0 then return height end
+    -- Before the window is laid out a label has no width yet: one line.
+    local width = label:GetWidth()
+    local lines = 1
+    if type(width) == "number" and width > 1 then
+        lines = math.max(1, math.ceil(Theme.TextWidth(size, text) / width))
+    end
+    return lines * ((Theme.sizes[size] or 10) + 2)
+end
+
+--- Grow a filled quest row to show its name, where it starts and its
+--- reward in full.
+-- @return the row's height
+function DQUI:FitQuestRow(row)
+    local height = 5 + TextHeight(row.name, "normal") + 2 + TextHeight(row.from, "tiny") + 6
+    height = math.max(height, 8 + TextHeight(row.rewardName, "small") + 8)
+    height = math.max(QUEST_ROW, math.ceil(height))
+    row:SetHeight(height)
+    return height
+end
+
 local function RewardText(itemID)
     local items = ns.Items
     local name = items and items.Call and items.Call({ "C_Item.GetItemNameByID", "GetItemInfo" }, itemID)
@@ -481,8 +514,10 @@ function DQUI:FillQuests()
         self.empty:SetText("")
     end
     local quests = dungeon and dungeon.quests or {}
+    -- The rows stack down the room the list has, each as tall as its lines.
+    local room, used, shown = QUEST_ROWS * QUEST_ROW, 0, 0
     for index, row in ipairs(self.questRows) do
-        local quest = quests[self.questOffset + index]
+        local quest = used < room and quests[self.questOffset + index] or nil
         row.quest = quest
         if quest then
             local look = LOOKS[quest.status] or LOOKS.todo
@@ -511,11 +546,23 @@ function DQUI:FillQuests()
                 row.rewardName:SetText("")
             end
             SetPicked(row, quest.questID == self.questPick)
-            row:Show()
+            local height = self:FitQuestRow(row)
+            if shown > 0 and used + height > room then
+                row.quest = nil
+                row:Hide()
+                used = room
+            else
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", 1, -(self.questTop + used))
+                row:SetPoint("TOPRIGHT", -1, -(self.questTop + used))
+                used, shown = used + height, shown + 1
+                row:Show()
+            end
         else
             row:Hide()
         end
     end
+    self.questShown = shown
     local quest = self:PickedQuest()
     local place = quest and ns.DungeonQuests.Place(quest)
     if quest then
@@ -555,6 +602,12 @@ function DQUI:Show()
         self:RestorePosition()
         self.frame:Show()
         if Motion and Motion.Open then Motion:Open(self.frame) end
+        -- The rows' widths are known only once the window is laid out, so
+        -- they are fitted again a frame later.
+        local after = _G.C_Timer and _G.C_Timer.After
+        if type(after) == "function" then
+            after(0, function() if DQUI:Showing() then DQUI:FillQuests() end end)
+        end
     end
     self:Refresh()
 end

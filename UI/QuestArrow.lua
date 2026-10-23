@@ -188,22 +188,8 @@ function ArrowUI:Build()
         self:StopMovingOrSizing()
         ArrowUI:SavePosition()
         ArrowUI:AvoidXPBar()
-        -- The button coming up after a drag is not a click. The client may
-        -- send OnMouseUp before this, after it, or not at all, so the drop
-        -- is remembered by the moment it happened, never as a flag that
-        -- could swallow the next real click.
         ArrowUI.dragging = nil
-        ArrowUI.droppedAt = Clock()
     end)
-    frame:SetScript("OnMouseUp", function(_, button)
-        if ArrowUI.dragging or (ArrowUI.droppedAt and ArrowUI.droppedAt == Clock()) then
-            ArrowUI.dragging, ArrowUI.droppedAt = nil, nil
-            return
-        end
-        ArrowUI:OnClick(button)
-    end)
-    frame:SetScript("OnEnter", function(self) ArrowUI:ShowTooltip(self) end)
-    frame:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
     frame:SetScript("OnUpdate", function(_, elapsed) ArrowUI:Step(elapsed) end)
 
     self.frame = frame
@@ -213,45 +199,13 @@ function ArrowUI:Build()
 end
 
 --------------------------------------------------------------------------------
--- Clicks and the tooltip
+-- The close gem
 --------------------------------------------------------------------------------
-
-function ArrowUI:OnClick(button)
-    local Arrow = ns.QuestArrow
-    if button == "RightButton" then
-        if not Arrow:NextPlace() then ns.Print(L["no other place in this quest's steps."]) end
-    elseif not Arrow:NextTab() then
-        ns.Print(L["no other tab has an upgrade quest."])
-    end
-    self.since = STEP
-    self:Draw(true)
-end
 
 --- The close gem: the arrow off until turned on again.
 function ArrowUI:Close()
     ns.QuestArrow:SetOn(false)
     ns.Print(L["quest arrow off. To bring it back, use the Arrow button on the quest panel, /beq arrow or Settings."])
-end
-
-function ArrowUI:ShowTooltip(owner)
-    if not GameTooltip then return end
-    GameTooltip:SetOwner(owner, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine(L["Quest arrow"], Theme.Unpack("accent"))
-    local state = self.state
-    local target = state and state.target
-    if target and target.text then GameTooltip:AddLine(target.text, 1, 1, 1, true) end
-    if state and state.count and state.count > 1 then
-        local after = state.count - (state.index or 1)
-        if after == 1 then
-            GameTooltip:AddLine(L["1 more place after this one"], 1, 1, 1)
-        elseif after > 1 then
-            GameTooltip:AddLine(L.Format("%d more places after this one", after), 1, 1, 1)
-        end
-    end
-    GameTooltip:AddLine(L["Click for the next tab's upgrade quest."], 0.9, 0.9, 0.9)
-    GameTooltip:AddLine(L["Right-click for the next place."], 0.9, 0.9, 0.9)
-    GameTooltip:AddLine(L["Drag to move it. The red gem closes it."], 0.9, 0.9, 0.9)
-    GameTooltip:Show()
 end
 
 --------------------------------------------------------------------------------

@@ -161,6 +161,40 @@ suite.check("in a fight it still pins", ns.Waypoints:Show(place, "it") == true a
 suite.check("but leaves the map closed", opened == nil)
 _G.InCombatLockdown = nil
 
+-- A pin the game turns down is never called pinned.
+_G.C_Map.HasUserWaypoint = function() return false end
+local before = #env.chat
+suite.check("a pin the game turns down fails", ns.Waypoints:Show(place, "it") == false)
+local said = table.concat(env.chat, "\n", before + 1)
+suite.check("and says it couldn't, never pinned", said:find("Couldn't put a pin on the map.", 1, true) ~= nil
+    and said:find("pinned", 1, true) == nil, said)
+_G.C_Map.HasUserWaypoint = function() return waypoint ~= nil end
+
+-- A map that takes no pin: the map around it, the spot moved over.
+_G.C_Map.CanSetUserWaypointOnMap = function(id) return id ~= 1429 end
+_G.C_Map.GetMapRectOnMap = function(id, parent)
+    if id == 1429 and parent == 1415 then return 0.4, 0.6, 0.5, 0.7 end
+end
+opened, waypoint = nil, nil
+suite.check("a zone that takes no pin pins the map around it", ns.Waypoints:Show(place, "it") == true
+    and waypoint and waypoint.id == 1415, waypoint and waypoint.id)
+suite.check("at the same spot on it", waypoint and math.abs(waypoint.x - (0.4 + 0.421 * 0.2)) < 1e-9
+    and math.abs(waypoint.y - (0.5 + 0.659 * 0.2)) < 1e-9)
+suite.check("and opens that map", opened == 1415, opened)
+_G.C_Map.CanSetUserWaypointOnMap = function() return false end
+suite.check("no map up the line takes one: it fails", select(2, ns.Waypoints:Pin(place)) == "noclient")
+_G.C_Map.CanSetUserWaypointOnMap, _G.C_Map.GetMapRectOnMap, _G.C_Map.HasUserWaypoint = nil, nil, nil
+
+-- A cave or a floor sharing the zone's name: the zone's own map wins.
+ns.Waypoints.found = nil
+local children = _G.C_Map.GetMapChildrenInfo
+_G.C_Map.GetMapChildrenInfo = function()
+    return { { name = "Elwynn Forest", mapID = 2000, mapType = 4 },
+        { name = "Elwynn Forest", mapID = 1429, mapType = 3 } }
+end
+suite.check("a zone's own map beats a cave of the same name", ns.Waypoints:MapFor("Elwynn Forest") == 1429)
+_G.C_Map.GetMapChildrenInfo = children
+
 local canvas = env.Stub({ _width = 1000, _height = 600 })
 function canvas:GetHeight() return 600 end
 _G.WorldMapFrame = env.Stub({ _shown = true, GetCanvas = function() return canvas end,

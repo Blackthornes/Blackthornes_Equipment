@@ -70,6 +70,9 @@ Waypoints.ZONE_MAPS = {
     ["Darnassus"] = 1457, ["Undercity"] = 1458, ["Alterac Valley"] = 1459,
 }
 
+-- The game's map type for a zone (Enum.UIMapType.Zone).
+local ZONE_TYPE = 3
+
 -- The two continents are never a zone the character is "in".
 local CONTINENTS = { [1414] = true, [1415] = true }
 
@@ -208,15 +211,23 @@ function Waypoints:MapFor(zone)
         local name = Info(top)
         if name == zone then mapID = top end
         -- Every map under the top one, zones and continents alike.
+        -- A name can be on more than one map (a zone and a cave or a floor
+        -- of the same name, which take no pin): the zone's own map wins.
         local children = not mapID and Read(map.GetMapChildrenInfo, top, nil, true)
         if type(children) == "table" then
+            local best, bestRank = nil, 0
             for _, child in ipairs(children) do
-                local ok, childName, childID = pcall(function() return child.name, child.mapID end)
-                if ok and Plain(childName) == zone and Number(childID) then
-                    mapID = Number(childID)
-                    break
+                local ok, childName, childID, kind = pcall(function()
+                    return child.name, child.mapID, child.mapType
+                end)
+                childID = ok and Number(childID)
+                if childID and Plain(childName) == zone then
+                    local rank = (childID == Waypoints.ZONE_MAPS[zone] and 3)
+                        or (Number(kind) == ZONE_TYPE and 2) or 1
+                    if rank > bestRank then best, bestRank = childID, rank end
                 end
             end
+            mapID = best
         end
     end
 
@@ -243,9 +254,12 @@ function Waypoints:Pin(place)
     if not self:CanPin() then return false, "noclient" end
     local mapID = self:MapFor(place.zone)
     if not mapID then return false, "nomap" end
+    local x, y
+    mapID, x, y = Waypoints.PinnableSpot(mapID, place.x / 100, place.y / 100)
+    if not mapID then return false, "noclient" end
 
     local ok = pcall(function()
-        local point = _G.UiMapPoint.CreateFromCoordinates(mapID, place.x / 100, place.y / 100)
+        local point = _G.UiMapPoint.CreateFromCoordinates(mapID, x, y)
         _G.C_Map.SetUserWaypoint(point)
         local super = _G.C_SuperTrack
         if type(super) == "table" and type(super.SetSuperTrackedUserWaypoint) == "function" then
@@ -253,7 +267,34 @@ function Waypoints:Pin(place)
         end
     end)
     if not ok then return false, "noclient" end
-    return true
+    -- The game can turn a pin down without a word: only a pin it kept counts.
+    local map = Map()
+    if map and type(map.HasUserWaypoint) == "function" and Read(map.HasUserWaypoint) == false then
+        return false, "noclient"
+    end
+    return true, mapID
+end
+
+--- A map the game takes a pin on, and the spot (0-1) on it. Some maps (a
+--- city, a cave or a building on some clients) take none: then the map
+--- around it, with the spot moved over by where the one map sits on the
+--- other. Tradeskills' Waypoints.PinnableSpot, the same lines.
+-- @return mapID, x, y, or nil when no map up the line takes a pin
+function Waypoints.PinnableSpot(mapID, x, y)
+    local map = Map()
+    if not (map and type(map.CanSetUserWaypointOnMap) == "function") then return mapID, x, y end
+    for _ = 1, 4 do
+        if Read(map.CanSetUserWaypointOnMap, mapID) ~= false then return mapID, x, y end
+        local _, parent = Info(mapID)
+        if not parent or parent <= 0 then return nil end
+        local minX, maxX, minY, maxY = Read(map.GetMapRectOnMap, mapID, parent)
+        minX, maxX, minY, maxY = Number(minX), Number(maxX), Number(minY), Number(maxY)
+        if not (minX and maxX and minY and maxY) then return nil end
+        x = minX + x * (maxX - minX)
+        y = minY + y * (maxY - minY)
+        mapID = parent
+    end
+    return nil
 end
 
 local WHY = {
@@ -266,6 +307,7 @@ local WHY = {
 function Waypoints:Show(place, what)
     local ok, why = self:Pin(place)
     if ok then
+        -- `why` is the map the pin went on, which can be the one around it.
         ns.Print(L.Format("pinned %s on your map: %s (%s, %s)", what or place.name or L["it"],
             place.zone, place.x, place.y))
         -- Open the map on it, where the game lets an addon. Never in a
@@ -276,7 +318,7 @@ function Waypoints:Show(place, what)
             local okFight, fighting = pcall(_G.InCombatLockdown)
             inFight = okFight and fighting == true
         end
-        local mapID = self:MapFor(place.zone)
+        local mapID = Number(why) or self:MapFor(place.zone)
         if not inFight and type(_G.OpenWorldMap) == "function" then pcall(_G.OpenWorldMap, mapID) end
     else
         local reason = WHY[why] or why
