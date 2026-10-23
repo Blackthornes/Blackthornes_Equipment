@@ -815,9 +815,11 @@ quest's row and the arrow show the game's own title
 else the data's; one the game has not loaded is asked for once with
 `RequestLoadQuestByID`, and `QUEST_DATA_LOAD_RESULT` redraws a shown
 window). Sorting still uses the data's title. `Logic/DungeonDoors.lua`
-learns where each door stands: the spot as a loading screen starts
-(`PLAYER_LEAVING_WORLD`, `QuestArrow:Here`) is kept when the next
-`PLAYER_ENTERING_WORLD` is inside a dungeon the addon knows
+learns where each door stands: the spot outside, noted on zone changes,
+as a loading screen starts and every `NOTE_EVERY` seconds (`Doors:Note`,
+on the zone's own map; the loading screen alone kept nothing on Forever,
+2026-10-23), is kept when `PLAYER_ENTERING_WORLD`, or a look again
+`RETRIES` seconds later, finds a dungeon the addon knows
 (`DQ.Inside`), account wide in `dungeonDoors[key].spots` (at most
 `KEEP`; never rename it). A spot counts only in the door zone the data
 names, or, with none named, once two agree (`NEAR`), so a hearth or a

@@ -122,6 +122,14 @@ function DQ.Inside()
     return nil
 end
 
+--- For /beq probe: what GetInstanceInfo says, "outside" when not in one.
+function DQ.InstanceText()
+    local name, kind, _, _, _, _, _, mapID = Read(_G.GetInstanceInfo)
+    kind = Plain(kind)
+    if kind ~= "party" and kind ~= "raid" then return "outside" end
+    return ("%s %s map %s"):format(tostring(Plain(name)), tostring(kind), tostring(Number(mapID)))
+end
+
 --------------------------------------------------------------------------------
 -- The quests
 --------------------------------------------------------------------------------
@@ -463,8 +471,11 @@ function DQ:Describe()
     local learned = 0
     for _ in pairs(type(ns.db) == "table" and type(ns.db.learnedDungeonQuests) == "table"
         and ns.db.learnedDungeonQuests or {}) do learned = learned + 1 end
+    -- Quest 166 is an Alliance quest: "works, 166 not done" on a Horde
+    -- character means the call answers.
     return ("%d in data, %d learned, done call %s, inside %s"):format(
-        count, learned, done == nil and "missing" or tostring(done), tostring(DQ.Inside()))
+        count, learned, done == nil and "missing" or ("works, 166 " .. (done and "done" or "not done")),
+        tostring(DQ.Inside()))
 end
 
 function DQ:OnEnable()

@@ -216,6 +216,36 @@ DQ.Inside = function() return nil end
 Doors:Leaving()
 suite.check("arriving outside a dungeon keeps nothing", Doors:Arrived() == false)
 
+-- On Forever the loading screen noted nothing, so the spot outside is noted
+-- as the character walks, and the arrival is looked at again a little later.
+ns.db.dungeonDoors = nil
+Doors.outside, Doors.lastTry = nil, nil
+ns.QuestArrow.Here = function() return { zone = "Ironforge", x = 0.40, y = 0.30 } end
+suite.check("a walk outside notes the spot", Doors:Note() == true and Doors.outside ~= nil)
+ns.QuestArrow.Here = function() return nil end
+Doors:Leaving()
+suite.check("a loading screen with no position keeps the last spot", Doors.outside ~= nil
+    and Doors.outside.x == 40)
+local realAfter, waiting = _G.C_Timer and _G.C_Timer.After, {}
+_G.C_Timer = _G.C_Timer or {}
+_G.C_Timer.After = function(_, fn) waiting[#waiting + 1] = fn end
+ns.QuestArrow.Inside = function() return true end
+DQ.Inside = function() return nil end
+Doors:Entered()
+suite.check("arriving before the game names the dungeon waits", ns.db.dungeonDoors == nil and #waiting > 0)
+suite.check("the probe says why", (Doors.lastTry or ""):find("not in a known dungeon", 1, true) ~= nil,
+    Doors.lastTry)
+suite.check("inside, nothing new is noted", Doors:Note() == false and Doors.outside.x == 40)
+DQ.Inside = function() return "3065" end
+for _, fn in ipairs(waiting) do fn() end
+local learned = Doors:Learned("3065")
+suite.check("a look again keeps the door", learned and learned.zone == "Ironforge" and learned.x == 40,
+    Doors.lastTry)
+suite.check("the door is kept once", #ns.db.dungeonDoors["3065"].spots == 1)
+suite.check("the probe line reads", Doors:Describe():find("last try: kept 3065", 1, true) ~= nil,
+    Doors:Describe())
+_G.C_Timer.After = realAfter
+
 -- A dungeon whose door zone the data lacks waits for two spots that agree.
 ns.FOREVER_DUNGEON_PLACES["9902"] = { "Doorless Hall", "" }
 Doors:Keep("9902", "Elwynn Forest", 50, 50)
