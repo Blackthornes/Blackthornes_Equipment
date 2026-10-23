@@ -819,8 +819,17 @@ names, or, with none named, once two agree (`NEAR`), so a hearth or a
 summon is never taken for a door. `DungeonDoors:Fill` lays it on the
 upgrade quest's door places (a dungeon drop, a boss that starts or ends
 a quest), which were a zone's middle. `/beq probe` has "quest names" and
-"dungeon doors" lines. Nothing new is shown to players in words. Tested
-in `tools/test_dungeonquests.lua`. Not yet seen in game.
+"dungeon doors" lines. Nothing new is shown to players in words. Before
+any walk in, the door comes from `Data/DungeonDoorSpots.lua`
+(`ns.DUNGEON_DOOR_SPOTS[key] = { zone, x, y }`, `DungeonDoors.Shipped`),
+written by `tools/make_dungeon_doors.py <tables folder> --build <build>`
+from the Forever client's game tables (Map's entrance spot, AreaPOI's
+label first, UiMapAssignment for the zone map); never by hand, rerun when
+the tables are pulled again. A spot is kept only in the door's own zone
+(Blackrock Mountain's in Searing Gorge, else Burning Steppes, and a
+shipped spot brings its zone to `Fill`). A walked-in spot always wins.
+Tested in `tools/test_dungeonquests.lua` and
+`tools/test_make_dungeon_doors.py`. Not yet seen in game.
 
 Boss drops on the tooltip (the owner approved the words, 2026-10-22):
 "Drops from BOSS in DUNGEON" under the item's other lines

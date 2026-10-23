@@ -261,7 +261,7 @@ function DLUI:BuildList()
     rule:SetHeight(1)
     Paint(rule, "border", 0.8)
 
-    -- The chips: Armor on one line, Stat and Upgrades Only on the next.
+    -- The chips: Armor and Upgrades Only on one line, Stat on the next.
     local function ChipLine(y, label, list, field)
         local title = Theme.CreateLabel(well, "small", "muted")
         title:SetPoint("TOPLEFT", 14, -(y + 5))
@@ -284,7 +284,8 @@ function DLUI:BuildList()
         DLUI.offset = 0
         DLUI:Refresh()
     end, false)
-    upgrades:SetPoint("TOPRIGHT", -14, -(HEAD + 6 + CHIP_ROW + 2))
+    -- On the Armor line, which has room to spare in every language.
+    upgrades:SetPoint("TOPRIGHT", -14, -(HEAD + 6 + 2))
     self.upgradesBox = upgrades
 
     local columnsTop = HEAD + 8 + CHIP_ROW * 2

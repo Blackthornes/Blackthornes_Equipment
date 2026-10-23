@@ -68,6 +68,9 @@ jobs:
       - name: The Forever vendor tool reads a save as data only
         run: python tools/test_forever_vendors.py
 
+      - name: The door spot tool keeps only spots in the door's zone
+        run: python tools/test_make_dungeon_doors.py
+
       - name: No saved variables, WTF folders, keys or .env files
         run: python tools/check_private_files.py
 
