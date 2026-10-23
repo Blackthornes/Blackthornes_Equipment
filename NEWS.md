@@ -23,6 +23,21 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.35.0
+
+- Dungeon Quests lists quests known to the addon done inside dungeons or raids, and which ones you've done.
+- Dungeon Loot shows what each dungeon's bosses drop, with the upgrades for you marked.
+- The gear window has tabs now: Upgrades, Enchants, Dungeon Quests, Dungeon Loot and Settings.
+- An item's tooltip can say which boss drops it. You pick under Boss Drops on the Gear page of Settings.
+- Every window has a size grip, and the General page has an Effects choice.
+
+Fixes and changes:
+
+- Gear made for other classes isn't called an upgrade anymore.
+- The headings in Where to Get Upgrades sort the list.
+- Right-click a spell in the Training drawer to skip it.
+- Several bug fixes for stat weights and Settings.
+
 ## 0.34.0
 
 - Where to Get Upgrades now lists your slots down the left. Pick a slot to see every upgrade for it, and tick which sources to show. "Only what I can get now" hides what you can't get yet.
