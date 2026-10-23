@@ -731,13 +731,13 @@ function SettingsUI:BuildQuest()
     end, true)
     controls.useTomTom:SetPoint("TOPLEFT", CONTROL_X, -2)
 
-    -- A trip step by step to a far place (Logic/Travel.lua), off unless
-    -- ticked.
+    -- A trip step by step to a far place (Logic/Travel.lua), on unless
+    -- unticked.
     local routeRow = pages:Row("quest", 2, L["Guide Me:"],
         L["When the place is in another zone or across the sea, the arrow leads you there step by step."])
     controls.arrowRoute = Widgets.CreateCheckbox(routeRow, L["On"], function(checked)
         if ns.Travel then ns.Travel:SetOn(checked) end
-    end, false)
+    end, true)
     controls.arrowRoute:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- The panel's Quest log tab (UI/QuestLogTab.lua) and its two tick boxes.
@@ -940,7 +940,7 @@ function SettingsUI:Refresh()
     controls.upgradeQuest:SetChecked(ns.db.upgradeQuest == true)
     controls.questArrow:SetChecked(ns.db.questArrow == true)
     controls.useTomTom:SetChecked(ns.db.useTomTom ~= false)
-    controls.arrowRoute:SetChecked(ns.db.arrowRoute == true)
+    controls.arrowRoute:SetChecked(ns.db.arrowRoute ~= false)
     controls.questLogTracked:SetChecked(ns.db.questLogTrackedOnly == true)
     controls.hideQuestTracker:SetChecked(ns.db.hideQuestTracker == true)
     self:RefreshQuestSize()
