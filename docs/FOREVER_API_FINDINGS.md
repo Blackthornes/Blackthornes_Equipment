@@ -337,3 +337,16 @@ rogue does, and the druid's weapon list has polearms. Not yet seen in game.
   `GetCombatRatingBonus(CR_HIT_MELEE / CR_HIT_SPELL)`. Not yet probed:
   `/beq probe` has a "hit now" line. Caps are Classic's, against a mob of
   your level: 5% weapons, 3% spells, plain swings with two weapons to 24%.
+
+## Quests done and dungeon doors (2026-10-23, laptop probe)
+
+- `C_QuestLog.IsQuestFlaggedCompleted` is there and answers: quest 166 (an
+  Alliance quest) read false on a Horde character. The probe line now says
+  "works, 166 not done" instead of "false". `Finder:QuestDone` uses it, with
+  the hand-ins seen this account (`questsTurnedIn`) as a fallback.
+- Walking into Ragefire Chasm and out kept no door spot: noting the spot
+  only at `PLAYER_LEAVING_WORLD` was not enough. `DungeonDoors` now notes
+  the spot outside on zone changes and every 2 seconds, and looks again 1,
+  3 and 6 seconds after arriving. The probe's "dungeon doors" line says
+  what `GetInstanceInfo` gives, the spot noted outside and why the last
+  try kept nothing.

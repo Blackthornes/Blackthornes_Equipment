@@ -1,9 +1,13 @@
 -- Where a dungeon's door stands, learned as the player walks in (the owner
 -- picked it, 2026-10-22). The data names the zone a door opens in, never
 -- the spot, so the arrow and the upgrade quest could only aim at the
--- zone's middle. As the loading screen starts (PLAYER_LEAVING_WORLD) the
--- spot the character stands on is noted; if the next PLAYER_ENTERING_WORLD
--- finds them inside a dungeon the addon knows, that spot is kept for it,
+-- zone's middle. Outside, the spot the character stands on is noted on
+-- zone changes, as a loading screen starts (PLAYER_LEAVING_WORLD) and every
+-- `NOTE_EVERY` seconds (two cheap map calls), since on Forever the loading
+-- screen alone noted nothing (Ragefire Chasm, 2026-10-23). If the next
+-- PLAYER_ENTERING_WORLD, or a look again `RETRIES` seconds later while the
+-- game is still setting the dungeon up, finds them inside a dungeon the
+-- addon knows, the last spot noted is kept for it,
 -- account wide in dungeonDoors[key] = { spots = { { zone, x, y, at } } }
 -- (never rename it). A hearth or a summon lands somewhere else, so a spot
 -- is used only when it sits in the zone the data names for the door, or,
@@ -24,6 +28,11 @@ Doors.WAIT = 120
 Doors.KEEP = 5
 -- Two spots this close (0 to 100 on the zone map) agree.
 Doors.NEAR = 3
+-- How often the spot outside is noted, in seconds.
+Doors.NOTE_EVERY = 2
+-- After arriving in an instance, look again this many seconds later while
+-- the game has not said which dungeon it is.
+Doors.RETRIES = { 1, 3, 6 }
 
 local function Number(value)
     local ok, copy = pcall(function()
@@ -44,26 +53,92 @@ local function Store()
     return ns.db.dungeonDoors
 end
 
---- Note where the character stands as a loading screen starts.
-function Doors:Leaving()
-    self.leaving = nil
+--- Where the character stands outside, on the door zone's own map:
+--- { zone, x, y } (0 to 100), or nil and why.
+function Doors.HereOutside()
     local arrow = ns.QuestArrow
-    if not (arrow and arrow.Here) or (arrow.Inside and arrow.Inside()) then return end
+    if not (arrow and arrow.Here) then return nil, "no arrow" end
+    if arrow.Inside and arrow.Inside() then return nil, "inside" end
     local ok, here = pcall(arrow.Here, arrow)
-    if not (ok and type(here) == "table" and type(here.zone) == "string" and here.zone ~= "") then return end
+    if not (ok and type(here) == "table") then return nil, "no position" end
+    local zone = here.zone
+    if type(zone) ~= "string" or zone == "" then return nil, "no zone" end
     local x, y = Number(here.x), Number(here.y)
-    if not (x and y) then return end
-    self.leaving = { zone = here.zone, x = x * 100, y = y * 100, at = Now() }
+    -- The spot by the zone's own map: the game's best map can be a smaller
+    -- one inside it (a city's cave), whose numbers point somewhere else.
+    local zoneMap = ns.Waypoints and ns.Waypoints.MapFor and ns.Waypoints:MapFor(zone)
+    if zoneMap and zoneMap ~= here.map then
+        local okPos, zx, zy = pcall(function()
+            local pos = _G.C_Map.GetPlayerMapPosition(zoneMap, "player")
+            if not pos then return nil end
+            local px, py = pos:GetXY()
+            return px + 0, py + 0
+        end)
+        if okPos and zx and zy and (zx ~= 0 or zy ~= 0) then x, y = zx, zy end
+    end
+    if not (x and y) then return nil, "no position" end
+    return { zone = zone, x = x * 100, y = y * 100 }
+end
+
+--- Note where the character stands outside. Kept until a newer one.
+function Doors:Note()
+    local spot, why = Doors.HereOutside()
+    if not spot then
+        if why ~= "inside" then self.lastNoteWhy = why end
+        return false
+    end
+    spot.at = Now()
+    self.outside = spot
+    self.lastNoteWhy = nil
+    return true
+end
+
+--- As a loading screen starts: note the spot once more if it can be read.
+function Doors:Leaving()
+    self:Note()
 end
 
 --- After the loading screen: inside a dungeon just now, keep the spot.
+--- @return true when one was kept
 function Doors:Arrived()
-    local spot = self.leaving
-    self.leaving = nil
-    if not spot or Now() - spot.at > Doors.WAIT then return false end
-    local key = ns.DungeonQuests and ns.DungeonQuests.Inside()
-    if not key then return false end
-    return self:Keep(key, spot.zone, spot.x, spot.y)
+    local spot = self.outside
+    if not spot then
+        self.lastTry = "no spot noted outside" .. (self.lastNoteWhy and (" (" .. self.lastNoteWhy .. ")") or "")
+        return false
+    end
+    if Now() - spot.at > Doors.WAIT then
+        self.lastTry = "the spot outside was too old"
+        return false
+    end
+    local DQ = ns.DungeonQuests
+    local key = DQ and DQ.Inside()
+    if not key then
+        local arrow = ns.QuestArrow
+        if not (arrow and arrow.Inside and arrow.Inside()) then return false end
+        self.lastTry = "not in a known dungeon (" .. tostring(DQ and DQ.InstanceText and DQ.InstanceText() or "?") .. ")"
+        return false
+    end
+    self.outside = nil
+    local kept = self:Keep(key, spot.zone, spot.x, spot.y)
+    self.lastTry = kept and ("kept " .. key .. " at " .. spot.zone) or "could not save"
+    return kept
+end
+
+--- PLAYER_ENTERING_WORLD: try now, and again a little later while the game
+--- is still saying which dungeon this is.
+function Doors:Entered()
+    if self:Arrived() then return end
+    local arrow = ns.QuestArrow
+    if not (self.outside and arrow and arrow.Inside and arrow.Inside()) then return end
+    local after = _G.C_Timer and _G.C_Timer.After
+    if type(after) ~= "function" then return end
+    self.tries = (self.tries or 0) + 1
+    local try = self.tries
+    for _, wait in ipairs(Doors.RETRIES) do
+        after(wait, function()
+            if Doors.tries == try and Doors.outside then Doors:Arrived() end
+        end)
+    end
 end
 
 function Doors:Keep(key, zone, x, y)
@@ -166,11 +241,25 @@ function Doors:Describe()
         if self:Learned(key) then known = known + 1 end
     end
     for _ in pairs(ns.DUNGEON_DOOR_SPOTS or {}) do shipped = shipped + 1 end
-    return ("%d dungeons with a spot, %d trusted, %d shipped, inside %s"):format(kept, known, shipped,
-        tostring(ns.DungeonQuests and ns.DungeonQuests.Inside()))
+    local DQ = ns.DungeonQuests
+    local outside = self.outside
+    return ("%d dungeons with a spot, %d trusted, %d shipped, inside %s (%s), spot outside %s, last try: %s"):format(
+        kept, known, shipped, tostring(DQ and DQ.Inside()),
+        tostring(DQ and DQ.InstanceText and DQ.InstanceText() or "?"),
+        outside and ("%s %.1f %.1f, %ds ago"):format(outside.zone, outside.x, outside.y,
+            math.floor(Now() - outside.at)) or ("none" .. (self.lastNoteWhy and (" (" .. self.lastNoteWhy .. ")") or "")),
+        self.lastTry or "none yet")
 end
 
 function Doors:OnEnable()
     ns.RegisterEvent(self, "PLAYER_LEAVING_WORLD", function() Doors:Leaving() end)
-    ns.RegisterEvent(self, "PLAYER_ENTERING_WORLD", function() Doors:Arrived() end)
+    ns.RegisterEvent(self, "PLAYER_ENTERING_WORLD", function() Doors:Entered() end)
+    for _, event in ipairs({ "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AREA" }) do
+        ns.RegisterEvent(self, event, function() Doors:Note() end)
+    end
+    local timer = _G.C_Timer
+    if timer and type(timer.NewTicker) == "function" and not self.ticker then
+        local ok, ticker = pcall(timer.NewTicker, Doors.NOTE_EVERY, function() Doors:Note() end)
+        if ok then self.ticker = ticker end
+    end
 end
