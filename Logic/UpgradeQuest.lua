@@ -769,7 +769,7 @@ local function EndPlace(p)
         if ns.DungeonDoors then
             local door = { zone = place.zone }
             ns.DungeonDoors:Fill(door, place.dungeon)
-            if door.x then place.x, place.y = door.x, door.y end
+            if door.x then place.zone, place.x, place.y = door.zone, door.x, door.y end
         end
     end
     place.item = p[6]

@@ -8,6 +8,11 @@
 -- (never rename it). A hearth or a summon lands somewhere else, so a spot
 -- is used only when it sits in the zone the data names for the door, or,
 -- for a dungeon whose zone the data lacks, once two spots agree.
+--
+-- Before any walk in, the door comes from Data/DungeonDoorSpots.lua
+-- (ns.DUNGEON_DOOR_SPOTS, from the Forever client's game tables), so a new
+-- player's arrow points at the door, not the middle of the zone. A spot
+-- the player walked through always wins.
 
 local _, ns = ...
 
@@ -79,8 +84,22 @@ local function Near(a, b)
     return a.zone == b.zone and math.abs(a.x - b.x) <= Doors.NEAR and math.abs(a.y - b.y) <= Doors.NEAR
 end
 
---- The door's spot for a dungeon by key: { zone, x, y }, or nil.
+--- The shipped door spot by key: { zone, x, y, shipped = true }, or nil.
+function Doors.Shipped(key)
+    local row = key and ns.DUNGEON_DOOR_SPOTS and ns.DUNGEON_DOOR_SPOTS[key]
+    if type(row) ~= "table" or type(row[1]) ~= "string" then return nil end
+    local x, y = Number(row[2]), Number(row[3])
+    if not (x and y) then return nil end
+    return { zone = row[1], x = x, y = y, shipped = true }
+end
+
+--- The door's spot for a dungeon by key: { zone, x, y }, or nil. The one
+--- the player walked through, else the shipped one.
 function Doors:Spot(key)
+    return self:Learned(key) or Doors.Shipped(key)
+end
+
+function Doors:Learned(key)
     local store = Store()
     local entry = store and key and store[key]
     if type(entry) ~= "table" or type(entry.spots) ~= "table" then return nil end
@@ -112,6 +131,16 @@ end
 function Doors:SpotByName(name)
     local DQ = ns.DungeonQuests
     local key = DQ and DQ.KeyForName(name)
+    if not key and type(name) == "string" then
+        -- Scarlet Monastery's wings have doors of their own.
+        local lower = name:lower()
+        for wing, row in pairs(ns.Sources and ns.Sources.DUNGEONS or {}) do
+            if type(row) == "table" and type(row[1]) == "string" and row[1]:lower() == lower then
+                key = wing
+                break
+            end
+        end
+    end
     return key and self:Spot(key) or nil
 end
 
@@ -120,7 +149,9 @@ end
 function Doors:Fill(place, dungeonName)
     if type(place) ~= "table" or (place.x or 0) > 0 then return place end
     local spot = self:SpotByName(dungeonName)
-    if spot and (not place.zone or place.zone == spot.zone) then
+    -- A shipped spot can name the zone the door is reached from
+    -- (Blackrock Mountain's are in Searing Gorge), so it brings its zone.
+    if spot and (not place.zone or place.zone == spot.zone or spot.shipped) then
         place.zone, place.x, place.y = spot.zone, spot.x, spot.y
     end
     return place
@@ -129,12 +160,13 @@ end
 --- For /beq probe.
 function Doors:Describe()
     local store = Store() or {}
-    local known, kept = 0, 0
+    local known, kept, shipped = 0, 0, 0
     for key in pairs(store) do
         kept = kept + 1
-        if self:Spot(key) then known = known + 1 end
+        if self:Learned(key) then known = known + 1 end
     end
-    return ("%d dungeons with a spot, %d trusted, inside %s"):format(kept, known,
+    for _ in pairs(ns.DUNGEON_DOOR_SPOTS or {}) do shipped = shipped + 1 end
+    return ("%d dungeons with a spot, %d trusted, %d shipped, inside %s"):format(kept, known, shipped,
         tostring(ns.DungeonQuests and ns.DungeonQuests.Inside()))
 end
 

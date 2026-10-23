@@ -217,4 +217,23 @@ suite.check("the doors probe line reads", type(Doors:Describe()) == "string")
 ns.QuestArrow.Here, ns.QuestArrow.Inside, DQ.Inside = realHere, realInside, realDQInside
 ns.db.dungeonDoors = nil
 
+-- Before any walk in, the shipped door spot is used.
+suite.check("door spots are shipped", type(ns.DUNGEON_DOOR_SPOTS) == "table"
+    and ns.DUNGEON_DOOR_SPOTS["36"] ~= nil)
+local deadmines = Doors:Spot("36")
+suite.check("a new player gets the shipped door", deadmines and deadmines.zone == "Westfall"
+    and deadmines.x > 0 and deadmines.y > 0)
+local mines = Doors:Fill({ zone = "Westfall" }, "The Deadmines")
+suite.check("the door place gets the shipped spot", mines.x == deadmines.x and mines.y == deadmines.y)
+Doors:Keep("36", "Westfall", 42.5, 71.7)
+suite.check("a door walked through wins", Doors:Spot("36").x == 42.5 and not Doors:Spot("36").shipped)
+ns.db.dungeonDoors = nil
+local spire = Doors:Fill({ zone = "Blackrock Mountain" }, "Blackrock Spire")
+suite.check("a mountain door brings its own zone", spire.zone ~= "Blackrock Mountain" and (spire.x or 0) > 0,
+    tostring(spire.zone))
+suite.check("a monastery wing finds its door", Doors:SpotByName("Scarlet Monastery Library") ~= nil)
+suite.check("a dungeon with no shipped spot keeps only its zone",
+    (Doors:Fill({ zone = "Ironforge" }, DQ.Dungeon("3065").name).x or 0) == 0)
+suite.check("the doors probe line counts shipped spots", Doors:Describe():find("shipped", 1, true) ~= nil)
+
 suite.done()
