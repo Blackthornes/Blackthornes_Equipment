@@ -126,7 +126,8 @@ suite.check("the window closes", not UI.frame:IsShown())
 ns.HandleSlash("loot")
 suite.check("/beq loot opens it", UI.frame:IsShown())
 UI:Hide()
-suite.check("the gear window has a Dungeon Loot button", ns.UI.lootButton ~= nil or ns.UI.frame == nil)
+suite.check("it wears the gear window's tabs, Dungeon Loot lit", UI.tabStrip == nil
+    or UI.tabStrip.selected == "loot", UI.tabStrip and UI.tabStrip.selected)
 
 ns.Items.Info, ns.Items.Stats, DL.NameOf = realInfo, realStats, realName
 ns.Finder.JudgeOnce, ns.Finder.IsCached, ns.Compare.WearableUpgrade, ns.Finder.Shown =

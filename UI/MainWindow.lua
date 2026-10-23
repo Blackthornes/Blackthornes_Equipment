@@ -159,23 +159,29 @@ function UI:Show()
     ns.FinderUI:Show()
 end
 
---- Settings shown in the window's place, from its tab.
-local function SettingsAsTab()
-    local settings = ns.SettingsUI
-    local frame = settings and settings.frame
-    if not (frame and rawget(settings, "asTab")) then return nil end
-    local ok, shown = pcall(frame.IsShown, frame)
-    return ok and shown and settings or nil
+--- Settings, Dungeon Quests or Dungeon Loot shown in the window's place,
+--- from its tab.
+local function StandInAsTab()
+    local names = ns.FinderUI and ns.FinderUI.STAND_INS or { settings = "SettingsUI" }
+    for _, name in pairs(names) do
+        local module = ns[name]
+        local frame = module and rawget(module, "frame")
+        if frame and rawget(module, "asTab") then
+            local ok, shown = pcall(frame.IsShown, frame)
+            if ok and shown then return module end
+        end
+    end
+    return nil
 end
 
 function UI:Hide()
     if ns.FinderUI then ns.FinderUI:Hide() end
-    local settings = SettingsAsTab()
-    if settings then settings:Hide() end
+    local standIn = StandInAsTab()
+    if standIn then standIn:Hide() end
 end
 
 function UI:IsShown()
-    return (self.frame ~= nil and self.frame:IsShown()) or SettingsAsTab() ~= nil
+    return (self.frame ~= nil and self.frame:IsShown()) or StandInAsTab() ~= nil
 end
 
 function UI:Toggle()

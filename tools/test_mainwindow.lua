@@ -40,10 +40,15 @@ suite.check("one window: the gear window is the finder's", UI.frame == Finder.fr
 suite.check("named on its plate", Finder.frame ~= nil)
 suite.check("a line for every slot down the left", #Finder.slotButtons == #Finder.SLOT_GROUPS,
     #Finder.slotButtons)
-suite.check("Upgrades, Enchants and Settings hang under it", Finder.tabStrip ~= nil
+suite.check("its tabs hang under it", Finder.tabStrip ~= nil
     and Finder.tabStrip.selected == "upgrades", Finder.tabStrip and Finder.tabStrip.selected)
-suite.check("the header has Training, Upgrade quest and Dungeon Loot",
-    UI.trainingButton ~= nil and UI.questButton ~= nil and UI.lootButton ~= nil)
+suite.check("the header has Training and Upgrade quest",
+    UI.trainingButton ~= nil and UI.questButton ~= nil)
+suite.check("Dungeon Loot is a tab now, not a header button", UI.lootButton == nil)
+local tabKeys = {}
+for _, tab in ipairs(Finder.tabStrip.tabs) do tabKeys[#tabKeys + 1] = tab.key end
+suite.check("the tabs are Upgrades, Enchants, Dungeon Quests, Dungeon Loot and Settings",
+    table.concat(tabKeys, ",") == "upgrades,enchant,dungeons,loot,settings", table.concat(tabKeys, ","))
 
 suite.check("the bigger of two chest upgrades", Owned(5) == "item:2", Owned(5))
 suite.check("an item above your level is not offered", not Owned(5):find("item:8", 1, true))
@@ -91,12 +96,32 @@ Finder:ShowTab("settings")
 suite.check("Settings shows from its tab", ns.SettingsUI.frame:IsShown() and not Finder.frame:IsShown())
 suite.check("with the Settings tab lit", ns.SettingsUI.tabStrip.selected == "settings")
 suite.check("and counts as the window being open", UI:IsShown())
-Finder:ShowTab("upgrades", ns.SettingsUI.frame)
+Finder:ShowTab("upgrades")
 suite.check("Upgrades brings the window back", Finder.frame:IsShown() and not ns.SettingsUI.frame:IsShown())
 Finder:ShowTab("enchant")
 suite.check("Enchants shows the enchants", Finder:ShowingEnchants() and Finder.tabStrip.selected == "enchant")
 Finder:ShowTab("upgrades")
 suite.check("and Upgrades the gear", not Finder:ShowingEnchants())
+
+-- Dungeon Quests and Dungeon Loot show in its place the same way.
+Finder:ShowTab("dungeons")
+local dq, dl = ns.DungeonQuestsUI, ns.DungeonLootUI
+suite.check("Dungeon Quests shows from its tab", dq.frame:IsShown() and not Finder.frame:IsShown())
+suite.check("with the Dungeon Quests tab lit", dq.tabStrip ~= nil and dq.tabStrip.selected == "dungeons")
+suite.check("and counts as the window being open", UI:IsShown())
+Finder:ShowTab("loot")
+suite.check("Dungeon Loot takes its place", dl.frame:IsShown() and not dq.frame:IsShown())
+suite.check("with the Dungeon Loot tab lit", dl.tabStrip ~= nil and dl.tabStrip.selected == "loot")
+Finder:ShowTab("settings")
+suite.check("Settings takes Dungeon Loot's place", ns.SettingsUI.frame:IsShown() and not dl.frame:IsShown())
+Finder:ShowTab("upgrades")
+suite.check("and Upgrades brings the gear back", Finder.frame:IsShown() and not ns.SettingsUI.frame:IsShown())
+ns.HandleSlash("dungeons")
+suite.check("/beq dungeons opens the tab in the gear window's place",
+    dq.frame:IsShown() and not Finder.frame:IsShown() and dq.tabStrip.selected == "dungeons")
+UI:Hide()
+suite.check("closing the window closes the tab", not dq.frame:IsShown())
+Finder:ShowTab("upgrades")
 
 -- /beq window.
 UI:Hide()
