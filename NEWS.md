@@ -25,7 +25,7 @@ tool prints a note for a shipped line that reads like an advert.
 
 ## 0.35.0
 
-- Dungeon Quests lists every quest done inside a dungeon or raid, and which ones you've done.
+- Dungeon Quests lists quests known to the addon done inside dungeons or raids, and which ones you've done.
 - Dungeon Loot shows what each dungeon's bosses drop, with the upgrades for you marked.
 - The gear window has tabs now: Upgrades, Enchants, Dungeon Quests, Dungeon Loot and Settings.
 - An item's tooltip can say which boss drops it. You pick under Boss Drops on the Gear page of Settings.
