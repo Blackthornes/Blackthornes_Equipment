@@ -156,6 +156,36 @@ suite.check("and nothing there means not", not ns.Compare:IsUnique("item:10"))
 _G.GetItemUniqueness = nil
 suite.check("no answer: a ring is not taken to be unique", not ns.Compare:IsUnique("item:5"))
 
+-- Every tab is one size, so the window never jumps as the tabs are clicked.
+local function SizeOf(frame) return frame:GetWidth() .. "x" .. frame:GetHeight() end
+local tabSizes = {}
+for _, key in ipairs({ "dungeons", "loot", "settings", "enchant", "upgrades" }) do
+    Finder:ShowTab(key)
+    local frame = Finder:ShownTabWindow()
+    tabSizes[#tabSizes + 1] = frame and SizeOf(frame) or "none"
+end
+local want = Finder.WIDTH .. "x" .. Finder.HEIGHT
+local same = true
+for _, size in ipairs(tabSizes) do same = same and size == want end
+suite.check("every tab is the gear window's size", same, table.concat(tabSizes, ", "))
+suite.check("the dungeon lists fill the taller window",
+    ns.DungeonQuestsUI.DUNGEON_ROWS >= 10 and ns.DungeonLootUI.LIST_ROWS >= 8,
+    ns.DungeonQuestsUI.DUNGEON_ROWS .. " " .. ns.DungeonLootUI.LIST_ROWS)
+for _, frame in ipairs({ ns.SettingsUI.frame, ns.DungeonLootUI.frame }) do
+    frame.SetScale = function(self, scale) self.scaleSet = scale end
+end
+ns.db.finderScale = 80
+Finder:ScaleChanged()
+suite.check("one size grip scales every tab", ns.SettingsUI.frame.scaleSet == 0.8
+    and ns.DungeonLootUI.frame.scaleSet == 0.8, ns.SettingsUI.frame.scaleSet)
+ns.db.finderScale = nil
+Finder:ScaleChanged()
+Finder:Need("settings", Finder.WIDTH, Finder.HEIGHT + 40)
+suite.check("a tab that needs more room makes them all taller",
+    Finder.frame:GetHeight() == Finder.HEIGHT + 40 and ns.DungeonQuestsUI.frame:GetHeight() == Finder.HEIGHT + 40,
+    Finder.frame:GetHeight())
+Finder:Need("settings", nil, nil)
+
 -- A class with no weights is offered nothing.
 _G.UnitClass = function() return "DEATHKNIGHT", "DEATHKNIGHT" end
 suite.check("a class without weights owns no upgrades", next(UI:ReadBags()) == nil)

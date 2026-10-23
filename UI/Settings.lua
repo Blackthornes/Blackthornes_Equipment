@@ -24,8 +24,16 @@ local HEADER = 36
 -- the header sits inside it.
 local RIM = 6
 
-local COLUMN_WIDTH = 330
 local COLUMN_GAP = 18
+-- Two columns across the width every tab of the gear window shares
+-- (UI/FinderWindow.lua), set again as the window is built, since that file
+-- loads after this one.
+local COLUMN_WIDTH = 330
+local function TabColumnWidth()
+    local width = ns.FinderUI and ns.FinderUI.WIDTH
+    if type(width) ~= "number" then return COLUMN_WIDTH end
+    return math.floor((width - PADDING * 2 - COLUMN_GAP) / 2)
+end
 -- Where the controls start: room for a label like "Upgrade Arrows:" in the
 -- game's font, which runs wider than it looks. A longer one wraps.
 local CONTROL_X = 150
@@ -154,6 +162,7 @@ end
 function SettingsUI:Build()
     if self.frame then return self.frame end
 
+    COLUMN_WIDTH = TabColumnWidth()
     local frame = CreateFrame("Frame", "BlackthornesEquipmentSettings", UIParent)
     frame:SetSize(COLUMN_WIDTH * 2 + COLUMN_GAP + PADDING * 2, 600)
     frame:SetFrameStrata("DIALOG")
@@ -187,9 +196,11 @@ function SettingsUI:Build()
     end)
 
     -- The house size grip under the bottom right corner (Widgets.WindowGrip),
-    -- saved as `settingsScale`.
-    self.sizeGrip = Widgets.WindowGrip(frame, "settingsScale", function()
+    -- saved as the one scale every tab shares (`settingsScale`, from
+    -- before the tabs, stays in the save unread).
+    self.sizeGrip = Widgets.WindowGrip(frame, ns.FinderUI and ns.FinderUI.SCALE_KEY or "settingsScale", function()
         SettingsUI:SavePosition()
+        if ns.FinderUI then ns.FinderUI:ScaleChanged() end
     end)
 
     -- Escape closes it, like the game's own windows.
@@ -228,7 +239,18 @@ function SettingsUI:Build()
         pages:Searchable("about", info, info.words)
         self:BuildShareBox()
     end
-    self.pages:Fit()
+    -- The pages fit their fullest page; the window is then the size every
+    -- tab shares, or more when a page needs it (UI/FinderWindow.lua).
+    local pages = self.pages
+    local fit = pages.Fit
+    pages.Fit = function(page)
+        fit(page)
+        if ns.FinderUI then
+            ns.FinderUI:Need("settings", frame:GetWidth(), frame:GetHeight())
+            ns.FinderUI:FitTab(frame)
+        end
+    end
+    pages:Fit()
 
     -- Upgrades, Enchants and Settings hang under it as under the gear
     -- window, so the two read as one (the owner approved it 2026-10-22).
@@ -1031,6 +1053,7 @@ function SettingsUI:Show()
     self.asTab = false
 
     if not self.frame:IsShown() then
+        if ns.FinderUI then ns.FinderUI:FitTab(self.frame) end
         self:RestorePosition()
         self.frame:Show()
         ns.Motion:Open(self.frame)
