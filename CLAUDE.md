@@ -293,9 +293,12 @@ game.
 One window (a player asked for fewer windows, the owner approved the
 mockup, 2026-10-22): the gear window and Where to get upgrades are one
 window, `UI/FinderWindow.lua`, with hanging tabs (Upgrades, Enchants,
-Settings; `FinderUI:HangTabs`, Settings opens in its place with
-`SettingsUI.asTab`) and Dungeon Loot, Upgrade quest and Training in the
-header. The slot list shows YOU WEAR and UP; the slot picked lists IN
+Dungeon Quests, Dungeon Loot, Settings; `FinderUI:HangTabs`; the owner
+picked the two dungeon tabs 2026-10-23). Dungeon Quests, Dungeon Loot and
+Settings are their own windows that wear the same tabs and open in its
+place at the same spot (`FinderUI.STAND_INS`, `FinderUI:ShowTab`, their
+`asTab`); `/beq dungeons`, `/beq loot` and the Settings buttons open them
+the same way. Upgrade quest and Training are in the header. The slot list shows YOU WEAR and UP; the slot picked lists IN
 YOUR BAGS first (`UI:ReadBags`: the best in the bags, else your bank or
 another character, `FinderUI.OwnedWhere`; Put it on only for bag gear
 that needs no training, `FinderUI.CanPutOn`), then TO GO AND GET. A gear
@@ -799,7 +802,7 @@ shipped Forever ones, then what this account learned (which fills in a
 shipped quest's giver). Tested in `tools/test_forever_dungeon_quests.py`. Other authors' Forever quest pages may be
 read as a checklist only, never copied into the data or named.
 Status is Done (`Finder:QuestDone`), In Log or To Do. `UI/DungeonQuestsWindow.lua`
-(`/beq dungeons`, the gear window's Dungeon Quests button, Settings >
+(`/beq dungeons`, the gear window's Dungeon Quests tab, Settings >
 Upgrade quest) lists the dungeons and the picked one's quests; Follow aims
 the quest arrow, Show the Way the game's map pin. Saved, account wide,
 never rename them: `learnedDungeonQuests`, `dungeonQuestsHideDone` (off
@@ -853,7 +856,7 @@ words he approved): what each dungeon's bosses drop, upgrades marked.
 `Sources.FOREVER`, which wins) and judges each piece through the finder's
 kept verdicts (`Finder:JudgeOnce`, `Compare.WearableUpgrade`), asking the
 server for items not loaded (`ASK` a list). `UI/DungeonLootWindow.lua`
-(`/beq loot`, the gear window's Dungeon Loot button, Settings > Upgrade
+(`/beq loot`, the gear window's Dungeon Loot tab, Settings > Upgrade
 quest) lists the dungeons for this side on the left; the picked one shows
 its door and levels, Armor: and Stat: chips (cloth, leather and mail chips
 leave out other body armor only), Upgrades Only, sortable ITEM, SLOT,

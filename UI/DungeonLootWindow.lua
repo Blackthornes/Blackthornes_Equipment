@@ -5,7 +5,7 @@
 -- for the character playing, how much better it is. Armor and Stat chips
 -- and Upgrades Only narrow the list; the headings sort it. Follow points
 -- the quest arrow at the door, Show the Way puts the game's map pin there.
--- Opened with /beq loot, the gear window's Dungeon Loot button or
+-- Opened with /beq loot, the gear window's Dungeon Loot tab or
 -- Settings.
 --
 -- The list is DungeonLoot:Rows(), laid out again only when the window
@@ -194,6 +194,9 @@ function DLUI:Build()
 
     self:BuildDungeons()
     self:BuildList()
+    -- The gear window's tabs hang under it too, Dungeon Loot lit, so the
+    -- two read as one window.
+    self.tabStrip = ns.FinderUI and ns.FinderUI:HangTabs(frame, "loot")
     frame:Hide()
     return frame
 end
@@ -588,8 +591,15 @@ function DLUI:Hide()
     if self.frame then self.frame:Hide() end
 end
 
+--- Opened as a tab of the gear window, in its place (FinderUI:ShowTab).
 function DLUI:Toggle()
-    if self:Showing() then self:Hide() else self:Show() end
+    if self:Showing() then
+        self:Hide()
+    elseif ns.FinderUI and ns.FinderUI.ShowTab then
+        ns.FinderUI:ShowTab("loot")
+    else
+        self:Show()
+    end
 end
 
 --- Lay the list out again a moment after a burst (items arriving, gear).

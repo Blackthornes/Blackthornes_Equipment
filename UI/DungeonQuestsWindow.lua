@@ -5,7 +5,7 @@
 -- and where, its level and its reward (green with the gain when it is an
 -- upgrade). Follow points the quest arrow, Show the Way puts the game's map
 -- pin where it starts. Opened with /beq dungeons, the gear window's
--- Dungeon Quests button or Settings.
+-- Dungeon Quests tab or Settings.
 --
 -- What it shows is DungeonQuests:Build(), built again only on Refresh:
 -- when it opens, a tick box changes, or a burst of quest log events ends
@@ -149,6 +149,9 @@ function DQUI:Build()
     self:BuildBar()
     self:BuildDungeons()
     self:BuildQuests()
+    -- The gear window's tabs hang under it too, Dungeon Quests lit, so the
+    -- two read as one window.
+    self.tabStrip = ns.FinderUI and ns.FinderUI:HangTabs(frame, "dungeons")
     frame:Hide()
     return frame
 end
@@ -616,8 +619,15 @@ function DQUI:Hide()
     if self.frame then self.frame:Hide() end
 end
 
+--- Opened as a tab of the gear window, in its place (FinderUI:ShowTab).
 function DQUI:Toggle()
-    if self:Showing() then self:Hide() else self:Show() end
+    if self:Showing() then
+        self:Hide()
+    elseif ns.FinderUI and ns.FinderUI.ShowTab then
+        ns.FinderUI:ShowTab("dungeons")
+    else
+        self:Show()
+    end
 end
 
 function DQUI:OnEnable()

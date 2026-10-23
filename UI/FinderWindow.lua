@@ -132,8 +132,19 @@ local TAB_INSET = 18
 local TABS = {
     { key = "upgrades", text = L["Upgrades"] },
     { key = "enchant", text = L["Enchants"] },
+    { key = "dungeons", text = L["Dungeon Quests"] },
+    { key = "loot", text = L["Dungeon Loot"] },
     { key = "settings", text = L["Settings"] },
 }
+
+-- The tabs whose window stands in for this one, at the same spot: each
+-- hangs the same tabs (HangTabs) and is shown by ShowTab.
+local STAND_INS = {
+    dungeons = "DungeonQuestsUI",
+    loot = "DungeonLootUI",
+    settings = "SettingsUI",
+}
+FinderUI.STAND_INS = STAND_INS
 
 -- How many levels ahead the stepper can look.
 local MOST_AHEAD = 10
@@ -706,7 +717,8 @@ function FinderUI:Build()
     hint:SetText(L["Click a row to follow it. Right-click to track it."])
     self.hint = hint
 
-    -- Upgrades, Enchants and Settings, hanging under the window.
+    -- Upgrades, Enchants, Dungeon Quests, Dungeon Loot and Settings,
+    -- hanging under the window.
     self.tabStrip = self:HangTabs(frame, "upgrades")
 
     frame:Hide()
@@ -723,7 +735,7 @@ function FinderUI:HangTabs(frame, selected)
     if not (ok and type(frameWidth) == "number" and frameWidth > 0) then frameWidth = WIDTH end
     local width = frameWidth - TAB_INSET * 2
     local strip = Widgets.CreateTabStrip(frame, TABS, function(key)
-        FinderUI:ShowTab(key, frame)
+        FinderUI:ShowTab(key)
     end, { hanging = true, width = width })
     strip:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", TAB_INSET, 0)
     strip:Select(selected)
@@ -750,34 +762,58 @@ local function PlaceAt(frame, x, y)
     frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x / scale, y / scale)
 end
 
---- A tab clicked, under this window (`from` nil or this frame) or under
---- Settings: Upgrades and Enchants show this window, Settings shows the
---- Settings window in its place, at the same spot.
-function FinderUI:ShowTab(key, from)
-    local settings = ns.SettingsUI
-    if key == "settings" then
-        if not settings then return end
-        local x, y = Corner(self.frame)
-        local shown = self.frame and self.frame:IsShown()
+--- The window a stand-in tab's module keeps, or nil.
+local function StandInFrame(name)
+    local module = ns[name]
+    return module and rawget(module, "frame") or nil
+end
+
+local function Shown(frame)
+    if not frame then return false end
+    local ok, shown = pcall(frame.IsShown, frame)
+    return ok and shown == true
+end
+
+--- The window of the tabs shown now: this one, or one standing in for it.
+function FinderUI:ShownTabWindow()
+    if Shown(self.frame) then return self.frame end
+    for _, name in pairs(STAND_INS) do
+        local frame = StandInFrame(name)
+        if Shown(frame) then return frame end
+    end
+    return nil
+end
+
+--- A tab clicked, or a stand-in window opened on its own: Upgrades and
+--- Enchants show this window, the others show their own window in its
+--- place, at the same spot, and every other window of the tabs goes.
+function FinderUI:ShowTab(key)
+    local current = self:ShownTabWindow()
+    local x, y
+    if current then x, y = Corner(current) end
+    for other, name in pairs(STAND_INS) do
+        if other ~= key and StandInFrame(name) and ns[name].Hide then ns[name]:Hide() end
+    end
+
+    local standIn = STAND_INS[key] and ns[STAND_INS[key]]
+    if STAND_INS[key] then
+        if not (standIn and standIn.Show) then return end
+        local wasShown = Shown(StandInFrame(STAND_INS[key]))
         self:Hide()
-        settings:Show()
-        if shown then PlaceAt(settings.frame, x, y) end
-        settings.asTab = true
-        if settings.tabStrip then settings.tabStrip:Select("settings") end
+        standIn:Show()
+        local frame = StandInFrame(STAND_INS[key])
+        if current and not wasShown and frame then PlaceAt(frame, x, y) end
+        standIn.asTab = true
+        local strip = rawget(standIn, "tabStrip")
+        if strip then strip:Select(key) end
         return
     end
-    local settingsFrame = settings and settings.frame
-    local fromSettings = settingsFrame ~= nil and from == settingsFrame
-    local x, y
-    if fromSettings then
-        x, y = Corner(settingsFrame)
-        settings:Hide()
-    end
+
     if ns.db then ns.db.finderShow = key == "enchant" and "enchant" or "all" end
     self.offset = 0
-    local wasShown = self.frame and self.frame:IsShown()
+    local wasShown = Shown(self.frame)
     self:Show()
-    if fromSettings and not wasShown then PlaceAt(self.frame, x, y) end
+    if current and not wasShown then PlaceAt(self.frame, x, y) end
     if self.tabStrip then self.tabStrip:Select(key == "enchant" and "enchant" or "upgrades") end
 end
 
@@ -1032,20 +1068,14 @@ function FinderUI:BuildHeader()
     header:SetPoint("TOPRIGHT", -RIM, 0)
     header:SetHeight(HEADER)
 
-    -- Dungeon Loot, Upgrade quest and Training, right to left, clear of
-    -- the close gem.
-    local loot = Widgets.CreateButton(header, L["Dungeon Loot"], function()
-        if ns.DungeonLootUI then ns.DungeonLootUI:Toggle() end
-    end, { width = 100, height = 20 })
-    loot:SetPoint("RIGHT", -(PADDING + 16 - RIM), -4)
-    self.lootButton = loot
-
+    -- Upgrade quest and Training, right to left, clear of the close gem.
+    -- Dungeon Quests and Dungeon Loot are tabs under the window.
     -- Closes the upgrade quest, or brings it back with its quests as they
     -- were. Its label is green while the quest is up.
     local quest = Widgets.CreateButton(header, L["Upgrade quest"], function()
         if ns.UpgradeQuest then ns.UpgradeQuest:Toggle() end
     end, { width = 104, height = 20 })
-    quest:SetPoint("RIGHT", loot, "LEFT", -6, 0)
+    quest:SetPoint("RIGHT", -(PADDING + 16 - RIM), -4)
     quest:HookScript("OnEnter", function(self)
         local on = ns.UpgradeQuest and ns.UpgradeQuest:IsEnabled()
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -1074,7 +1104,7 @@ function FinderUI:BuildHeader()
 
     -- The gear window's module paints these (ns.UI).
     if ns.UI then
-        ns.UI.lootButton, ns.UI.questButton, ns.UI.trainingButton = loot, quest, training
+        ns.UI.questButton, ns.UI.trainingButton = quest, training
         ns.UI:OnUpgradeQuestToggled()
         ns.UI:OnTrainingToggled()
     end
