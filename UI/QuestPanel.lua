@@ -511,7 +511,7 @@ function QuestPanel:BuildFilters(frame)
     for value = 0, most do
         widest = math.max(widest, Theme.TextWidth("small", QuestPanel.QuestLevelsText(value)))
     end
-    local levels = Widgets.CreateStepper(strip, {
+    local levels = Widgets.CreateChoice(strip, {
         min = 0, max = most, step = 1, value = QuestPanel.QuestLevelsValue(),
         format = function(value) return QuestPanel.QuestLevelsText(value) end,
         onChange = function(value)

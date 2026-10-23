@@ -826,6 +826,7 @@ function Widgets.CreateDropdown(parent, options, onSelect, opts)
     local label = Theme.CreateLabel(dropdown, "small", "text")
     label:SetPoint("LEFT", 6, 0)
     label:SetPoint("RIGHT", -18, 0)
+    dropdown.label = label
     dropdown.text = label
 
     -- A small solid arrow pointing down, four rows of plain colour (7, 5, 3
@@ -904,6 +905,8 @@ function Widgets.CreateDropdown(parent, options, onSelect, opts)
             end
 
             entry:SetScript("OnClick", function()
+                -- A choice (Widgets.CreateChoice) calls its own onChange.
+                if rawget(dropdown, "Pick") then return dropdown:Pick(option.value) end
                 dropdown:SetValue(option.value)
                 menu:Hide()
                 if onSelect then onSelect(option.value, option) end
@@ -1032,6 +1035,58 @@ function Widgets.CreateDropdown(parent, options, onSelect, opts)
 
     dropdown:SetValue(nil)
     return dropdown
+end
+
+--- A drop-down in a stepper's place, for a setting that picks one of a
+--- few words (the owner, 2026-10-23: drop-downs, never < > pickers). It
+--- takes a stepper's opts (min, max, step, value, format, onChange) and
+--- answers its calls: SetValue(value, silent), GetValue() and .text, so a
+--- row swaps one for the other and nothing else changes. Number boxes stay
+--- steppers. choice:Pick(value) is what a click on a line of its menu does.
+function Widgets.CreateChoice(parent, opts)
+    opts = opts or {}
+    local step = opts.step or 1
+    local low = opts.min or 0
+    local high = opts.max or 100
+
+    local function Clamp(value)
+        value = low + math.floor((value - low) / step + 0.5) * step
+        return math.max(low, math.min(high, value))
+    end
+    local function Words(value)
+        return opts.format and opts.format(value) or tostring(value)
+    end
+
+    local options = {}
+    for value = low, high, step do
+        options[#options + 1] = { text = Words(value), value = value }
+    end
+
+    local choice = Widgets.CreateDropdown(parent, options, nil,
+        { width = opts.width or Widgets.DropdownWidth(options, 100) })
+    choice.text = choice.label
+
+    local Show = choice.SetValue
+    function choice:SetValue(value, silent)
+        self.value = Clamp(tonumber(value) or low)
+        -- The words are read again each time, since some follow the game
+        -- (a level, a spec) and not only the value.
+        for _, option in ipairs(self.options) do option.text = Words(option.value) end
+        Show(self, self.value)
+        if not silent and opts.onChange then opts.onChange(self.value) end
+    end
+
+    function choice:GetValue()
+        return self.value
+    end
+
+    function choice:Pick(value)
+        if self.menu then self.menu:Hide() end
+        if Clamp(tonumber(value) or low) ~= self.value then self:SetValue(value) end
+    end
+
+    choice:SetValue(opts.value or low, true)
+    return choice
 end
 
 --- A dropdown width that fits every option's words, never below `least`.

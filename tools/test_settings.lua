@@ -201,7 +201,7 @@ end
 suite.check("an empty search lights nothing", lit == 0)
 
 -- Text size, saved as a word, waits for a reload.
-controls.textSize.plus:GetScript("OnClick")(controls.textSize.plus)
+controls.textSize:Pick(controls.textSize:GetValue() + 1)
 suite.check("Text size saves Large", ns.db.textSize == "large")
 suite.check("and offers Reload", controls.textSize.reload:IsShown())
 suite.check("under the stepper, at its right edge", controls.textSize.reload._point[1] == "TOPRIGHT"
@@ -210,9 +210,30 @@ suite.check("under the stepper, at its right edge", controls.textSize.reload._po
 suite.check("the Window style's Reload sits the same way", controls.windowStyle.reload._point[1] == "TOPRIGHT"
     and controls.windowStyle.reload._point[2] == controls.windowStyle
     and controls.windowStyle.reload._point[3] == "BOTTOMRIGHT")
-controls.textSize.minus:GetScript("OnClick")(controls.textSize.minus)
+controls.textSize:Pick(controls.textSize:GetValue() - 1)
 suite.check("back to Normal needs no reload", ns.db.textSize == "normal"
     and not controls.textSize.reload:IsShown())
+-- Word choices are drop-downs (the owner, 2026-10-23), the character
+-- picker too.
+controls.textSize:GetScript("OnMouseDown")(controls.textSize)
+suite.check("Text size opens a menu of its words", controls.textSize.menu:IsShown()
+    and #controls.textSize.options == 3)
+controls.textSize.entries[1]:GetScript("OnClick")()
+suite.check("picking the one shown changes nothing", ns.db.textSize == "normal"
+    and not controls.textSize.menu:IsShown())
+do
+    local picked = 0
+    local picker = SettingsUI.CharacterPicker(CreateFrame("Frame"), 0, function() picked = picked + 1 end)
+    suite.check("an empty picker says so", picker.text:GetText() == "No characters yet" and picker:GetEntry() == nil)
+    picker:SetEntries({ { key = "Player-1", name = "Ana Stormwind" }, { key = "Player-2", name = "Bob Wither" } })
+    suite.check("then shows the first whole name", picker:GetEntry().key == "Player-1"
+        and picker.text:GetText() == "Ana Stormwind")
+    picker:GetScript("OnMouseDown")(picker)
+    picker.entries[2]:GetScript("OnClick")()
+    suite.check("a line of its menu picks that character", picker:GetEntry().key == "Player-2" and picked == 1)
+    picker:SetEntries({ { key = "Player-3", name = "Cid Hale" }, { key = "Player-2", name = "Bob Wither" } })
+    suite.check("and the pick stays through a new list", picker:GetEntry().key == "Player-2")
+end
 suite.check("sizes read through the step", ns.Theme.sizes.small == ns.Theme.BASE_SIZES.small)
 
 -- The command buttons run their commands.
@@ -261,10 +282,10 @@ pages.describe:GetScript("OnClick")(pages.describe)
 local style = controls.windowStyle
 suite.check("window style starts on Titanforged", style.text:GetText() == "Titanforged", style.text:GetText())
 suite.check("with no reload to offer", not style.reload:IsShown())
-style.plus:GetScript("OnClick")()
+style:Pick(style:GetValue() + 1)
 suite.check("stepping picks Blizzard", ns.db.windowStyle == "blizzard" and style.text:GetText() == "Blizzard")
 suite.check("which waits for /reload", style.reload:IsShown() and ns.BlizzardLook.Style() == "titanforged")
-style.minus:GetScript("OnClick")()
+style:Pick(style:GetValue() - 1)
 suite.check("stepping back saves Titanforged", ns.db.windowStyle == "titanforged" and not style.reload:IsShown())
 ns.db.windowStyle = "blizzard"
 SettingsUI:Refresh()
