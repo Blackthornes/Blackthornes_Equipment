@@ -178,10 +178,8 @@ suite.check("the dial shows", ArrowUI.frame and ArrowUI.frame:IsShown())
 suite.check("the plate names the upgrade", ArrowUI.title:GetText() == "Item", ArrowUI.title:GetText())
 suite.check("the distance under it", ArrowUI.distance:GetText() == Arrow.Yards(yards), ArrowUI.distance:GetText())
 suite.check("the arrow is up", ArrowUI.arrow:IsShown() and not ArrowUI.check:IsShown())
-ArrowUI:ShowTooltip(ArrowUI.frame)
-local tip = table.concat(GameTooltip._lines, "\n")
-suite.check("its tooltip says what the clicks do", tip:find("Right-click for the next place", 1, true) ~= nil, tip)
-suite.check("and the step", tip:find("Kirsta Deepshadow", 1, true) ~= nil, tip)
+suite.check("no tooltip on the dial", ArrowUI.frame:GetScript("OnEnter") == nil and ArrowUI.ShowTooltip == nil)
+suite.check("no click on the dial", ArrowUI.frame:GetScript("OnMouseUp") == nil and ArrowUI.OnClick == nil)
 
 -- Standing at the vendor.
 zone = "Westfall"
@@ -307,12 +305,12 @@ end)())
 suite.check("a step with no place cannot be aimed at", not Arrow:Aim(4))
 
 --------------------------------------------------------------------------------
--- Clicking the dial: the next tab's quest
+-- The next tab's quest
 --------------------------------------------------------------------------------
 
 suite.check("the quest tab has its own quest", Quest:QuestOn("quest") and Quest:QuestOn("quest").itemID == 1003)
-ArrowUI:OnClick("LeftButton")
-suite.check("a click shows the next tab with a quest", Quest:Tab() == "quest", Quest:Tab())
+Arrow:NextTab()
+suite.check("the next tab with a quest shows", Quest:Tab() == "quest", Quest:Tab())
 suite.check("and forgets the vendor's step", Arrow.pinned == nil)
 clock = clock + 5
 state = Arrow:State(clock)
@@ -428,11 +426,10 @@ do
     TomTom.refused = nil
     ArrowUI.state = shownState
 end
-ArrowUI:OnClick("LeftButton")
+Arrow:NextTab()
 suite.check("and round again", Quest:Tab() == "vendor", Quest:Tab())
 
-ArrowUI:OnClick("RightButton")
-suite.check("one place: right-click says there is no other", env.ChatText():find("no other place", 1, true) ~= nil)
+suite.check("one place: there is no other to step to", Arrow:NextPlace() == nil)
 
 --------------------------------------------------------------------------------
 -- Got: nothing left to point at
@@ -498,40 +495,16 @@ do
 end
 
 --------------------------------------------------------------------------------
--- Dropping the dial after a drag is not a click, whichever order the
--- client runs OnDragStop and OnMouseUp in
+-- The dial only moves: a drag changes nothing it points at
 --------------------------------------------------------------------------------
 
 do
     local dial = ArrowUI.frame
-    local clicks = 0
-    local realClick = ArrowUI.OnClick
-    ArrowUI.OnClick = function() clicks = clicks + 1 end
-    local start, stop, up = dial:GetScript("OnDragStart"), dial:GetScript("OnDragStop"), dial:GetScript("OnMouseUp")
-    local realTime, now = _G.GetTime, 100
-    _G.GetTime = function() return now end
-
-    up(dial, "LeftButton")
-    suite.check("a plain click on the dial is a click", clicks == 1, clicks)
-
-    start(dial); stop(dial); up(dial, "LeftButton")
-    suite.check("a drag dropped before the mouse-up is not", clicks == 1, clicks)
-    now = now + 1
-    up(dial, "LeftButton")
-    suite.check("and the next click still counts", clicks == 2, clicks)
-
-    start(dial); up(dial, "LeftButton"); stop(dial)
-    suite.check("a drag whose mouse-up comes first is not either", clicks == 2, clicks)
-    now = now + 1
-    up(dial, "LeftButton")
-    suite.check("and the click after that counts too", clicks == 3, clicks)
-
-    start(dial); stop(dial)
-    now = now + 1
-    up(dial, "LeftButton")
-    suite.check("a drag with no mouse-up of its own swallows no later click", clicks == 4, clicks)
-    _G.GetTime = realTime
-    ArrowUI.OnClick = realClick
+    local tab = Quest:Tab()
+    dial:GetScript("OnDragStart")(dial)
+    dial:GetScript("OnDragStop")(dial)
+    suite.check("a drag keeps the same tab", Quest:Tab() == tab, Quest:Tab())
+    suite.check("and is done dragging", ArrowUI.dragging == nil)
 end
 
 --------------------------------------------------------------------------------
@@ -572,11 +545,10 @@ do
         if not file then return nil end
         local text = file:read("*a")
         file:close()
-        return text:match('frame:SetScript%("OnDragStart".-ArrowUI:OnClick%(button%)')
+        return text:match('frame:SetScript%("OnDragStart".-ArrowUI%.dragging = nil')
     end
     local mine = Lines(lfs_cwd .. "/UI/QuestArrow.lua")
-    suite.check("the drag lines use the guarded clock", mine and mine:find("Clock()", 1, true) ~= nil
-        and not mine:find("GetTime", 1, true))
+    suite.check("the drag lines are found", mine ~= nil)
     for _, sister in ipairs({ "/../Blackthornes_Farmer/UI/Arrow.lua", "/../Blackthornes_Pets/UI/BeastArrow.lua" }) do
         local theirs = Lines(lfs_cwd .. sister)
         if theirs then suite.check("the drag lines match " .. sister, theirs == mine) end
