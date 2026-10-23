@@ -1207,7 +1207,7 @@ function FinderUI:BuildFilters()
     end
 
     -- Plan ahead: "Now", or a level up to MOST_AHEAD past the character's.
-    local ahead = Widgets.CreateStepper(self.frame, {
+    local ahead = Widgets.CreateChoice(self.frame, {
         min = 0, max = MOST_AHEAD, step = 1, value = self:Ahead(),
         format = function(value) return FinderUI.AheadText(value) end,
         onChange = function(value)
@@ -1263,7 +1263,7 @@ function FinderUI:BuildFilters()
     solo:HookScript("OnLeave", function() GameTooltip:Hide() end)
     self.solo = solo
 
-    local questLevels = Widgets.CreateStepper(self.frame, {
+    local questLevels = Widgets.CreateChoice(self.frame, {
         min = 0, max = Finder.QUEST_LEVELS_ANY, step = 1, value = self:QuestLevelsValue(),
         format = function(value) return FinderUI.QuestLevelsText(value) end,
         onChange = function(value) Finder:SetQuestLevelsAbove(value) end,

@@ -412,9 +412,9 @@ for _, button in ipairs(made) do
 end
 check("buttons checked across the windows", #made > 20, true)
 check("every one readable at rest and lit", table.concat(unreadable, ", "), "")
--- (Settings' character picker adds its < and > while no character is known.)
--- (The five tooltip line steppers start on Always, their + dimmed.)
-check("bar the few dimmed at the end of a range", dimmed > 0 and dimmed < 16, true)
+-- (Settings' word choices are drop-downs now, so none of its buttons is
+-- dimmed; a number stepper elsewhere may dim its - or +.)
+check("bar the few dimmed at the end of a range", dimmed < 16, true)
 
 addon.Widgets.CreateButton = CreateButton
 

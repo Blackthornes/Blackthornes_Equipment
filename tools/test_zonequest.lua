@@ -317,7 +317,7 @@ Quest:SetZoneOnly(false)
 --------------------------------------------------------------------------------
 
 Panel:Refresh()
-Panel.levelStepper.minus:GetScript("OnClick")(Panel.levelStepper.minus)
+Panel.levelStepper:Pick(Panel.levelStepper:GetValue() - 1)
 suite.check("the panel's stepper sets the finder's limit", ns.db.questLevelsAbove == 3
     and Finder:QuestLevelsAbove() == 3, ns.db.questLevelsAbove)
 ns.FinderUI:Show()

@@ -340,7 +340,7 @@ end
 local function ShiftStepper(row, key, lineKey)
     local Shift = ns.TooltipShift
     local function IsOn() return ns.db[key] ~= false end
-    local stepper = Widgets.CreateStepper(row, {
+    local stepper = Widgets.CreateChoice(row, {
         min = 0, max = 2, step = 1, value = Shift:Mode(IsOn(), lineKey),
         format = function(value) return Shift.NAMES[value] end,
         onChange = function(value)
@@ -366,7 +366,7 @@ function SettingsUI:BuildGear()
     pages:Section("gear", 1, L["JUDGING GEAR"])
 
     local specRow = pages:Row("gear", 1, L["Judge Gear As:"], function() return SettingsUI:SpecHint() end)
-    controls.spec = Widgets.CreateStepper(specRow, {
+    controls.spec = Widgets.CreateChoice(specRow, {
         min = 1, max = #SettingsUI:SpecChoices(), step = 1, value = 1,
         format = function(index)
             local choices, specs = SettingsUI:SpecChoices()
@@ -494,7 +494,7 @@ function SettingsUI:BuildGear()
         local skills = ns.WeaponSkills
         return (skills and skills:AnyHidden()) and 0 or 1
     end
-    controls.weapons = Widgets.CreateStepper(weaponsRow, {
+    controls.weapons = Widgets.CreateChoice(weaponsRow, {
         min = 0, max = 1, step = 1, value = WeaponsShown(),
         format = function(value) return weaponNames[value] end,
         onChange = function(value)
@@ -522,57 +522,40 @@ function SettingsUI:BuildGear()
     controls.classTraining:SetPoint("TOPLEFT", CONTROL_X, -2)
 end
 
---- Steps through the player's characters by whole name, wrapped rather
---- than cut short (Butler's picker). :SetEntries(list of { key, name }),
+--- The player's characters by whole name, in a drop-down (the owner,
+--- 2026-10-23: drop-downs, never < > pickers), as wide as the longest
+--- name so none is cut short. :SetEntries(list of { key, name }),
 --- :GetEntry().
 function SettingsUI.CharacterPicker(row, x, onChange)
-    local picker = CreateFrame("Frame", nil, row)
-    picker:SetSize(180, 24)
-    picker:SetPoint("TOPLEFT", x, 0)
-    picker.entries, picker.index = {}, 1
-
-    local text = Theme.CreateLabel(picker, "small", "text", "CENTER")
-    text:SetPoint("LEFT", 26, 0)
-    text:SetPoint("RIGHT", -26, 0)
-    text:SetWordWrap(true)
-
-    local function Show()
-        local count = #picker.entries
-        picker.index = math.max(1, math.min(picker.index, math.max(1, count)))
-        local entry = picker.entries[picker.index]
-        text:SetText(entry and (entry.name or L["A character not seen yet"]) or L["No characters yet"])
-        picker.prev:SetDimmed(picker.index <= 1)
-        picker.next:SetDimmed(picker.index >= count)
-    end
-
-    local function Step(direction)
-        local wanted = picker.index + direction
-        if wanted < 1 or wanted > #picker.entries then return end
-        picker.index = wanted
-        Show()
+    local picker = Widgets.CreateDropdown(row, {}, function()
         if onChange then onChange() end
-    end
+    end, { width = 180, placeholder = L["No characters yet"] })
+    picker:SetPoint("TOPLEFT", x, -1)
+    picker.characters = {}
 
-    picker.prev = Widgets.CreateButton(picker, "<", function() Step(-1) end, { width = 22, height = 20 })
-    picker.prev:SetPoint("LEFT", 0, 0)
-    picker.next = Widgets.CreateButton(picker, ">", function() Step(1) end, { width = 22, height = 20 })
-    picker.next:SetPoint("RIGHT", 0, 0)
-
-    function picker:SetEntries(entries)
-        local current = self.entries[self.index]
-        self.entries = entries
-        self.index = 1
-        for index, entry in ipairs(entries) do
-            if current and entry.key == current.key then self.index = index end
+    function picker:SetEntries(characters)
+        local current = picker:GetEntry()
+        self.characters = characters or {}
+        local options = {}
+        for index, entry in ipairs(self.characters) do
+            options[index] = { text = entry.name or L["A character not seen yet"], value = entry.key }
         end
-        Show()
+        self:SetWidth(Widgets.DropdownWidth(options, 180))
+        local keep = nil
+        for _, entry in ipairs(self.characters) do
+            if current and entry.key == current.key then keep = entry.key end
+        end
+        self.options = options
+        self:SetValue(keep or (options[1] and options[1].value))
     end
 
     function picker:GetEntry()
-        return self.entries[self.index]
+        local key = self:GetValue()
+        for _, entry in ipairs(self.characters or {}) do
+            if entry.key == key then return entry end
+        end
     end
 
-    Show()
     return picker
 end
 
@@ -837,7 +820,7 @@ function SettingsUI:BuildGeneral()
         end
         return 1
     end
-    controls.effects = Widgets.CreateStepper(effectsRow, {
+    controls.effects = Widgets.CreateChoice(effectsRow, {
         min = 1, max = #Motion.LEVELS, step = 1, value = EffectIndex(),
         format = function(index) return effectNames[Motion.LEVELS[index]] end,
         onChange = function(index) Motion.SetLevel(Motion.LEVELS[index]) end,
@@ -895,7 +878,7 @@ function SettingsUI:WindowStyleControl(row)
     end
 
     local reload
-    local stepper = Widgets.CreateStepper(row, {
+    local stepper = Widgets.CreateChoice(row, {
         min = 1, max = #styles, step = 1,
         format = function(value) return self.WINDOW_STYLE_LABELS[styles[value]] end,
         onChange = function(value)
