@@ -458,9 +458,10 @@ ns.SettingsUI.controls.questArrow:GetScript("OnClick")(ns.SettingsUI.controls.qu
 suite.check("and on", Arrow.IsOn())
 
 env.chat = {}
-ns.SettingsUI.controls.questArrowCheck:GetScript("OnClick")(ns.SettingsUI.controls.questArrowCheck)
+suite.check("the check is typed only", ns.SettingsUI.controls.questArrowCheck == nil)
+ns.HandleSlash("arrow check")
 local text = env.ChatText()
-suite.check("the Check button runs /beq arrow check", text:find("quest arrow check", 1, true) ~= nil, text)
+suite.check("/beq arrow check runs", text:find("quest arrow check", 1, true) ~= nil, text)
 suite.check("which names what it reads", text:find("world position", 1, true) ~= nil
     and text:find("facing", 1, true) ~= nil, text)
 ns.SettingsUI:Hide()

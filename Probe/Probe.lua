@@ -483,6 +483,6 @@ function Probe:Upgrades()
     end
 end
 
-ns.RegisterCommand("probe", "check what this client supports (reads only)", function()
+ns.RegisterHiddenCommand("probe", function()
     ns.KeepCheck("probe", Probe.Run, Probe)
 end)
