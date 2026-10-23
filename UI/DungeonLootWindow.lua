@@ -22,18 +22,22 @@ local Widgets = ns.Widgets
 local Motion = ns.Motion
 
 local NAME = "BlackthornesEquipmentDungeonLoot"
-local WIDTH, HEIGHT = 840, 560
+-- The size every tab of the gear window shares (UI/FinderWindow.lua), so
+-- the window never jumps as the tabs are clicked.
+local WIDTH = ns.FinderUI and ns.FinderUI.WIDTH or 840
+local HEIGHT = ns.FinderUI and ns.FinderUI.HEIGHT or 560
 local PADDING = 18
 local TOP = 44
 local LEFT_WIDTH = 220
 local DUNGEON_ROW = 40
-local DUNGEON_ROWS = 11
 local LIST_ROW = 38
-local LIST_ROWS = 8
 local HEAD = 50
 local CHIP_ROW = 28
 local COLUMN_HEAD = 20
 local FOOT = 42
+-- As many rows as the wells hold at that size.
+local DUNGEON_ROWS = math.floor((HEIGHT - TOP - PADDING - COLUMN_HEAD - 2) / DUNGEON_ROW)
+local LIST_ROWS = math.floor((HEIGHT - TOP - PADDING - (HEAD + 8 + CHIP_ROW * 2 + COLUMN_HEAD) - FOOT) / LIST_ROW)
 local ICON = 26
 local SLOT_WIDTH, BOSS_WIDTH, GAIN_WIDTH = 130, 150, 84
 
@@ -182,10 +186,12 @@ function DLUI:Build()
         DLUI:SavePosition()
     end)
 
-    -- The house size grip under the bottom right corner, saved as
-    -- `dungeonLootScale`.
-    self.sizeGrip = Widgets.WindowGrip(frame, "dungeonLootScale", function()
+    -- The house size grip under the bottom right corner, saved as the one
+    -- scale every tab shares (`dungeonLootScale`, from before the tabs,
+    -- stays in the save unread).
+    self.sizeGrip = Widgets.WindowGrip(frame, ns.FinderUI and ns.FinderUI.SCALE_KEY or "finderScale", function()
         DLUI:SavePosition()
+        if ns.FinderUI then ns.FinderUI:ScaleChanged() end
     end)
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, NAME) end
     self.frame = frame
@@ -580,6 +586,7 @@ end
 function DLUI:Show()
     self:Build()
     if not self.frame:IsShown() then
+        if ns.FinderUI then ns.FinderUI:FitTab(self.frame) end
         self:RestorePosition()
         self.frame:Show()
         if Motion and Motion.Open then Motion:Open(self.frame) end

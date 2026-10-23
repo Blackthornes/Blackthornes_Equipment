@@ -304,7 +304,15 @@ another character, `FinderUI.OwnedWhere`; Put it on only for bag gear
 that needs no training, `FinderUI.CanPutOn`), then TO GO AND GET. A gear
 line you follow shows a Following tag. `UI/MainWindow.lua` keeps the old
 names (`UI:Show`, `UI:Refresh`, `UI.frame`) as a facade. The place is
-`finderPoint`, else the old gear window's. Dungeon Quests opens from
+`finderPoint`, else the old gear window's. Every tab is one size and one scale
+(the owner, 2026-10-23: the window jumped as the tabs were clicked): the
+gear window's `FinderUI.WIDTH` by `HEIGHT`, or more when a tab says it
+needs it (`FinderUI:Need`, Settings' fullest page), set on each tab as it
+shows (`FinderUI:FitTab`); Dungeon Quests and Dungeon Loot lay out as many
+rows as that height holds, and Settings' two columns span the width.
+Every tab's size grip saves `finderScale` and scales the others
+(`FinderUI:ScaleChanged`); `dungeonQuestsScale`, `dungeonLootScale` and
+`settingsScale` stay in the save, unread. Dungeon Quests opens from
 Settings and `/beq dungeons`. The Stat Weights window picks class and
 spec from dropdowns. Tested in `tools/test_mainwindow.lua`.
 

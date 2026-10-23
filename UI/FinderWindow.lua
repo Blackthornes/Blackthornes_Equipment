@@ -146,6 +146,15 @@ local STAND_INS = {
 }
 FinderUI.STAND_INS = STAND_INS
 
+-- Every tab's window is one size and one scale, so the window never jumps
+-- as the tabs are clicked (the owner, 2026-10-23): this window's size,
+-- or more when a tab needs it (FinderUI:Need), and `finderScale`, which
+-- every tab's size grip sets.
+FinderUI.WIDTH, FinderUI.HEIGHT = WIDTH, HEIGHT
+FinderUI.SCALE_KEY = "finderScale"
+-- What each tab needs at least, { width, height }, as it last said.
+FinderUI.needs = {}
+
 -- How many levels ahead the stepper can look.
 local MOST_AHEAD = 10
 
@@ -629,10 +638,11 @@ function FinderUI:Build()
     end)
 
     -- The house size grip under the bottom right corner (Widgets.WindowGrip),
-    -- saved as `finderScale`.
-    self.sizeGrip = Widgets.WindowGrip(frame, "finderScale", function()
+    -- saved as `finderScale`, the one every tab shares.
+    self.sizeGrip = Widgets.WindowGrip(frame, FinderUI.SCALE_KEY, function()
         if ns.db then ns.db.finderMoved = true end
         FinderUI:SavePosition()
+        FinderUI:ScaleChanged()
     end)
     frame:EnableMouseWheel(true)
     frame:SetScript("OnMouseWheel", function(_, delta) FinderUI:ScrollBy(-delta) end)
@@ -774,6 +784,53 @@ local function Shown(frame)
     return ok and shown == true
 end
 
+--- The size every tab shares: this window's, or the most any tab needs.
+function FinderUI:TabSize()
+    local width, height = WIDTH, HEIGHT
+    for _, need in pairs(self.needs) do
+        if type(need[1]) == "number" and need[1] > width then width = need[1] end
+        if type(need[2]) == "number" and need[2] > height then height = need[2] end
+    end
+    return math.ceil(width), math.ceil(height)
+end
+
+--- Give one tab's window the shared size and scale.
+function FinderUI:FitTab(frame)
+    if not frame then return end
+    local width, height = self:TabSize()
+    frame:SetWidth(width)
+    frame:SetHeight(height)
+    if Widgets.ApplySize and ns.db then Widgets.ApplySize(frame, ns.db[FinderUI.SCALE_KEY]) end
+end
+
+--- Every tab's window built so far, this one first.
+function FinderUI:TabFrames()
+    local frames = {}
+    if self.frame then frames[#frames + 1] = self.frame end
+    for _, name in pairs(STAND_INS) do
+        local frame = StandInFrame(name)
+        if frame then frames[#frames + 1] = frame end
+    end
+    return frames
+end
+
+--- A tab says how much room it needs; nil for either keeps the usual.
+--- Every window follows when that moves the shared size.
+function FinderUI:Need(key, width, height)
+    local beforeWidth, beforeHeight = self:TabSize()
+    self.needs[key] = { width, height }
+    local afterWidth, afterHeight = self:TabSize()
+    if beforeWidth == afterWidth and beforeHeight == afterHeight then return end
+    for _, frame in ipairs(self:TabFrames()) do self:FitTab(frame) end
+end
+
+--- A size grip dragged on one tab: the others take the same scale.
+function FinderUI:ScaleChanged()
+    for _, frame in ipairs(self:TabFrames()) do
+        if Widgets.ApplySize and ns.db then Widgets.ApplySize(frame, ns.db[FinderUI.SCALE_KEY]) end
+    end
+end
+
 --- The window of the tabs shown now: this one, or one standing in for it.
 function FinderUI:ShownTabWindow()
     if Shown(self.frame) then return self.frame end
@@ -802,6 +859,7 @@ function FinderUI:ShowTab(key)
         self:Hide()
         standIn:Show()
         local frame = StandInFrame(STAND_INS[key])
+        self:FitTab(frame)
         if current and not wasShown and frame then PlaceAt(frame, x, y) end
         standIn.asTab = true
         local strip = rawget(standIn, "tabStrip")
@@ -813,6 +871,7 @@ function FinderUI:ShowTab(key)
     self.offset = 0
     local wasShown = Shown(self.frame)
     self:Show()
+    self:FitTab(self.frame)
     if current and not wasShown then PlaceAt(self.frame, x, y) end
     if self.tabStrip then self.tabStrip:Select(key == "enchant" and "enchant" or "upgrades") end
 end
@@ -2182,6 +2241,7 @@ end
 function FinderUI:Show()
     self:Build()
     if not self.frame:IsShown() then
+        self:FitTab(self.frame)
         self:RestorePosition()
         self.offset = 0
         -- A new look: the slot last clicked if it has something, else the
