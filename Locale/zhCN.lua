@@ -1136,3 +1136,6 @@ L["Judging gear as %s, level %d"] = "按%s评判装备，等级 %d"
 L["Judging gear as %s, level %d, planning for %d"] = "按%s评判装备，等级 %d，按等级 %d 来规划"
 L["1 upgrade you can go and get."] = "有 1 个升级可以去拿。"
 L["%d upgrades you can go and get."] = "有 %d 个升级可以去拿。"
+-- The fold gem beside a window's close gem (2026-10-24)
+L["Collapse this window"] = "收起这个窗口"
+L["Expand this window"] = "展开这个窗口"
