@@ -1136,3 +1136,6 @@ L["Judging gear as %s, level %d"] = "Valorando el equipo como %s, nivel %d"
 L["Judging gear as %s, level %d, planning for %d"] = "Valorando el equipo como %s, nivel %d, pensando en el nivel %d"
 L["1 upgrade you can go and get."] = "1 mejora que puedes ir a buscar."
 L["%d upgrades you can go and get."] = "%d mejoras que puedes ir a buscar."
+-- The fold gem beside a window's close gem (2026-10-24)
+L["Collapse this window"] = "Plegar esta ventana"
+L["Expand this window"] = "Desplegar esta ventana"
