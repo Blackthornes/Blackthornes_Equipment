@@ -382,6 +382,11 @@ function Alts:Judge(note, link)
 
     local usable, fromLevel = Weights:CanUse(note.class, info.classID, info.subclassID, info.equipLoc)
     if not usable or not Compare:ClassAllows(note.class, link) then return nil end
+    -- Mail or plate that character only gets far later: not for it yet.
+    if info.classID == 4 and fromLevel
+        and (note.level or 0) < fromLevel - Compare.LATER_ARMOR_WITHIN then
+        return nil
+    end
     -- Armor goes only to a character who wears that kind as its heaviest:
     -- no cloth for a leather wearer.
     if not Weights:IsBestArmor(note.class, note.level, info.classID, info.subclassID, info.equipLoc) then
