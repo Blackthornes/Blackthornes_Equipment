@@ -54,6 +54,11 @@ local RANGED = {
 -- weights are a guess, and a 0.3% "upgrade" would be noise.
 local SAME_WITHIN = 1
 
+-- A heavier armor kind the class learns later (mail or plate at 40) counts
+-- only this many levels before it opens (the owner, 2026-10-24: keep chain
+-- from 38). Below that it is not for this character yet.
+Compare.LATER_ARMOR_WITHIN = 2
+
 Compare.SLOTS = SLOTS
 
 -- The backpack and the four bags beside it.
@@ -427,6 +432,15 @@ function Compare:Judge(link)
         return result
     end
 
+    -- Armor of a kind learned later, far off yet: not for it until close,
+    -- so it isn't kept in the bags for many levels.
+    if info.classID == 4 and fromLevel
+        and (Items:PlayerLevel() or 0) < fromLevel - Compare.LATER_ARMOR_WITHIN then
+        result.verdict = "cantuse"
+        result.laterArmor = fromLevel
+        return result
+    end
+
     -- Best Armor Only, ticked on this character: lighter armor than the
     -- heaviest kind it wears is not for it (no tooltip line of its own). A
     -- kind learned later counts in a slot once that slot holds a piece of it.
@@ -713,7 +727,7 @@ function Compare:Describe(result)
     local verdict, spec = result.verdict, result.specName
     local percent = result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5)) or nil
 
-    if verdict == "cantuse" and result.lighterArmor then
+    if verdict == "cantuse" and (result.lighterArmor or result.laterArmor) then
         return nil
     elseif verdict == "cantuse" and result.ignoredSkill then
         return L.Format("Ignored until you train %s", result.ignoredSkill), "muted"

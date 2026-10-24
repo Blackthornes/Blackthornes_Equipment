@@ -1077,6 +1077,17 @@ picked for lighter armor is let go quietly (`UpgradeQuest:LighterArmor`).
 Alts keep `Weights:IsBestArmor` as before. Tested in
 `tools/test_bestarmor.lua`.
 
+## Mail and plate from 38
+
+The owner (2026-10-24): Butler kept chain for a level 12 hunter as "an
+upgrade at a later level". A body armor kind the class learns later (mail
+or plate at 40, `Weights:CanUse`'s level) is now "cantuse" with
+`laterArmor` (no tooltip line) until the character is within
+`Compare.LATER_ARMOR_WITHIN` (2) levels of it, so from 38 it is an upgrade
+for later as before. `Alts:Judge` uses the same rule by the alt's level.
+Gear that only needs a higher item level is untouched. Tested in
+`tools/test_laterarmor.lua`.
+
 ## Gear for other classes only
 
 A player's report (2026-10-22): a druid was told Hunter-only shoulders
