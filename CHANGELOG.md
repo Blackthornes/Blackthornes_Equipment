@@ -4,6 +4,16 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.0.0
+
+For WoW: Forever (interface 16001). Files were added and the TOC changed, so
+restart the game fully after updating (`/reload` is not enough).
+
+- **Arrow Size:** pick 50%, 75% or 100% for the guide arrow.
+- **Fold gem:** a small gem beside the close button folds a window down to its title and opens it again.
+- **Mail and plate:** they show as upgrades for later only from level 38.
+- **Settings:** word choices are drop-downs.
+
 ## 0.35.0
 
 For WoW: Forever (interface 16001). Files were added and the TOC changed, so
