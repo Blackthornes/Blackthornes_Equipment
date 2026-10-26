@@ -602,9 +602,10 @@ send (names come in the client's language). `Logic/Contribute.lua`
 whispers a hello (`Q<id>:<hash>`) to each name in `Contribute.RECIPIENTS`
 (full names, only in code, never shown; the same two as Farmer's and
 Tradeskills' lists, change all three together) 30 s after login and every
-half hour. Only those characters ask (`R<id>`), one sender at a time, each
-at most every half hour, and the sender answers only a recipient asking
-for its own id. The table (`K`, `{ q, v, d }` in the saved shapes; an
+five minutes (the owner, 2026-10-26). Only those characters ask (`R<id>`),
+one sender at a time, the next as soon as one is done (or given up after
+`SYNC_TIMEOUT`), each at most every five minutes (`SYNC_GAP`, `SEND_GAP`),
+and the sender answers only a recipient asking for its own id. The table (`K`, `{ q, v, d }` in the saved shapes; an
 older sender's has no `d`) is checked field by field (`CleanQuest`,
 `CleanVendor`, `CleanDungeonQuest`: plain text, spots 0 to 100, whole
 numbers in range) and kept apart on the receiver in `sharedData[id] = {
