@@ -207,6 +207,25 @@ check("the recipient's own vendors are untouched", farmer.ns.db.learnedVendors[8
 check("and still its own", farmer.ns.db.learnedVendors[700001] ~= nil)
 check("no learned quests were made for it", farmer.ns.db.learnedQuests == nil)
 
+print("\nthe table is built at most every PAYLOAD_KEEP")
+do
+    local builds, real = 0, C.Payload
+    C.Payload = function(...) builds = builds + 1 return real(...) end
+    current = ana
+    clock = clock + C.PAYLOAD_KEEP
+    C:Hello()
+    Run()
+    clock = clock + 300
+    C:Hello()
+    Run()
+    check("two hellos five minutes apart build it once", builds, 1)
+    clock = clock + C.PAYLOAD_KEEP
+    C:Hello()
+    Run()
+    check("after PAYLOAD_KEEP it is built again", builds, 2)
+    C.Payload = real
+end
+
 print("\nagain")
 -- One account: only one of the two is ever online at once.
 farmer.online, wither.online = true, false
