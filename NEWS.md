@@ -23,6 +23,16 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.0.0
+
+- Arrow Size picks 50%, 75% or 100% for the guide arrow.
+- A small gem beside the close button folds a window down to its title.
+- Mail and plate show as upgrades for later only from level 38.
+
+Fixes and changes:
+
+- Word choices in Settings are now drop-downs.
+
 ## 0.35.0
 
 - Dungeon Quests lists quests known to the addon done inside dungeons or raids, and which ones you've done.

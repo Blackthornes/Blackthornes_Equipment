@@ -5,6 +5,11 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.0.0", lines = {
+        "Arrow Size picks 50%, 75% or 100% for the guide arrow.",
+        "A small gem beside the close button folds a window down to its title.",
+        "Mail and plate show as upgrades for later only from level 38.",
+    } },
     { version = "0.35.0", lines = {
         "Dungeon Quests lists quests known to the addon done inside dungeons or raids, and which ones you've done.",
         "Dungeon Loot shows what each dungeon's bosses drop, with the upgrades for you marked.",
@@ -15,8 +20,5 @@ ns.WHATS_NEW = {
     { version = "0.34.0", lines = {
         "Where to Get Upgrades now lists your slots down the left. Pick a slot to see every upgrade for it, and tick which sources to show. \"Only what I can get now\" hides what you can't get yet.",
         "Untrained Weapons on the Gear page of Settings is now Show or Hide, set for each character.",
-    } },
-    { version = "0.33.0", lines = {
-        "Each tooltip line Equipment adds can be Off, Shift or Always. You pick in Settings.",
     } },
 }
