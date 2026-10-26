@@ -753,6 +753,19 @@ function SettingsUI:BuildQuest()
     end, true)
     controls.arrowRoute:SetPoint("TOPLEFT", CONTROL_X, -2)
 
+    -- How big the whole arrow is drawn, 100% unless picked (the owner,
+    -- 2026-10-26). The arrow keeps its spot.
+    local arrowSizeRow = pages:Row("quest", 2, L["Arrow Size:"], nil)
+    controls.arrowSize = Widgets.CreateChoice(arrowSizeRow, {
+        min = 50, max = 100, step = 25, value = 100,
+        format = function(percent) return ("%d%%"):format(percent) end,
+        onChange = function(percent)
+            if ns.QuestArrowUI then ns.QuestArrowUI:SetSize(percent) end
+        end,
+    })
+    ns.SettingsPages.FitStepper(controls.arrowSize, { "50%", "75%", "100%" })
+    controls.arrowSize:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- The panel's Quest log tab (UI/QuestLogTab.lua) and its two tick boxes.
     pages:Section("quest", 2, L["QUEST LOG"])
 
@@ -954,6 +967,7 @@ function SettingsUI:Refresh()
     controls.questArrow:SetChecked(ns.db.questArrow == true)
     controls.useTomTom:SetChecked(ns.db.useTomTom ~= false)
     controls.arrowRoute:SetChecked(ns.db.arrowRoute ~= false)
+    controls.arrowSize:SetValue(ns.QuestArrowUI and ns.QuestArrowUI.Size() or 100, true)
     controls.questLogTracked:SetChecked(ns.db.questLogTrackedOnly == true)
     controls.hideQuestTracker:SetChecked(ns.db.hideQuestTracker == true)
     self:RefreshQuestSize()
