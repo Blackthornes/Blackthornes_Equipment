@@ -39,6 +39,8 @@ local MIN_WIDTH = 150
 local MAX_WIDTH = 320
 -- The room the arrow leaves under Farmer's XP bar.
 local CLEAR_GAP = 4
+-- How big the whole arrow is drawn, in percent (Settings, "Arrow Size:").
+ArrowUI.SIZES = { 50, 75, 100 }
 
 -- Redrawn this often, seconds: smooth to the eye, cheap to run.
 local STEP = 0.03
@@ -86,6 +88,7 @@ function ArrowUI:Build()
 
     local frame = CreateFrame("Frame", "BlackthornesEquipmentQuestArrow", UIParent)
     frame:SetSize(MIN_WIDTH, RING + PLATE_HEIGHT + 56)
+    frame:SetScale(ArrowUI.Scale())
     frame:SetFrameStrata("MEDIUM")
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
@@ -433,6 +436,38 @@ end
 -- Position
 --------------------------------------------------------------------------------
 
+--- The arrow's size as a scale: the percent picked under "Arrow Size:"
+--- (`questArrowSize`, account wide, nil for 100), else full size.
+function ArrowUI.Scale()
+    local percent = tonumber(type(ns.db) == "table" and ns.db.questArrowSize)
+    for _, size in ipairs(ArrowUI.SIZES) do
+        if percent == size then return size / 100 end
+    end
+    return 1
+end
+
+--- The size picked, in percent.
+function ArrowUI.Size()
+    return math.floor(ArrowUI.Scale() * 100 + 0.5)
+end
+
+--- Draws the whole arrow, plate and words too, at `percent` (50, 75 or
+--- 100). 100 saves nothing, so nobody's save changes until a smaller size
+--- is picked. The arrow stays where it was left.
+function ArrowUI:SetSize(percent)
+    percent = tonumber(percent)
+    local known = false
+    for _, size in ipairs(ArrowUI.SIZES) do
+        if percent == size then known = true end
+    end
+    if not known or type(ns.db) ~= "table" then return end
+    ns.db.questArrowSize = percent ~= 100 and percent or nil
+    local frame = self.frame
+    if not frame then return end
+    frame:SetScale(ArrowUI.Scale())
+    self:RestorePosition()
+end
+
 function ArrowUI:SavePosition()
     local frame = self.frame
     local ok, x, y = pcall(function() return frame:GetCenter() end)
@@ -440,7 +475,9 @@ function ArrowUI:SavePosition()
 
     frame:ClearAllPoints()
     frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
-    ns.db.questArrowX, ns.db.questArrowY = x, y
+    -- Kept in the screen's own units, so a new size keeps the spot.
+    local scale = ArrowUI.Scale()
+    ns.db.questArrowX, ns.db.questArrowY = x * scale, y * scale
 end
 
 --- Farmer's XP bar can come up after the arrow, so the arrow listens for
@@ -491,6 +528,8 @@ function ArrowUI:AvoidXPBar()
         for _, part in ipairs({ frame, self.plate, self.close }) do
             local x, y, w, h = part:GetRect()
             if x and (part == frame or part:IsShown()) then
+                local scale = ArrowUI.Scale()
+                x, y, w, h = x * scale, y * scale, w * scale, h * scale
                 left = math.min(left or x, x)
                 bottom = math.min(bottom or y, y)
                 right = math.max(right or x + w, x + w)
@@ -502,7 +541,7 @@ function ArrowUI:AvoidXPBar()
         if left < barLeft + barWidth + gap and right > barLeft - gap
             and bottom < barBottom + barHeight + gap and top > barBottom - gap then
             frame:ClearAllPoints()
-            frame:SetPoint("TOP", bar, "BOTTOM", 0, -(gap + 2))
+            frame:SetPoint("TOP", bar, "BOTTOM", 0, -(gap + 2) / ArrowUI.Scale())
         end
     end)
 end
@@ -512,10 +551,11 @@ function ArrowUI:RestorePosition()
     if not frame then return end
     frame:ClearAllPoints()
     if ns.db.questArrowX and ns.db.questArrowY then
-        frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", ns.db.questArrowX, ns.db.questArrowY)
+        local scale = ArrowUI.Scale()
+        frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", ns.db.questArrowX / scale, ns.db.questArrowY / scale)
     else
         -- Top middle, a little lower than Farmer's, so both can be up.
-        frame:SetPoint("TOP", UIParent, "TOP", 0, -330)
+        frame:SetPoint("TOP", UIParent, "TOP", 0, -330 / ArrowUI.Scale())
     end
     self:AvoidXPBar()
 end
