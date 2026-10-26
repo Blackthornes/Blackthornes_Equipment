@@ -605,7 +605,10 @@ Tradeskills' lists, change all three together) 30 s after login and every
 five minutes (the owner, 2026-10-26). Only those characters ask (`R<id>`),
 one sender at a time, the next as soon as one is done (or given up after
 `SYNC_TIMEOUT`), each at most every five minutes (`SYNC_GAP`, `SEND_GAP`),
-and the sender answers only a recipient asking for its own id. The table (`K`, `{ q, v, d }` in the saved shapes; an
+and the sender answers only a recipient asking for its own id. The sender
+builds and hashes its table at most every `PAYLOAD_KEEP` (`Contribute:Built`,
+kept per id; the hello and the answer send the same build, so a hash a
+recipient heard always matches what it then keeps). The table (`K`, `{ q, v, d }` in the saved shapes; an
 older sender's has no `d`) is checked field by field (`CleanQuest`,
 `CleanVendor`, `CleanDungeonQuest`: plain text, spots 0 to 100, whole
 numbers in range) and kept apart on the receiver in `sharedData[id] = {
