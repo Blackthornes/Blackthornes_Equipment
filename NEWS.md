@@ -23,6 +23,14 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.0.1
+
+- The Take reward button has the gold plaque look.
+
+Fixes and changes:
+
+- Various UI improvements.
+
 ## 1.0.0
 
 - Arrow Size picks 50%, 75% or 100% for the guide arrow.
