@@ -600,7 +600,7 @@ hover, only on North American clients (`Contribute:InRegion`,
 is not in the help line or Settings' command list). Only English clients
 send (names come in the client's language). `Logic/Contribute.lua`
 whispers a hello (`Q<id>:<hash>`) to each name in `Contribute.RECIPIENTS`
-(full names, only in code, never shown; the same two as Farmer's and
+(full names, only in code, never shown; the same three as Farmer's and
 Tradeskills' lists, change all three together) 30 s after login and every
 five minutes (the owner, 2026-10-26). Only those characters ask (`R<id>`),
 one sender at a time, the next as soon as one is done (or given up after
