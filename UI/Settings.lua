@@ -4,7 +4,7 @@
 -- Built the way Tradeskills' Settings tab is (UI/SettingsPages.lua), as in
 -- Pets and Farmer: pages picked along the top, two columns of rows a page,
 -- a row being [label .. control] on one line, and what it does in the row's
--- tooltip or, with Show descriptions ticked, underneath it.
+-- tooltip or, with Show Descriptions ticked, underneath it.
 --
 -- Open it with /beq settings, a click on the minimap button, or from the
 -- game's own Options > AddOns list. Nothing here deletes anything.
