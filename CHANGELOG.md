@@ -4,6 +4,14 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.0.1
+
+For WoW: Forever (interface 16001). Files were added and the TOC changed, so
+restart the game fully after updating (`/reload` is not enough).
+
+- **Take reward:** the Take reward button has the gold plaque look.
+- **UI:** various UI improvements.
+
 ## 1.0.0
 
 For WoW: Forever (interface 16001). Files were added and the TOC changed, so
