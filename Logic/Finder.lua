@@ -1111,12 +1111,30 @@ local NEED_WORDS = {
     group = L["group"], dungeon = L["dungeon"], raid = L["raid"], battleground = L["battleground"],
 }
 
-local function Place(source)
+--- A zone or dungeon in the client's language, for showing only.
+function Finder.ShownZone(zone)
+    local waypoints = ns.Waypoints
+    if not (type(zone) == "string" and waypoints and waypoints.ShowZone) then return zone end
+    local ok, shown = pcall(waypoints.ShowZone, zone)
+    return ok and type(shown) == "string" and shown or zone
+end
+
+--- A quest's title as the game gives it in the client's language, else the
+--- data's, for showing only.
+function Finder.ShownTitle(questID, title)
+    local quests = ns.DungeonQuests
+    if not (questID and type(title) == "string" and quests and quests.TitleOf) then return title end
+    local ok, shown = pcall(quests.TitleOf, quests, { questID = questID, title = title })
+    return ok and type(shown) == "string" and shown ~= "" and shown or title
+end
+
+local function Place(source, plain)
     if not source.zone then return nil end
+    local zone = plain and source.zone or Finder.ShownZone(source.zone)
     if source.x and source.y then
-        return ("%s (%s, %s)"):format(source.zone, source.x, source.y)
+        return ("%s (%s, %s)"):format(zone, source.x, source.y)
     end
-    return source.zone
+    return zone
 end
 
 --- The item a quest starts from, by its ID, when the source names one.
@@ -1149,7 +1167,7 @@ end
 function Finder:Describe(source, plain)
     if source.kind == "vendor" then
         local text = source.name
-        local where = Place(source)
+        local where = Place(source, plain)
         if where then text = text .. ", " .. where end
         local price = self.Money(source.price)
         if price then text = text .. "  " .. price end
@@ -1160,7 +1178,8 @@ function Finder:Describe(source, plain)
         if source.limited then text = L.Format("%s  (limited stock)", text) end
         return text
     elseif source.kind == "quest" then
-        local text = L.Format("%s (level %d)", source.title, source.questLevel or 0)
+        local title = plain and source.title or Finder.ShownTitle(source.questID, source.title)
+        local text = L.Format("%s (level %d)", title, source.questLevel or 0)
         local need = Finder.Need(source.group)
         if need then text = text .. ", " .. (NEED_WORDS[need] or need) end
         if (source.chain or 0) > 1 then
@@ -1168,7 +1187,7 @@ function Finder:Describe(source, plain)
         elseif (source.chain or 0) == 1 and source.first then
             text = L.Format("%s, after %s", text, source.first)
         end
-        local where = Place(source)
+        local where = Place(source, plain)
         if source.x then
             if where then
                 text = L.Format("%s, from %s in %s", text, source.name, where)
@@ -1183,7 +1202,8 @@ function Finder:Describe(source, plain)
         end
         return text
     elseif source.kind == "dungeon" then
-        local text = L.Format("%s in %s", source.name, source.dungeon)
+        local dungeon = plain and source.dungeon or Finder.ShownZone(source.dungeon)
+        local text = L.Format("%s in %s", source.name, dungeon)
         if not source.raid then
             text = text .. (" (%d-%d)"):format(source.minLevel, source.maxLevel)
         end
