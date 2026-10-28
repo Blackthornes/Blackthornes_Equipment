@@ -9,6 +9,10 @@
 -- finder's kept verdicts, so a list is cheap to draw again; an item the
 -- client has not loaded is asked for, and the window draws again when it
 -- comes in.
+--
+-- A Forever dungeon also lists every boss the Forever client's game tables
+-- name for it (Data/ForeverBosses.lua), in the game's order, so a boss
+-- nobody has seen drop gear yet still has a line of its own.
 
 local _, ns = ...
 
@@ -65,13 +69,28 @@ function DL:Index()
     return index
 end
 
+--- A Forever dungeon's bosses in the game's order, or an empty list.
+function DL:Bosses(key)
+    local list = ns.FOREVER_BOSSES and ns.FOREVER_BOSSES[key]
+    return type(list) == "table" and list or {}
+end
+
+--- A boss's name to match on: lower case, a leading "The " left off.
+function DL.BossKey(name)
+    if type(name) ~= "string" then return nil end
+    return (name:lower():gsub("^the%s+", ""))
+end
+
 --- The dungeons with drops for this side: { key, name, low, high, door,
 --- raid, forever, count }, Classic's by level, raids after, Forever's last.
 function DL:Dungeons(player)
     local S = Sources()
     local DQ = ns.DungeonQuests
     local list = {}
-    for key, items in pairs(self:Index()) do
+    local keys = {}
+    for key, items in pairs(self:Index()) do keys[key] = items end
+    for key in pairs(ns.FOREVER_BOSSES or {}) do keys[key] = keys[key] or {} end
+    for key, items in pairs(keys) do
         local row = S and S.DUNGEONS and S.DUNGEONS[key]
         local side = type(row) == "table" and row[5] or ""
         local dungeon = DQ and DQ.Dungeon(key)
@@ -135,13 +154,20 @@ end
 
 --- One dungeon's rows for the chips picked: { rows = { { itemID, link,
 --- boss, chance, slot, upgrade, gain (whole percent or nil), result } },
---- waiting, upgrades }. Rows come best first: upgrades by gain, an empty
---- slot's ahead of any, then the rest by name.
+--- shown, waiting, upgrades }. Rows come best first: upgrades by gain, an
+--- empty slot's ahead of any, then the rest by name. With no chip picked, a
+--- Forever boss no drop names yet follows as a row of its own (`bossOnly`,
+--- `order` its place in the game's list); `shown` counts only the items.
 function DL:Rows(key, armor, stat, upgradesOnly)
     local items = self:Index()[key] or {}
     local Finder, Compare = ns.Finder, ns.Compare
     local judged = Finder and Finder:Judged()
     local rows, waiting, upgrades, asked = {}, 0, 0, 0
+    local dropped = {}
+    for _, drop in pairs(items) do
+        local bossKey = DL.BossKey(drop.boss)
+        if bossKey then dropped[bossKey] = true end
+    end
     for itemID, drop in pairs(items) do
         local link = Link(itemID)
         local info = ns.Items and ns.Items:Info(link)
@@ -172,8 +198,17 @@ function DL:Rows(key, armor, stat, upgradesOnly)
             end
         end
     end
+    local shown = #rows
+    if (not armor or armor == "all") and (not stat or stat == "all") and not upgradesOnly then
+        for order, boss in ipairs(self:Bosses(key)) do
+            if not dropped[DL.BossKey(boss)] then
+                rows[#rows + 1] = { bossOnly = true, boss = boss, order = order,
+                    name = "", slot = "", upgrade = false, itemID = 0 }
+            end
+        end
+    end
     table.sort(rows, DL.Best)
-    return { rows = rows, waiting = waiting, upgrades = upgrades }
+    return { rows = rows, shown = shown, waiting = waiting, upgrades = upgrades }
 end
 
 --- The item's name from the client, or "" while it is on its way.
@@ -188,8 +223,11 @@ function DL.NameOf(itemID)
 end
 
 --- Best first: upgrades before the rest, an empty slot's first, then the
---- biggest gain; then by name.
+--- biggest gain; then by name. Bosses with no drops seen come last, in
+--- the game's order.
 function DL.Best(a, b)
+    if (a.bossOnly or false) ~= (b.bossOnly or false) then return not a.bossOnly end
+    if a.bossOnly then return a.order < b.order end
     if a.upgrade ~= b.upgrade then return a.upgrade end
     if a.upgrade then
         if (a.gain == nil) ~= (b.gain == nil) then return a.gain == nil end

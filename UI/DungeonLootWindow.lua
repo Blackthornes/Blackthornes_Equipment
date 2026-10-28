@@ -147,6 +147,9 @@ function DLUI.Where(dungeon)
     return L.Format("Door in %s. Levels %d to %d.", zone, dungeon.low, dungeon.high or dungeon.low)
 end
 
+-- The icon on a boss's own row, before anyone has seen it drop gear.
+DLUI.BOSS_ICON = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01"
+
 --- The foot's line: how many show and how many are upgrades.
 function DLUI.FootText(shown, upgrades)
     if upgrades == 1 then return L.Format("%d shown. 1 is an upgrade for you.", shown) end
@@ -332,7 +335,7 @@ function DLUI:BuildList()
         row.name:SetPoint("RIGHT", row.slot, "LEFT", -6, 0)
         row.name:SetWordWrap(true)
         row.onHover = function(self)
-            if not self.line then return end
+            if not (self.line and self.line.link) then return end
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             pcall(GameTooltip.SetHyperlink, GameTooltip, self.line.link)
             GameTooltip:Show()
@@ -540,8 +543,22 @@ function DLUI:FillList()
     for index, row in ipairs(self.rows) do
         local line = rows[self.offset + index]
         row.line = line
-        if line then
+        if line and line.bossOnly then
+            -- A boss the game lists whose drops nobody has seen yet.
+            row.icon.icon:SetTexture(DLUI.BOSS_ICON)
+            Theme.SetBorderColor(row.icon, "border")
+            row.icon:SetAlpha(0.55)
+            row.icon:Show()
+            row.name:SetTextColor(Theme.Unpack("muted"))
+            row.name:SetText(L["Loot not seen yet"])
+            row.slot:SetText("")
+            row.boss:SetText(line.boss)
+            row.gain:SetText("")
+            SetPicked(row, false)
+            row:Show()
+        elseif line then
             Theme.SetItemIcon(row.icon, line.link)
+            row.icon:SetAlpha(1)
             local name = line.name ~= "" and line.name or ns.DungeonLoot.NameOf(line.itemID)
             local r, g, b = Theme.QualityColor(line.link)
             if r then row.name:SetTextColor(r, g, b) else row.name:SetTextColor(Theme.Unpack("text")) end
@@ -561,8 +578,8 @@ function DLUI:FillList()
             row:Hide()
         end
     end
-    local shown = #self.data.rows
-    self.empty:SetText(shown == 0 and dungeon and self.data.waiting == 0
+    local shown = self.data.shown or #self.data.rows
+    self.empty:SetText(#self.data.rows == 0 and dungeon and self.data.waiting == 0
         and L["Nothing here matches. Try fewer picks."] or "")
     self.foot:SetText(DLUI.FootText(shown, self.data.upgrades))
     local door = dungeon and ns.DungeonLoot.Door(dungeon)

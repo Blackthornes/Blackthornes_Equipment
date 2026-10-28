@@ -39,6 +39,7 @@ Data\ForeverGoneQuests.lua
 Data\ForeverVendors.lua
 Data\DungeonQuests.lua
 Data\ForeverDungeonQuests.lua
+Data\ForeverBosses.lua
 Data\DungeonDoorSpots.lua
 Data\Crafts.lua
 Data\ForeverItems.lua
