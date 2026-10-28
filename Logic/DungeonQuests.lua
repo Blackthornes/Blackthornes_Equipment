@@ -368,6 +368,10 @@ function DQ:TitleLoaded(questID, success)
         DQ.titleRedraw = false
         local ui = ns.DungeonQuestsUI
         if ui and ui.Showing and ui:Showing() then DQ:Changed() end
+        -- The upgrade quest's steps and the finder's rows name quests the
+        -- game's way too, so they redraw if they are up.
+        if ns.QuestPanel and ns.QuestPanel.RefreshSoon then pcall(ns.QuestPanel.RefreshSoon, ns.QuestPanel) end
+        if ns.FinderUI and ns.FinderUI.Redraw then pcall(ns.FinderUI.Redraw, ns.FinderUI) end
     end)
 end
 

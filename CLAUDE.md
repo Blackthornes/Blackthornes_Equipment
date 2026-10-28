@@ -583,6 +583,27 @@ login and as each is learned. Before a release, `tools/forever_vendors.py
 (never by hand), the same way as the quests. Tested in
 `tools/test_learnmore.lua` and `tools/test_forever_vendors.py`.
 
+## Names in the client's language, and Show on Map
+
+A German player asked (2026-10-28, the owner said build it from a
+mockup): the upgrade quest's steps named quests and zones in English, and
+Show on Map's pin was hard to see. The data stays English for every
+comparison and saved text; only what is shown asks the game.
+`Waypoints.ShowZone(zone)` gives a zone's name from `C_Map.GetMapInfo`
+(by `Waypoints.ZONE_MAPS`) or a dungeon's from `GetRealZoneText` (by its
+`Sources.DUNGEONS` key), kept per name, the English on an English client
+or when the game won't say. Quest titles come from `DQ:TitleOf`.
+`Finder.ShownZone`/`ShownTitle` and `UpgradeQuest.ShownZone`/`ShownTitle`
+wrap them; `Finder:Describe(source, plain)` keeps the data's names when
+`plain` (Tracking's saved text). NPC and objective item names stay the
+data's. Show on Map (`Waypoints:Show`) also lays a big marker
+(`MapPins:Spotlight(place, icon, name)`): a gold ring with the upgrade's
+icon and its name under it, two waves going out for `WAVE_FOR` seconds
+then a breathing glow (`MapPins.SpotLook`; Effects Subtle a still glow,
+Off still), shown whatever "Map pins" says, gone when the game's pin is
+removed (`PinStillSet`) or another place is pinned. Tested in
+`tools/test_shownnames.lua`. Not yet seen in game.
+
 ## Sending vendors and quests to Blackthornes
 
 The owner said do it (2026-10-18), as Farmer's "Sending drops to

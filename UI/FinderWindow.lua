@@ -244,10 +244,18 @@ end
 --- The zone the character is in, named in green wherever `text` names it
 --- as a whole word (a player asked, 2026-10-09: easier to spot what is
 --- nearby).
-function FinderUI.MarkZone(text, zone)
-    if not (zone and text) or zone == "" then return text end
+local function MarkName(text, zone)
     local pattern = "%f[%w]" .. zone:gsub("[%%%^%$%(%)%.%[%]%*%+%-%?]", "%%%0") .. "%f[%W]"
     return (text:gsub(pattern, function(found) return Colored("good", found) end))
+end
+
+--- `zone` is the data's English name; the text may show it in the
+--- client's language, so that name is marked too.
+function FinderUI.MarkZone(text, zone)
+    if not (zone and text) or zone == "" then return text end
+    local shown = Finder.ShownZone and Finder.ShownZone(zone) or zone
+    if shown ~= zone and shown ~= "" then text = MarkName(text, shown) end
+    return MarkName(text, zone)
 end
 
 --- A source as one line: the coloured kind, then where, the zone the
@@ -296,7 +304,7 @@ local function ShowEnchantTooltip(row, line)
     local place = (source and (source.state == "learn" or source.state == "skill"))
         and Enchants:WhereToLearn(pick.recipeID)
     if place and place.name then
-        local where = place.zone and L.Format("Learn it from %s in %s", place.name, place.zone)
+        local where = place.zone and L.Format("Learn it from %s in %s", place.name, Finder.ShownZone(place.zone))
             or L.Format("Learn it from %s", place.name)
         GameTooltip:AddLine(where, r, g, b, true)
     end
@@ -580,7 +588,7 @@ function FinderUI:BuildRow(index)
         local okAlt, alt = pcall(function() return IsAltKeyDown() == true end)
         if okAlt and alt then
             local place = FinderUI.Place(pick)
-            if place and ns.Waypoints then ns.Waypoints:Show(place, place.name) end
+            if place and ns.Waypoints then ns.Waypoints:Show(place, place.name, Theme.ItemIcon(pick.link)) end
             return
         end
         if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
@@ -1646,9 +1654,9 @@ end
 function FinderUI.WhereOf(line)
     local source = line.sources and line.sources[1]
     if not source then return nil end
-    if source.kind == "dungeon" then return source.dungeon or source.zone end
+    if source.kind == "dungeon" then return Finder.ShownZone(source.dungeon or source.zone) end
     if source.kind == "craft" then return source.profession end
-    return source.zone
+    return Finder.ShownZone(source.zone)
 end
 
 --- A pick's name, for sorting.

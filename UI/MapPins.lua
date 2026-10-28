@@ -10,6 +10,12 @@
 -- map's canvas, the way Farmer draws its gathering markers, and every map
 -- call is in a pcall: a map this cannot read simply shows no pins. Switched
 -- off with the "Map pins" setting (`mapPins`).
+--
+-- Show on Map also lays a bigger marker on the spot (a player found the
+-- game's own pin hard to see, 2026-10-28): the upgrade's icon in a wide gold
+-- ring with two waves going out for a few seconds, then a slow glow, the
+-- place's name under it. Effects Subtle keeps a still glow, Off holds still.
+-- It goes when the game's pin is taken off or another place is shown.
 
 local _, ns = ...
 local L = ns.L
@@ -21,6 +27,12 @@ local Theme = ns.Theme
 local SIZE = 22
 local STEP = 0.2
 local ROUND = [[Interface\CharacterFrame\TempPortraitAlphaMask]]
+
+MapPins.SPOT_SIZE = 34
+MapPins.WAVE_FOR = 4       -- seconds the waves run after a Show on Map
+MapPins.WAVE_TIME = 1.6    -- seconds one wave takes to go out
+MapPins.WAVE_GROW = 2.6    -- how far a wave grows, times the ring
+MapPins.SPOT_ICON = [[Interface\Icons\INV_Misc_Map_01]]
 
 function MapPins:IsEnabled()
     return not (ns.db and ns.db.mapPins == false)
@@ -145,11 +157,159 @@ function MapPins:MakePin(canvas)
     return pin
 end
 
-function MapPins:Draw()
-    local view = self:IsEnabled() and self:View() or nil
+--- Lay the big marker on `place` ({ zone, x, y }), showing `icon` and the
+--- name `name` under it. Called by Waypoints:Show once the game's pin is set.
+function MapPins:Spotlight(place, icon, name)
+    if not (type(place) == "table" and place.zone and place.x and place.y) then
+        self.spotlight = nil
+    else
+        local shown = name or place.name
+        if not shown and ns.Waypoints and ns.Waypoints.ShowZone then shown = ns.Waypoints.ShowZone(place.zone) end
+        local now = type(_G.GetTime) == "function" and _G.GetTime() or 0
+        self.spotlight = { place = place, icon = icon or self.SPOT_ICON, name = shown, at = now }
+    end
+    self:OnTrackingChanged()
+end
 
-    local key = view and ("%d:%s:%s:%s:%d"):format(view.mapID, view.scale, view.width, view.height,
-        self.version or 0) or "none"
+--- The marker's look `age` seconds after it was laid, by the effects level:
+--- { glow, waves = { { size, alpha }, ... } }. Waves only on Full, for
+--- WAVE_FOR seconds; then the glow breathes. Subtle keeps a still glow.
+function MapPins.SpotLook(age, level)
+    local look = { glow = 0.5, waves = {} }
+    if level == "off" then return look end
+    if level ~= "full" then
+        look.glow = 0.55
+        return look
+    end
+    age = math.max(0, age or 0)
+    if age < MapPins.WAVE_FOR then
+        look.glow = 0.7
+        for wave = 0, 1 do
+            local start = wave * MapPins.WAVE_TIME / 2
+            if age >= start then
+                local t = ((age - start) % MapPins.WAVE_TIME) / MapPins.WAVE_TIME
+                look.waves[#look.waves + 1] = {
+                    size = MapPins.SPOT_SIZE * (1 + (MapPins.WAVE_GROW - 1) * t),
+                    alpha = 0.7 * (1 - t),
+                }
+            end
+        end
+    else
+        look.glow = 0.45 + 0.25 * math.sin((age - MapPins.WAVE_FOR) * 2.4)
+    end
+    return look
+end
+
+function MapPins:MakeSpot(canvas)
+    local size = self.SPOT_SIZE
+    local spot = CreateFrame("Frame", nil, canvas)
+    spot:SetSize(size, size)
+    pcall(spot.EnableMouse, spot, false)
+
+    local glow = spot:CreateTexture(nil, "BACKGROUND")
+    glow:SetPoint("CENTER")
+    glow:SetSize(size + 26, size + 26)
+    glow:SetTexture(ROUND)
+    glow:SetVertexColor(Theme.Unpack("accent"))
+    pcall(glow.SetBlendMode, glow, "ADD")
+    spot.glow = glow
+
+    spot.waves = {}
+    for index = 1, 2 do
+        local wave = spot:CreateTexture(nil, "BACKGROUND", nil, 1)
+        wave:SetPoint("CENTER")
+        wave:SetSize(size, size)
+        wave:SetTexture(ROUND)
+        wave:SetVertexColor(Theme.Unpack("accent"))
+        pcall(wave.SetBlendMode, wave, "ADD")
+        wave:Hide()
+        spot.waves[index] = wave
+    end
+
+    local ring = spot:CreateTexture(nil, "BORDER")
+    ring:SetPoint("CENTER")
+    ring:SetSize(size, size)
+    ring:SetTexture(ROUND)
+    ring:SetVertexColor(Theme.Unpack("accent"))
+
+    local icon = spot:CreateTexture(nil, "ARTWORK")
+    icon:SetPoint("CENTER")
+    icon:SetSize(size - 6, size - 6)
+    pcall(icon.SetMask, icon, ROUND)
+    spot.icon = icon
+
+    local label = Theme.CreateLabel(spot, "normal", "accent", "CENTER")
+    label:SetPoint("TOP", spot, "BOTTOM", 0, -3)
+    pcall(label.SetShadowOffset, label, 1, -1)
+    pcall(label.SetShadowColor, label, 0, 0, 0, 1)
+    spot.label = label
+
+    spot:SetScript("OnUpdate", function(frame) MapPins:Animate(frame) end)
+    return spot
+end
+
+--- One frame of the marker's motion; runs only while it shows.
+function MapPins:Animate(spot)
+    local light = self.spotlight
+    if not light then return end
+    local level = ns.Motion and ns.Motion.Level and ns.Motion.Level() or "full"
+    local now = type(_G.GetTime) == "function" and _G.GetTime() or 0
+    local look = MapPins.SpotLook(now - (light.at or now), level)
+    spot.glow:SetAlpha(look.glow)
+    for index, wave in ipairs(spot.waves) do
+        local shape = look.waves[index]
+        if shape then
+            wave:SetSize(shape.size, shape.size)
+            wave:SetAlpha(shape.alpha)
+            wave:Show()
+        else
+            wave:Hide()
+        end
+    end
+end
+
+--- Whether the game's own pin is still on the map. A client that won't say
+--- keeps the marker.
+function MapPins.PinStillSet()
+    local map = _G.C_Map
+    if type(map) ~= "table" or type(map.HasUserWaypoint) ~= "function" then return true end
+    local ok, has = pcall(map.HasUserWaypoint)
+    if not ok then return true end
+    return has == true
+end
+
+function MapPins:DrawSpot(view, zone, level, scale)
+    local light = self.spotlight
+    local place = light and light.place
+    if not (view and place and place.zone == zone) then
+        if self.spot then self.spot:Hide() end
+        return
+    end
+    local spot = self.spot
+    if not spot or spot.canvas ~= view.canvas then
+        if spot then spot:Hide() end
+        spot = self:MakeSpot(view.canvas)
+        spot.canvas = view.canvas
+        self.spot = spot
+    end
+    spot.icon:SetTexture(light.icon or self.SPOT_ICON)
+    spot.label:SetText(light.name or "")
+    spot:SetScale(scale)
+    spot:SetFrameLevel(level + 2)
+    spot:ClearAllPoints()
+    spot:SetPoint("CENTER", view.canvas, "TOPLEFT",
+        place.x / 100 * view.width / scale, -place.y / 100 * view.height / scale)
+    self:Animate(spot)
+    spot:Show()
+end
+
+function MapPins:Draw()
+    -- The big marker answers a click, so it shows with "Map pins" off too.
+    local enabled = self:IsEnabled()
+    local view = (enabled or self.spotlight) and self:View() or nil
+
+    local key = view and ("%d:%s:%s:%s:%d:%s"):format(view.mapID, view.scale, view.width, view.height,
+        self.version or 0, tostring(enabled)) or "none"
     if key == self.key then return end
     self.key = key
 
@@ -157,21 +317,27 @@ function MapPins:Draw()
     -- the upgrade quest's next place reads the quest log and bags, and a
     -- zoom changes the scale five times a second while the map is open, so
     -- a zoom only re-places the pins it has.
-    local huntsKey = view and ("%d:%s:%d"):format(view.mapID, tostring(view.name), self.version or 0) or "none"
+    local huntsKey = view and ("%d:%s:%d:%s"):format(view.mapID, tostring(view.name), self.version or 0,
+        tostring(enabled)) or "none"
     if huntsKey ~= self.huntsKey or not self.hunts then
         self.huntsKey = huntsKey
-        self.hunts = view and self:HuntsOn(ns.Waypoints and ns.Waypoints:DataZone(view.name, view.mapID)
-            or view.name) or {}
+        self.zone = view and (ns.Waypoints and ns.Waypoints:DataZone(view.name, view.mapID) or view.name)
+        self.hunts = view and enabled and self:HuntsOn(self.zone) or {}
     end
     local hunts = self.hunts
 
     self.pins = self.pins or {}
     for _, pin in ipairs(self.pins) do pin:Hide() end
-    if not view or #hunts == 0 then return end
+    if not view then
+        if self.spot then self.spot:Hide() end
+        return
+    end
 
     local okLevel, level = pcall(view.canvas.GetFrameLevel, view.canvas)
     level = (okLevel and Number(level) or 1) + 20
     local scale = 1 / view.scale
+    self:DrawSpot(view, self.zone, level, scale)
+    if #hunts == 0 then return end
 
     for index, hunt in ipairs(hunts) do
         local pin = self.pins[index]
@@ -204,6 +370,8 @@ function MapPins:Step(elapsed)
     self.since = (self.since or 0) + (elapsed or 0)
     if self.since < STEP then return end
     self.since = 0
+    -- The marker goes with the game's pin: taken off on the map, or reached.
+    if self.spotlight and not MapPins.PinStillSet() then self:Spotlight(nil) end
     local ok, err = pcall(self.Draw, self)
     if not ok then ns.Debug("map pins:", tostring(err)) end
 end

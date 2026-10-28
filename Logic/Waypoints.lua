@@ -126,6 +126,36 @@ local function Info(mapID)
     return Plain(name), Number(parent)
 end
 
+--- A zone or dungeon kept in English, shown in the client's language: the
+--- game's own name for its map, else for the dungeon. English clients and
+--- names the game won't give stay as they are. Only for showing; compare
+--- the English name.
+local shownZones = {}
+function Waypoints.ShowZone(zone)
+    if type(zone) ~= "string" or zone == "" or Waypoints.English() then return zone end
+    if shownZones[zone] then return shownZones[zone] end
+    local name
+    local mapID = Waypoints.ZONE_MAPS[zone]
+    if mapID then name = Info(mapID) end
+    if not name then
+        local dungeons = ns.Sources and ns.Sources.DUNGEONS
+        for key, dungeon in pairs(type(dungeons) == "table" and dungeons or {}) do
+            if type(dungeon) == "table" and dungeon[1] == zone then
+                local id = tonumber(key)
+                if id and type(_G.GetRealZoneText) == "function" then
+                    name = Plain(Read(_G.GetRealZoneText, id))
+                end
+                break
+            end
+        end
+    end
+    if type(name) == "string" and name ~= "" then
+        shownZones[zone] = name
+        return name
+    end
+    return zone
+end
+
 --- The highest map above the one the character is on.
 local function TopMap()
     local map = Map()
@@ -272,6 +302,13 @@ function Waypoints:Pin(place)
     if map and type(map.HasUserWaypoint) == "function" and Read(map.HasUserWaypoint) == false then
         return false, "noclient"
     end
+    -- A pin somewhere else takes the big marker off the old spot.
+    local pins = ns.MapPins
+    local light = pins and pins.spotlight
+    if light and light.place and (light.place.zone ~= place.zone or light.place.x ~= place.x
+        or light.place.y ~= place.y) then
+        pcall(pins.Spotlight, pins, nil)
+    end
     return true, mapID
 end
 
@@ -304,12 +341,16 @@ local WHY = {
 }
 
 --- Pin a place and say so in chat. `what` names it ("Corina Steele").
-function Waypoints:Show(place, what)
+--- `icon` (optional) is the texture the big marker on the map shows.
+function Waypoints:Show(place, what, icon)
     local ok, why = self:Pin(place)
     if ok then
         -- `why` is the map the pin went on, which can be the one around it.
         ns.Print(L.Format("pinned %s on your map: %s (%s, %s)", what or place.name or L["it"],
-            place.zone, place.x, place.y))
+            Waypoints.ShowZone(place.zone), place.x, place.y))
+        if ns.MapPins and ns.MapPins.Spotlight then
+            pcall(ns.MapPins.Spotlight, ns.MapPins, place, icon, what or place.name)
+        end
         -- Open the map on it, where the game lets an addon. Never in a
         -- fight: the game blocks an addon opening the map then. The pin
         -- stays, so the map shows it when opened after the fight.
@@ -326,7 +367,7 @@ function Waypoints:Show(place, what)
             -- A whole sentence of its own: no place would help.
             ns.Print(reason)
         elseif place and place.zone then
-            ns.Print(L.Format("can't pin %s (%s): %s", what or L["that"], place.zone, reason))
+            ns.Print(L.Format("can't pin %s (%s): %s", what or L["that"], Waypoints.ShowZone(place.zone), reason))
         else
             ns.Print(L.Format("can't pin %s: %s", what or L["that"], reason))
         end
