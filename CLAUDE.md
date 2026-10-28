@@ -909,6 +909,20 @@ last the session. Saved, account wide, never rename them:
 `dungeonLootRelPoint`, `dungeonLootX`, `dungeonLootY`. Tested in
 `tools/test_dungeonloot.lua`. Not yet seen in game.
 
+Every Forever boss in Dungeon Loot (the owner said yes, 2026-10-28):
+`Data/ForeverBosses.lua` (`ns.FOREVER_BOSSES[key] = { name, ... }` in the
+game's order, by `FOREVER_DUNGEON_PLACES`' key) is written by
+`tools/make_forever_bosses.py <tables folder> --build <build>` from the
+Forever client's DungeonEncounter table (normal difficulty, test bosses
+left out); never by hand, rerun when the tables are pulled again. A name
+the game shows otherwise in play goes in its `RENAMES` (Infurnus is
+Magmatus). `DL:Dungeons` lists a Forever dungeon with bosses but no drops
+seen, and with no chip or Upgrades Only picked `DL:Rows` adds a row for
+each boss no drop names yet (`bossOnly`, after the loot in the game's
+order, matched by `DL.BossKey`), shown with a dim skull and "Loot not
+seen yet"; the foot counts only the loot (`shown`). Tested in
+`tools/test_dungeonloot.lua` and `tools/test_make_forever_bosses.py`.
+
 ## The Quest log tab
 
 The owner asked (2026-10-10) for the game's quest tracker inside the

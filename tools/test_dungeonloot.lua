@@ -129,6 +129,43 @@ UI:Hide()
 suite.check("it wears the gear window's tabs, Dungeon Loot lit", UI.tabStrip == nil
     or UI.tabStrip.selected == "loot", UI.tabStrip and UI.tabStrip.selected)
 
+-- Forever's bosses from the game's tables: one nobody has seen drop gear
+-- still gets a row, after the loot, in the game's order.
+local realBosses = ns.FOREVER_BOSSES
+suite.check("the game's boss lists ship", type(realBosses) == "table" and #(realBosses["2999"] or {}) >= 5)
+local crypts
+for _, d in ipairs(DL:Dungeons({ level = 20, faction = "H" })) do
+    if d.key == "2875" then crypts = d end
+end
+suite.check("a Forever dungeon with no drops seen is listed", crypts ~= nil and crypts.name == "Karazhan Crypts")
+ns.FOREVER_BOSSES = { test_wc = { "Lord Test", "The Hidden Test", "Lady Test", "Silent Test" } }
+data = DL:Rows("test_wc", "all", "all", false)
+suite.check("bosses with no drops seen add rows", #data.rows == 7, #data.rows)
+suite.check("the foot still counts only the loot", data.shown == 5, data.shown)
+suite.check("they come after the loot, in the game's order",
+    data.rows[6].bossOnly and data.rows[6].boss == "The Hidden Test" and data.rows[7].boss == "Silent Test")
+suite.check("a boss with drops gets no extra row", data.rows[6].boss ~= "Lord Test")
+suite.check("\"The\" and case don't stop a match", DL.BossKey("The Hidden Test") == DL.BossKey("hidden test"))
+suite.check("a chip leaves them out", #DL:Rows("test_wc", "leather", "all", false).rows == 4)
+suite.check("so does Upgrades Only", #DL:Rows("test_wc", "all", "all", true).rows == 2)
+local sortedByBoss = DL.SortRows(data.rows, "boss")
+suite.check("sorting by boss puts them among the rest", sortedByBoss[1].boss == "Lady Test"
+    and sortedByBoss[#sortedByBoss].boss == "The Hidden Test")
+local sortedByGain = DL.SortRows(data.rows, "gain")
+suite.check("sorting by gain leaves them last", not sortedByGain[1].bossOnly)
+UI:Show()
+UI:Scroll(10)
+local bossRow
+for _, row in ipairs(UI.rows) do
+    if row:IsShown() and row.line and row.line.bossOnly then bossRow = row end
+end
+suite.check("the window shows a boss's own row", bossRow ~= nil
+    and bossRow.name:GetText() == "Loot not seen yet" and bossRow.gain:GetText() == "")
+suite.check("the window's foot counts the loot", UI.foot:GetText() == "5 shown. 2 are upgrades for you.",
+    UI.foot:GetText())
+UI:Hide()
+ns.FOREVER_BOSSES = realBosses
+
 ns.Items.Info, ns.Items.Stats, DL.NameOf = realInfo, realStats, realName
 ns.Finder.JudgeOnce, ns.Finder.IsCached, ns.Compare.WearableUpgrade, ns.Finder.Shown =
     realJudge, realCached, realWearable, realShown
