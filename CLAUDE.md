@@ -604,6 +604,21 @@ Off still), shown whatever "Map pins" says, gone when the game's pin is
 removed (`PinStillSet`) or another place is pinned. Tested in
 `tools/test_shownnames.lua`. Not yet seen in game.
 
+Forever turns the game's own pin down (a German player found nothing at
+the Crossroads, 2026-10-29; the owner said do all six fixes, in every
+addon), so the marker is ours every time and the game's pin is only a
+bonus: `Waypoints:Show` lays the marker first (`opts.gamePin` when the
+game's pin also went on), and with no game pin aims the quest arrow there
+(`QuestArrow:AimAtQuest(nil, ...)`, TomTom through it) and the marker goes
+when you stand within `QuestArrow.ARRIVED` of it (`MapPins:SpotlightDone`,
+`MapPins.Reached`, looked at every `ARRIVE_LOOK` seconds). A zone-only
+step lays it in the zone's middle as "Somewhere in ZONE" (`opts.area`,
+kept until the next Show). The upgrade quest panel, the quest log tab and
+a hunt's map pin all go through `Show`. `Waypoints.ZONE_MAPS` has
+Forever's own zones (Mount Hyjal, Zephras Isle, Riverglades,
+Shen'dralas), the same in Pets and Tradeskills. Tested in
+`tools/test_showonmap.lua` and `tools/test_hunts.lua`.
+
 ## Sending vendors and quests to Blackthornes
 
 The owner said do it (2026-10-18), as Farmer's "Sending drops to

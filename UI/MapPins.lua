@@ -15,7 +15,11 @@
 -- game's own pin hard to see, 2026-10-28): the upgrade's icon in a wide gold
 -- ring with two waves going out for a few seconds, then a slow glow, the
 -- place's name under it. Effects Subtle keeps a still glow, Off holds still.
--- It goes when the game's pin is taken off or another place is shown.
+-- It is our own frame, so it shows even when the game turns its pin down,
+-- as Forever does (2026-10-29). It goes when another place is shown, when
+-- the game's pin it came with is taken off, or, with no game pin, when you
+-- reach it (QuestArrow.ARRIVED). A zone-only marker ("Somewhere in ZONE")
+-- stays until the next Show on Map.
 
 local _, ns = ...
 local L = ns.L
@@ -152,21 +156,28 @@ function MapPins:MakePin(canvas)
     end)
     pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
     pin:SetScript("OnClick", function(self)
-        if self.hunt and ns.Waypoints then ns.Waypoints:Pin(self.hunt.place) end
+        local hunt = self.hunt
+        if hunt and ns.Waypoints then
+            ns.Waypoints:Show(hunt.place, hunt.place.name, Theme.ItemIcon(hunt.link))
+        end
     end)
     return pin
 end
 
 --- Lay the big marker on `place` ({ zone, x, y }), showing `icon` and the
---- name `name` under it. Called by Waypoints:Show once the game's pin is set.
-function MapPins:Spotlight(place, icon, name)
+--- name `name` under it. Called by Waypoints:Show. `opts.gamePin` says the
+--- game's own pin went on too, so the marker goes when that pin is taken
+--- off; `opts.area` marks a zone-only place, kept until the next Show.
+function MapPins:Spotlight(place, icon, name, opts)
     if not (type(place) == "table" and place.zone and place.x and place.y) then
         self.spotlight = nil
     else
         local shown = name or place.name
         if not shown and ns.Waypoints and ns.Waypoints.ShowZone then shown = ns.Waypoints.ShowZone(place.zone) end
         local now = type(_G.GetTime) == "function" and _G.GetTime() or 0
-        self.spotlight = { place = place, icon = icon or self.SPOT_ICON, name = shown, at = now }
+        opts = type(opts) == "table" and opts or {}
+        self.spotlight = { place = place, icon = icon or self.SPOT_ICON, name = shown, at = now,
+            gamePin = opts.gamePin and true or false, area = opts.area and true or false }
     end
     self:OnTrackingChanged()
 end
@@ -269,7 +280,7 @@ function MapPins:Animate(spot)
 end
 
 --- Whether the game's own pin is still on the map. A client that won't say
---- keeps the marker.
+--- keeps the marker. Asked only for a marker that came with a game pin.
 function MapPins.PinStillSet()
     local map = _G.C_Map
     if type(map) ~= "table" or type(map.HasUserWaypoint) ~= "function" then return true end
@@ -370,10 +381,47 @@ function MapPins:Step(elapsed)
     self.since = (self.since or 0) + (elapsed or 0)
     if self.since < STEP then return end
     self.since = 0
-    -- The marker goes with the game's pin: taken off on the map, or reached.
-    if self.spotlight and not MapPins.PinStillSet() then self:Spotlight(nil) end
+    if self:SpotlightDone(elapsed) then self:Spotlight(nil) end
     local ok, err = pcall(self.Draw, self)
     if not ok then ns.Debug("map pins:", tostring(err)) end
+end
+
+-- How often a marker with no game pin looks whether you reached it.
+MapPins.ARRIVE_LOOK = 1
+
+--- Is the big marker done with? One that came with the game's pin goes with
+--- it (taken off on the map, or reached). One without looks about once a
+--- second whether you stand within QuestArrow.ARRIVED yards of it. A
+--- zone-only marker stays.
+function MapPins:SpotlightDone(elapsed)
+    local light = self.spotlight
+    if not light then return false end
+    if light.gamePin then return not MapPins.PinStillSet() end
+    if light.area then return false end
+    self.arriveSince = (self.arriveSince or 0) + (elapsed or 0)
+    if self.arriveSince < MapPins.ARRIVE_LOOK then return false end
+    self.arriveSince = 0
+    return MapPins.Reached(light)
+end
+
+--- True when the player stands on the marker's spot.
+function MapPins.Reached(light)
+    local arrow, waypoints = ns.QuestArrow, ns.Waypoints
+    if not (arrow and arrow.Here and arrow.Offset and arrow.Measure and waypoints) then return false end
+    local ok, reached = pcall(function()
+        local place = light.place
+        local here = arrow:Here()
+        if not here then return false end
+        local mapID = light.map or waypoints:MapFor(place.zone)
+        if not mapID then return false end
+        light.map = mapID
+        light.target = light.target or {}
+        local north, west = arrow.Offset(here, mapID, place.x / 100, place.y / 100, light.target)
+        if not north then return false end
+        local yards = arrow.Measure(north, west)
+        return yards <= (arrow.ARRIVED or 15)
+    end)
+    return ok and reached or false
 end
 
 function MapPins:OnEnable()

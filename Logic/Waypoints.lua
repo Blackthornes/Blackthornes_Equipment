@@ -9,9 +9,10 @@
 -- another language names its maps in that language, so there Classic's map
 -- IDs stand in (Waypoints.ZONE_MAPS, below).
 --
--- The pin itself is the game's: C_Map.SetUserWaypoint, then tracked so the
--- game draws its arrow to it. Every call is inside a pcall; a client without
--- them simply cannot pin, and the finder says so.
+-- Show lays our own big marker on the map (UI/MapPins.lua) every time and
+-- tries the game's pin too (C_Map.SetUserWaypoint, then tracked so the game
+-- draws its arrow to it). Every call is inside a pcall. Forever turns the
+-- game's pin down, so then the quest arrow shows the way instead.
 
 local _, ns = ...
 
@@ -68,6 +69,9 @@ Waypoints.ZONE_MAPS = {
     ["Silithus"] = 1451, ["Winterspring"] = 1452, ["Stormwind City"] = 1453,
     ["Orgrimmar"] = 1454, ["Ironforge"] = 1455, ["Thunder Bluff"] = 1456,
     ["Darnassus"] = 1457, ["Undercity"] = 1458, ["Alterac Valley"] = 1459,
+    -- Forever's own zones (Farmer's Data/Zones.lua, from the client's tables).
+    ["Mount Hyjal"] = 2482, ["Zephras Isle"] = 2521, ["Riverglades"] = 2548,
+    ["Shen'dralas"] = 2652,
 }
 
 -- The game's map type for a zone (Enum.UIMapType.Zone).
@@ -340,37 +344,67 @@ local WHY = {
     nomap = L["the map for that zone could not be found"],
 }
 
---- Pin a place and say so in chat. `what` names it ("Corina Steele").
---- `icon` (optional) is the texture the big marker on the map shows.
+--- Show a place on the map and say so in chat. `what` names it ("Corina
+--- Steele"). `icon` (optional) is the texture the big marker shows.
+---
+--- The big marker (UI/MapPins.lua) is our own frame on the map, so it shows
+--- whatever the game does with its pin. The game's pin is only a bonus: on
+--- Forever the client turns it down (a player saw "Couldn't put a pin on the
+--- map." at the Crossroads, 2026-10-28), and then the quest arrow, or
+--- TomTom through it, points the way instead. A place with only a zone
+--- gets a "Somewhere in ZONE" marker in the zone's middle and the arrow.
+-- @return true when the place is on the map, false (and a chat line) when
+--         there is nowhere to show
 function Waypoints:Show(place, what, icon)
-    local ok, why = self:Pin(place)
-    if ok then
-        -- `why` is the map the pin went on, which can be the one around it.
-        ns.Print(L.Format("pinned %s on your map: %s (%s, %s)", what or place.name or L["it"],
-            Waypoints.ShowZone(place.zone), place.x, place.y))
-        if ns.MapPins and ns.MapPins.Spotlight then
-            pcall(ns.MapPins.Spotlight, ns.MapPins, place, icon, what or place.name)
+    if not (type(place) == "table" and place.zone) then
+        ns.Print(L.Format("can't pin %s: %s", what or L["that"], WHY.nospot))
+        return false
+    end
+    local zone = place.zone
+    local mapID = self:MapFor(zone)
+    if not mapID then
+        ns.Print(L.Format("can't pin %s (%s): %s", what or L["that"], Waypoints.ShowZone(zone), WHY.nomap))
+        return false
+    end
+
+    local exact = place.x ~= nil and place.y ~= nil
+    local gamePin, pinMap = false, nil
+    if exact then
+        local ok, why = self:Pin(place)
+        gamePin = ok and true or false
+        if ok then pinMap = Number(why) end
+    end
+
+    local name = what or place.name
+    local pins = ns.MapPins
+    if exact then
+        ns.Print(L.Format("pinned %s on your map: %s (%s, %s)", name or L["it"],
+            Waypoints.ShowZone(zone), place.x, place.y))
+        if pins and pins.Spotlight then
+            pcall(pins.Spotlight, pins, place, icon, name, { gamePin = gamePin })
         end
-        -- Open the map on it, where the game lets an addon. Never in a
-        -- fight: the game blocks an addon opening the map then. The pin
-        -- stays, so the map shows it when opened after the fight.
-        local inFight = false
-        if type(_G.InCombatLockdown) == "function" then
-            local okFight, fighting = pcall(_G.InCombatLockdown)
-            inFight = okFight and fighting == true
-        end
-        local mapID = Number(why) or self:MapFor(place.zone)
-        if not inFight and type(_G.OpenWorldMap) == "function" then pcall(_G.OpenWorldMap, mapID) end
     else
-        local reason = WHY[why] or why
-        if why == "noclient" then
-            -- A whole sentence of its own: no place would help.
-            ns.Print(reason)
-        elseif place and place.zone then
-            ns.Print(L.Format("can't pin %s (%s): %s", what or L["that"], Waypoints.ShowZone(place.zone), reason))
-        else
-            ns.Print(L.Format("can't pin %s: %s", what or L["that"], reason))
+        ns.Print(L.Format("head for %s.", Waypoints.ShowZone(zone)))
+        if pins and pins.Spotlight then
+            pcall(pins.Spotlight, pins, { zone = zone, x = 50, y = 50 }, icon,
+                L.Format("Somewhere in %s", Waypoints.ShowZone(zone)), { area = true })
         end
     end
-    return ok
+
+    -- No game pin, so no game arrow: the quest arrow points there instead.
+    if not gamePin and ns.QuestArrow and ns.QuestArrow.AimAtQuest then
+        pcall(ns.QuestArrow.AimAtQuest, ns.QuestArrow, nil, name or Waypoints.ShowZone(zone),
+            { zone = zone, x = place.x, y = place.y, name = name })
+    end
+
+    -- Open the map on it, where the game lets an addon. Never in a fight:
+    -- the game blocks an addon opening the map then. The marker stays, so
+    -- the map shows it when opened after the fight.
+    local inFight = false
+    if type(_G.InCombatLockdown) == "function" then
+        local okFight, fighting = pcall(_G.InCombatLockdown)
+        inFight = okFight and fighting == true
+    end
+    if not inFight and type(_G.OpenWorldMap) == "function" then pcall(_G.OpenWorldMap, pinMap or mapID) end
+    return true
 end
