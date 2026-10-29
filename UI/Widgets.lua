@@ -41,6 +41,7 @@ end
 function Motion.SetLevel(level)
     if not ns.db then return end
     ns.db.effectsLevel = (level == "subtle" or level == "off") and level or nil
+    if ns.SharedChoices then ns.SharedChoices:Changed("effects", ns.db.effectsLevel or "full") end
 end
 
 function Motion.EaseOut(p)
