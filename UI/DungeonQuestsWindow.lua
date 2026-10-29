@@ -125,7 +125,7 @@ function DQUI:Build()
     Theme.Fill(frame, "window")
     if ns.Titanforged then
         local trim = ns.Titanforged:Dress(frame, {
-            title = L["Dungeon Quests"],
+            title = "Blackthornes Equipment",
             portrait = true,
             close = function() DQUI:Hide() end,
         })

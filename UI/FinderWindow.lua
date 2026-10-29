@@ -134,7 +134,7 @@ local TABS = {
     { key = "enchant", text = L["Enchants"] },
     { key = "dungeons", text = L["Dungeon Quests"] },
     { key = "loot", text = L["Dungeon Loot"] },
-    { key = "settings", text = L["Settings"] },
+    { key = "settings", text = L["Settings"], right = true },
 }
 
 -- The tabs whose window stands in for this one, at the same spot: each
@@ -765,6 +765,8 @@ function FinderUI:HangTabs(frame, selected)
     end, { hanging = true, width = width })
     strip:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", TAB_INSET, 0)
     strip:Select(selected)
+    -- Kept on the frame, so FitTab keeps Settings flush right as it grows.
+    frame.blackthornesTabs = strip
     return strip
 end
 
@@ -814,8 +816,13 @@ end
 function FinderUI:FitTab(frame)
     if not frame then return end
     local width, height = self:TabSize()
+    local okWidth, oldWidth = pcall(frame.GetWidth, frame)
     frame:SetWidth(width)
     frame:SetHeight(height)
+    local strip = rawget(frame, "blackthornesTabs")
+    if strip and strip.SetRoom and not (okWidth and oldWidth == width) then
+        strip:SetRoom(width - TAB_INSET * 2)
+    end
     if Widgets.ApplySize and ns.db then Widgets.ApplySize(frame, ns.db[FinderUI.SCALE_KEY]) end
 end
 

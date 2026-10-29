@@ -173,7 +173,7 @@ function DLUI:Build()
     Theme.Fill(frame, "window")
     if ns.Titanforged then
         local trim = ns.Titanforged:Dress(frame, {
-            title = L["Dungeon Loot"],
+            title = "Blackthornes Equipment",
             portrait = true,
             close = function() DLUI:Hide() end,
         })
