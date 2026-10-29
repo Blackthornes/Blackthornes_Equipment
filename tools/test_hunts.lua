@@ -161,13 +161,23 @@ suite.check("in a fight it still pins", ns.Waypoints:Show(place, "it") == true a
 suite.check("but leaves the map closed", opened == nil)
 _G.InCombatLockdown = nil
 
--- A pin the game turns down is never called pinned.
+-- A pin the game turns down (Forever does): our own marker still goes on
+-- the spot, and the quest arrow shows the way instead.
 _G.C_Map.HasUserWaypoint = function() return false end
 local before = #env.chat
-suite.check("a pin the game turns down fails", ns.Waypoints:Show(place, "it") == false)
+local arrowWas = ns.db.questArrow
+ns.QuestArrow.free = nil
+suite.check("a pin the game turns down still shows", ns.Waypoints:Show(place, "it") == true)
 local said = table.concat(env.chat, "\n", before + 1)
-suite.check("and says it couldn't, never pinned", said:find("Couldn't put a pin on the map.", 1, true) ~= nil
-    and said:find("pinned", 1, true) == nil, said)
+suite.check("and never says it couldn't", said:find("Couldn't put a pin on the map.", 1, true) == nil, said)
+local light = ns.MapPins.spotlight
+suite.check("our marker is on the spot", light and light.place == place and light.gamePin == false)
+local free = ns.QuestArrow.free
+suite.check("and the arrow points there", free and free.place.zone == "Elwynn Forest"
+    and free.place.x == 42.1 and free.place.y == 65.9)
+suite.check("the marker stays with no game pin", ns.MapPins:SpotlightDone(0.2) == false)
+ns.QuestArrow.free, ns.db.questArrow = nil, arrowWas
+ns.MapPins:Spotlight(nil)
 _G.C_Map.HasUserWaypoint = function() return waypoint ~= nil end
 
 -- A map that takes no pin: the map around it, the spot moved over.
