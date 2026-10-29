@@ -102,6 +102,7 @@ UI\QuestRewards.lua
 UI\LootRolls.lua
 UI\UpgradeChat.lua
 UI\Toast.lua
+UI\SeeThrough.lua
 UI\TrackerPanel.lua
 UI\MapPins.lua
 UI\SlotUpgrades.lua

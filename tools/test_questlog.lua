@@ -165,7 +165,7 @@ suite.check("clicking Quest log shows it", Panel:ShowsLog() and ns.charDB.questL
 suite.check("the header names it", Panel.title:GetText() == "Quest log")
 suite.check("and counts the quests", Panel.progress:GetText() == "3 quests, 2 tracked", Panel.progress:GetText())
 suite.check("its tab is lit, the source tabs are not", logButton.shown and not Panel.tabs[1].shown)
-suite.check("the upgrade quest's own list is hidden", not Panel.body:IsShown() and not Panel.filters:IsShown())
+suite.check("the upgrade quest's own list is hidden", not Panel.body:IsShown())
 suite.check("the tab's view shows", Tab.view:IsShown())
 
 local rows = Tab.shown

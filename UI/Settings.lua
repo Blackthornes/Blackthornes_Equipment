@@ -900,6 +900,25 @@ function SettingsUI:BuildGeneral()
         ns.WhatsNew:SetMotionOn(checked)
     end, true)
     controls.whatsNewMotion:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    -- The two panels that stay up while you play let the world show through
+    -- (UI/SeeThrough.lua, card 14 of the unified look): Off unless picked.
+    pages:Section("general", 2, L["TRANSPARENT"])
+    controls.seeThrough = {}
+    local see = ns.SeeThrough
+    for _, spec in ipairs({ { "hunts", L["Upgrade Hunts:"] }, { "quest", L["Upgrade Quest:"] } }) do
+        local id = spec[1]
+        local row = pages:Row("general", 2, spec[2], nil)
+        local names = see and see.Names() or { [0] = L["Off"] }
+        local choice = Widgets.CreateChoice(row, {
+            min = 0, max = see and #see.LEVELS or 0, step = 1, value = see and see:Level(id) or 0,
+            format = function(level) return names[level] end,
+            onChange = function(level) if see then see:Set(id, level) end end,
+        })
+        ns.SettingsPages.FitStepper(choice, names)
+        choice:SetPoint("TOPLEFT", CONTROL_X, -2)
+        controls.seeThrough[id] = choice
+    end
 end
 
 -- The window styles, in the order the stepper steps through them.
@@ -1016,6 +1035,9 @@ function SettingsUI:Refresh()
     controls.windowStyle:Sync()
     controls.combineButtons:SetChecked(not ns.SharedMinimap or ns.SharedMinimap.Combined())
     controls.effects:SetValue(controls.effectsIndex(), true)
+    if ns.SeeThrough then
+        for id, choice in pairs(controls.seeThrough or {}) do choice:SetValue(ns.SeeThrough:Level(id), true) end
+    end
     controls.windowScale:Sync()
     self.pages:Refresh()
 end
