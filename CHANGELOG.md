@@ -4,6 +4,15 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.1.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game fully after updating (`/reload` is not enough).
+
+- **Minimap button:** One minimap button now covers every Blackthornes addon you have. Click it to pick one. Turn it off with Combine Addon Buttons on the General page.
+- **Show on Map:** Show on Map puts a bigger gold marker with the upgrade's name on the spot.
+- **Names:** Quest and zone names show in your game's language.
+- **Bug fixes:** several bug fixes for text that wrapped over the line under it.
+
 ## 1.0.1
 
 For WoW: Forever (interface 16001). Files were added and the TOC changed, so

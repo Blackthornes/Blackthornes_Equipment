@@ -23,6 +23,16 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.1.0
+
+- One minimap button now covers every Blackthornes addon you have. Click it to pick one. Turn it off with Combine Addon Buttons on the General page.
+- Show on Map puts a bigger gold marker with the upgrade's name on the spot.
+- Quest and zone names show in your game's language.
+
+Fixes and changes:
+
+- Several bug fixes for text that wrapped over the line under it.
+
 ## 1.0.1
 
 - The Take reward button has the gold plaque look.
