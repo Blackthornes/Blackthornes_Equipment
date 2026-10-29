@@ -472,7 +472,7 @@ function FinderUI:BuildRow(index)
 
     -- Queue it, on crafted gear while Tradeskills is loaded: sends the craft,
     -- or what to buy, to Tradeskills' queue (Logic/TradeskillsQueue.lua).
-    local queueIt = Widgets.CreateButton(row, L["Queue it"], function(self)
+    local queueIt = Widgets.CreateButton(row, L["Queue It"], function(self)
         local enchant = rawget(self, "enchant")
         if enchant and ns.Enchants then
             ns.Enchants:Queue(enchant.pick.recipeID)
@@ -490,7 +490,7 @@ function FinderUI:BuildRow(index)
         if enchant and ns.Enchants then
             local source = enchant.source
             GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:AddLine(L["Queue it"], Theme.Unpack("accent"))
+            GameTooltip:AddLine(L["Queue It"], Theme.Unpack("accent"))
             local known = source and (source.state == "known" or source.state == "alt")
             local text = known and L["Puts the enchant in Tradeskills' queue."]
                 or (source and source.kit and source.state == "other") and L["Puts it on Tradeskills' shopping list."]
@@ -513,7 +513,7 @@ function FinderUI:BuildRow(index)
 
     -- Show the way, on enchants still to learn: pins the trainer or vendor
     -- through Tradeskills.
-    local showWay = Widgets.CreateButton(row, L["Show the way"], function(self)
+    local showWay = Widgets.CreateButton(row, L["Show the Way"], function(self)
         local enchant = rawget(self, "enchant")
         if not (enchant and ns.Enchants) then return end
         if not ns.Enchants:ShowTheWay(enchant.pick.recipeID) then
@@ -525,7 +525,7 @@ function FinderUI:BuildRow(index)
     row.showWay = showWay
 
     -- Put it on, on an upgrade in your bags: the gold button of the row.
-    local putOn = Widgets.CreateButton(row, L["Put it on"], function(self)
+    local putOn = Widgets.CreateButton(row, L["Put It On"], function(self)
         local owned = rawget(self, "owned")
         if owned and ns.Wear then ns.Wear:PutOn(owned.link) end
     end, { width = 78, height = 20, primary = true })
@@ -2088,7 +2088,7 @@ function FinderUI:FillEnchantRow(row, line)
     local used = 0
     if Enchants:CanQueue() then
         row.queueIt.enchant = line
-        row.queueIt:SetText(L["Queue it"])
+        row.queueIt:SetText(L["Queue It"])
         row.queueIt:Show()
         used = math.max(QUEUE_WIDTH, row.queueIt:GetWidth() or 0) + 8
     else

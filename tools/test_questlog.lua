@@ -253,7 +253,7 @@ local function Labels(quest)
     for _, item in ipairs(Tab:MenuFor(quest)) do list[#list + 1] = item[1] end
     return table.concat(list, ", ")
 end
-suite.check("the menu, alone", Labels(night) == "Show on map, Point the arrow here, Untrack, Open in quest log, Abandon quest",
+suite.check("the menu, alone", Labels(night) == "Show on Map, Point the arrow here, Untrack, Open in quest log, Abandon quest",
     Labels(night))
 _G.GetNumGroupMembers = function() return 2 end
 suite.check("Share shows in a group", Labels(night):find("Share with party", 1, true))

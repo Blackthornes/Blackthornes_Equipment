@@ -731,7 +731,7 @@ function QuestPanel:Build()
 
     -- Queue it, at the top right of a crafted upgrade while Tradeskills is
     -- loaded (Logic/TradeskillsQueue.lua).
-    local queueIt = Widgets.CreateButton(item, L["Queue it"], function()
+    local queueIt = Widgets.CreateButton(item, L["Queue It"], function()
         local quest = ns.UpgradeQuest and ns.UpgradeQuest:Current()
         if quest and quest.source and ns.TradeskillsQueue then
             ns.TradeskillsQueue:Queue(quest.source)
@@ -791,9 +791,9 @@ function QuestPanel:Build()
     self.steps = {}
     for index = 1, MOST_STEPS do self.steps[index] = self:BuildStep(index) end
 
-    local map = Widgets.CreateButton(body, L["Show on map"], function() QuestPanel:ShowOnMap() end,
+    local map = Widgets.CreateButton(body, L["Show on Map"], function() QuestPanel:ShowOnMap() end,
         { width = 96, height = 22, primary = true })
-    Explain(map, L["Show on map"], L["Pins the next place to go on your map."])
+    Explain(map, L["Show on Map"], L["Pins the next place to go on your map."])
     self.mapButton = map
 
     -- The quest arrow: lit green while it is up.
