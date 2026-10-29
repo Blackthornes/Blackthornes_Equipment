@@ -1397,8 +1397,8 @@ function FinderUI:BuildFilters()
     local x = PADDING
     for _, entry in ipairs(SOURCE_BOXES) do
         local kind = entry[1]
-        local chip = Widgets.CreateChip(frame, entry[2], function(self)
-            FinderUI:SetSource(kind, not self:IsSelected())
+        local chip = Widgets.CreateChip(frame, entry[2], function(picked)
+            FinderUI:SetSource(kind, not picked:IsSelected())
         end, { selected = self:SourceOn(kind), height = 20 })
         -- The tick boxes' names, so every caller reads a chip the same way.
         chip.kind = kind
