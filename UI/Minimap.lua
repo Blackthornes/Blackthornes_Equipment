@@ -213,14 +213,15 @@ function MinimapButton:JoinShared()
         shift = function() if ns.UpgradeQuest then ns.UpgradeQuest:Toggle() end end,
         db = function() return ns.db end,
     })
-    -- And the one Blackthornes window (UI/SharedWindow.lua). Until this
-    -- addon's pages move in, its rail button opens its own window.
+    -- And for the one Blackthornes window (UI/SharedWindow.lua).
     if ns.SharedWindow then
         ns.SharedWindow:Join({
             key = "equipment", order = 3, name = "Equipment", icon = ICON,
             open = function() MinimapButton:Open() end,
             settings = function() if ns.SettingsUI then ns.SettingsUI:Toggle() end end,
             db = function() return ns.db end,
+            -- Every tab shows in it (UI/FinderWindow.lua).
+            host = ns.FinderUI and ns.FinderUI.host or nil,
         })
     end
 end

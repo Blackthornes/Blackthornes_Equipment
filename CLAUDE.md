@@ -1239,6 +1239,17 @@ close event for the same place changes nothing. At the auction house only
 Tradeskills is needed (`PLACES.auction.only`). Tested in
 `tools/test_sharedwindow.lua`. Not yet seen in game.
 
+Equipment's tabs have moved in (2026-10-30): `UI/FinderWindow.lua` is the
+host (`FinderUI.host`, given to `SharedWindow:Join` in `UI/Minimap.lua`).
+With One Window on, opening the gear window, Dungeon Quests, Dungeon Loot
+or Settings opens the one window on Equipment (`FinderUI:Route`), each tab
+laid into its area bare of its own rim and grip, its tabs hung under the
+one window. A tab hiding only closes the one window when it is an
+Equipment tab in the area and no tab change or swap is under way
+(`FinderUI:Closed`, `switching`, `leaving`), so picking another addon on
+the rail never drops Equipment back to its own window. "One Window:" sits
+on the General page. Tested in `tools/test_onewindow.lua`.
+
 ## The shared minimap button
 
 A player asked, the owner said build it from a mockup (2026-10-28), in all
