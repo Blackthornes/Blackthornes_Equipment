@@ -90,6 +90,7 @@ UI\WhatsNew.lua
 UI\TooltipShift.lua
 UI\SettingsPages.lua
 UI\SharedMinimap.lua
+UI\SharedWindow.lua
 UI\Minimap.lua
 UI\Settings.lua
 UI\WeightsWindow.lua
