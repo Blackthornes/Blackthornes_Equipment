@@ -33,7 +33,7 @@ tool prints a note for a shipped line that reads like an advert.
 
 Fixes and changes:
 
-- Windows use the same look as the other Blackthornes addons.
+- Various bug fixes for Equipment.
 
 ## 1.1.0
 

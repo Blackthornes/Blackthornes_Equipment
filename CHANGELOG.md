@@ -13,7 +13,7 @@ For WoW: Forever (interface 16001). Files were added, so restart the game fully 
 - **Upgrade quest:** The Upgrade quest panel keeps its options behind one Options button.
 - **Transparent:** You can make Upgrade Hunts and the Upgrade quest see-through on the General page. It starts Off.
 - **Show the Way:** Show the Way now does the job Follow did.
-- **Look:** Windows use the same look as the other Blackthornes addons.
+- **Bug fixes:** Various bug fixes for Equipment.
 
 ## 1.1.0
 
