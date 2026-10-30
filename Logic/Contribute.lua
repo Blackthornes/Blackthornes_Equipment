@@ -53,7 +53,7 @@ local Comm = ns.Comm
 -- here, never shown to players. Empty sends nothing. The same two as
 -- Farmer's and Tradeskills' lists; change all three together.
 Contribute.RECIPIENTS = {
-    "Blackthornes Farms",
+    "Blackthornes Farmer",
     "Blackthornes Wither",
     "Blackthornes Tradeskills",
 }
