@@ -5,6 +5,9 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.3.0", lines = {
+        "All your Blackthornes addons share one window. A strip down the left has a button for each addon you have, and the tabs of the one you pick sit beside it. At the auction house, mailbox, vendor and trainer it sits next to the game's window, and it goes back when you close that one. Turn it off with One Window on the General page.",
+    } },
     { version = "1.2.0", lines = {
         "Gear in the finder takes one line, so you see more at once. Judge Gear As is at the top.",
         "Upgrade Hunts has Hunts and Done tabs.",
@@ -16,8 +19,5 @@ ns.WHATS_NEW = {
         "One minimap button now covers every Blackthornes addon you have. Click it to pick one. Turn it off with Combine Addon Buttons on the General page.",
         "Show on Map puts a bigger gold marker with the upgrade's name on the spot.",
         "Quest and zone names show in your game's language.",
-    } },
-    { version = "1.0.1", lines = {
-        "The Take reward button has the gold plaque look.",
     } },
 }
