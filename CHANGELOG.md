@@ -4,6 +4,17 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.2.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game fully after updating (`/reload` is not enough).
+
+- **Finder:** Gear in the finder takes one line, so you see more at once. Judge Gear As is at the top.
+- **Upgrade Hunts:** Upgrade Hunts has Hunts and Done tabs.
+- **Upgrade quest:** The Upgrade quest panel keeps its options behind one Options button.
+- **Transparent:** You can make Upgrade Hunts and the Upgrade quest see-through on the General page. It starts Off.
+- **Show the Way:** Show the Way now does the job Follow did.
+- **Bug fixes:** Various bug fixes for Equipment.
+
 ## 1.1.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game fully after updating (`/reload` is not enough).
