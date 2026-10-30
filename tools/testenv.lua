@@ -62,6 +62,8 @@ local function Stub(fields)
     function frame:GetTop() return self._top end
     function frame:GetFrameLevel() return rawget(self, "_frameLevel") or 1 end
     function frame:SetFrameLevel(value) self._frameLevel = value end
+    function frame:SetParent(parent) self._parent = parent end
+    function frame:GetParent() return rawget(self, "_parent") end
 
     -- Recorded so a test can check where something was anchored.
     function frame:SetPoint(...) self._point = { ... } end
@@ -320,6 +322,9 @@ function env.Load(locale)
     -- ADDON_LOADED installs saved variables; tests that skip the event loop
     -- still need ns.db to exist.
     ns.LoadSavedVariables()
+    -- "One Window:" is on unless unticked; suites test Equipment's own windows
+    -- unless they tick it (test_onewindow.lua checks the default).
+    if ns.db then ns.db.oneWindow = false end
 
     env.ns = ns
     return ns
