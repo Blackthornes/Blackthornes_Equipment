@@ -25,15 +25,15 @@ tool prints a note for a shipped line that reads like an advert.
 
 ## 1.2.0
 
-- Finder rows take one line and the filters sit on one row. Judge Gear As is a drop-down in the finder header.
+- Gear in the finder takes one line, so you see more at once. Judge Gear As is at the top.
 - Upgrade Hunts has Hunts and Done tabs.
-- The Upgrade quest panel keeps its tick boxes and Quest level behind one Options button.
-- Upgrade Hunts and Upgrade Quest can be see-through. Pick it on the General page. It starts Off.
-- Show the Way also does what Follow did.
+- The Upgrade quest panel keeps its options behind one Options button.
+- You can make Upgrade Hunts and the Upgrade quest see-through on the General page. It starts Off.
+- Show the Way now does the job Follow did.
 
 Fixes and changes:
 
-- Several screens use the shared look and the same grey colors.
+- Windows use the same look as the other Blackthornes addons.
 
 ## 1.1.0
 
