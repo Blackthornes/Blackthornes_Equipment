@@ -4,6 +4,17 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.2.0
+
+For WoW: Forever (interface 16001). Files were added, so restart the game fully after updating (`/reload` is not enough).
+
+- **Finder:** Finder rows take one line and the filters sit on one row. Judge Gear As is a drop-down in the finder header.
+- **Upgrade Hunts:** Upgrade Hunts has Hunts and Done tabs, and a gold fold gem.
+- **Upgrade quest:** The Upgrade quest panel folds with the gold gem. Its tick boxes and Quest level are behind one Options button.
+- **Transparent:** Upgrade Hunts and Upgrade Quest can be see-through. Pick it on the General page. It starts Off.
+- **Show the Way:** Show the Way also does what Follow did.
+- **Look:** Several screens use the shared look and the same grey colors.
+
 ## 1.1.0
 
 For WoW: Forever (interface 16001). Files were added, so restart the game fully after updating (`/reload` is not enough).

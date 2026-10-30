@@ -23,6 +23,18 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.2.0
+
+- Finder rows take one line and the filters sit on one row. Judge Gear As is a drop-down in the finder header.
+- Upgrade Hunts has Hunts and Done tabs, and a gold fold gem.
+- The Upgrade quest panel folds with the gold gem. Its tick boxes and Quest level are behind one Options button.
+- Upgrade Hunts and Upgrade Quest can be see-through. Pick it on the General page. It starts Off.
+- Show the Way also does what Follow did.
+
+Fixes and changes:
+
+- Several screens use the shared look and the same grey colors.
+
 ## 1.1.0
 
 - One minimap button now covers every Blackthornes addon you have. Click it to pick one. Turn it off with Combine Addon Buttons on the General page.
