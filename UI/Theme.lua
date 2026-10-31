@@ -515,8 +515,18 @@ function Theme.SetItemIcon(holder, item)
 
     holder.icon:SetTexture(Theme.ItemIcon(item) or FALLBACK_ICON)
     local r, g, b = Theme.QualityColor(item)
+    local alpha = 0.9
+    if not r and ns.ItemLook then
+        -- Grey and white get the same ring, softer, as in every addon's
+        -- lists (UI/ItemLook.lua).
+        local quality = ns.ItemLook.QualityOf(item)
+        if quality == 0 or quality == 1 then
+            r, g, b = ns.ItemLook.Color(quality)
+            alpha = ns.ItemLook.PLAIN_ALPHA
+        end
+    end
     if r then
-        for _, edge in ipairs(holder.borderTextures or {}) do edge:SetColorTexture(r, g, b, 0.9) end
+        for _, edge in ipairs(holder.borderTextures or {}) do edge:SetColorTexture(r, g, b, alpha) end
     else
         Theme.SetBorderColor(holder, "border")
     end
