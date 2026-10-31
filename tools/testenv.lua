@@ -78,6 +78,8 @@ local function Stub(fields)
 
     function frame:SetMinMaxValues(low, high) self._min, self._max = low, high end
     function frame:SetValue(value) self._value = value end
+    function frame:SetFrameStrata(value) self._strata = value end
+    function frame:GetFrameStrata() return rawget(self, "_strata") or "MEDIUM" end
     function frame:GetValue() return self._value or 0 end
 
     frame._scripts = frame._scripts or {}
