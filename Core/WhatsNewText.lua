@@ -5,6 +5,10 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.4.0", lines = {
+        "The one window now stays next to the auction house.",
+        "Item icons get a soft ring for their quality.",
+    } },
     { version = "1.3.0", lines = {
         "All your Blackthornes addons share one window. A strip down the left has a button for each addon you have, and the tabs of the one you pick sit beside it. At the auction house, mailbox, vendor and trainer it sits next to the game's window, and it goes back when you close that one. Turn it off with One Window on the General page.",
     } },
@@ -14,10 +18,5 @@ ns.WHATS_NEW = {
         "The Upgrade quest panel keeps its options behind one Options button.",
         "You can make Upgrade Hunts and the Upgrade quest see-through on the General page. It starts Off.",
         "Show the Way now does the job Follow did.",
-    } },
-    { version = "1.1.0", lines = {
-        "One minimap button now covers every Blackthornes addon you have. Click it to pick one. Turn it off with Combine Addon Buttons on the General page.",
-        "Show on Map puts a bigger gold marker with the upgrade's name on the spot.",
-        "Quest and zone names show in your game's language.",
     } },
 }
