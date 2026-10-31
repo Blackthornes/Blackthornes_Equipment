@@ -254,7 +254,10 @@ function SettingsUI:Build()
     pages.Fit = function(page)
         fit(page)
         if ns.FinderUI then
-            ns.FinderUI:Need("settings", frame:GetWidth(), frame:GetHeight())
+            -- What the pages asked for: laid into the one window the frame
+            -- fills the area, so its own size would only say how big that is.
+            local need = page.need or { frame:GetWidth(), frame:GetHeight() }
+            ns.FinderUI:Need("settings", need[1], need[2])
             ns.FinderUI:FitTab(frame)
         end
     end
