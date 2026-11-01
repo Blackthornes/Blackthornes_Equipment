@@ -2722,6 +2722,7 @@ function FinderUI:Grow()
     if okH and type(areaH) == "number" and areaH > 0 and areaH < height then
         one:SetHeight(one:GetHeight() + (height - areaH))
     end
+    if ns.SharedWindow and ns.SharedWindow.Fit then ns.SharedWindow.Fit(one) end
 end
 
 --- The tabs go into the one window: called by it (host.enter).
