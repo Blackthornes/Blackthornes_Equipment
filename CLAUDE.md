@@ -1841,3 +1841,34 @@ same.
   compared, concatenated or formatted, so read client values inside a pcall.
   Registering an event the client does not know raises too, which is why
   `ns.RegisterEvent` wraps it.
+
+## Big files (read these in pieces)
+
+Reading a huge file whole fills the context and the thread dies. Sizes are
+from 2026-11-03 and only grow. Find more with `find . -name '*.lua' | xargs wc -lc | sort -n`.
+
+- Never read a file below whole. Use `grep -n` to find the spot, then read
+  about 150 lines at a time (Read with `offset` and `limit`).
+- Never read data tables or locale files whole. Grep them for one key.
+- CLAUDE.md is big too. Grep it for a heading, then read that part only.
+- Generated files (`Data/`) are written by their `tools/` script. Never edit
+  them by hand, and never open them to see what they hold.
+
+Data tables (generated, grep only): `Data/Sources.lua` 6265 lines, 491 KB; `Data/QuestEnds.lua` 1857 lines, 239 KB; `Data/Crafts.lua` 1675 lines, 131 KB; `Data/ClassSpells.lua` 1538 lines, 87 KB.
+
+Locale (grep one key, never read): `Locale/ruRU` 1145 lines, 97 KB; `frFR`, `deDE`, `esES`, `zhCN` are each about 1146 lines, 71 to 78 KB.
+
+Code:
+- `UI/FinderWindow.lua` 2788 lines, 113 KB: the gear window and its tabs.
+- `Logic/UpgradeQuest.lua` 1926 lines, 83 KB: the upgrade quest.
+- `UI/Widgets.lua` 1683 lines, 64 KB: shared widgets.
+- `UI/QuestPanel.lua` 1542 lines, 62 KB: quest panel.
+- `Logic/Weights.lua` 1484 lines, 62 KB: stat weights.
+- `UI/Settings.lua` 1267 lines, 55 KB: Settings pages.
+- `Logic/Finder.lua` 1256 lines, 52 KB: upgrade finder.
+- `UI/QuestLogTab.lua` 1136 lines, 45 KB: quest log tab.
+- `Logic/ClassTraining.lua` 1017 lines, 41 KB: class training.
+
+Over 800 lines or 30 KB, same rule: `UI/WhatsNew.lua`, `UI/SharedWindow.lua`, `UI/SettingsPages.lua`, `Logic/QuestArrow.lua`, `Logic/Travel.lua`, `CHANGELOG.md` (926 lines).
+
+The same file lives in several addons: `UI/SharedWindow.lua`, `UI/WhatsNew.lua`, `UI/SettingsPages.lua`, `Logic/Travel.lua`, `Logic/ClassTraining.lua`. A fix to one belongs in all.
