@@ -116,6 +116,14 @@ suite.check("rings and shields are not armor kinds",
 -- The other side and another realm are never picked, even for an empty slot.
 ns.db.characterGear["Player-2"] = nil
 suite.check("other realms and sides are left out", Alts:BestFor("item:4") == nil)
+-- A second account on one realm: Forever names another server for it
+-- ("Here Realm 3" against "Here"), and it is still this realm (2026-11-05).
+ns.db.characterGear["Player-9"] = { class = "ROGUE", level = 20, realm = "Here Realm 3", faction = "Horde",
+    worn = { [5] = "item:11" } }
+local other = Alts:BestFor("item:4")
+suite.check("the other account's server counts as this realm", other and other.key == "Player-9",
+    other and other.key)
+ns.db.characterGear["Player-9"] = nil
 
 -- Its own note never counts.
 ns.db.characterGear["Player-5"] = { class = "HUNTER", level = 20, realm = "Here", faction = "Horde",

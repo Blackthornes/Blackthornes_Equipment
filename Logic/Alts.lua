@@ -31,6 +31,18 @@ local _, ns = ...
 local Alts = ns.NewModule("Alts")
 local L = ns.L
 
+--- One key for a realm name, the same on every account of one player.
+--- Forever's GetRealmName names the server behind the realm, and each of a
+--- player's accounts can sit on a different one ("CAMWOW US2 Realm 7 PvE"
+--- on one, "CAMWOW US2 Realm 3 PvE" on the other), so the key drops spaces,
+--- case and the "Realm N" part (as Tradeskills' RealmKey does).
+local function RealmKey(name)
+    if type(name) ~= "string" or name == "" or name == "?" then return nil end
+    local key = name:lower():gsub("%s", ""):gsub("realm%d+", "")
+    if key == "" then return nil end
+    return key
+end
+
 local Items = ns.Items
 local Weights = ns.Weights
 local Compare = ns.Compare
@@ -296,7 +308,7 @@ function Alts:BetterElsewhere()
                 for _, entry in ipairs(type(note.bank) == "table" and note.bank or {}) do
                     if type(entry) == "table" and entry.link then Consider(entry.link, "bank") end
                 end
-            elseif (not realm or not note.realm or note.realm == realm)
+            elseif (not RealmKey(realm) or not RealmKey(note.realm) or RealmKey(note.realm) == RealmKey(realm))
                 and (not faction or not note.faction or note.faction == faction) then
                 for _, link in ipairs(type(note.spare) == "table" and note.spare or {}) do
                     Consider(link, key)
@@ -434,7 +446,7 @@ function Alts:BestFor(link)
     local best, bestKey
     for key, note in pairs(self:Notes()) do
         if key ~= me and type(note) == "table" and not self:IsSkipped(key)
-            and (not realm or not note.realm or note.realm == realm)
+            and (not RealmKey(realm) or not RealmKey(note.realm) or RealmKey(note.realm) == RealmKey(realm))
             and (not faction or not note.faction or note.faction == faction) then
             local result = self:Judge(note, link)
             if result then
