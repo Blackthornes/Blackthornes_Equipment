@@ -1185,6 +1185,16 @@ window and `customWeights` are untouched. Alts get neither. Since the patch
 no racial favours a weapon kind. Tested in `tools/test_ratingsandcap.lua`.
 A weekly patch check looks for racial, rating and cap changes.
 
+## White gear for casters
+
+Trent's report (2026-11-05): a warlock was never offered plain white
+weapons or armor. Caster specs (priest, mage, warlock, balance and resto
+druid, resto shaman, holy paladin) weighed neither melee weapon dps nor
+armor, so a white staff or cloth boots scored 0 and tied with what was
+worn. Each now has `meleeDps = 0.05` and `armor = 0.005` as a tie-breaker,
+far below a point of intellect, so real caster stats always win. Tested in
+`tools/test_casterweapons.lua`.
+
 ## Players' own stat weights
 
 Kept in `BlackthornesEquipmentDB.customWeights[CLASS][spec][stat]`, account
