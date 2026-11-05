@@ -1088,6 +1088,15 @@ a piece the game would not put on falls back to the banner. A What's New
 card (`autoEquip`) offers to turn it on once. Tested in
 `tools/test_autoequip.lua`. Not yet seen in game.
 
+The banner can be dragged (a player asked, the owner said build it,
+2026-11-05): it is no guarded button, so it moves in a fight too. Its top
+left is kept per character in `BlackthornesEquipmentCharDB.toastSpot`
+(`{ left, top }` on UIParent, never rename it; `Toast:Place`, `SaveSpot`),
+right-click puts it back at the top middle (`ResetSpot`), and the mouse
+going up at the end of a drag never opens the finder (`droppedAt`). Hover
+line "Drag to move it. Right-click to put it back." Tested in
+`tools/test_toastspot.lua`. Not yet seen in game.
+
 ## Sell coins in the bags
 
 The owner asked (2026-10-10) for a gold coin on bag gear worth selling:
