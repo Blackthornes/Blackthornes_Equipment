@@ -157,6 +157,8 @@ local SPECS = {
                 intellect = 1.0, healing = 0.8, spellPower = 0.9, spirit = 0.5,
                 stamina = 0.3, mp5 = 2, spellCrit = 10, armor = 0.005,
                 holyDamage = 0.3,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05,
             },
         },
         prot = {
@@ -222,6 +224,8 @@ local SPECS = {
                 intellect = 1.0, spirit = 0.7, stamina = 0.4, healing = 0.8,
                 spellPower = 0.8, mp5 = 2, spellCrit = 8, rangedDps = 2,
                 holyDamage = 0.3, shadowDamage = 0.3,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
         holy = {
@@ -230,6 +234,8 @@ local SPECS = {
                 intellect = 1.0, spirit = 0.9, stamina = 0.3, healing = 1.0,
                 spellPower = 0.8, mp5 = 2.5, spellCrit = 10, rangedDps = 2,
                 holyDamage = 0.3, shadowDamage = 0.2,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
         shadow = {
@@ -238,6 +244,8 @@ local SPECS = {
                 intellect = 0.8, spirit = 0.8, stamina = 0.6, spellPower = 1.1,
                 spellHit = 12, spellCrit = 4, mp5 = 1.5, rangedDps = 3,
                 shadowDamage = 1.1, holyDamage = 0.2,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
     },
@@ -269,6 +277,8 @@ local SPECS = {
             weights = {
                 intellect = 1.0, spirit = 0.3, stamina = 0.4, healing = 1.0,
                 spellPower = 0.8, mp5 = 3, spellCrit = 10,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
     },
@@ -285,6 +295,8 @@ local SPECS = {
                 intellect = 1.0, spirit = 0.4, stamina = 0.5, spellPower = 1.2,
                 spellCrit = 10, spellHit = 12, mp5 = 1.5, rangedDps = 3,
                 arcaneDamage = 0.6, frostDamage = 0.6, fireDamage = 0.4,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
         fire = {
@@ -293,6 +305,8 @@ local SPECS = {
                 intellect = 0.9, spirit = 0.4, stamina = 0.5, spellPower = 1.2,
                 spellCrit = 14, spellHit = 12, mp5 = 1.5, rangedDps = 3,
                 fireDamage = 1.2, frostDamage = 0.2, arcaneDamage = 0.2,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
         frost = {
@@ -301,6 +315,8 @@ local SPECS = {
                 intellect = 0.9, spirit = 0.5, stamina = 0.6, spellPower = 1.2,
                 spellCrit = 10, spellHit = 12, mp5 = 1.5, rangedDps = 3,
                 frostDamage = 1.2, fireDamage = 0.2, arcaneDamage = 0.2,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
     },
@@ -317,6 +333,8 @@ local SPECS = {
                 stamina = 0.8, intellect = 0.8, spirit = 0.4, spellPower = 1.2,
                 spellHit = 12, spellCrit = 5, mp5 = 1, rangedDps = 3,
                 shadowDamage = 1.2, fireDamage = 0.3,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
         demo = {
@@ -325,6 +343,8 @@ local SPECS = {
                 stamina = 1.0, intellect = 0.8, spirit = 0.4, spellPower = 1.1,
                 spellHit = 12, spellCrit = 5, mp5 = 1, rangedDps = 3,
                 shadowDamage = 1.1, fireDamage = 0.4,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
         destro = {
@@ -333,6 +353,8 @@ local SPECS = {
                 stamina = 0.7, intellect = 0.8, spirit = 0.3, spellPower = 1.2,
                 spellHit = 12, spellCrit = 12, mp5 = 1, rangedDps = 3,
                 shadowDamage = 1.2, fireDamage = 0.6,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
     },
@@ -351,6 +373,8 @@ local SPECS = {
                 intellect = 1.0, spirit = 0.5, stamina = 0.4, spellPower = 1.1,
                 spellCrit = 10, spellHit = 10, mp5 = 2,
                 natureDamage = 0.7, arcaneDamage = 0.6,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
         feral = {
@@ -370,6 +394,8 @@ local SPECS = {
             weights = {
                 intellect = 1.0, spirit = 0.8, stamina = 0.4, healing = 1.0,
                 spellPower = 0.8, mp5 = 2.5, spellCrit = 8,
+                -- A tie-breaker for plain white gear, far below any caster stat.
+                meleeDps = 0.05, armor = 0.005,
             },
         },
     },
