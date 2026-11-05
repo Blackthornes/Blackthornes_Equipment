@@ -23,6 +23,12 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.5.1
+
+Fixes and changes:
+
+- Characters on your second account now count as this realm.
+
 ## 1.5.0
 
 - You can drag the upgrade popup where you want it. Right-click puts it back.
