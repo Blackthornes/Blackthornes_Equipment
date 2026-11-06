@@ -10,14 +10,20 @@
 local _, ns = ...
 
 ns.ForeverNPCs = {
+    [2393] = { "Christoph Jeffcoat", "Hillsbrad Foothills", 62.3, 19.2 },
+    [2394] = { "Mallen Swain", "Hillsbrad Foothills", 62, 20.9 },
+    [2401] = { "Kayren Soothallow", "Hillsbrad Foothills", 62.4, 20 },
+    [2855] = { "Snang", "Orgrimmar", 62.9, 49.8 },
+    [2997] = { "Jyn Stonehoof", "Thunder Bluff", 40.9, 62.4 },
     [2999] = { "Taur Stonehoof", "Thunder Bluff", 39.6, 55.5 },
     [3076] = { "Moorat Longstride", "Mulgore", 45.2, 61.4 },
     [3078] = { "Kennah Hawkseye", "Mulgore", 45, 61.9 },
     [3079] = { "", "Mulgore", 45.3, 62.1 },
     [3080] = { "Harant Ironbrace", "Mulgore", 45.4, 62.1 },
     [3081] = { "Wunna Darkmane", "Mulgore", 45.5, 61.8 },
-    [3367] = { "Felika", "Orgrimmar", 60, 54.5 },
+    [3367] = { "Felika", "Orgrimmar", 57.9, 57.8 },
     [3534] = { "Wallace the Blind", "Silverpine Forest", 43.9, 84.4 },
+    [3537] = { "Zixil", "Hillsbrad Foothills", 60.8, 19.8 },
     [3658] = { "Lizzarik", "The Barrens", 52.4, 30.7 },
     [5783] = { "Kalldan Felmoon", "Kalimdor", 51.9, 55.4 },
     [5784] = { "Waldor", "Kalimdor", 51.9, 55.5 },
