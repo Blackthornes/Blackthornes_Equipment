@@ -23,6 +23,7 @@ ns.ForeverNPCs = {
     [3367] = { "Felika", "Orgrimmar", 55.1, 57.6 },
     [3534] = { "Wallace the Blind", "Silverpine Forest", 43.9, 84.4 },
     [3537] = { "Zixil", "Hillsbrad Foothills", 60.8, 19.8 },
+    [4577] = { "Millie Gregorian", "Undercity", 70.8, 29.4 },
     [5783] = { "Kalldan Felmoon", "Kalimdor", 51.9, 55.4 },
     [5784] = { "Waldor", "Kalimdor", 51.9, 55.5 },
     [8362] = { "Kuruk", "Thunder Bluff", 39, 64.3 },
