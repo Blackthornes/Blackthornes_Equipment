@@ -106,6 +106,20 @@ function Tooltip:FromBag(tooltip)
     return false
 end
 
+--- The bag and slot of the bag button the tooltip belongs to, or nil.
+function Tooltip:BagSlot(tooltip)
+    local getOwner = Field(tooltip, "GetOwner")
+    if type(getOwner) ~= "function" then return nil end
+    local ok, owner = pcall(getOwner, tooltip)
+    if not ok or type(owner) ~= "table" then return nil end
+    local getBag, getID = Field(owner, "GetBagID"), Field(owner, "GetID")
+    if type(getBag) ~= "function" or type(getID) ~= "function" then return nil end
+    local okBag, bag = pcall(getBag, owner)
+    local okSlot, slot = pcall(getID, owner)
+    if okBag and okSlot and type(bag) == "number" and type(slot) == "number" then return bag, slot end
+    return nil
+end
+
 -- Which tooltip already carries the line, for which item and at what length.
 -- Cleared when the tooltip is, so the next showing gets it again.
 local decorated = setmetatable({}, { __mode = "k" })
@@ -168,11 +182,11 @@ end
 --- "Upgrade for Ana Smith: +9%" when the item is no upgrade for the
 --- character playing but is for another of the player's characters on this
 --- realm and side (Alts:BestFor, the same answer Butler mails by), or nil.
-function Tooltip:AltLine(link, result)
+function Tooltip:AltLine(link, result, bag, slot)
     if ns.db and ns.db.altTooltipLine == false then return nil end
     if not ns.Alts or type(result) ~= "table" or result.verdict == "upgrade"
         or result.verdict == "equipped" then return nil end
-    local alt = ns.Alts:BestFor(link)
+    local alt = ns.Alts:BestFor(link, bag, slot)
     if not alt then return nil end
     local name = ns.Alts:NameOf(alt.key) or L["another of your characters"]
     local how = alt.gain and ("%+d%%"):format(alt.gain) or L["fills an empty slot"]
@@ -218,7 +232,7 @@ function Tooltip.DropLine(itemID)
 end
 
 --- The lines for one item, worked out afresh.
-function Tooltip:WorkOutLines(link, carried)
+function Tooltip:WorkOutLines(link, carried, bag, slot)
     local lines = {}
     -- An item shown from a bag slot is a carried copy, so a second copy of a
     -- worn ring is judged against the other ring, as its bag arrow is.
@@ -227,7 +241,7 @@ function Tooltip:WorkOutLines(link, carried)
     local text, color = Compare:Describe(result)
     if text then lines[#lines + 1] = { text, color, key = "upgrade" } end
     -- No use to you, but an upgrade for another of your characters.
-    local okAlt, altLine = pcall(Tooltip.AltLine, Tooltip, link, result)
+    local okAlt, altLine = pcall(Tooltip.AltLine, Tooltip, link, result, bag, slot)
     if okAlt and altLine then lines[#lines + 1] = { altLine, "accent", key = "alt" } end
     local okTrainer, trainer, trainerColor = pcall(WeaponSkills.Describe, WeaponSkills, link)
     if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true, key = "upgrade" } end
@@ -244,16 +258,18 @@ function Tooltip:WorkOutLines(link, carried)
 end
 
 --- The lines for one item, kept for LINES_KEPT seconds.
-function Tooltip:LinesFor(link, carried)
+function Tooltip:LinesFor(link, carried, bag, slot)
     local now = Now()
     local generation = ns.Weights and ns.Weights.generation or 0
+    local where = bag and slot and (bag .. ":" .. slot) or nil
     local kept = lastLines
-    if now and kept and kept.link == link and kept.carried == carried and kept.generation == generation
-        and now >= kept.at and now - kept.at < LINES_KEPT then
+    if now and kept and kept.link == link and kept.carried == carried and kept.where == where
+        and kept.generation == generation and now >= kept.at and now - kept.at < LINES_KEPT then
         return kept.lines
     end
-    local lines = self:WorkOutLines(link, carried)
-    lastLines = now and { link = link, carried = carried, generation = generation, at = now, lines = lines } or nil
+    local lines = self:WorkOutLines(link, carried, bag, slot)
+    lastLines = now and { link = link, carried = carried, where = where, generation = generation,
+        at = now, lines = lines } or nil
     return lines
 end
 
@@ -273,7 +289,8 @@ function Tooltip:Decorate(tooltip, data)
         if not now or now >= mark.lines then return "duplicate" end
     end
 
-    local lines = self:LinesFor(link, self:FromBag(tooltip))
+    local bag, slot = self:BagSlot(tooltip)
+    local lines = self:LinesFor(link, self:FromBag(tooltip), bag, slot)
     if #lines == 0 then return "quiet" end
 
     local addLine = Field(tooltip, "AddLine")
