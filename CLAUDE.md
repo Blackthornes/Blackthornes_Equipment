@@ -220,8 +220,8 @@ calls. `Logic/TradeskillsQueue.lua` calls, inside a pcall:
 
 ```lua
 ts.Queue:Ensure(recipeID, quantity)         -- at least that many queued; true, or nil and why
-ts.Queue:EnsureBuy(itemID, count, forItem)  -- that many on the list to buy for forItem; true, or nil and why
-ts.Queue:ForUpgrade(itemID)                 -- "craft", "buy" or nil; the button then reads Queued
+ts.Queue:EnsureBuy(itemID, count, forItem, forRecipe)  -- that many on the list to buy for forItem; true, or nil and why
+ts.Queue:ForUpgrade(itemID, recipeID)       -- "craft", "buy" or nil; the button then reads Queued
 ts.Queue:ShowQueue()                        -- a click on Queued opens the Queue tab
 ```
 
@@ -232,6 +232,14 @@ itself. A craft Tradeskills has not read yet falls back to its materials.
 The source is read again on each click (`TradeskillsQueue.Fresh`), since
 the upgrade quest keeps one from when it was picked. If these change in
 Tradeskills, change `Logic/TradeskillsQueue.lua` too.
+Materials for a pattern still to learn go on the list tied to its recipe
+(`forRecipe = { recipeID, name, crafts = 1 }`, 2026-11-07, a player found
+nothing in the queue after learning one), so Tradeskills queues the craft
+when it is learned (`Queue:QueueLearned`) and drops those lines when the
+craft is queued (`Queue:DropBoughtFor`). `ForUpgrade` is asked with the
+recipe ID too; while only materials are listed and the craft can now be
+made, the button reads Queue It again and a click queues the craft
+(`TradeskillsQueue:Label(itemID, source)`). Tested in `tools/test_tsqueue.lua`.
 
 The Enchants view (see "Enchants for your gear") uses the same `Ensure`
 and `EnsureBuy` for its Queue it, and asks where a recipe is learned:
