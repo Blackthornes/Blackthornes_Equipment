@@ -4,6 +4,13 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.6.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Sell coin.** On a character you skip for upgrades, soulbound gear another character would wear now gets the sell coin in your bags, since it can't be mailed. Gear you can still mail is kept for the other character, same as before.
+- **Sharing your data.** If you chose to share your data, it now goes to one more of our collecting characters. It is still off until you turn it on, and what gets sent is the same.
+
 ## 1.6.0
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.

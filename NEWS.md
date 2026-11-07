@@ -23,6 +23,13 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.6.1
+
+Fixes and changes:
+
+- Soulbound gear on a skipped character now shows the sell coin. It can't be mailed, so it no longer just sits in your bags.
+- If you share your data, it now goes to one more of our characters. It is still off until you turn it on.
+
 ## 1.6.0
 
 - Druids have a new Bear Tank spec, so tanks and cats get the right gear.
