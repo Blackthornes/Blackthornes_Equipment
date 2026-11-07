@@ -4,6 +4,14 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.6.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Bear Tank.** Druids have a new Bear Tank spec in Judge Gear As: (or `/beq spec bear`). Feral Combat now weighs gear for cats only. Talents still pick Feral, and saved Feral weights stay as they are.
+- **Haste and expertise.** Gear with haste or expertise rating now counts. Each spec weighs haste like its crit, and melee weapon specs weigh expertise at a quarter of their hit.
+- **Spell hit.** The spell hit cap is now 4%. Destruction, Retribution and Shadow have new weights.
+
 ## 1.5.2
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.

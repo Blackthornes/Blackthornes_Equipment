@@ -23,6 +23,12 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.6.0
+
+- Druids have a new Bear Tank spec, so tanks and cats get the right gear.
+- Haste and expertise on gear now count when Equipment looks for upgrades.
+- Destruction, Retribution and Shadow get new stat weights, and the spell hit cap is fixed.
+
 ## 1.5.2
 
 Fixes and changes:
