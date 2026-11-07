@@ -1208,6 +1208,18 @@ worn. Each now has `meleeDps = 0.05` and `armor = 0.005` as a tie-breaker,
 far below a point of intellect, so real caster stats always win. Tested in
 `tools/test_casterweapons.lua`.
 
+## Cat and Bear for druids
+
+Trent asked (2026-11-07) for feral tanks and feral damage to be weighed
+apart. `SPECS.DRUID.feral` ("Feral Combat") is the cat set; its key never
+changes, so saved `customWeights.DRUID.feral` and `weaponTypeWeights` stay
+with it. `SPECS.DRUID.bear` ("Bear Tank") is last in `order`: talents fill
+only the first three places and can't tell cat from bear, so they pick
+feral, and a bear picks Bear Tank from "Judge Gear As:" or `/beq spec
+bear` (or `tank`, which stays Protection for warriors and paladins:
+`CLASS_ALIASES`, `Weights:ResolveSpec(text, class)`). Tested in
+`tools/test_bearweights.lua`.
+
 ## Players' own stat weights
 
 Kept in `BlackthornesEquipmentDB.customWeights[CLASS][spec][stat]`, account
