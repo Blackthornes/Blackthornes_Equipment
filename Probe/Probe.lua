@@ -358,7 +358,8 @@ function Probe:Run()
     pcall(function()
         local parts = {}
         for _, key in ipairs({ "ITEM_MOD_HIT_RATING_SHORT", "ITEM_MOD_CRIT_RATING_SHORT",
-            "ITEM_MOD_DODGE_RATING_SHORT", "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT" }) do
+            "ITEM_MOD_DODGE_RATING_SHORT", "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT",
+            "ITEM_MOD_HASTE_RATING_SHORT", "ITEM_MOD_EXPERTISE_RATING_SHORT" }) do
             local rating = Weights.RATINGS and Weights.RATINGS[key]
             if rating then
                 parts[#parts + 1] = ("%s=%.2f"):format(key:gsub("^ITEM_MOD_", ""):gsub("_SHORT$", ""):lower(),
@@ -366,6 +367,16 @@ function Probe:Run()
             end
         end
         Line("rating for 1%", #parts > 0 and table.concat(parts, ", ") or "none")
+        -- Whether the client names haste and expertise at all; gear with a
+        -- name we read under another key shows up in "not weighted".
+        local named = {}
+        for _, key in ipairs({ "ITEM_MOD_HASTE_RATING_SHORT", "ITEM_MOD_HASTE_MELEE_RATING_SHORT",
+            "ITEM_MOD_HASTE_SPELL_RATING_SHORT", "ITEM_MOD_EXPERTISE_RATING_SHORT" }) do
+            local text = _G[key]
+            named[#named + 1] = ("%s=%s"):format(key:gsub("^ITEM_MOD_", ""):gsub("_SHORT$", ""):lower(),
+                type(text) == "string" and text or "missing")
+        end
+        Line("haste and expertise", table.concat(named, ", "))
         local melee, spell = ns.Compare:CurrentHit("melee"), ns.Compare:CurrentHit("spell")
         Line("hit now", ("weapons %s, spells %s"):format(melee and ("%.2f%%"):format(melee) or "unknown",
             spell and ("%.2f%%"):format(spell) or "unknown"))

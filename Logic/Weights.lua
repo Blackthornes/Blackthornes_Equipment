@@ -173,8 +173,8 @@ local SPECS = {
         ret = {
             name = "Retribution",
             weights = {
-                strength = 1.0, agility = 0.5, stamina = 0.5, intellect = 0.3,
-                attackPower = 0.45, crit = 12, hit = 12, spellPower = 0.3,
+                strength = 1.0, agility = 0.3, stamina = 0.5, intellect = 0.3,
+                attackPower = 0.45, crit = 12, hit = 14, spellPower = 0.3,
                 armor = 0.02, meleeDps = 7, holyDamage = 0.3,
             },
         },
@@ -242,7 +242,7 @@ local SPECS = {
             name = "Shadow",
             weights = {
                 intellect = 0.8, spirit = 0.8, stamina = 0.6, spellPower = 1.1,
-                spellHit = 12, spellCrit = 4, mp5 = 1.5, rangedDps = 3,
+                spellHit = 12, spellCrit = 6, mp5 = 1.5, rangedDps = 3,
                 shadowDamage = 1.1, holyDamage = 0.2,
                 -- A tie-breaker for plain white gear, far below any caster stat.
                 meleeDps = 0.05, armor = 0.005,
@@ -351,7 +351,7 @@ local SPECS = {
             name = "Destruction",
             weights = {
                 stamina = 0.7, intellect = 0.8, spirit = 0.3, spellPower = 1.2,
-                spellHit = 12, spellCrit = 12, mp5 = 1, rangedDps = 3,
+                spellHit = 12, spellCrit = 8, mp5 = 1, rangedDps = 3,
                 shadowDamage = 1.2, fireDamage = 0.6,
                 -- A tie-breaker for plain white gear, far below any caster stat.
                 meleeDps = 0.05, armor = 0.005,
@@ -473,6 +473,11 @@ local STAT_KEYS = {
     ["ITEM_MOD_PARRY_RATING_SHORT"] = "parry",
     ["ITEM_MOD_BLOCK_RATING_SHORT"] = "block",
     ["ITEM_MOD_BLOCK_VALUE_SHORT"] = "blockValue",
+    ["ITEM_MOD_HASTE_RATING_SHORT"] = "haste",
+    ["ITEM_MOD_HASTE_MELEE_RATING_SHORT"] = "haste",
+    ["ITEM_MOD_HASTE_RANGED_RATING_SHORT"] = "haste",
+    ["ITEM_MOD_HASTE_SPELL_RATING_SHORT"] = "haste",
+    ["ITEM_MOD_EXPERTISE_RATING_SHORT"] = "expertise",
 }
 
 -- Forever's gear carries hit, crit, dodge, parry, block and defense as
@@ -504,6 +509,15 @@ local RATINGS = {
     ITEM_MOD_DODGE_RATING_SHORT = { stat = "dodge", cr = "CR_DODGE", index = 3, at60 = 12 },
     ITEM_MOD_PARRY_RATING_SHORT = { stat = "parry", cr = "CR_PARRY", index = 4, at60 = 20 },
     ITEM_MOD_BLOCK_RATING_SHORT = { stat = "block", cr = "CR_BLOCK", index = 5, at60 = 5 },
+    -- Haste is one stat on Forever, like hit and crit: whichever key the
+    -- gear names, it counts as haste, per 1%.
+    ITEM_MOD_HASTE_RATING_SHORT = { stat = "haste", cr = "CR_HASTE_MELEE", index = 18, at60 = 10 },
+    ITEM_MOD_HASTE_MELEE_RATING_SHORT = { stat = "haste", cr = "CR_HASTE_MELEE", index = 18, at60 = 10 },
+    ITEM_MOD_HASTE_RANGED_RATING_SHORT = { stat = "haste", cr = "CR_HASTE_RANGED", index = 19, at60 = 10 },
+    ITEM_MOD_HASTE_SPELL_RATING_SHORT = { stat = "haste", cr = "CR_HASTE_SPELL", index = 20, at60 = 10 },
+    -- Expertise is counted per point, as defense is: each point takes a
+    -- quarter of a percent off the target's dodge.
+    ITEM_MOD_EXPERTISE_RATING_SHORT = { stat = "expertise", cr = "CR_EXPERTISE", index = 24, at60 = 2.5 },
 }
 
 -- The plain rating stats, weighed by the larger of the two weights.
@@ -527,6 +541,8 @@ local STAT_ORDER = {
     { key = "rangedAttackPower", name = "Ranged attack power" },
     { key = "crit", name = "Crit", per = true },
     { key = "hit", name = "Hit", per = true },
+    { key = "haste", name = "Haste", per = true },
+    { key = "expertise", name = "Expertise" },
     { key = "meleeDps", name = "Melee weapon dps" },
     { key = "rangedDps", name = "Ranged weapon dps" },
     { key = "spellPower", name = "Spell power" },
@@ -595,7 +611,7 @@ local LABELS = {
     ["Strength"] = L["Strength"], ["Agility"] = L["Agility"], ["Stamina"] = L["Stamina"],
     ["Intellect"] = L["Intellect"], ["Spirit"] = L["Spirit"], ["Armor"] = L["Armor"],
     ["Attack power"] = L["Attack power"], ["Ranged attack power"] = L["Ranged attack power"],
-    ["Crit"] = L["Crit"], ["Hit"] = L["Hit"], ["Melee weapon dps"] = L["Melee weapon damage"],
+    ["Crit"] = L["Crit"], ["Hit"] = L["Hit"], ["Haste"] = L["Haste"], ["Expertise"] = L["Expertise"], ["Melee weapon dps"] = L["Melee weapon damage"],
     ["Ranged weapon dps"] = L["Ranged weapon damage"], ["Spell power"] = L["Spell power"],
     ["Arcane spell damage"] = L["Arcane spell damage"], ["Fire spell damage"] = L["Fire spell damage"],
     ["Frost spell damage"] = L["Frost spell damage"], ["Nature spell damage"] = L["Nature spell damage"],
@@ -623,6 +639,40 @@ function Weights:SpecName(class, spec)
     local entry = class and SPECS[class] and spec and SPECS[class][spec]
     return entry and Weights.Label(entry.name) or nil
 end
+
+-- Haste and expertise (Forever gear carries both; checked against its class
+-- guides 2026-11-07). A spec that names its own keeps it; the rest get:
+--   haste, per 1%: about what the spec gives crit (crit or spell crit), so
+--     casters, healers and melee all count it, and a tank with no crit
+--     weight does not;
+--   expertise, per point: a quarter of the spec's melee hit weight, since a
+--     point takes a quarter of a percent off the target's dodge. Only specs
+--     that fight with a melee weapon (more melee than ranged weapon damage)
+--     and care about weapon hit more than spell hit.
+Weights.EXPERTISE_PER_HIT = 0.25
+
+function Weights.FillDerived(specs)
+    for _, class in pairs(specs) do
+        for _, entry in pairs(class) do
+            local w = type(entry) == "table" and entry.weights
+            if type(w) == "table" then
+                if w.haste == nil then
+                    local crit = math.max(w.crit or 0, w.spellCrit or 0)
+                    if crit > 0 then w.haste = crit end
+                end
+                if w.expertise == nil then
+                    local hit = w.hit or 0
+                    if hit > 0 and hit > (w.spellHit or 0)
+                        and (w.meleeDps or 0) > (w.rangedDps or 0) then
+                        w.expertise = hit * Weights.EXPERTISE_PER_HIT
+                    end
+                end
+            end
+        end
+    end
+end
+
+Weights.FillDerived(SPECS)
 
 Weights.SPECS = SPECS
 Weights.STAT_KEYS = STAT_KEYS

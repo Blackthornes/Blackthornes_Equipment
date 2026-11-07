@@ -1187,7 +1187,7 @@ usual table scaled by level), so the weights stay per 1%; plain hit and
 crit rating count as spell hit and crit too (`EITHER`). `Weights:Score`
 returns the score and the hit it holds; `Compare:ScoreOf` returns score,
 hit and what the hit adds, and `Against` the hit worn there. Hit past the
-cap (`Compare.HIT_CAP`: 5 weapons, 3 spells; with two weapons half up to
+cap (`Compare.HIT_CAP`: 5 weapons, 4 spells; with two weapons half up to
 `DUAL_WIELD_CAP` 24) is taken off both sides in `Judge`, `JudgeCarried`
 and `BestInBags` (`Capped`, `result.hitCapped`), from the hit the client
 says the character has (`Compare:CurrentHit`); unread, nothing is capped.
@@ -1196,6 +1196,15 @@ Racials (`Weights.RACIALS`: Tauren Stamina, Human Spirit, Gnome Intellect,
 `Weights:ForPlayer` through `WithRacials`, a copy; `Get`, the weights
 window and `customWeights` are untouched. Alts get neither. Since the patch
 no racial favours a weapon kind. Tested in `tools/test_ratingsandcap.lua`.
+Haste and expertise (2026-11-07): haste rating turns into percent and
+expertise rating into points through `Weights.RATINGS`, like hit and crit.
+No spec lists them; `Weights.FillDerived` gives each spec haste equal to
+its crit weight (none for a spec that weighs no crit) and, for melee
+weapon specs that care about weapon hit more than spell hit, expertise at
+`EXPERTISE_PER_HIT` (a quarter) of its hit weight. A player's own weight
+in `customWeights` still wins. `/beq probe` has a "haste and expertise"
+line saying whether the client names them. Tested in
+`tools/test_statweights.lua`. Not yet seen in game.
 A weekly patch check looks for racial, rating and cap changes.
 
 ## White gear for casters
