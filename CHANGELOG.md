@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.6.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Queue It and patterns you learn later.** If you bought a pattern and learned it after clicking Queue It, the button stayed on Queued with nothing in your queue. Now the next click queues the craft.
+
 ## 1.6.1
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
