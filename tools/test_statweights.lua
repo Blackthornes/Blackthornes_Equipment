@@ -24,4 +24,27 @@ local enh = SPECS.SHAMAN.enhancement.weights
 suite.check("Enhancement still leans on strength",
     enh.strength == 1.0 and enh.agility == 0.7 and enh.intellect == 0.3)
 
+-- Haste and expertise read off gear as the percent or points they give.
+env.InstallItems({}, {}, {}, 60)
+_G.GetHitModifier, _G.GetSpellHitModifier, _G.GetCombatRatingBonus = nil, nil, nil
+_G.GetCombatRatingBonusForCombatRatingValue, _G.GetCombatRating = nil, nil
+ns.Weights:ForgetRatings()
+local stats = ns.Weights:Normalize({ ITEM_MOD_HASTE_RATING_SHORT = 10,
+    ITEM_MOD_EXPERTISE_RATING_SHORT = 5 })
+suite.check("10 haste rating is 1% haste at 60", math.abs((stats.haste or 0) - 1) < 1e-6, stats.haste)
+suite.check("5 expertise rating is 2 expertise at 60", math.abs((stats.expertise or 0) - 2) < 1e-6, stats.expertise)
+stats = ns.Weights:Normalize({ ITEM_MOD_HASTE_SPELL_RATING_SHORT = 10 })
+suite.check("spell haste rating counts as haste", math.abs((stats.haste or 0) - 1) < 1e-6, stats.haste)
+
+-- Haste is worth what the spec's crit is; expertise a quarter of weapon hit.
+suite.check("Destruction weighs haste like its crit", destro.haste == 8, destro.haste)
+suite.check("Retribution weighs expertise 3.5", ret.expertise == 3.5, ret.expertise)
+suite.check("casters weigh no expertise", destro.expertise == nil)
+suite.check("hunters weigh no expertise", SPECS.HUNTER.beast.weights.expertise == nil)
+suite.check("a tank with no crit weight weighs no haste", SPECS.PALADIN.prot.weights.haste == nil)
+
+local inOrder = {}
+for _, row in ipairs(ns.Weights.STAT_ORDER or {}) do inOrder[row.key] = true end
+suite.check("the weights window lists haste and expertise", inOrder.haste and inOrder.expertise)
+
 suite.done()
