@@ -173,8 +173,8 @@ local SPECS = {
         ret = {
             name = "Retribution",
             weights = {
-                strength = 1.0, agility = 0.5, stamina = 0.5, intellect = 0.3,
-                attackPower = 0.45, crit = 12, hit = 12, spellPower = 0.3,
+                strength = 1.0, agility = 0.3, stamina = 0.5, intellect = 0.3,
+                attackPower = 0.45, crit = 12, hit = 14, spellPower = 0.3,
                 armor = 0.02, meleeDps = 7, holyDamage = 0.3,
             },
         },
@@ -242,7 +242,7 @@ local SPECS = {
             name = "Shadow",
             weights = {
                 intellect = 0.8, spirit = 0.8, stamina = 0.6, spellPower = 1.1,
-                spellHit = 12, spellCrit = 4, mp5 = 1.5, rangedDps = 3,
+                spellHit = 12, spellCrit = 6, mp5 = 1.5, rangedDps = 3,
                 shadowDamage = 1.1, holyDamage = 0.2,
                 -- A tie-breaker for plain white gear, far below any caster stat.
                 meleeDps = 0.05, armor = 0.005,
@@ -351,7 +351,7 @@ local SPECS = {
             name = "Destruction",
             weights = {
                 stamina = 0.7, intellect = 0.8, spirit = 0.3, spellPower = 1.2,
-                spellHit = 12, spellCrit = 12, mp5 = 1, rangedDps = 3,
+                spellHit = 12, spellCrit = 8, mp5 = 1, rangedDps = 3,
                 shadowDamage = 1.2, fireDamage = 0.6,
                 -- A tie-breaker for plain white gear, far below any caster stat.
                 meleeDps = 0.05, armor = 0.005,

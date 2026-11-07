@@ -124,14 +124,14 @@ end
 -- The hit cap
 --
 -- Past a point, more hit does nothing: against a mob of your own level,
--- 5% hit stops weapon attacks missing and 3% stops spells missing (Classic's
--- numbers). Someone swinging two weapons still misses with plain swings
+-- 5% hit stops weapon attacks missing and 4% stops spells missing (Forever's
+-- numbers; Classic's spell cap was 3%). Someone swinging two weapons still misses with plain swings
 -- until 24%, so for them hit past 5% counts for half, up to 24%. The hit the
 -- character has now comes from the client (talents, racials and gear all
 -- in it); when it cannot be read, hit counts in full as before.
 --------------------------------------------------------------------------------
 
-Compare.HIT_CAP = { melee = 5, spell = 3 }
+Compare.HIT_CAP = { melee = 5, spell = 4 }
 Compare.DUAL_WIELD_CAP = 24
 Compare.DUAL_WIELD_PAST_CAP = 0.5
 

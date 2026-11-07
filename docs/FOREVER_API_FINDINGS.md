@@ -335,8 +335,8 @@ rogue does, and the druid's weapon list has polearms. Not yet seen in game.
   (`Weights.RACIALS`, read off the spell text when it can be).
 - The hit cap reads `GetHitModifier` / `GetSpellHitModifier` plus
   `GetCombatRatingBonus(CR_HIT_MELEE / CR_HIT_SPELL)`. Not yet probed:
-  `/beq probe` has a "hit now" line. Caps are Classic's, against a mob of
-  your level: 5% weapons, 3% spells, plain swings with two weapons to 24%.
+  `/beq probe` has a "hit now" line. Caps against a mob of your level:
+  5% weapons, 4% spells (Forever's; Classic had 3%), plain swings with two weapons to 24%.
 
 ## Quests done and dungeon doors (2026-10-23, laptop probe)
 

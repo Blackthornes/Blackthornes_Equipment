@@ -1187,7 +1187,7 @@ usual table scaled by level), so the weights stay per 1%; plain hit and
 crit rating count as spell hit and crit too (`EITHER`). `Weights:Score`
 returns the score and the hit it holds; `Compare:ScoreOf` returns score,
 hit and what the hit adds, and `Against` the hit worn there. Hit past the
-cap (`Compare.HIT_CAP`: 5 weapons, 3 spells; with two weapons half up to
+cap (`Compare.HIT_CAP`: 5 weapons, 4 spells; with two weapons half up to
 `DUAL_WIELD_CAP` 24) is taken off both sides in `Judge`, `JudgeCarried`
 and `BestInBags` (`Capped`, `result.hitCapped`), from the hit the client
 says the character has (`Compare:CurrentHit`); unread, nothing is capped.
