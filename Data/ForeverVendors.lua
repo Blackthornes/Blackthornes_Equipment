@@ -21,6 +21,7 @@ ns.ForeverVendors = {
     [251537] = { name = "Uualia Suncrest", zone = "Zephras Isle", x = 42.7, y = 24.4, side = "AH", items = { [2901] = { 10, 1, 4, false }, [2947] = { 42, 1, 3, false }, [3111] = { 42, 1, 3, false }, [7005] = { 10, 1, 4, false } } },
     [251913] = { name = "Aedi Thriceforged", zone = "Zephras Isle", x = 44.8, y = 44.4, side = "AH", items = { [2901] = { 10, 1, 4, false }, [5956] = { 18, 1, 1, false } } },
     [251965] = { name = "Fevrath Skyhammer", zone = "Zephras Isle", x = 43.3, y = 23.5, side = "AH", items = { [2129] = { 77, 1, 5, false }, [2379] = { 75, 1, 5, false }, [2380] = { 37, 1, 5, false }, [2381] = { 75, 1, 5, false }, [2383] = { 57, 1, 5, false }, [2384] = { 37, 1, 5, false }, [2385] = { 37, 1, 5, false }, [17184] = { 34, 1, 3, false } } },
+    [251992] = { name = "Fenn Fairweather", zone = "Zephras Isle", x = 45, y = 48.4, side = "AH", items = { [6256] = { 23, 0, 1, false } } },
     [251993] = { name = "Indari Sunseam", zone = "Zephras Isle", x = 44.7, y = 44.5, side = "AH", items = { [7005] = { 10, 1, 4, false } } },
     [254358] = { name = "Veena Vericloud", zone = "Zephras Isle", x = 44.8, y = 45.5, side = "AH", items = { [2946] = { 299, 3, 8, false }, [2947] = { 42, 1, 3, false }, [3111] = { 42, 1, 3, false }, [3131] = { 299, 3, 8, false } } },
     [254360] = { name = "Belandiel Farflight", zone = "Zephras Isle", x = 44.7, y = 45.1, side = "AH", items = { [2901] = { 10, 1, 4, false }, [5956] = { 18, 1, 1, false }, [6256] = { 23, 0, 1, false }, [7005] = { 10, 1, 4, false } } },

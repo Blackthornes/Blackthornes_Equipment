@@ -237,6 +237,7 @@ ns.ForeverQuests = {
     [97957] = { title = "Camping 101: Herbalism", level = 6, min = 6, giver = "Eleanor Shackleton", zone = "Tirisfal Glades", x = 57.2, y = 55.5, side = "H", rewards = {}, xp = 270 },
     [97963] = { title = "Camping 101: Alchemy", level = 6, min = 7, giver = "Raan Wildwind", zone = "Zephras Isle", x = 41.7, y = 44.8, side = "H", rewards = {}, xp = 270 },
     [97964] = { title = "Camping 101: Blacksmithing", level = 6, min = 7, giver = "Raan Wildwind", zone = "Zephras Isle", x = 41.7, y = 44.8, rewards = {} },
+    [97965] = { title = "Camping 101: First Aid", level = 6, min = 10, giver = "Raan Wildwind", zone = "Zephras Isle", x = 41.7, y = 44.9, side = "H", rewards = {}, xp = 270 },
     [97968] = { title = "Camping 101: Herbalism", level = 6, min = 7, giver = "Raan Wildwind", zone = "Zephras Isle", x = 41.7, y = 44.7, side = "H", rewards = {}, xp = 270 },
     [97970] = { title = "Camping 101: Mining", level = 6, min = 6, giver = "Raan Wildwind", zone = "Zephras Isle", x = 41.7, y = 44.7, rewards = {} },
     [98389] = { title = "A Light in the Darkness", level = 4, min = 4, giver = "Aramis Hammerhand", zone = "Tirisfal Glades", x = 31, y = 66.3, side = "H", rewards = {}, xp = 360 },
