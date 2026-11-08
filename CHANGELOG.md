@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.6.4
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Lag spikes.** The game still hitched every few seconds while the addon looked for upgrades, most of all with the upgrade quest up. It now searches only after a new zone, new gear, a level, talents, a new skill or recipe, or a changed setting.
+
 ## 1.6.3
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
