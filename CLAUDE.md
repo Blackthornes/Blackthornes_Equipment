@@ -357,6 +357,19 @@ an older one-source value reads as gear. Enchants use the same slot
 column. All account wide; never rename them. Tested in
 `tools/test_finderslots.lua`.
 
+Scanning only when it matters (the owner said build it, 2026-11-08, after
+Equipment showed 30% CPU with the upgrade quest up): item answers the
+finder asked for (`Finder:OnItemAnswer`) wait until none have come for
+`ANSWER_SETTLE` (2) seconds, then mark the scan out of date once and call
+`Finder:WatchAnswers` listeners (the upgrade quest and the window), so a
+burst of 40 answers starts one scan, not 40. A bag change counts only when
+gear the finder could list came or went (`Finder:CarriedMoved(who)`, each
+caller keeping its own last look; stacks and moves count for nothing). A
+kept scan is used for `KEEP_LATEST` (300) seconds while `JudgeKey` holds.
+The quest arrow reads its state every `REST_STEP` (0.5 s) while it has
+nowhere to point ("nowhere", "blind"); the glow still breathes every step.
+Tested in `tools/test_speed.lua`.
+
 Solo quests (a player asked, the owner agreed 2026-10-06): a quest's
 11th field in `Sources.QUESTS` says what it needs besides the player
 ("group", "dungeon", "raid", "battleground", or nothing), worked out by
