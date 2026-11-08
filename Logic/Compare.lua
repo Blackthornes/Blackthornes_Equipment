@@ -291,6 +291,33 @@ function Compare:Against(link, equipLoc, weights)
     return weakest or 0, empty, false, weakestSlot, wornHit, wornValue
 end
 
+--- Every slot a swap would empty: a two-hander empties the off hand too,
+--- and an off-hand item beside a worn two-hander takes the main hand off.
+local function ReplacedSlots(equipLoc, slot)
+    local slots = { slot }
+    if equipLoc == "INVTYPE_2HWEAPON" then
+        slots[2] = 17
+    elseif slot == 17 then
+        local mainHand = Items:Equipped(16)
+        local mainInfo = mainHand and Items:Info(mainHand)
+        if mainInfo and mainInfo.equipLoc == "INVTYPE_2HWEAPON" then slots[2] = 16 end
+    end
+    return slots
+end
+Compare.ReplacedSlots = ReplacedSlots
+
+--- Fold in what the worn sets' bonuses gain or lose by the swap
+--- (Logic/ItemSets.lua). Nothing changes when no set is touched.
+local function WithSets(link, slots, weights, score, against, result)
+    local sets = ns.ItemSets
+    if not (sets and sets.Apply) then return score, against end
+    local ok, newScore, newAgainst, change = pcall(sets.Apply, sets, link, slots, weights, score, against)
+    if not ok or type(newScore) ~= "number" or type(newAgainst) ~= "number" then return score, against end
+    if result then result.setChange = change end
+    return newScore, newAgainst
+end
+Compare.WithSets = WithSets
+
 --- The character playing is skipped for upgrades (Alts:SetSkipped, a
 --- crafting alt): what would be an upgrade is "skipped" instead, so no
 --- arrow, banner, finder row or Tradeskills arrow calls it one, and the
@@ -487,6 +514,9 @@ function Compare:Judge(link)
 
     -- Hit past the cap counts for less, on this item and on what it replaces.
     score, against, result.hitCapped = Capped(self, weights, score, hit, hitValue, against, wornHit, wornValue)
+    -- A set bonus the swap would finish counts for it, one it would break
+    -- counts against it.
+    score, against = WithSets(link, ReplacedSlots(info.equipLoc, slot), weights, score, against, result)
     result.score, result.against, result.empty = score, against, empty
 
     if empty then
@@ -561,6 +591,7 @@ function Compare:JudgeCarried(link)
         against = against or 0
     end
     score, against = Capped(self, weights, score, hit, hitValue, against, wornHit, wornValue)
+    score, against = WithSets(link, { other }, weights, score, against)
 
     local judged = {
         className = result.className, specName = result.specName, slot = other,
@@ -631,6 +662,7 @@ function Compare:BestInBags()
                     local raw, hit, hitValue = self:ScoreOf(entry.link, weights)
                     local score, against = Capped(self, weights, raw or result.score or 0, hit, hitValue,
                         wornScore, wornHit, wornValue)
+                    score, against = WithSets(entry.link, { other }, weights, score, against)
                     local percent = against > 0 and (score - against) / against * 100 or nil
                     local beats = not worn or (percent and percent >= SAME_WITHIN)
                         or (against <= 0 and score > 0)
