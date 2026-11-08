@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.7.0
+
+For WoW: Forever (interface 16001). A full game restart is needed after updating (new files).
+
+- **Set bonuses count.** When you wear enough pieces of a set to get a bonus, that bonus now counts when Equipment judges what would replace a piece, so a piece that would break a set is no longer called an upgrade unless the swap still comes out ahead. Only bonuses that give plain stats count. There is no setting for it.
+
 ## 1.6.4
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.

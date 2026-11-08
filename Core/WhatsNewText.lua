@@ -5,6 +5,9 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.7.0", lines = {
+        "Set bonuses now count. If a piece is part of a set you're wearing, Equipment thinks about the bonus before it tells you to swap it out.",
+    } },
     { version = "1.6.0", lines = {
         "Druids have a new Bear Tank spec, so tanks and cats get the right gear.",
         "Haste and expertise on gear now count when Equipment looks for upgrades.",
@@ -12,9 +15,5 @@ ns.WHATS_NEW = {
     } },
     { version = "1.5.0", lines = {
         "You can drag the upgrade popup where you want it. Right-click puts it back.",
-    } },
-    { version = "1.4.0", lines = {
-        "The one window now stays next to the auction house.",
-        "Item icons get a soft ring for their quality.",
     } },
 }
