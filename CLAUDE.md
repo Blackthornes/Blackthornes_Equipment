@@ -1236,6 +1236,32 @@ line saying whether the client names them. Tested in
 `tools/test_statweights.lua`. Not yet seen in game.
 A weekly patch check looks for racial, rating and cap changes.
 
+## Set bonuses
+
+Trent asked (2026-11-08): when the character wears enough pieces of a set
+for a bonus, that bonus counts when judging what would replace a piece.
+`Data/ItemSets.lua` (`ns.ItemSetData.SETS[setID] = { items, b = { [pieces]
+= { stat = value } }, skill, rank, name }`) is written by
+`tools/make_item_sets.py <tables folder> --build <build>` from the Forever
+client's game tables (ItemSet, ItemSetSpell, SpellEffect); never by hand,
+rerun when the tables are pulled again. Only bonuses that give plain stats
+are kept (read as `make_enchants.py` reads an enchant); a bonus that changes
+a spell or procs gives nothing, and a set with none is left out.
+`Logic/ItemSets.lua` works out a swap: the worn sets' bonuses before and
+after (`ItemSets:Change(link, slots, weights)`, distinct item IDs counted,
+every slot the swap empties: `Compare.ReplacedSlots`, a two-hander takes
+the off hand too), scored with the gear's own weights. A gain is added to
+the new item's score, a loss to the score it has to beat
+(`ItemSets:Apply`, through `Compare.WithSets` in `Judge`, `JudgeCarried`
+and `BestInBags`' second ring; `result.setChange`, nil when no set is
+touched). A set that asks for a profession counts only once
+`Crafting:Professions` reads the skill high enough. Only the character
+playing: alts are judged without sets. Nothing is scanned: the worn sets
+are read again only after `PLAYER_EQUIPMENT_CHANGED` or a loading screen,
+and bonus values are kept per weights table until a skill or level moves.
+No new words for players. Tested in `tools/test_itemsets.lua` and
+`tools/test_make_item_sets.py`. Not yet seen in game.
+
 ## White gear for casters
 
 Trent's report (2026-11-05): a warlock was never offered plain white
