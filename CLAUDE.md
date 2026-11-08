@@ -358,17 +358,25 @@ column. All account wide; never rename them. Tested in
 `tools/test_finderslots.lua`.
 
 Scanning only when it matters (the owner said build it, 2026-11-08, after
-Equipment showed 30% CPU with the upgrade quest up): item answers the
-finder asked for (`Finder:OnItemAnswer`) wait until none have come for
-`ANSWER_SETTLE` (2) seconds, then mark the scan out of date once and call
-`Finder:WatchAnswers` listeners (the upgrade quest and the window), so a
-burst of 40 answers starts one scan, not 40. A bag change counts only when
-gear the finder could list came or went (`Finder:CarriedMoved(who)`, each
-caller keeping its own last look; stacks and moves count for nothing). A
-kept scan is used for `KEEP_LATEST` (300) seconds while `JudgeKey` holds.
-The quest arrow reads its state every `REST_STEP` (0.5 s) while it has
-nowhere to point ("nowhere", "blind"); the glow still breathes every step.
-Tested in `tools/test_speed.lua`.
+Equipment showed 30% CPU with the upgrade quest up, then again the same day
+when it still hitched every few seconds): the full search runs only on a new
+zone, gear worn, a level, talents, a recipe or skill learned, or a setting
+(`Finder:MarkStale`); a single item is judged when it lands in the bags
+(`UpgradeChat`) or a quest offers it (`QuestRewards`). No clock makes a
+scan old (`Finder:Latest` keeps it until `stale` or `JudgeKey` moves) and
+the bags never start a search. Item answers the finder asked for
+(`Finder:OnItemAnswer`) wait until none have come for `ANSWER_SETTLE` (2)
+seconds; only the first burst after a real change lets the scan be made
+once more (`followUp`, `AnswersSettled` returns it and passes it to the
+`WatchAnswers` listeners), since each scan asks about more items and the
+answers used to start another scan forever. Weapon skill events
+(`SPELLS_CHANGED` and the rest) settle `WeaponSkills.SETTLE` (1) second,
+and the verdicts are thrown away only when the known skills changed
+(`WeaponSkills:Look`, by `Signature`). The upgrade quest's level-up look
+(`LookForBetter`) and its wait for items (`WAIT_FOR_ITEMS`) stay, both
+bounded. The quest arrow reads its state every `REST_STEP` (0.5 s) while
+it has nowhere to point ("nowhere", "blind"); the glow still breathes every
+step. Tested in `tools/test_speed.lua` and `tools/test_upgradequest.lua`.
 
 Solo quests (a player asked, the owner agreed 2026-10-06): a quest's
 11th field in `Sources.QUESTS` says what it needs besides the player
