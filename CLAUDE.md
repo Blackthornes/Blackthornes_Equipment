@@ -98,6 +98,11 @@ otherwise a table:
   so false while "Sell coins" is unticked). Soulbound can only be told from
   the bag slot, so without `bag` and `slot` green and better gear is never
   `sell`.
+- `never`: true when this class can never wear it (gear for other
+  classes, an armor or weapon kind it never learns, an off-hand without
+  dual wield ever); never for mail or plate learned later, Best Armor
+  Only or a hidden untrained weapon. Butler sells soulbound green gear
+  on it (2026-11-10, a player's report). Tested in `tools/test_butler.lua`.
 - `tool`: true for gathering and profession tools (`BagIcons.IsTool`,
   `BagIcons.TOOLS`) and fishing poles; a tool is never `sell`.
 - `alt`: only when it is no upgrade here, `{ key, gain, level }` for the
