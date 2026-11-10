@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.7.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Gear your class can never wear.** Equipment now tells Butler when your class can never wear a piece of gear, so Butler can offer to sell the soulbound ones. You will not see a change here without Butler.
+
 ## 1.7.1
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
