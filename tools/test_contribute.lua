@@ -138,7 +138,7 @@ farmer.ns.db.learnedVendors = { [700001] = { name = "Mine", zone = "Elwynn Fores
 print("\nchoosing")
 local C = ana.ns.Contribute
 check("off by default", C:On(), false)
-check("the shipped list names four whole names", #C:Recipients(), 4)
+check("the shipped list names five whole names", #C:Recipients(), 5)
 current = farmer
 check("Blackthornes Farmer receives", farmer.ns.Contribute:Receiving())
 current = wither
