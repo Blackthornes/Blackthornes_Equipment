@@ -860,6 +860,14 @@ function SettingsUI:BuildGeneral()
     controls.effects:SetPoint("TOPLEFT", CONTROL_X, 0)
     controls.effectsIndex = EffectIndex
 
+    -- Quiets every sound every Blackthornes addon plays (UI/SharedChoices.lua,
+    -- a player asked, 2026-11-12). Off unless ticked; ticked in one is ticked in all.
+    local muteRow = pages:Row("general", 1, L["Mute All Sounds:"], nil)
+    controls.muteSounds = Widgets.CreateCheckbox(muteRow, L["On"], function(checked)
+        SettingsUI:SetMuteSounds(checked)
+    end, false)
+    controls.muteSounds:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- One minimap button for every Blackthornes addon (UI/SharedMinimap.lua,
     -- the owner, 2026-10-28): ticked unless unticked, the same in all five.
     local combineRow = pages:Row("general", 1, L["Combine Addon Buttons:"], nil)
@@ -1057,6 +1065,7 @@ function SettingsUI:Refresh()
     local One = ns.FinderUI and ns.FinderUI.One()
     controls.oneWindow:SetChecked(One ~= nil and One.On() == true)
     controls.effects:SetValue(controls.effectsIndex(), true)
+    controls.muteSounds:SetChecked(ns.Muted ~= nil and ns.Muted() == true)
     if ns.SeeThrough then
         for id, choice in pairs(controls.seeThrough or {}) do choice:SetValue(ns.SeeThrough:Level(id), true) end
     end
@@ -1238,6 +1247,29 @@ end)
 
 -- Common names for the same thing, so a guess works. Kept out of the help
 -- list, which would otherwise print the same line three times.
+-- Mute All Sounds: kept in this addon's own save as muteSounds and
+-- muteSoundsAt (never rename them) and told to every sister.
+function SettingsUI:SetMuteSounds(on)
+    on = on and true or false
+    local at = ns.SharedChoices and ns.SharedChoices:SetMute(on) or nil
+    if ns.db then
+        ns.db.muteSounds = on
+        ns.db.muteSoundsAt = at
+    end
+    if self.Refresh and self.frame and self.frame:IsShown() then pcall(self.Refresh, self) end
+end
+
+ns.RegisterCommand("mute", L["turn every Blackthornes sound off or back on (on/off)"], function(arg)
+    arg = ((arg or ""):match("^%s*(.-)%s*$") or ""):lower()
+    local on
+    if arg == "on" then on = true
+    elseif arg == "off" then on = false
+    else on = not (ns.Muted and ns.Muted()) end
+    SettingsUI:SetMuteSounds(on)
+    ns.Print(on and L["All Blackthornes sounds are off. /beq mute off turns them back on."]
+        or L["Blackthornes sounds are back on."])
+end)
+
 ns.commands.options = ns.commands.settings
 ns.commands.config = ns.commands.settings
 
@@ -1261,7 +1293,13 @@ if ns.SharedChoices then
             if ns.Travel then ns.Travel:SetOn(value and true or false) end
         elseif choice == "arrowSize" then
             if ns.QuestArrowUI then ns.QuestArrowUI:SetSize(value) end
+        elseif choice == "muteSounds" then
+            ns.db.muteSounds = value and true or false
+            ns.db.muteSoundsAt = ns.SharedChoices.board.mute.at
         end
         if ns.SettingsUI and ns.SettingsUI.Refresh and ns.SettingsUI.frame and ns.SettingsUI.frame:IsShown() then pcall(ns.SettingsUI.Refresh, ns.SettingsUI) end
+    end, function()
+        if not ns.db then return nil end
+        return ns.db.muteSounds == true, ns.db.muteSoundsAt
     end)
 end

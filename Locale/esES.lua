@@ -1148,3 +1148,9 @@ L["Upgrade Hunts:"] = "CACERÍAS DE MEJORAS:"
 L["Options"] = "Opciones"
 L["Got It"] = "Entendido"
 L["Restore All"] = "Recuperar todas"
+
+-- Mute All Sounds (2026-11-12)
+L["Mute All Sounds:"] = "Silenciar todos los sonidos:"
+L["turn every Blackthornes sound off or back on (on/off)"] = "apaga o vuelve a encender todos los sonidos de Blackthornes (on/off)"
+L["All Blackthornes sounds are off. /beq mute off turns them back on."] = "Todos los sonidos de Blackthornes están apagados. /beq mute off los vuelve a encender."
+L["Blackthornes sounds are back on."] = "Los sonidos de Blackthornes vuelven a estar encendidos."

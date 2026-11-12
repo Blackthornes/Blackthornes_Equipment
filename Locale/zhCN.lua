@@ -1148,3 +1148,9 @@ L["Upgrade Hunts:"] = "升级追踪："
 L["Options"] = "选项"
 L["Got It"] = "知道了"
 L["Restore All"] = "全部恢复"
+
+-- Mute All Sounds (2026-11-12)
+L["Mute All Sounds:"] = "全部静音："
+L["turn every Blackthornes sound off or back on (on/off)"] = "关闭或重新打开所有 Blackthornes 音效（on/off）"
+L["All Blackthornes sounds are off. /beq mute off turns them back on."] = "所有 Blackthornes 音效已关闭。输入 /beq mute off 可重新打开。"
+L["Blackthornes sounds are back on."] = "Blackthornes 音效已重新打开。"
