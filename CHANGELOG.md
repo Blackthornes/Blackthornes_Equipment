@@ -4,6 +4,13 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.8.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Mute All Sounds.** A new Mute All Sounds: row under Effects on the General page (or `/beq mute on|off`) quiets every sound from every Blackthornes addon at once. It starts off.
+- **Spell power and healing.** Gear with both damage and healing now counts toward both totals, so casters and healers are judged fairly. Healer defaults were lowered a little.
+
 ## 1.7.3
 
 For WoW: Forever (interface 16001). A /reload is enough after updating.

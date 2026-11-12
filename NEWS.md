@@ -23,6 +23,11 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.8.0
+
+- There is a new box that mutes every sound from all the Blackthornes addons at once. It starts off, so nothing changes until you tick it.
+- Gear with both damage and healing now counts for both, so healers and casters get better upgrade picks.
+
 ## 1.7.2
 
 Fixes and changes:
