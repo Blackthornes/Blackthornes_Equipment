@@ -266,7 +266,7 @@ local covered = { sisters = true, whatsnew = true,
     window = true, find = true, quest = true, arrow = true,
     spec = true, weights = true,
     settings = true, weapons = true, training = true, skip = true, autoequip = true,
-    dungeons = true, loot = true, mute = true,
+    dungeons = true, loot = true, mute = true, windows = true,
 }
 local typedOnly = { bags = true, tracked = true, help = true }
 for _, name in ipairs(ns.commandOrder) do
@@ -309,7 +309,10 @@ SettingsUI:Refresh()
 ns.db.settingsX = 400
 controls.resetPositions:GetScript("OnClick")(controls.resetPositions)
 suite.check("Set Default forgets where it was dragged", ns.db.settingsX == nil)
-suite.check("and says so", env.chat[#env.chat]:find("UI windows set to defaults.", 1, true) ~= nil, env.chat[#env.chat])
+suite.check("and says so", env.chat[#env.chat]:find("Every window is back in its first spot.", 1, true) ~= nil, env.chat[#env.chat])
+ns.db.settingsX = 400
+ns.commands.windows.fn("reset")
+suite.check("/beq windows reset does the same", ns.db.settingsX == nil)
 
 -- A client with neither options API still loads.
 local ns2 = env.Load()
