@@ -15,7 +15,7 @@ local _, ns = ...
 
 ns.ForeverQuests = {
     [2] = { title = "Sharptalon's Claw", level = 30, min = 28, side = "H", rewards = {}, xp = 2450 },
-    [8] = { title = "A Rogue's Deal", level = 5, min = 5, giver = "Calvin Montague", zone = "Tirisfal Glades", x = 38.2, y = 56.8, side = "H", rewards = {}, items = { { 4604, 5, false }, { 159, 5, false } }, xp = 110 },
+    [8] = { title = "A Rogue's Deal", level = 5, min = 5, giver = "Calvin Montague", zone = "Tirisfal Glades", x = 38.2, y = 56.8, side = "H", rewards = {}, items = { { 159, 5, false }, { 4604, 5, false } }, xp = 110 },
     [23] = { title = "Ursangous's Paw", level = 24, min = 29, side = "H", rewards = {}, xp = 1950 },
     [24] = { title = "Shadumbra's Head", level = 27, min = 29, side = "H", rewards = {}, xp = 2200 },
     [25] = { title = "Stonetalon Standstill", level = 25, min = 23, giver = "Mastok Wrilehiss", zone = "Ashenvale", x = 73.6, y = 60, side = "H", rewards = {}, money = 1800, xp = 2000 },
@@ -126,7 +126,7 @@ ns.ForeverQuests = {
     [1515] = { title = "Dogran's Captivity", min = 21, giver = "Grunt Logmar", zone = "The Barrens", x = 44.6, y = 59.2, side = "H", rewards = {}, xp = 1150 },
     [1520] = { title = "Call of Earth", level = 4, min = 11, side = "H", rewards = {} },
     [1654] = { title = "The Test of Righteousness", level = 22, min = 24, side = "A", rewards = {} },
-    [1656] = { title = "A Task Unfinished", level = 5, min = 6, giver = "Antur Fallow", zone = "Mulgore", x = 39.2, y = 81.4, side = "H", rewards = {}, items = { { 4540, 5, false }, { 159, 5, false } }, xp = 110 },
+    [1656] = { title = "A Task Unfinished", level = 5, min = 6, giver = "Antur Fallow", zone = "Mulgore", x = 39.2, y = 81.4, side = "H", rewards = {}, items = { { 159, 5, false }, { 4540, 5, false } }, xp = 110 },
     [1738] = { title = "Heartswood", level = 20, min = 20, side = "A", rewards = {} },
     [1998] = { title = "Fenwick Thatros", level = 16, min = 16, side = "H", rewards = {} },
     [2161] = { title = "A Peon's Burden", min = 6, giver = "Ukor", zone = "Durotar", x = 52, y = 68.3, side = "H", rewards = {}, items = { { 159, 5, false }, { 4540, 5, false } }, xp = 110 },
