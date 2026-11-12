@@ -163,6 +163,23 @@ function SettingsUI:ResetPositions()
         end
     end
 end
+
+--- Every Blackthornes window back where it started, in every addon loaded
+--- (the owner, 2026-11-12): the one window, its docked spots, the small
+--- windows and each addon's own. Settings and data stay the same.
+function SettingsUI:ResetAllWindows()
+    local shared = ns.SharedWindow
+    if shared and shared.ResetAllSpots then
+        shared.ResetAllSpots()
+    else
+        SettingsUI:ResetPositions()
+    end
+    ns.Print(L["Every window is back in its first spot."])
+end
+
+if ns.SharedWindow and ns.SharedWindow.AddSpotReset then
+    ns.SharedWindow.AddSpotReset("Equipment", function() SettingsUI:ResetPositions() end)
+end
 --------------------------------------------------------------------------------
 -- Construction
 --------------------------------------------------------------------------------
@@ -887,11 +904,10 @@ function SettingsUI:BuildGeneral()
 
     -- The minimap button always shows (the owner, 2026-10-15); a saved
     -- minimapHidden is kept but no longer read.
-    local positionRow = pages:Row("general", 1, L["Window Positions:"],
-        L["Reset the UI windows to their defaults."])
+    local positionRow = pages:Row("general", 1, L["Window Spots:"],
+        L["Puts every Blackthornes window back where it started. Your settings and data stay the same."])
     local reset = Widgets.CreateButton(positionRow, L["Set Default"], function()
-        SettingsUI:ResetPositions()
-        ns.Print(L["UI windows set to defaults."])
+        SettingsUI:ResetAllWindows()
     end, { width = 100, height = 20 })
     reset:SetPoint("TOPLEFT", CONTROL_X, 0)
     controls.resetPositions = reset
@@ -1303,3 +1319,12 @@ if ns.SharedChoices then
         return ns.db.muteSounds == true, ns.db.muteSoundsAt
     end)
 end
+
+ns.RegisterCommand("windows", L["put every Blackthornes window back where it started (reset)"], function(arg)
+    arg = ((arg or ""):match("^%s*(.-)%s*$") or ""):lower()
+    if arg == "reset" then
+        SettingsUI:ResetAllWindows()
+    else
+        ns.Print(L["Type /beq windows reset to put every window back in its first spot."])
+    end
+end)
