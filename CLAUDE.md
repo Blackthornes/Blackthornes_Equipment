@@ -2059,3 +2059,15 @@ which clears both keys and calls each addon's own reset
 Chat says "Every window is back in its first spot." Tested in
 `tools/test_sharedwindow.lua` and each addon's settings test
 (Tradeskills: `tools/test_resetwindows.lua`).
+
+## Shield tanks
+
+Trent's report (2026-11-13): a Protection paladin was offered two-handers.
+`SPECS.WARRIOR.prot` and `SPECS.PALADIN.prot` carry `shieldTank = true`
+(`Weights:ShieldTank(class, spec)`). For them `Compare:Judge` answers
+"cantuse" with `tankTwoHand` (no tooltip line, no bag arrow, Butler's
+`never` stays unset) for any two-hander, and a shield fills the off hand
+even while a two-hander is worn (`Against`, `ReplacedSlots`). The upgrade
+quest lets such a pick go quietly (`UpgradeQuest:TankTwoHand`) and
+`Alts:Judge` never offers one to a Protection alt. Bear Tank is left
+alone (no shield). No new words. Tested in `tools/test_tanktwohand.lua`.
