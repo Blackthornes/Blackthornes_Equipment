@@ -6,7 +6,7 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lupa import lua51  # noqa: E402
-from forever_quests import from_save, shared_from_save, merge, new_to_classic, render  # noqa: E402
+from forever_quests import from_save, shared_from_save, merge, new_to_classic, render, fill  # noqa: E402
 
 checks = 0
 failures = 0
@@ -116,6 +116,18 @@ lua = lua51.LuaRuntime(unpack_returned_tuples=True, register_eval=False)
 lua.execute("ns = {}")
 lua.execute(text.replace("local _, ns = ...", ""))
 expect("the file loads", lua.eval("ns.ForeverQuests[90010].items[1][2]") == 5)
+
+seen = {"title": "Seen", "level": 20, "rewards": [(1001, 20, 25, False)]}
+fact = {"title": "Fact", "level": 18, "giver": "Ann", "prev": 77,
+        "rewards": [(1001, 0, 0, True), (1003, 20, 25, False)]}
+both = fill(seen, fact)
+expect("what the game showed wins", both["title"] == "Seen" and both["level"] == 20)
+expect("a fact fills what nothing else says", both["giver"] == "Ann" and both["prev"] == 77)
+expect("a fact adds only rewards not seen", both["rewards"] == [(1001, 20, 25, False), (1003, 20, 25, False)])
+text = render({90020: both})
+expect("the file writes the quest before", "prev = 77" in text)
+lua.execute(text.replace("local _, ns = ...", ""))
+expect("and it loads", lua.eval("ns.ForeverQuests[90020].prev") == 77)
 
 print(f"{checks - failures}/{checks} checks passed")
 sys.exit(1 if failures else 0)

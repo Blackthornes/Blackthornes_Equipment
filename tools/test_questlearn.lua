@@ -177,4 +177,10 @@ ns.db.learnedQuests[90001].side = nil
 Learn:OnQuestWindow(true)
 suite.check("an older record is not given a side", ns.db.learnedQuests[90001].side == nil)
 
+-- A shipped quest names the one before it, so the finder walks the chain
+Learn:Lay(90050, { title = "Second Step", level = 20, min = 18, prev = 90049, rewards = {} })
+suite.check("a laid quest keeps the quest before it", S.QUESTS[90050] and S.QUESTS[90050].p == 90049)
+Learn:Lay(90050, { title = "Second Step", prev = 90048, rewards = {} })
+suite.check("and a later reading does not change it", S.QUESTS[90050].p == 90049)
+
 suite.done()
