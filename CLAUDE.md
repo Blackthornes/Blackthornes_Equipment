@@ -405,6 +405,39 @@ asked about again; while fewer worn stats read than that most
 (`wornShort`), nothing new is judged and the worn items are asked for
 again. Tested in `tools/test_speed.lua`.
 
+Nothing scans itself again (the owner's report, 2026-11-13: the window
+still refreshed without end; "fix it once and for all"). The rule: a scan
+starts only on a real change, and nothing a scan does may start the next
+one. What holds it:
+
+- Only an answer the finder is waiting on counts (`Finder.pending`), never
+  one about an item it asked long ago; the client says the same event
+  whenever it loads an item for anyone. An item is not asked again while
+  its answer is due (`Finder:Awaited`, `ANSWER_WAIT`), so a layout that asks
+  as it draws (Dungeon Loot's `DL:Rows`) spends no tries.
+- A whole scan clears `stale` unless something changed while it ran
+  (`Finder.changes`, counted by `MarkStale`).
+- An upgrade a tab of the upgrade quest let go (the live judge says no, the
+  kept verdict yes) is not picked back until `Finder:JudgeKey` moves
+  (`UpgradeQuest:LetGo`, `LetGoNow`), and an answer about a tab's own
+  upgrade is looked at once per gear, level and weights
+  (`UpgradeQuest:OwnItemHeard`).
+- Events that say nothing new are dropped for every listener
+  (`ns.NothingChanged`, `QUIET` in `Core/Init.lua`): bags, worn gear, skills
+  and talents each pass only when their signature moved. Worn and bag
+  signatures leave the item's name out (`Items.LinkKey`), since a link can
+  read with no name; `TRAIT_CONFIG_UPDATED` is said for any trait tree, so
+  it passes only when the active config or a bought node moved
+  (`Weights:TalentSignature`, `Items:TalentSignature`; talents that can't
+  be read hold nothing back). A new quiet event needs a signature that
+  answers nil when it can't tell.
+
+A new listener for `GET_ITEM_INFO_RECEIVED` only redraws, debounced and
+while its window shows; it never calls `MarkStale`. No new words for
+players. Tested in `tools/test_refreshloop.lua`, `tools/test_quietgear.lua`,
+`tools/test_speed.lua`, `tools/test_upgradequest.lua` and
+`tools/test_weights.lua`.
+
 Solo quests (a player asked, the owner agreed 2026-10-06): a quest's
 11th field in `Sources.QUESTS` says what it needs besides the player
 ("group", "dungeon", "raid", "battleground", or nothing), worked out by
