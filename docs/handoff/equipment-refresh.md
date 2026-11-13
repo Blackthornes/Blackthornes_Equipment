@@ -116,6 +116,12 @@ Tick these as each lands (commit shas in the PR).
   - [x] upgrade quest: an answer about a tab's own upgrade is looked at
     once per gear, level and weights (`UpgradeQuest:OwnItemHeard`; one that
     brought nothing still counts; `tools/test_speed.lua`)
+  - [x] talents: `TRAIT_CONFIG_UPDATED` is said for any trait tree, and each
+    one threw every verdict away (`Finder:ForgetVerdicts`) and marked the
+    scan stale. It is now a quiet event (`QUIET` in `Core/Init.lua`,
+    `Items:TalentSignature`, `Weights:TalentSignature`: the active config and
+    every node with ranks bought), passed on only when the talents moved;
+    unreadable talents hold nothing back. `tools/test_weights.lua`.
 - [ ] `CLAUDE.md` notes updated
 
 Test notes: `tools/testenv.lua` runs timers at once, so a scan's wait settles
