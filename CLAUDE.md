@@ -383,6 +383,19 @@ bounded. The quest arrow reads its state every `REST_STEP` (0.5 s) while
 it has nowhere to point ("nowhere", "blind"); the glow still breathes every
 step. Tested in `tools/test_speed.lua` and `tools/test_upgradequest.lua`.
 
+Asking for the rest (a player's report, 2026-11-13: "Still querying the
+server" went up and down and never finished, with stutters, since the
+window scanned again after every burst of answers): a scan asks about
+`ASK_PER_SCAN` (40) items and keeps the rest in `Finder.queue`. While the
+window is open (`Finder.keepAsking`, set by `FinderUI`), each settled burst
+asks the next batch with no scan (`Finder:AskMore`), also after
+`ANSWER_WAIT` (5) seconds with no answer at all (`WaitForAnswers`).
+`WatchAnswers` listeners get `(again, done)`, and the window scans once
+more only on `again` or `done` (the queue is empty). An item asked
+`ASK_TRIES` times with no answer is given up on (`Finder:GaveUp`) and no
+longer counted as waiting, so the count reaches 0. No new words for
+players. Tested in `tools/test_speed.lua`.
+
 Solo quests (a player asked, the owner agreed 2026-10-06): a quest's
 11th field in `Sources.QUESTS` says what it needs besides the player
 ("group", "dungeon", "raid", "battleground", or nothing), worked out by

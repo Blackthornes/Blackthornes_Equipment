@@ -295,6 +295,113 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- Many items the client has not seen: asked a batch at a time, one scan after
+--------------------------------------------------------------------------------
+
+do
+    local S = ns.Sources
+    local realItems = S.ITEMS
+    local items = {}
+    for id, row in pairs(realItems) do items[id] = row end
+    -- 100 pieces the client has never seen, beside the three it has.
+    local unseen = {}
+    for id = 2001, 2100 do
+        items[id] = { 15, 15, 0, 0, 100, v = { 1, 0 } }
+        ITEMS["item:" .. id] = Chest(12)
+        unseen[id] = true
+    end
+    S.ITEMS = items
+    local held, requests = {}, {}
+    local realAfter = _G.C_Timer.After
+    _G.C_Timer.After = function(_, fn) held[#held + 1] = fn end
+    local function Run()
+        local fns = held
+        held = {}
+        for _, fn in ipairs(fns) do fn() end
+    end
+    local realCached, realRequest = C_Item.IsItemDataCachedByID, C_Item.RequestLoadItemDataByID
+    C_Item.IsItemDataCachedByID = function(id) return not unseen[id] end
+    C_Item.RequestLoadItemDataByID = function(id) requests[#requests + 1] = id end
+    local scans, realBuild = 0, Finder.Build
+    Finder.Build = function(self, ...) scans = scans + 1 return realBuild(self, ...) end
+    local realKeep, realWatchers = Finder.keepAsking, Finder.answerWatchers
+    local open = true
+    Finder.keepAsking = function() return open end
+    local looks = 0
+    Finder.answerWatchers = { function(again, done) if again or done then looks = looks + 1 end end }
+    Finder.asked, Finder.tries, Finder.followUp = {}, {}, false
+
+    -- The server answers what it was asked, and the burst settles.
+    local function Answer(drop)
+        local batch = requests
+        requests = {}
+        for _, id in ipairs(batch) do
+            if not (drop and drop[id]) then
+                unseen[id] = nil
+                Finder:OnItemAnswer(id)
+            end
+        end
+        Run()
+    end
+
+    local found = Finder:Scan()
+    suite.check("a scan asks about forty at most", #requests == 40, #requests)
+    suite.check("and waits on all hundred", found.waiting == 100, found.waiting)
+    scans = 0
+    Answer()
+    suite.check("their answers ask for the next forty, with no scan", #requests == 40 and scans == 0 and looks == 0,
+        #requests .. " " .. scans .. " " .. looks)
+    Answer()
+    suite.check("and the last twenty", #requests == 20 and scans == 0 and looks == 0,
+        #requests .. " " .. scans .. " " .. looks)
+    Answer()
+    suite.check("the window hears once, when all are in", looks == 1 and #requests == 0 and scans == 0,
+        looks .. " " .. #requests .. " " .. scans)
+    found = Finder:Scan()
+    suite.check("the scan after that waits on nothing", found.waiting == 0, found.waiting)
+    suite.check("and asks for nothing", #requests == 0, #requests)
+
+    -- With nothing showing the list, the rest is left unasked.
+    for id = 2001, 2100 do unseen[id] = true end
+    Finder.asked, Finder.tries = {}, {}
+    open, looks, requests = false, 0, {}
+    Finder:Scan()
+    Answer()
+    suite.check("with the window shut nothing more is asked", #requests == 0, #requests)
+    open = true
+
+    -- A batch the server never answers does not stop the rest.
+    for id = 2001, 2100 do unseen[id] = true end
+    Finder.asked, Finder.tries = {}, {}
+    looks, requests, held = 0, {}, {}
+    Finder:Scan()
+    suite.check("a scan that leaves some unasked keeps a wait going", #held == 1, #held)
+    requests = {}
+    Run()   -- the wait runs out with no answer at all
+    suite.check("no answer at all still asks for the next batch", #requests == 40 and looks == 0,
+        #requests .. " " .. looks)
+
+    -- Items the server never answers are given up on, and no longer counted.
+    for id = 2001, 2100 do unseen[id] = nil end
+    unseen[2001], unseen[2002] = true, true
+    Finder.asked, Finder.tries, Finder.queue = {}, {}, nil
+    requests, held = {}, {}
+    for _ = 1, 3 do found = Finder:Scan() end
+    suite.check("an item asked three times is still counted while it may come", found.waiting == 2, found.waiting)
+    found = Finder:Scan()
+    suite.check("then it is given up on and not counted as waiting", found.waiting == 0, found.waiting)
+
+    Finder.keepAsking, Finder.answerWatchers = realKeep, realWatchers
+    Finder.Build = realBuild
+    C_Item.IsItemDataCachedByID, C_Item.RequestLoadItemDataByID = realCached, realRequest
+    _G.C_Timer.After = realAfter
+    S.ITEMS = realItems
+    for id = 2001, 2100 do ITEMS["item:" .. id] = nil end
+    Finder.asked, Finder.tries, Finder.queue = {}, {}, nil
+    Finder:MarkStale()
+end
+
+--------------------------------------------------------------------------------
 -- The arrow rests when it has nowhere to point
 --------------------------------------------------------------------------------
 
