@@ -108,6 +108,11 @@ Tick these as each lands (commit shas in the PR).
 - [x] F whole scan clears stale (`Finder.changes`: a change during the scan keeps it stale)
 - [ ] G redraw caps
 - [ ] H other listeners
+  - [x] upgrade quest: an upgrade a tab let go (live judge says no, kept
+    verdict says yes) is not picked back until `Finder:JudgeKey` moves
+    (`UpgradeQuest:LetGo`, `LetGoNow`; test in `tools/test_upgradequest.lua`)
+  - `WeaponSkills` hide and ignore, `SetBestArmorOnly`: fine, they go
+    through `Weights:Changed`. `LookForBetter`: fine, bounded by `LEVEL_LOOK`.
 - [ ] `CLAUDE.md` notes updated
 
 Test notes: `tools/testenv.lua` runs timers at once, so a scan's wait settles
