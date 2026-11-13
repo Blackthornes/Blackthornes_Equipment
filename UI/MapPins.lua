@@ -177,7 +177,8 @@ function MapPins:Spotlight(place, icon, name, opts)
         local now = type(_G.GetTime) == "function" and _G.GetTime() or 0
         opts = type(opts) == "table" and opts or {}
         self.spotlight = { place = place, icon = icon or self.SPOT_ICON, name = shown, at = now,
-            gamePin = opts.gamePin and true or false, area = opts.area and true or false }
+            gamePin = opts.gamePin and true or false, area = opts.area and true or false,
+            questID = opts.questID }
     end
     self:OnTrackingChanged()
 end
@@ -256,7 +257,42 @@ function MapPins:MakeSpot(canvas)
     spot.label = label
 
     spot:SetScript("OnUpdate", function(frame) MapPins:Animate(frame) end)
+
+    -- Card H: our own marker takes clicks (no game frame is touched).
+    -- Left-click aims the quest arrow at it, right-click opens the quest.
+    pcall(spot.EnableMouse, spot, true)
+    spot:SetScript("OnEnter", function(frame) MapPins:SpotTip(frame) end)
+    spot:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    spot:SetScript("OnMouseUp", function(_, button) MapPins:SpotClick(button) end)
     return spot
+end
+
+--- The marker's hover: its name and what each click does.
+function MapPins:SpotTip(spot)
+    local light, tip = self.spotlight, _G.GameTooltip
+    if not (light and tip) then return end
+    tip:SetOwner(spot, "ANCHOR_RIGHT")
+    tip:SetText(light.name or L["Quest"], Theme.Unpack("accent"))
+    tip:AddLine(L["Left-click: aim the arrow here"], 1, 1, 1)
+    tip:AddLine(L["Right-click: open the quest"], 1, 1, 1)
+    tip:Show()
+end
+
+--- Left-click aims the arrow at the marker; right-click opens the quest
+--- panel. Answers what it did, for the tests.
+function MapPins:SpotClick(button)
+    local light = self.spotlight
+    if not (light and light.place) then return nil end
+    if button == "RightButton" then
+        local quest = ns.UpgradeQuest
+        if quest and quest.TurnOn then pcall(quest.TurnOn, quest) end
+        return "quest"
+    end
+    local arrow = ns.QuestArrow
+    if arrow and arrow.AimAtQuest then
+        pcall(arrow.AimAtQuest, arrow, light.questID, light.name, light.place)
+    end
+    return "arrow"
 end
 
 --- One frame of the marker's motion; runs only while it shows.
