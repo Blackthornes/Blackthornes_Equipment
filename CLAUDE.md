@@ -1898,7 +1898,7 @@ marks, streaks, "Up to #N!", "Goal done: X!"), and `About.NOTE` is the
 owner's own wording. This rule is in every addon's notes; keep them the
 same.
 
-## The owner's standing rules (all three addons)
+## The owner's standing rules (all the addons)
 
 - **Every list is dark glass** (the owner, 2026-10-12: "keep this as the
   standard across all Blackthornes addons", after Farmer's Kills & Loot
@@ -1928,14 +1928,11 @@ same.
   writes the CHANGELOG section changes it too; `tools/check_release.py`
   refuses a tag it does not match, and `tools/test_check_release.py` fails
   while the two disagree. This rule is in every addon's notes.
-- **Every reply that ships code ends with the GitHub Desktop steps,** naming
-  the branch: merge the PR on github.com (Ready for review, then Merge pull
-  request); in GitHub Desktop switch **Current branch** to **main** and click
-  **Pull origin**; then say whether the game needs `/reload` or a full restart
-  (a full restart when a file is added, removed or renamed, or the TOC
-  changes). For a release, add: History, right-click the newest commit,
-  Create Tag, `vX.Y.Z`, Push origin. Remind him to pull `main` first, or the
-  tag lands on an old commit and nothing runs.
+- **Every reply that ships code says the PR is ready and whether the game
+  needs `/reload` or a full restart** (a full restart when a file is added,
+  removed or renamed, or the TOC changes). Merging, pulling and tagging go
+  through the project's own steps, never by hand on github.com or in
+  GitHub Desktop.
 - **CurseForge descriptions are features only.** Leave out privacy notes and
   any explanation of public emotes or their switches. Those belong in the
   README and CHANGELOG.
@@ -1968,7 +1965,7 @@ same.
   craft pane in one frame (now `Recipes:NothingNewMidCraft` skips the
   re-read mid-run and `CraftPanel:RefreshInSlices` spreads the pane over
   frames). Visuals and usability are never traded away for speed. This
-  rule is in all four addons' notes; keep them the same.
+  rule is in every addon's notes; keep them the same.
 - **The client is WoW: Forever, a retail engine** (`## Interface: 16001`,
   modern Lua), not 1.12. Instances hand addons secret values that raise when
   compared, concatenated or formatted, so read client values inside a pcall.
