@@ -113,6 +113,9 @@ Tick these as each lands (commit shas in the PR).
     (`UpgradeQuest:LetGo`, `LetGoNow`; test in `tools/test_upgradequest.lua`)
   - `WeaponSkills` hide and ignore, `SetBestArmorOnly`: fine, they go
     through `Weights:Changed`. `LookForBetter`: fine, bounded by `LEVEL_LOOK`.
+  - [x] upgrade quest: an answer about a tab's own upgrade is looked at
+    once per gear, level and weights (`UpgradeQuest:OwnItemHeard`; one that
+    brought nothing still counts; `tools/test_speed.lua`)
 - [ ] `CLAUDE.md` notes updated
 
 Test notes: `tools/testenv.lua` runs timers at once, so a scan's wait settles
