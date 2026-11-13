@@ -214,7 +214,49 @@ function Finder:OnQuestTurnedIn(_, questID)
         if type(ns.charDB.questsTurnedIn) ~= "table" then ns.charDB.questsTurnedIn = {} end
         ns.charDB.questsTurnedIn[id] = true
     end
+    -- A hand-in can open quests a giver would not offer before.
+    if ns.charDB then ns.charDB.questsNotOffered = nil end
     self:MarkStale()
+end
+
+--------------------------------------------------------------------------------
+-- Quests a giver did not offer
+--------------------------------------------------------------------------------
+
+-- The data is Classic's, and Forever changed some givers: Deathguard
+-- Burgess offered a level 6 character nothing like Proof of Demise
+-- (2026-11-13). When the giver's window shows and the quest is not in it,
+-- the upgrade quest notes it here, per character, as
+-- `questsNotOffered[questID] = level` (never rename it). It counts only at
+-- that level, and every hand-in forgets them all, so a giver is asked
+-- again once something changed.
+
+--- Did this quest's giver show the character its quests without this one,
+--- at the level the character is now?
+function Finder:NotOffered(questID)
+    local seen = ns.charDB and ns.charDB.questsNotOffered
+    local level = type(seen) == "table" and questID and seen[questID]
+    if not level then return false end
+    local player = self:Player()
+    return player ~= nil and level == player.level
+end
+
+--- Note that a quest's giver did not offer it, at this level.
+function Finder:NoteNotOffered(questID)
+    local player = self:Player()
+    if not (ns.charDB and tonumber(questID) and player) then return end
+    if type(ns.charDB.questsNotOffered) ~= "table" then ns.charDB.questsNotOffered = {} end
+    ns.charDB.questsNotOffered[tonumber(questID)] = player.level
+    self:MarkStale()
+end
+
+--- The quest to pick up first for a quest reward: the first quest still to
+--- do in its chain, or the quest itself. Nil when the first is a quest the
+--- data only names.
+function Finder:FirstPickup(questID)
+    local chain, unknown = self:Chain(questID)
+    if unknown then return nil end
+    return chain[1] and chain[1].questID or questID
 end
 
 --------------------------------------------------------------------------------
@@ -458,7 +500,11 @@ function Finder:SourcesFor(itemID, player)
                 -- Handed over with the quest, not picked from its choices.
                 given = Finder.Given(itemID, questID) or nil,
             }
-            if self:QuestAllowed(source, player.level) then found[#found + 1] = source end
+            -- The giver was asked and did not offer the first quest to do.
+            local first = not unknown and (chain[1] and chain[1].questID or questID)
+            if self:QuestAllowed(source, player.level) and not (first and self:NotOffered(first)) then
+                found[#found + 1] = source
+            end
         end
     end
 
