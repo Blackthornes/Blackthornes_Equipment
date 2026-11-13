@@ -18,6 +18,54 @@
   }
  },
  "loot": {
+  "109": {
+   "Atal'alarion": [
+    10799
+   ]
+  },
+  "129": {
+   "Tuten'kash": [
+    10775
+   ]
+  },
+  "189": {
+   "Arcanist Doan": [
+    274293,
+    274294
+   ],
+   "Herod": [
+    250546,
+    250547,
+    250548,
+    250549,
+    250550,
+    252465,
+    252466,
+    252531,
+    252532,
+    252533,
+    252562,
+    252563,
+    252564,
+    252565,
+    254039,
+    254041,
+    254043,
+    254045,
+    254047,
+    274295
+   ],
+   "Houndmaster Loksey": [
+    3456
+   ],
+   "Interrogator Vishas": [
+    7683,
+    274290
+   ],
+   "Scarlet Commander Mograine": [
+    254037
+   ]
+  },
   "189Graveyard": {
    "Bloodmage Thalnos": [
     274291
@@ -26,6 +74,70 @@
   "189Library": {
    "Houndmaster Loksey": [
     274292
+   ]
+  },
+  "209": {
+   "Chief Ukorz Sandscalp": [
+    250552,
+    252584,
+    252586,
+    252587,
+    254103
+   ],
+   "Gahz'rilla": [
+    250555
+   ],
+   "Shadowpriest Sezz'ziz": [
+    9470,
+    9473,
+    9474,
+    9475
+   ],
+   "Theka the Martyr": [
+    250553,
+    252551
+   ],
+   "Witch Doctor Zum'rah": [
+    252548,
+    254097
+   ]
+  },
+  "229": {
+   "Solakar Flamewreath": [
+    16695
+   ]
+  },
+  "230": {
+   "Anub'shiah": [
+    11731
+   ],
+   "Gorosh the Dervish": [
+    11726
+   ],
+   "Hurley Blackbreath": [
+    11735
+   ],
+   "Ok'thor the Breaker": [
+    11728
+   ]
+  },
+  "289": {
+   "Darkmaster Gandling": [
+    16667,
+    16677,
+    16686,
+    16693,
+    16698,
+    16707,
+    16720,
+    16727,
+    16731
+   ],
+   "Kormok": [
+    22303
+   ],
+   "Spectral Researcher": [
+    252606
    ]
   },
   "2959": {
@@ -144,9 +256,31 @@
     271098
    ]
   },
+  "329": {
+   "Balnazzar": [
+    16725,
+    18720
+   ],
+   "Ramstein the Gorger": [
+    16737
+   ],
+   "The Unforgiven": [
+    13404,
+    13405
+   ],
+   "Timmy the Cruel": [
+    13400,
+    13402,
+    16724
+   ]
+  },
   "33": {
+   "Arugal's Voidwalker": [
+    5943
+   ],
    "Baron Silverlaine": [
-    273637
+    273637,
+    276631
    ],
    "Commander Springvale": [
     273105,
@@ -173,11 +307,22 @@
     273829
    ],
    "Dextren Ward": [
+    250498,
+    250500,
+    250501,
+    250502,
+    253975,
+    253977,
+    253979,
+    253981,
+    253983,
+    253985,
     273817,
     273819,
     273820
    ],
    "Hamhock": [
+    273809,
     273810,
     273811
    ],
@@ -196,6 +341,25 @@
     273102,
     273298
    ],
+   "Edwin VanCleef": [
+    250493,
+    250494,
+    250495,
+    250496,
+    250497,
+    252445,
+    252446,
+    252500,
+    252501,
+    252502,
+    252503,
+    253937,
+    253939,
+    253941,
+    253943,
+    253945,
+    253947
+   ],
    "Gilnid": [
     273086,
     273297
@@ -204,11 +368,35 @@
     284715
    ],
    "Rhahk'Zor": [
+    5187,
     273289
    ],
    "Sneed": [
+    5194,
+    5195,
+    250488,
+    250489,
+    250490,
+    250491,
+    250492,
+    252434,
+    252435,
+    252490,
+    252491,
+    252492,
+    252493,
+    253901,
+    253903,
+    253905,
+    253907,
+    253909,
+    253911,
     273092,
     273293
+   ],
+   "Sneed's Shredder": [
+    2169,
+    285292
    ]
   },
   "389": {
@@ -223,7 +411,16 @@
     272999
    ]
   },
+  "409": {
+   "Ragnaros": [
+    17182
+   ]
+  },
   "43": {
+   "Hedrum the Creeper": [
+    11633,
+    11729
+   ],
    "Kresh": [
     273084
    ],
@@ -243,7 +440,9 @@
     274160
    ],
    "Aggem Thorncurse": [
-    274158
+    6681,
+    274158,
+    274159
    ],
    "Overlord Ramtusk": [
     274161
@@ -256,6 +455,11 @@
   },
   "48": {
    "Gelihast": [
+    252456,
+    252512,
+    252513,
+    252514,
+    252515,
     273141,
     273840
    ],
@@ -263,9 +467,33 @@
     273839
    ],
    "Lorgus Jett": [
+    250499,
     273841,
     273842,
     273843
+   ],
+   "Twilight Lord Kelris": [
+    252455,
+    273846
+   ]
+  },
+  "70": {
+   "Archaedas": [
+    250551,
+    250554,
+    252547,
+    252549,
+    252550,
+    252585,
+    254095,
+    254099,
+    254101
+   ],
+   "Geomancer Flintdagger": [
+    5743
+   ],
+   "Ironaya": [
+    9407
    ]
   },
   "90": {
@@ -274,6 +502,7 @@
     274068
    ],
    "Grubbis": [
+    9445,
     274043
    ]
   }
@@ -1751,6 +1980,868 @@
    "min": 24,
    "side": "A",
    "title": "Highland Hides"
+  }
+ },
+ "rewards": {
+  "11": {
+   "level": 6,
+   "min": 6,
+   "prev": 239,
+   "rewards": [
+    [
+     287059,
+     6,
+     10,
+     false
+    ]
+   ],
+   "title": "Riverpaw Gnoll Bounty"
+  },
+  "1139": {
+   "level": 35,
+   "min": 35,
+   "rewards": [
+    [
+     270095,
+     35,
+     47,
+     false
+    ]
+   ],
+   "title": "The Lost Tablets of Will",
+   "x": 76.4,
+   "y": 10.8,
+   "zone": "Ironforge"
+  },
+  "1199": {
+   "giver": "Argent Guard Manados",
+   "level": 20,
+   "min": 20,
+   "rewards": [
+    [
+     270025,
+     20,
+     27,
+     false
+    ]
+   ],
+   "title": "Twilight Falls",
+   "x": 55.2,
+   "y": 23.4,
+   "zone": "Darnassus"
+  },
+  "1367": {
+   "prev": 1385,
+   "title": "Magram Alliance"
+  },
+  "1368": {
+   "prev": 1382,
+   "title": "Gelkis Alliance"
+  },
+  "1369": {
+   "prev": 1367,
+   "title": "Broken Tears"
+  },
+  "1370": {
+   "prev": 1368,
+   "title": "Stealing Supplies"
+  },
+  "1373": {
+   "prev": 1370,
+   "title": "Ongeku"
+  },
+  "1382": {
+   "title": "Strange Alliance",
+   "x": 66.4,
+   "y": 10.8,
+   "zone": "Desolace"
+  },
+  "1385": {
+   "title": "Brutal Politics",
+   "x": 66.4,
+   "y": 10.8,
+   "zone": "Desolace"
+  },
+  "1446": {
+   "level": 50,
+   "min": 50,
+   "rewards": [
+    [
+     270115,
+     50,
+     55,
+     false
+    ]
+   ],
+   "title": "Jammal'an the Prophet",
+   "x": 33.6,
+   "y": 75.2,
+   "zone": "The Hinterlands"
+  },
+  "2040": {
+   "level": 15,
+   "min": 15,
+   "prev": 2041,
+   "rewards": [
+    [
+     270015,
+     15,
+     22,
+     false
+    ],
+    [
+     270016,
+     15,
+     22,
+     false
+    ]
+   ],
+   "title": "Underground Assault"
+  },
+  "2041": {
+   "giver": "Shoni the Shilent",
+   "title": "Speak with Shoni",
+   "x": 69.4,
+   "y": 50.4,
+   "zone": "Ironforge"
+  },
+  "214": {
+   "giver": "Scout Riell",
+   "level": 14,
+   "min": 14,
+   "rewards": [
+    [
+     270005,
+     14,
+     19,
+     false
+    ]
+   ],
+   "title": "Red Silk Bandanas",
+   "x": 56.6,
+   "y": 47.4,
+   "zone": "Westfall"
+  },
+  "239": {
+   "title": "Westbrook Garrison Needs Help!",
+   "x": 42.2,
+   "y": 65.8,
+   "zone": "Elwynn Forest"
+  },
+  "2418": {
+   "level": 30,
+   "min": 30,
+   "rewards": [
+    [
+     270055,
+     30,
+     38,
+     false
+    ]
+   ],
+   "title": "Power Stones",
+   "x": 42.4,
+   "y": 52.4,
+   "zone": "Badlands"
+  },
+  "2768": {
+   "level": 44,
+   "min": 44,
+   "rewards": [
+    [
+     270099,
+     44,
+     49,
+     false
+    ]
+   ],
+   "title": "Divino-matic Rod",
+   "x": 52.4,
+   "y": 28.4,
+   "zone": "Tanaris"
+  },
+  "2846": {
+   "level": 43,
+   "min": 43,
+   "prev": 2861,
+   "rewards": [
+    [
+     270098,
+     43,
+     48,
+     false
+    ]
+   ],
+   "title": "Tiara of the Deep"
+  },
+  "2861": {
+   "title": "Tabetha's Task",
+   "x": 84.4,
+   "y": 11.0,
+   "zone": "Undercity"
+  },
+  "2987": {
+   "level": 38,
+   "min": 38,
+   "rewards": [
+    [
+     287073,
+     38,
+     43,
+     false
+    ]
+   ],
+   "title": "Gordunni Cobalt",
+   "x": 75.6,
+   "y": 44.2,
+   "zone": "Feralas"
+  },
+  "3528": {
+   "level": 49,
+   "min": 49,
+   "rewards": [
+    [
+     270117,
+     49,
+     54,
+     false
+    ]
+   ],
+   "title": "The God Hakkar"
+  },
+  "377": {
+   "giver": "Councilman Millstipe",
+   "level": 22,
+   "min": 22,
+   "rewards": [
+    [
+     270029,
+     22,
+     28,
+     false
+    ]
+   ],
+   "title": "Crime and Punishment",
+   "x": 72.0,
+   "y": 47.8,
+   "zone": "Duskwood"
+  },
+  "378": {
+   "level": 22,
+   "min": 22,
+   "rewards": [
+    [
+     270036,
+     22,
+     29,
+     false
+    ]
+   ],
+   "title": "The Fury Runs Deep",
+   "x": 49.6,
+   "y": 18.2,
+   "zone": "Wetlands"
+  },
+  "464": {
+   "prev": 473,
+   "title": "War Banners"
+  },
+  "465": {
+   "prev": 464,
+   "title": "Nek'rosh's Gambit"
+  },
+  "473": {
+   "title": "Report to Captain Stoutfist",
+   "x": 10.0,
+   "y": 56.8,
+   "zone": "Wetlands"
+  },
+  "474": {
+   "level": 23,
+   "min": 23,
+   "prev": 465,
+   "rewards": [
+    [
+     287067,
+     23,
+     32,
+     false
+    ]
+   ],
+   "title": "Defeat Nek'rosh"
+  },
+  "565": {
+   "level": 29,
+   "min": 29,
+   "rewards": [
+    [
+     287069,
+     29,
+     34,
+     false
+    ]
+   ],
+   "title": "Bartolo's Yeti Fur Cloak"
+  },
+  "6521": {
+   "level": 28,
+   "min": 28,
+   "prev": 6522,
+   "rewards": [
+    [
+     270054,
+     28,
+     38,
+     false
+    ]
+   ],
+   "title": "An Unholy Alliance"
+  },
+  "6522": {
+   "title": "An Unholy Alliance",
+   "x": 42.3,
+   "y": 89.9,
+   "zone": "The Barrens"
+  },
+  "704": {
+   "level": 30,
+   "min": 30,
+   "prev": 739,
+   "rewards": [
+    [
+     270059,
+     30,
+     40,
+     false
+    ],
+    [
+     270060,
+     30,
+     40,
+     false
+    ]
+   ],
+   "title": "Agmond's Fate"
+  },
+  "707": {
+   "title": "Ironband Wants You!",
+   "x": 73.8,
+   "y": 13.0,
+   "zone": "Ironforge"
+  },
+  "709": {
+   "level": 30,
+   "min": 30,
+   "rewards": [
+    [
+     270074,
+     30,
+     42,
+     false
+    ],
+    [
+     270075,
+     30,
+     42,
+     false
+    ]
+   ],
+   "title": "Solution to Doom",
+   "x": 51.4,
+   "y": 76.4,
+   "zone": "Badlands"
+  },
+  "738": {
+   "prev": 707,
+   "title": "Find Agmond"
+  },
+  "739": {
+   "prev": 738,
+   "title": "Murdaloc"
+  },
+  "7441": {
+   "level": 52,
+   "min": 52,
+   "rewards": [
+    [
+     270127,
+     52,
+     57,
+     false
+    ]
+   ],
+   "title": "Pusillin and the Elder Azj'Tordin"
+  },
+  "79007": {
+   "title": "... and that note you found",
+   "x": 46.4,
+   "y": 73.9,
+   "zone": "The Barrens"
+  },
+  "79192": {
+   "prev": 79007,
+   "title": "Stepping Stones"
+  },
+  "79980": {
+   "level": 23,
+   "min": 23,
+   "prev": 79192,
+   "rewards": [
+    [
+     217314,
+     23,
+     27,
+     false
+    ],
+    [
+     217315,
+     23,
+     27,
+     false
+    ]
+   ],
+   "title": "Scramble"
+  },
+  "86777": {
+   "title": "Master Feardred",
+   "x": 63.0,
+   "y": 21.4,
+   "zone": "Azshara"
+  },
+  "86792": {
+   "prev": 86777,
+   "title": "Thinning Their Forces"
+  },
+  "86796": {
+   "prev": 86792,
+   "title": "Later, Satyr"
+  },
+  "86797": {
+   "prev": 86796,
+   "title": "Return to Rageroar"
+  },
+  "86798": {
+   "prev": 86797,
+   "title": "Timbermaw Reinforcements"
+  },
+  "86814": {
+   "prev": 87346,
+   "title": "Blackmaw Counter-Offensive"
+  },
+  "87346": {
+   "prev": 86798,
+   "title": "Chieftain Bloodmaw"
+  },
+  "8801": {
+   "giver": "Caelestrasz",
+   "title": "C'Thun's Legacy",
+   "x": 28.6,
+   "y": 89.2,
+   "zone": "Silithus"
+  },
+  "8802": {
+   "level": 60,
+   "min": 60,
+   "prev": 8801,
+   "rewards": [
+    [
+     21709,
+     60,
+     88,
+     false
+    ],
+    [
+     21710,
+     60,
+     88,
+     false
+    ],
+    [
+     21712,
+     60,
+     88,
+     false
+    ]
+   ],
+   "title": "The Savior of Kalimdor"
+  },
+  "898": {
+   "giver": "Gilthares Firebough",
+   "level": 20,
+   "min": 13,
+   "rewards": [
+    [
+     270011,
+     0,
+     21,
+     false
+    ]
+   ],
+   "title": "Free From the Hold",
+   "x": 61.2,
+   "y": 53.6,
+   "zone": "The Barrens"
+  },
+  "92065": {
+   "level": 47,
+   "min": 47,
+   "prev": 86814,
+   "rewards": [
+    [
+     260216,
+     47,
+     62,
+     false
+    ],
+    [
+     260217,
+     47,
+     62,
+     false
+    ],
+    [
+     260218,
+     47,
+     62,
+     false
+    ],
+    [
+     260219,
+     47,
+     62,
+     false
+    ]
+   ],
+   "title": "Blackmaw Reclamation"
+  },
+  "92415": {
+   "title": "Remember That I Love You",
+   "x": 47.2,
+   "y": 38.4,
+   "zone": "Stormwind City"
+  },
+  "92646": {
+   "title": "Confront Lorthuna",
+   "x": 65.2,
+   "y": 50.4,
+   "zone": "Zephras Isle"
+  },
+  "92743": {
+   "prev": 1369,
+   "title": "A Conqueror's Crown"
+  },
+  "92841": {
+   "prev": 92743,
+   "title": "Valley of Bones"
+  },
+  "92844": {
+   "prev": 92841,
+   "title": "Mountain of Bones"
+  },
+  "92847": {
+   "prev": 92844,
+   "title": "Corrupting Tears"
+  },
+  "92873": {
+   "level": 35,
+   "min": 35,
+   "prev": 92847,
+   "rewards": [
+    [
+     271796,
+     35,
+     38,
+     false
+    ],
+    [
+     271797,
+     35,
+     38,
+     false
+    ],
+    [
+     271798,
+     35,
+     38,
+     false
+    ]
+   ],
+   "title": "Proof of Concept"
+  },
+  "92893": {
+   "prev": 92873,
+   "title": "No Mercy for the Weak"
+  },
+  "93034": {
+   "prev": 1373,
+   "title": "Valley of Bones"
+  },
+  "93035": {
+   "prev": 93034,
+   "title": "Ravaging Ravagers"
+  },
+  "93041": {
+   "prev": 93035,
+   "title": "Facing the Truth"
+  },
+  "93044": {
+   "prev": 93041,
+   "title": "A Cleansing Cry"
+  },
+  "93045": {
+   "level": 35,
+   "min": 35,
+   "prev": 93044,
+   "rewards": [
+    [
+     271794,
+     35,
+     38,
+     false
+    ],
+    [
+     271799,
+     35,
+     38,
+     false
+    ]
+   ],
+   "title": "Test Your Theory"
+  },
+  "93058": {
+   "title": "Saving Our Own",
+   "x": 66.4,
+   "y": 10.8,
+   "zone": "Desolace"
+  },
+  "93066": {
+   "prev": 92893,
+   "title": "Bristleback Retreat"
+  },
+  "93072": {
+   "prev": 93066,
+   "title": "Long-Term Solutions"
+  },
+  "93090": {
+   "prev": 93836,
+   "title": "What Comes Next"
+  },
+  "93122": {
+   "prev": 93058,
+   "title": "Checking Things Out"
+  },
+  "93128": {
+   "level": 35,
+   "min": 35,
+   "prev": 93122,
+   "rewards": [
+    [
+     271801,
+     35,
+     42,
+     false
+    ],
+    [
+     271802,
+     35,
+     42,
+     false
+    ],
+    [
+     271805,
+     35,
+     42,
+     false
+    ]
+   ],
+   "title": "Khan Jehn"
+  },
+  "93188": {
+   "prev": 93072,
+   "title": "Return to Orgrul"
+  },
+  "93196": {
+   "level": 35,
+   "min": 35,
+   "prev": 93188,
+   "rewards": [
+    [
+     271800,
+     35,
+     42,
+     false
+    ],
+    [
+     271803,
+     35,
+     42,
+     false
+    ],
+    [
+     271804,
+     35,
+     42,
+     false
+    ]
+   ],
+   "title": "Khan Jehn"
+  },
+  "932": {
+   "giver": "Tallonkai Swiftroot",
+   "title": "Twisted Hatred",
+   "x": 55.4,
+   "y": 56.8,
+   "zone": "Teldrassil"
+  },
+  "93739": {
+   "level": 13,
+   "min": 7,
+   "prev": 95350,
+   "rewards": [
+    [
+     286426,
+     0,
+     15,
+     false
+    ]
+   ],
+   "title": "Exploring the Horde"
+  },
+  "93836": {
+   "prev": 92646,
+   "title": "The Fate of Zephras"
+  },
+  "94907": {
+   "title": "A Small Favor"
+  },
+  "94984": {
+   "level": 39,
+   "min": 39,
+   "prev": 94907,
+   "rewards": [
+    [
+     279854,
+     39,
+     46,
+     false
+    ],
+    [
+     279855,
+     39,
+     46,
+     false
+    ]
+   ],
+   "title": "Tome of Twilight"
+  },
+  "95161": {
+   "level": 15,
+   "min": 15,
+   "prev": 92415,
+   "rewards": [
+    [
+     279870,
+     15,
+     24,
+     false
+    ]
+   ],
+   "title": "Remember That I Love You"
+  },
+  "95349": {
+   "prev": 93090,
+   "title": "The Earthen Ring"
+  },
+  "95350": {
+   "prev": 95349,
+   "title": "Welcome to Azeroth"
+  },
+  "95432": {
+   "title": "Rise Up!"
+  },
+  "95433": {
+   "level": 36,
+   "min": 36,
+   "prev": 95432,
+   "rewards": [
+    [
+     275011,
+     36,
+     46,
+     false
+    ]
+   ],
+   "title": "Death to the Executioner"
+  },
+  "95561": {
+   "title": "Apple of My Eye"
+  },
+  "95913": {
+   "level": 36,
+   "min": 36,
+   "prev": 95561,
+   "rewards": [
+    [
+     274931,
+     36,
+     38,
+     false
+    ],
+    [
+     274932,
+     36,
+     38,
+     false
+    ]
+   ],
+   "title": "Fit for a Princess"
+  },
+  "96391": {
+   "giver": "Earthseer Farsen",
+   "title": "Underground Map",
+   "x": 64.8,
+   "y": 58.4,
+   "zone": "Dun Morogh"
+  },
+  "96393": {
+   "level": 9,
+   "min": 9,
+   "prev": 96391,
+   "rewards": [
+    [
+     279894,
+     9,
+     18,
+     false
+    ],
+    [
+     279895,
+     9,
+     18,
+     false
+    ],
+    [
+     279896,
+     9,
+     18,
+     false
+    ]
+   ],
+   "title": "Old Ironforge Incursion"
+  },
+  "98403": {
+   "level": 1,
+   "min": 1,
+   "prev": 932,
+   "rewards": [
+    [
+     282284,
+     1,
+     10,
+     false
+    ]
+   ],
+   "title": "Twisted Hatred"
   }
  }
 }
