@@ -394,6 +394,8 @@ function Alts:Judge(note, link)
 
     local usable, fromLevel = Weights:CanUse(note.class, info.classID, info.subclassID, info.equipLoc)
     if not usable or not Compare:ClassAllows(note.class, link) then return nil end
+    -- A Protection warrior or paladin tanks with a one-hander and a shield.
+    if info.equipLoc == "INVTYPE_2HWEAPON" and Weights:ShieldTank(note.class, spec) then return nil end
     -- Mail or plate that character only gets far later: not for it yet.
     if info.classID == 4 and fromLevel
         and (note.level or 0) < fromLevel - Compare.LATER_ARMOR_WITHIN then
