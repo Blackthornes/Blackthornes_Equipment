@@ -667,6 +667,45 @@ function UpgradeQuest:WorthLooking(empty)
     return false
 end
 
+--- The finder's key for the verdicts it keeps, or nil when it can't say.
+local function JudgeKeyNow()
+    local finder = ns.Finder
+    if not (finder and type(finder.JudgeKey) == "function") then return nil end
+    local ok, key = pcall(finder.JudgeKey, finder)
+    return ok and key or nil
+end
+
+--- A tab let this upgrade go because the game, asked now, says it is no
+--- upgrade to wear (beaten, lighter armor, a hidden weapon, a two-hander
+--- for a shield tank). The finder keeps its verdicts until gear, level or
+--- a setting moves, and the two can disagree (a buff's hit, worn gear the
+--- client let go of). Picked straight back, it would be let go again, with
+--- a whole scan each time, for as long as the panel is up. So it is kept
+--- out of the picks until the finder's own key moves. Session only.
+function UpgradeQuest:LetGo(itemID)
+    if type(itemID) ~= "number" then return end
+    self.letGo = self.letGo or {}
+    self.letGo[itemID] = JudgeKeyNow() or false
+end
+
+--- The upgrades let go while gear, level and settings stand as they do
+--- now, as `[itemID] = true` for Choose, or nil. Older ones are forgotten.
+function UpgradeQuest:LetGoNow()
+    local list = self.letGo
+    if type(list) ~= "table" or next(list) == nil then return nil end
+    local key = JudgeKeyNow()
+    local except
+    for itemID, at in pairs(list) do
+        if key and at == key then
+            except = except or {}
+            except[itemID] = true
+        else
+            list[itemID] = nil
+        end
+    end
+    return except
+end
+
 --- Give every tab without a quest its best upgrade, and pick the tab the
 --- first time: the one whose upgrade is most worth the trip.
 function UpgradeQuest:PickEmpty()
@@ -687,13 +726,15 @@ function UpgradeQuest:PickEmpty()
         return
     end
     self.rescan = false
+    -- What a tab just let go is not picked straight back (see LetGo).
+    local except = self:LetGoNow()
     for _, tab in ipairs(empty) do
-        local best = self:Choose(found, nil, tab)
+        local best = self:Choose(found, except, tab)
         if best then self:Start(best.pick, best.source, best.why) end
         self.states[tab] = best and "active" or "none"
     end
     if not IS_TAB[ns.charDB.upgradeQuestTab] then
-        local best = self:Choose(found)
+        local best = self:Choose(found, except)
         ns.charDB.upgradeQuestTab = best and self.TabOf(best.source) or "vendor"
     end
 end
@@ -1521,12 +1562,14 @@ function UpgradeQuest:Check()
             -- Protection picked for a two-hander, after this was picked (followed by hand too): let it go
             -- quietly (not skipped), and the tab picks again.
             quests[tab.key] = nil
+            self:LetGo(quest.itemID)
             if ns.Finder then ns.Finder:MarkStale() end
         elseif quest and not self:StillWanted(quest) then
             -- Something as good or better was put on first (looted, bought,
             -- made): this one is beaten, carried or not. Only the tab on
             -- show says so; the others quietly pick again.
             quests[tab.key] = nil
+            self:LetGo(quest.itemID)
             if shown then
                 ns.Print(L.Format("dropped the upgrade quest for %s, since you're already wearing something as good.", Items.ShowLink(quest.link)))
                 if ns.Toast then
@@ -1825,6 +1868,24 @@ function UpgradeQuest:OwnItem(itemID)
     return false
 end
 
+--- Has an answer about this own upgrade been looked at already, with the
+--- same gear, level and weights? Notes it when not. Not saved.
+function UpgradeQuest:OwnItemHeard(itemID)
+    local ok, id = pcall(function() return tonumber(itemID) end)
+    if not (ok and id) then return false end
+    -- An answer that brought nothing (the client still lacks the item) is
+    -- not the one waited for: the next one counts.
+    local finder = ns.Finder
+    if finder and type(finder.IsCached) == "function" and not finder:IsCached(id) then
+        return false
+    end
+    local key = JudgeKeyNow() or false
+    self.ownHeard = self.ownHeard or {}
+    if self.ownHeard[id] == key then return true end
+    self.ownHeard[id] = key
+    return false
+end
+
 --- Is an item answer from the server about gear the quest cares about: an
 --- item a finder scan asked for, or one of the tabs' upgrades?
 function UpgradeQuest:WantsItem(itemID)
@@ -1870,6 +1931,11 @@ function UpgradeQuest:OnEvent(event, level)
             and not self:OwnItem(level) then
             return
         end
+        -- One of the tabs' own upgrades: its first answer lets it be judged
+        -- and its steps drawn. The panel reading its link loads it again,
+        -- and the client says so every time; that is nothing new until the
+        -- gear worn, the level or the weights move.
+        if self:OwnItemHeard(level) then return end
     end
     if event == "PLAYER_LEVEL_UP" then
         -- Look for gear the new level opened, for a little while.

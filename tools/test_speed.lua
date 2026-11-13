@@ -148,12 +148,47 @@ local updates = 0
 local realUpdate = Quest.Update
 Quest.Update = function(...) updates = updates + 1 return realUpdate(...) end
 Quest.waiting, Quest.updating = false, false
+-- As after a real change. (The wait for a batch the server drops runs at
+-- once in a test, and has already used the one the scans above left.)
+ns.Finder.followUp = true
 for _ = 1, 20 do Quest:OnEvent("GET_ITEM_INFO_RECEIVED", 4242, true) end
 suite.check("twenty answers about a chat link look at nothing", updates == 0, updates)
 Quest:OnEvent("GET_ITEM_INFO_RECEIVED", 1004, true)
 suite.check("an answer a scan asked for waits for the rest of the burst", updates == 0, updates)
 ns.Finder:AnswersSettled()
 suite.check("and looks again once they settle", updates == 1, updates)
+
+-- A tab's own upgrade: its answer is looked at once. The panel reading its
+-- link loads it again and the client says so every time; that is nothing
+-- new until the gear worn, the level or the weights move.
+do
+    local own, loaded = 7777, false
+    local realCached = C_Item.IsItemDataCachedByID
+    C_Item.IsItemDataCachedByID = function(id)
+        if id == own then return loaded end
+        return true
+    end
+    Quest.Update = function() updates = updates + 1 end
+    Quest:Quests().vendor = { itemID = own, source = { kind = "vendor" } }
+    Quest.ownHeard, Quest.waiting, Quest.updating = nil, false, false
+    updates = 0
+    Quest:OnEvent("GET_ITEM_INFO_RECEIVED", own, false)
+    suite.check("an answer that brought nothing still looks", updates == 1, updates)
+    loaded = true
+    Quest:OnEvent("GET_ITEM_INFO_RECEIVED", own, true)
+    suite.check("and so does the one that brought the item", updates == 2, updates)
+    for _ = 1, 25 do Quest:OnEvent("GET_ITEM_INFO_RECEIVED", own, true) end
+    suite.check("the same upgrade loading again looks at nothing", updates == 2, updates)
+    suite.check("a text id reads the same", Quest:OwnItemHeard(tostring(own)) == true)
+    ns.Weights:Changed()
+    updates = 0
+    Quest:OnEvent("GET_ITEM_INFO_RECEIVED", own, true)
+    Quest:OnEvent("GET_ITEM_INFO_RECEIVED", own, true)
+    suite.check("after a real change its answer counts once more", updates == 1, updates)
+    Quest:Quests().vendor = nil
+    Quest.ownHeard = nil
+    C_Item.IsItemDataCachedByID = realCached
+end
 Quest.Update = realUpdate
 
 --------------------------------------------------------------------------------
@@ -276,6 +311,7 @@ do
     Finder.MarkStale = function(self, ...) stales = stales + 1 return realMark(self, ...) end
     Finder.asked = Finder.asked or {}
     Finder.asked[1001], Finder.asked[1002], Finder.asked[1003] = true, true, true
+    Finder.pending = { [1001] = true, [1002] = true, [1003] = true }
     Finder:OnItemAnswer(1001)
     Finder:OnItemAnswer(1002)
     Finder:OnItemAnswer(1003)
@@ -293,6 +329,7 @@ do
     -- start yet another scan, or it never stops.
     held = {}
     Finder.asked[1004] = true
+    Finder.pending[1004] = true
     Finder:OnItemAnswer(1004)
     for _, fn in ipairs(held) do fn() end
     suite.check("the answers after that follow-up start no more scans", settled[2] == false, tostring(settled[2]))
@@ -441,12 +478,27 @@ do
     for id = 2001, 2100 do unseen[id] = nil end
     unseen[2001], unseen[2002] = true, true
     Finder.asked, Finder.tries, Finder.queue = {}, {}, nil
+    Finder.pending, Finder.askedAt = {}, {}
     requests, held = {}, {}
     Finder.judged = nil
+    -- Scans one right after the other spend one try between them.
     for _ = 1, 3 do found = Finder:Scan() end
-    suite.check("an item asked three times is still counted while it may come", found.waiting == 2, found.waiting)
+    suite.check("scans in a row ask about an item once", #requests == 2 and Finder.tries[2001] == 1,
+        #requests .. " " .. tostring(Finder.tries[2001]))
+    -- Scans well apart ask again, three times in all.
+    local realNow, clock = Finder.Now, os.time()
+    Finder.Now = function() return clock end
+    for _ = 1, 2 do
+        clock = clock + 60
+        found = Finder:Scan()
+    end
+    suite.check("an item asked three times is still counted while it may come",
+        found.waiting == 2 and Finder.tries[2001] == 3, found.waiting)
+    clock = clock + 60
     found = Finder:Scan()
     suite.check("then it is given up on and not counted as waiting", found.waiting == 0, found.waiting)
+    suite.check("and never asked a fourth time", #requests == 6, #requests)
+    Finder.Now = realNow
 
     Finder.keepAsking, Finder.answerWatchers = realKeep, realWatchers
     Finder.Build = realBuild
@@ -455,6 +507,30 @@ do
     S.ITEMS = realItems
     for id = 2001, 2100 do ITEMS["item:" .. id] = nil end
     Finder.asked, Finder.tries, Finder.queue = {}, {}, nil
+    Finder:MarkStale()
+    -- A whole scan is the newest there is: the upgrade quest and the
+    -- character sheet use it, and make no second scan of their own.
+    local parked = {}
+    _G.C_Timer.After = function(_, fn) parked[#parked + 1] = fn end
+    Finder.pending, Finder.askedAt = {}, {}
+    Finder:Scan()
+    suite.check("a whole scan is fresh", Finder.stale == false and Finder:Fresh() ~= nil,
+        tostring(Finder.stale))
+    -- Something changes while the scan runs: that scan is already old.
+    local changed = false
+    Finder.Now = function()
+        if not changed then
+            changed = true
+            Finder:MarkStale()
+        end
+        return os.time()
+    end
+    Finder:Scan()
+    suite.check("a change during a scan leaves it out of date", changed and Finder.stale == true)
+    Finder.Now = realNow
+    Finder:Scan()
+    suite.check("and the scan after it is fresh again", Finder.stale == false)
+    _G.C_Timer.After = realAfter
     Finder:MarkStale()
 end
 
