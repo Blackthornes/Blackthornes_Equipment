@@ -396,6 +396,15 @@ more only on `again` or `done` (the queue is empty). An item asked
 longer counted as waiting, so the count reaches 0. No new words for
 players. Tested in `tools/test_speed.lua`.
 
+Worn gear the game lets go (a player's report, 2026-11-13: the window
+cycled, counts flipping and "You wear:" names blank): a worn link can read
+with no name and its stats nil. `JudgeKey` uses `Finder:WornState()`, a
+name-free key (`WornKey`) and the most worn stats ever read for that gear,
+so the verdicts stay. An item judged before keeps its verdict and is never
+asked about again; while fewer worn stats read than that most
+(`wornShort`), nothing new is judged and the worn items are asked for
+again. Tested in `tools/test_speed.lua`.
+
 Solo quests (a player asked, the owner agreed 2026-10-06): a quest's
 11th field in `Sources.QUESTS` says what it needs besides the player
 ("group", "dungeon", "raid", "battleground", or nothing), worked out by
@@ -434,6 +443,15 @@ The finder has its own "This zone only" (a player asked, 2026-10-09;
 apart from the panel's so ticking it never lets a quest go:
 `FinderUI:Groups` then reads `found.all` through `UpgradeQuest.InZone`, and
 `ZONE_CHANGED_NEW_AREA` refreshes the window.
+The upgrade quest follows the window's filters too (a player's report,
+2026-11-13: the window kept to the zone and the quest did not):
+`UpgradeQuest:KeepsToZone` is true while either zone box is ticked, and
+`Choose` passes only sources `UpgradeQuest.WindowAllows` (the source boxes,
+`finderSourcesOff`, and "Only what I can get now", `finderGetNow`, read
+from the save). A change to any of them (`FinderUI.TellQuest`) calls
+`UpgradeQuest:WindowFiltersChanged`, which lets go of the tabs' quests they
+now leave out (not skipped; a followed quest stays) and picks again.
+Tested in `tools/test_zonequest.lua`.
 Asked the same day: picks that show the same whole percent sort nearest
 first (`Finder.Nearness`: in the zone, by map distance when
 `Finder.Spot` can read where the character stands on that zone's own
