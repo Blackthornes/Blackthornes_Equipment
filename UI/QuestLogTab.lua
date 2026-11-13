@@ -23,7 +23,7 @@
 -- taking the mouse, caught again after a burst of quest events, and put back
 -- when the panel closes. Never Hide or Show: that runs the game's own code
 -- as this addon and taints Edit Mode. A protected line waits for combat to
--- end, as the controller bag button does (UI/BagIcons.lua).
+-- end.
 --
 -- Quest item buttons are secure buttons (using an item is protected), so
 -- they are kept outside the panel and placed over their row by screen

@@ -498,12 +498,6 @@ function SettingsUI:BuildGear()
 
     pages:Section("gear", 2, L["BAGS AND TOOLTIPS"])
 
-    local gamepadRow = pages:Row("gear", 2, L["Hide Controller Bag Button:"],
-        L["Hides the controller button over your backpack's sort button."])
-    controls.hideGamepadBag = Tick(gamepadRow, L["On"], "hideGamepadBag", true, function()
-        if ns.BagIcons then pcall(ns.BagIcons.ApplyGamepadBag, ns.BagIcons) end
-    end)
-
     local suffixRow = pages:Row("gear", 2, L["Random Roll Names:"],
         L["Adds a green's roll, like of the Monkey, to its tooltip."])
     controls.suffixLine = ShiftStepper(suffixRow, "suffixLine", "suffix")
@@ -1057,7 +1051,6 @@ function SettingsUI:Refresh()
     controls.tooltip:Sync()
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
     controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)
-    controls.hideGamepadBag:SetChecked(ns.db.hideGamepadBag ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
     controls.autoEquip:SetChecked(ns.db.autoEquip == true)
     controls.bestArmorOnly:SetChecked(ns.Compare.BestArmorOnly())
