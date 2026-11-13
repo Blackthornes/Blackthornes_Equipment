@@ -1234,15 +1234,13 @@ whose tooltip adds to Mining, Skinning, Herbalism or Fishing; the owner
 asked 2026-10-10) get none. "Sell coins" in Settings (`bagSellCoins`, account wide, on unless
 unticked). Not yet seen in game.
 
-## The controller bag button
+## The controller bag button (taken out)
 
-Forever's client draws a controller bag button (`GamepadBackpackButton`,
-on its `GamepadBagBar`, from Blizzard's own bag bar file) over the combined
-backpack's sort button. The owner asked (2026-10-09) to hide it:
-`BagIcons:ApplyGamepadBag` makes it see-through and lets clicks through
-to the sort button (`ns.Veil:Cover`) while "Bag sort button" in Settings
-(`hideGamepadBag`, account wide, on unless unticked) is ticked; unticking
-puts it back as it was. A protected button waits for combat to end.
+Forever's beta client drew a controller bag button (`GamepadBackpackButton`)
+over the combined backpack's sort button, and Equipment veiled it from 0.16.0
+("Hide Controller Bag Button:", `hideGamepadBag`). The owner had it taken out
+(2026-11-13): it was only for that beta bug. `hideGamepadBag` stays in
+players' saves, unread; never rename it or reuse the name.
 
 Why never Hide or Show (0.18.0, 2026-10-10): calling them on a game frame
 runs the game's OnHide/OnShow code as this addon. The tracker and the bag
