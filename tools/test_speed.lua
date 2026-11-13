@@ -51,6 +51,59 @@ suite.check("ten more scans judge nothing again", judges == 0, judges)
 found = Finder:Scan()
 suite.check("and still find the same upgrades", found.count == 3 and found.slots[5][1].itemID == 1003)
 
+-- The client lets worn gear go from its memory now and then: the link comes
+-- back with no name and no stats. That is no gear change, so nothing is
+-- judged again and the list holds still (a player's report, 2026-11-13).
+do
+    local named, blank = "|cffffffff|Hitem:900:|h[Worn Chest]|h|r", "|cffffffff|Hitem:900:|h[]|h|r"
+    ITEMS[named] = Chest(10)
+    env.worn[5] = named
+    Finder:Scan()
+    local asked = {}
+    local realRequest, realCached = C_Item.RequestLoadItemDataByID, C_Item.IsItemDataCachedByID
+    C_Item.RequestLoadItemDataByID = function(id) asked[#asked + 1] = id end
+    judges = 0
+    env.worn[5] = blank
+    for _ = 1, 5 do found = Finder:Scan() end
+    suite.check("a worn link that lost its name and stats judges nothing again", judges == 0, judges)
+    suite.check("and the list still shows the same upgrades", found.count == 3, found.count)
+    local wornAsked = false
+    for _, id in ipairs(asked) do if id == 900 then wornAsked = true end end
+    suite.check("and the worn piece is asked for again", wornAsked)
+    env.worn[5] = named
+    judges = 0
+    found = Finder:Scan()
+    suite.check("when it comes back nothing is judged again either", judges == 0 and found.count == 3,
+        judges .. " " .. found.count)
+
+    -- A piece judged before that the client lets go of keeps its verdict and
+    -- is not asked about again.
+    asked = {}
+    C_Item.IsItemDataCachedByID = function(id) return id ~= 1002 end
+    found = Finder:Scan()
+    suite.check("an upgrade the client forgot is still listed", found.count == 3, found.count)
+    suite.check("and not asked about again", #asked == 0, #asked)
+    C_Item.RequestLoadItemDataByID, C_Item.IsItemDataCachedByID = realRequest, realCached
+
+    -- Something new while the worn stats are missing waits, never judged
+    -- against nothing.
+    ITEMS["item:1006"] = Chest(5)
+    S.ITEMS[1006] = { 15, 15, 0, 0, 100, v = { 1, 0 } }
+    env.worn[5] = blank
+    judges = 0
+    found = Finder:Scan()
+    suite.check("a new item is not judged while the worn stats are missing", judges == 0 and found.waiting >= 1,
+        judges .. " " .. found.waiting)
+    env.worn[5] = named
+    judges = 0
+    found = Finder:Scan()
+    suite.check("and is judged once they are back", judges == 1 and found.count == 3, judges .. " " .. found.count)
+    ITEMS["item:1006"], S.ITEMS[1006] = nil, nil
+    env.worn[5] = "item:900"
+    ITEMS[named] = nil
+    Finder:Scan()
+end
+
 env.worn[5] = "item:901"
 judges = 0
 found = Finder:Scan()
@@ -344,6 +397,7 @@ do
         Run()
     end
 
+    Finder.judged = nil
     local found = Finder:Scan()
     suite.check("a scan asks about forty at most", #requests == 40, #requests)
     suite.check("and waits on all hundred", found.waiting == 100, found.waiting)
@@ -363,6 +417,7 @@ do
 
     -- With nothing showing the list, the rest is left unasked.
     for id = 2001, 2100 do unseen[id] = true end
+    Finder.judged = nil
     Finder.asked, Finder.tries = {}, {}
     open, looks, requests = false, 0, {}
     Finder:Scan()
@@ -372,6 +427,7 @@ do
 
     -- A batch the server never answers does not stop the rest.
     for id = 2001, 2100 do unseen[id] = true end
+    Finder.judged = nil
     Finder.asked, Finder.tries = {}, {}
     looks, requests, held = 0, {}, {}
     Finder:Scan()
@@ -386,6 +442,7 @@ do
     unseen[2001], unseen[2002] = true, true
     Finder.asked, Finder.tries, Finder.queue = {}, {}, nil
     requests, held = {}, {}
+    Finder.judged = nil
     for _ = 1, 3 do found = Finder:Scan() end
     suite.check("an item asked three times is still counted while it may come", found.waiting == 2, found.waiting)
     found = Finder:Scan()

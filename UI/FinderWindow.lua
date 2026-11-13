@@ -1528,6 +1528,14 @@ function FinderUI:SetGetNowOnly(on)
     if self.getNow then self.getNow:SetChecked(ns.db.finderGetNow) end
     self.offset = 0
     self:Redraw()
+    self.TellQuest()
+end
+
+--- The upgrade quest picks only what this window's filters let through,
+--- so it hears when one changes.
+function FinderUI.TellQuest()
+    local quest = ns.UpgradeQuest
+    if quest and quest.WindowFiltersChanged then pcall(quest.WindowFiltersChanged, quest) end
 end
 
 --- Can this source be used now? Not for gear that waits on a reputation
@@ -1561,6 +1569,7 @@ function FinderUI:SetSource(kind, on)
     end
     self.offset = 0
     self:Redraw()
+    self.TellQuest()
 end
 
 --- Draw again from the last scan, for a change that needs no new look (a
@@ -1586,6 +1595,7 @@ function FinderUI:SetZoneOnly(on)
     if self.zone then self.zone:SetChecked(ns.db.finderZoneOnly) end
     self.offset = 0
     self:Refresh()
+    self.TellQuest()
 end
 
 --- The zone the list keeps to, or nil for anywhere.
