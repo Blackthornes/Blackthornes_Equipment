@@ -102,13 +102,17 @@ Tick these as each lands (commit shas in the PR).
 
 - [x] A pending answers
 - [ ] B kept links
-- [ ] C bounded waiting
+- [x] C bounded waiting (an item is not asked again inside `ANSWER_WAIT`; `Build` waits when anything is due; `AskMore` asks old unanswered ones again with no scan, three tries, then gives up)
 - [ ] D worn stats held, name-free signatures
 - [ ] E judge on arrival
-- [ ] F whole scan clears stale
+- [x] F whole scan clears stale (`Finder.changes`: a change during the scan keeps it stale)
 - [ ] G redraw caps
 - [ ] H other listeners
 - [ ] `CLAUDE.md` notes updated
+
+Test notes: `tools/testenv.lua` runs timers at once, so a scan's wait settles
+inside the scan unless the test holds `C_Timer.After`. Move the clock with
+`Finder.Now`, and reset `Finder.pending` and `Finder.askedAt` between parts.
 
 ## How to work on it
 
