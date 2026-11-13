@@ -1445,6 +1445,11 @@ function UpgradeQuest:Check()
                 end
             end
             if ns.Finder then ns.Finder:MarkStale() end
+        elseif quest and self:NotOffered(quest) then
+            -- Its giver showed this character its quests without it (Forever
+            -- changed some givers): let it go quietly, and the tab picks again.
+            quests[tab.key] = nil
+            if ns.Finder then ns.Finder:MarkStale() end
         elseif quest and (self:LighterArmor(quest) or self:HiddenWeapon(quest)) then
             -- Best Armor Only was ticked, or an untrained weapon hidden,
             -- after this was picked (followed by hand too): let it go
@@ -1841,12 +1846,132 @@ function UpgradeQuest:StopWatchingLanding()
     if ticker and type(ticker.Cancel) == "function" then pcall(ticker.Cancel, ticker) end
 end
 
+--------------------------------------------------------------------------------
+-- Quests a giver did not offer
+--------------------------------------------------------------------------------
+
+-- The data is Classic's, and Forever changed some givers: Deathguard
+-- Burgess showed a level 6 character no Proof of Demise (2026-11-13). When
+-- a giver's window shows (gossip, greeting, or a single quest's page) and
+-- the quest the upgrade quest sends the player for is not in it, the quest
+-- is noted for this character at this level (`Finder:NoteNotOffered`), so
+-- the tab lets it go and picks the next upgrade. Only when the giver's
+-- name matches, the quest is open at the character's level and not grey,
+-- and it is not in the log or done.
+
+-- Seconds after a gossip or greeting in which a single quest's page is
+-- the player clicking one of its quests, not the giver's only offer.
+UpgradeQuest.PICKED_FROM_LIST = 10
+-- How far under the character's level a quest still shows when the client
+-- does not say (it goes grey and may be hidden past that).
+UpgradeQuest.GREEN_RANGE = 5
+
+--- Has this quest's giver left it out at the character's level?
+function UpgradeQuest:NotOffered(quest)
+    local source = quest and quest.source
+    local finder = ns.Finder
+    if not (finder and source and source.kind == "quest" and source.questID) then return false end
+    return finder:NotOffered(finder:FirstPickup(source.questID))
+end
+
+--- What the giver in front of the player offers: its name (lower case) and
+--- { [questID] = true }, or nil when the window cannot be read.
+function UpgradeQuest.GiverOffers(event)
+    if Read(_G.UnitIsPlayer, "npc") == true then return nil end
+    local raw = Read(_G.UnitName, "npc")
+    if type(raw) ~= "string" then return nil end
+    -- Compared in a pcall: inside a dungeon the name can be a secret value.
+    local ok, name = pcall(function()
+        local lower = raw:lower()
+        if lower == "" then return nil end
+        return lower
+    end)
+    if not ok or not name then return nil end
+    local offered = {}
+    if event == "GOSSIP_SHOW" then
+        local gossip = _G.C_GossipInfo
+        local list = Read(gossip and gossip.GetAvailableQuests)
+        if type(list) ~= "table" then return nil end
+        for _, info in ipairs(list) do
+            local id = type(info) == "table" and tonumber(info.questID)
+            if id then offered[id] = true end
+        end
+    elseif event == "QUEST_GREETING" then
+        local count = tonumber(Read(_G.GetNumAvailableQuests))
+        if not count then return nil end
+        for i = 1, count do
+            local id = tonumber(select(5, Read(_G.GetAvailableQuestInfo, i)))
+            -- One that will not name its ID: nothing can be told apart.
+            if not id then return nil end
+            offered[id] = true
+        end
+    elseif event == "QUEST_DETAIL" then
+        local id = tonumber(Read(_G.GetQuestID))
+        if not id or id == 0 then return nil end
+        offered[id] = true
+    else
+        return nil
+    end
+    return name, offered
+end
+
+--- Should this quest be in a giver's list for the character now?
+function UpgradeQuest.ShouldOffer(questID, level)
+    local finder = ns.Finder
+    local quest = questID and ns.Sources and ns.Sources.QUESTS[questID]
+    if not (finder and quest and level) then return false end
+    if (tonumber(quest[2]) or 0) > level then return false end
+    local green = tonumber(Read(_G.GetQuestGreenRange)) or UpgradeQuest.GREEN_RANGE
+    if (tonumber(quest[3]) or level) < level - green then return false end
+    if OnQuest(questID) ~= false then return false end
+    if finder:QuestDone(questID) then return false end
+    return true
+end
+
+function UpgradeQuest:OnGiverWindow(event)
+    local finder = ns.Finder
+    if not (self:IsEnabled() and finder) then return end
+    local now = finder.Now()
+    local name, offered = self.GiverOffers(event)
+    if not name then return end
+    if event ~= "QUEST_DETAIL" then
+        self.listShown = { name = name, at = now }
+    else
+        local list = self.listShown
+        if list and list.name == name and now - list.at <= self.PICKED_FROM_LIST then return end
+    end
+    local player = finder:Player()
+    local level = player and player.level
+    local noted = false
+    for _, tab in ipairs(TABS) do
+        local quest = Valid(self:Quests()[tab.key])
+        local source = quest and quest.source
+        local first = source and source.kind == "quest" and source.questID and finder:FirstPickup(source.questID)
+        local data = first and ns.Sources.QUESTS[first]
+        local giver = data and data[6]
+        if type(giver) == "string" and giver:lower() == name
+            and not offered[first] and self.ShouldOffer(first, level) then
+            finder:NoteNotOffered(first)
+            noted = true
+        end
+    end
+    if noted then
+        self.rescan = true
+        self.offer = nil
+        self.lastStep = nil
+        self:UpdateSoon()
+    end
+end
+
 function UpgradeQuest:OnEnable()
     for _, event in ipairs({ "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
         "ZONE_CHANGED_NEW_AREA", "QUEST_ACCEPTED", "QUEST_LOG_UPDATE", "QUEST_TURNED_IN", "QUEST_WATCH_LIST_CHANGED",
         "GET_ITEM_INFO_RECEIVED", "SKILL_LINES_CHANGED", "NEW_RECIPE_LEARNED", "TRAIT_CONFIG_UPDATED",
         "PLAYER_CONTROL_GAINED", "PLAYER_ENTERING_WORLD" }) do
         ns.RegisterEvent(self, event, self.OnEvent)
+    end
+    for _, event in ipairs({ "GOSSIP_SHOW", "QUEST_GREETING", "QUEST_DETAIL" }) do
+        ns.RegisterEvent(self, event, function() UpgradeQuest:OnGiverWindow(event) end)
     end
     if self:IsEnabled() then self:UpdateSoon(3) end
 end

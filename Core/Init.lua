@@ -537,7 +537,8 @@ local DEFAULTS = {
     -- of its quest in `upgradeQuest`, where versions before the tabs kept
     -- it), with `upgradeQuestSkipped` and `upgradeQuestsDone`, as are
     -- the quests seen handed in (`questsTurnedIn`, Logic/Finder.lua), for a
-    -- client that cannot say which quests are done.
+    -- client that cannot say which quests are done, and the quests a giver
+    -- did not offer at a level (`questsNotOffered`, Logic/Finder.lua).
     upgradeQuest = false,
 
     -- The upgrade quest panel's Quest log tab (UI/QuestLogTab.lua): list

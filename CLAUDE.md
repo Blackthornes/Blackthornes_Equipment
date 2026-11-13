@@ -797,6 +797,19 @@ back (`QuestPanel:ExplainClose`, a hook, so the shared Titanforged file is
 untouched), the gear window's header has an Upgrade quest button (green
 while it is up, `UI:OnUpgradeQuestToggled`), and Shift-click on the
 minimap button toggles it. Tested in `tools/test_questtoggle.lua`.
+Quests a giver leaves out (a player's report, 2026-11-13: Deathguard
+Burgess showed a level 6 Undead nothing, though Classic's data has him
+give Proof of Demise): when a giver's window opens (`GOSSIP_SHOW`,
+`QUEST_GREETING`, or a lone `QUEST_DETAIL` not picked from a list in the
+last `PICKED_FROM_LIST` seconds) and the first quest of a tab's chain
+(`Finder:FirstPickup`) is from that giver by name, should show
+(`UpgradeQuest.ShouldOffer`: level reached, not grey, not in the log or
+done) and is not offered, `UpgradeQuest:OnGiverWindow` notes it per
+character in `BlackthornesEquipmentCharDB.questsNotOffered[questID] =
+level` (never rename it). At that level the finder leaves it out
+(`Finder:NotOffered`) and the tab lets it go without skipping it; a new
+level or any hand-in asks again. No new words. Tested in
+`tools/test_questnotoffered.lua`.
 Ignore (the owner asked 2026-10-08) is the old Skip renamed: the same
 `.upgradeQuestSkipped` list, never offered again until restored.
 `UI/IgnoredWindow.lua` (Settings > Upgrade quest > Ignored, `/beq quest
