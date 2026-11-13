@@ -100,7 +100,7 @@ So one real change costs a handful of scans at most.
 
 Tick these as each lands (commit shas in the PR).
 
-- [ ] A pending answers
+- [x] A pending answers
 - [ ] B kept links
 - [ ] C bounded waiting
 - [ ] D worn stats held, name-free signatures
