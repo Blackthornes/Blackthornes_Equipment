@@ -103,7 +103,7 @@ Tick these as each lands (commit shas in the PR).
 - [x] A pending answers
 - [ ] B kept links
 - [x] C bounded waiting (an item is not asked again inside `ANSWER_WAIT`; `Build` waits when anything is due; `AskMore` asks old unanswered ones again with no scan, three tries, then gives up)
-- [ ] D worn stats held, name-free signatures
+- [x] D name-free signatures (`Items.LinkKey`; `WornSignature` and `BagSignature` leave the name out, so a worn or carried link read with no name is no change to `ns.NothingChanged`; `tools/test_quietgear.lua`). Worn stats held was already in (`Finder:WornState`).
 - [ ] E judge on arrival
 - [x] F whole scan clears stale (`Finder.changes`: a change during the scan keeps it stale)
 - [ ] G redraw caps
