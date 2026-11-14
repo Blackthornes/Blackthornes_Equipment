@@ -4,6 +4,13 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.10.1
+
+For WoW: Forever (interface 16001). `/reload` is enough.
+
+- **Upgrade quest labels wrap.** The chips, tabs, item name, gear rating words and gain on the upgrade quest panel now grow or wrap to fit, in every language, instead of being cut off.
+- **Show the way skips early trainers.** Starter class trainers only teach the first few levels, so Show the way no longer sends a higher level character to one. If none of the trainers seen teach far enough, chat says how far they go.
+
 ## 1.10.0
 
 For WoW: Forever (interface 16001). A full restart is needed after updating, because files were added.
