@@ -23,6 +23,17 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.10.0
+
+- The upgrade quest panel tells you how your gear is doing and why it picked each upgrade.
+- You can choose how you like to gear up, like quick and close, or vendors first.
+- A gold card pops up when you finish an upgrade.
+- Clicking the upgrade's marker on the map aims your arrow at it.
+- The quest log shows how much a quest reward would help you.
+Fixes and changes:
+- The Upgrades window stops refreshing on its own.
+- The controller bag button setting is gone.
+
 ## 1.9.2
 
 Fixes and changes:

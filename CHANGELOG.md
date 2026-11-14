@@ -4,6 +4,18 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.10.0
+
+For WoW: Forever (interface 16001). A full restart is needed after updating, because files were added.
+
+- **Upgrade quest cards.** The upgrade quest panel now shows Your Gear (rated Poor, Fair, Good or Great, with how many upgrades wait), why this upgrade was picked, what it asks of you as chips (level, dungeon, chain, standing), and Also good with, a few next picks you can switch to with a click. The Options button shows how many filters are on, and the foot has Ignored and Done.
+- **How You Gear Up.** A new drop-down in the panel's Options, also on the Upgrade quest page of Settings, picks a style: Anything, Quick and Close, No Dungeons, Dungeons Please or Vendors First. It starts on Anything.
+- **Upgrade Done!** When the quest's gear goes on, a gold plaque shows the item and its gain, with a count of upgrades done.
+- **Map marker clicks.** Left-click the upgrade's map marker to aim the quest arrow there, or right-click to open the quest.
+- **Quest log marks.** A quest whose reward is an upgrade shows its gain, like "+6% Head", on its row in the Quest log tab.
+- **Controller bag button.** The setting that hid the controller bag button is gone, because only the beta needed it.
+- **Upgrades window.** It no longer scans again and again, so it stops refreshing on its own.
+
 ## 1.9.2
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
