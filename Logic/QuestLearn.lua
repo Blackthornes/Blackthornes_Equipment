@@ -135,6 +135,12 @@ function QuestLearn:Lay(questID, rec)
         local races = SideRaces(rec.side)
         if row[4] ~= races then row[4] = races; added = true end
     end
+    -- The quest to do first, so the finder can walk the chain.
+    local prev = tonumber(rec.prev)
+    if row.learned and prev and prev > 0 and not row.p then
+        row.p = prev
+        added = true
+    end
 
     for _, reward in ipairs(type(rec.rewards) == "table" and rec.rewards or {}) do
         local itemID = type(reward) == "table" and tonumber(reward[1])

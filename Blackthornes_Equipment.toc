@@ -46,11 +46,13 @@ Data\ForeverItems.lua
 Data\Rolls.lua
 Data\ClassSpells.lua
 Data\Enchants.lua
+Data\ItemSets.lua
 Data\Travel.lua
 Data\TravelZones.lua
 
 Logic\Weights.lua
 Logic\Compare.lua
+Logic\ItemSets.lua
 Logic\Wear.lua
 Logic\WeaponSkills.lua
 Logic\ClassTraining.lua
@@ -110,6 +112,8 @@ UI\MapPins.lua
 UI\SlotUpgrades.lua
 UI\MoreMarks.lua
 UI\QuestPanel.lua
+UI\QuestPanelMore.lua
+UI\UpgradeDone.lua
 UI\QuestLogTab.lua
 UI\DungeonQuestsWindow.lua
 UI\DungeonLootWindow.lua

@@ -24,7 +24,7 @@ Forever dungeon needs one line in FOREVER_DUNGEONS.
 
 Some of what Forever changed is known before anyone here loots it: a new
 dungeon's level range and door, and which boss drops which new gear.
-tools/forever_facts.json holds those facts, each checked by hand, item IDs
+tools/forever_facts.json holds those facts, item IDs
 checked against the Forever client's game tables (pass --tables to check
 them again). A fact never replaces what Farmer saw: Farmer's rate wins,
 and a fact's drop has no rate (0). For Classic's dungeons only gear

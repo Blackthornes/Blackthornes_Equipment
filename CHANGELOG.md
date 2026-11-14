@@ -4,6 +4,100 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.10.0
+
+For WoW: Forever (interface 16001). A full restart is needed after updating, because files were added.
+
+- **Upgrade quest cards.** The upgrade quest panel now shows Your Gear (rated Poor, Fair, Good or Great, with how many upgrades wait), why this upgrade was picked, what it asks of you as chips (level, dungeon, chain, standing), and Also good with, a few next picks you can switch to with a click. The Options button shows how many filters are on, and the foot has Ignored and Done.
+- **How You Gear Up.** A new drop-down in the panel's Options, also on the Upgrade quest page of Settings, picks a style: Anything, Quick and Close, No Dungeons, Dungeons Please or Vendors First. It starts on Anything.
+- **Upgrade Done!** When the quest's gear goes on, a gold plaque shows the item and its gain, with a count of upgrades done.
+- **Map marker clicks.** Left-click the upgrade's map marker to aim the quest arrow there, or right-click to open the quest.
+- **Quest log marks.** A quest whose reward is an upgrade shows its gain, like "+6% Head", on its row in the Quest log tab.
+- **Controller bag button.** The setting that hid the controller bag button is gone, because only the beta needed it.
+- **Upgrades window.** It no longer scans again and again, so it stops refreshing on its own.
+
+## 1.9.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Various bug fixes for Equipment.**
+
+## 1.9.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Upgrades window.** The Upgrades window no longer keeps asking the server and stuttering.
+
+## 1.9.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Window Spots.** Windows now remember where you drag them, and the one window remembers its spot beside each game window it docks to (the auction house, mailbox, vendor and trainer). Every window stays on screen. A new Window Spots: Set Default row on the General page (or `/beq windows reset`) puts every Blackthornes window back where it started. Sizes, settings and data stay as they are.
+
+## 1.8.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Mute All Sounds.** A new Mute All Sounds: row under Effects on the General page (or `/beq mute on|off`) quiets every sound from every Blackthornes addon at once. It starts off.
+- **Spell power and healing.** Gear with both damage and healing now counts toward both totals, so casters and healers are judged fairly. Healer defaults were lowered a little.
+
+## 1.7.3
+
+For WoW: Forever (interface 16001). A /reload is enough after updating.
+
+- **Small fixes.** A few small touch-ups.
+
+## 1.7.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Gear your class can never wear.** Equipment now tells Butler when your class can never wear a piece of gear, so Butler can offer to sell the soulbound ones. You will not see a change here without Butler.
+
+## 1.7.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Shift tooltips.** Holding Shift over a tooltip no longer throws a Lua error.
+
+## 1.7.0
+
+For WoW: Forever (interface 16001). A full game restart is needed after updating (new files).
+
+- **Set bonuses count.** When you wear enough pieces of a set to get a bonus, that bonus now counts when Equipment judges what would replace a piece, so a piece that would break a set is no longer called an upgrade unless the swap still comes out ahead. Only bonuses that give plain stats count. There is no setting for it.
+
+## 1.6.4
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Lag spikes.** The game still hitched every few seconds while the addon looked for upgrades, most of all with the upgrade quest up. It now searches only after a new zone, new gear, a level, talents, a new skill or recipe, or a changed setting.
+
+## 1.6.3
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Less CPU and memory.** The addon checked for gear upgrades far too often, which slowed the game down, most of all with the upgrade quest up. It now looks again only when something that matters changes.
+
+## 1.6.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Queue It and patterns you learn later.** If you bought a pattern and learned it after clicking Queue It, the button stayed on Queued with nothing in your queue. Now the next click queues the craft.
+
+## 1.6.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Sell coin.** On a character you skip for upgrades, soulbound gear another character would wear now gets the sell coin in your bags, since it can't be mailed. Gear you can still mail is kept for the other character, same as before.
+- **Sharing your data.** If you chose to share your data, it now goes to one more of our collecting characters. It is still off until you turn it on, and what gets sent is the same.
+
+## 1.6.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Bear Tank.** Druids have a new Bear Tank spec in Judge Gear As: (or `/beq spec bear`). Feral Combat now weighs gear for cats only. Talents still pick Feral, and saved Feral weights stay as they are.
+- **Haste and expertise.** Gear with haste or expertise rating now counts. Each spec weighs haste like its crit, and melee weapon specs weigh expertise at a quarter of their hit.
+- **Spell hit.** The spell hit cap is now 4%. Destruction, Retribution and Shadow have new weights.
+
 ## 1.5.2
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.

@@ -28,7 +28,7 @@ end
 -- section changes this line too, and tools/check_release.py refuses a tag it
 -- does not match. Played straight from the repository there is no packager
 -- to fill in the TOC's version, so this is the one shown.
-ns.RELEASED_VERSION = "1.5.2"
+ns.RELEASED_VERSION = "1.10.0"
 
 -- The TOC carries @project-version@, which the release packager rewrites to
 -- the tag it is building, "v0.2.0" say. Running straight from the repository
@@ -253,9 +253,11 @@ end
 -- A skill point (crafting, gathering or a weapon swing) fires
 -- SKILL_LINES_CHANGED; only a skill learned or dropped is passed on, since
 -- a point threw every upgrade verdict away and started a new upgrade scan
--- (a hitch on some finished crafts, 2026-10-11).
+-- (a hitch on some finished crafts, 2026-10-11). TRAIT_CONFIG_UPDATED is
+-- said for every trait tree the client has; only a change to the talents
+-- bought is passed on.
 local QUIET = { BAG_UPDATE_DELAYED = "BagSignature", PLAYER_EQUIPMENT_CHANGED = "WornSignature",
-    SKILL_LINES_CHANGED = "SkillSignature" }
+    SKILL_LINES_CHANGED = "SkillSignature", TRAIT_CONFIG_UPDATED = "TalentSignature" }
 local lastSeen = {}
 
 --- True when the event changed nothing worth looking at again.
@@ -455,9 +457,6 @@ local DEFAULTS = {
     -- A gold coin on bag gear better sold than kept (BagIcons:Sells). On
     -- unless unticked.
     bagSellCoins = true,
-    -- Hide Forever's controller bag button, which covers the combined
-    -- backpack's sort button (BagIcons:ApplyGamepadBag). On unless unticked.
-    hideGamepadBag = true,
 
     -- A line in chat when an upgrade you can wear now lands in the bags.
     upgradeChat = true,
@@ -537,7 +536,8 @@ local DEFAULTS = {
     -- of its quest in `upgradeQuest`, where versions before the tabs kept
     -- it), with `upgradeQuestSkipped` and `upgradeQuestsDone`, as are
     -- the quests seen handed in (`questsTurnedIn`, Logic/Finder.lua), for a
-    -- client that cannot say which quests are done.
+    -- client that cannot say which quests are done, and the quests a giver
+    -- did not offer at a level (`questsNotOffered`, Logic/Finder.lua).
     upgradeQuest = false,
 
     -- The upgrade quest panel's Quest log tab (UI/QuestLogTab.lua): list

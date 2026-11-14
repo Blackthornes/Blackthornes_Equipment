@@ -353,8 +353,9 @@ function BagIcons:Sells(bag, slot, link, result)
     if type(result) ~= "table" or result.verdict == "upgrade" then return false end
     -- On a character skipped for upgrades, gear one of the others would
     -- wear is kept for them, not sold (a crafting alt making gear for a main).
+    -- The slot goes too, so a soulbound copy, which can't be mailed, still sells.
     if result.skipped and ns.Alts then
-        local ok, alt = pcall(ns.Alts.BestFor, ns.Alts, link)
+        local ok, alt = pcall(ns.Alts.BestFor, ns.Alts, link, bag, slot)
         if not ok or alt then return false end
     end
 
@@ -474,7 +475,6 @@ function BagIcons:InstallHooks()
         if type(hookScript) == "function" then
             pcall(hookScript, frame, "OnShow", function(shown)
                 pcall(BagIcons.RefreshFrame, BagIcons, shown)
-                pcall(BagIcons.ApplyGamepadBag, BagIcons)
             end)
         end
     end
@@ -496,48 +496,6 @@ function BagIcons:Describe()
     return frames, hooks
 end
 
---------------------------------------------------------------------------------
--- Forever's controller bag button
---------------------------------------------------------------------------------
-
--- Forever's client puts a controller bag button (GamepadBackpackButton, on
--- its GamepadBagBar) right over the combined backpack's sort button. While
--- hideGamepadBag is on it is out of sight and lets clicks through to the sort
--- button; unticking the setting puts it back as it was. It is never hidden
--- with Hide, which would run the game's own code for the bag bar as this
--- addon and leave Edit Mode's layout tainted (UI/Veil.lua says more). A
--- protected button that has to wait for combat is done once combat ends.
-local GAMEPAD_BUTTON = "GamepadBackpackButton"
-
-function BagIcons:HidesGamepadBag()
-    return not (ns.db and ns.db.hideGamepadBag == false)
-end
-
---- Is the controller bag button out of sight through this addon?
-function BagIcons:GamepadHidden()
-    local button = _G[GAMEPAD_BUTTON]
-    return type(button) == "table" and ns.Veil:Covers(button)
-end
-
---- Put the controller bag button out of sight or back, as the setting says.
---- True when it is out of sight.
-function BagIcons:ApplyGamepadBag()
-    local button = _G[GAMEPAD_BUTTON]
-    if type(button) ~= "table" then return false end
-
-    local hide = self:HidesGamepadBag()
-    local done
-    if hide then done = ns.Veil:Cover(button) else done = ns.Veil:Uncover(button) end
-    if not done and not self.gamepadWaiting then
-        self.gamepadWaiting = ns.RegisterEvent(self, "PLAYER_REGEN_ENABLED", function()
-            ns.UnregisterEvent(BagIcons, "PLAYER_REGEN_ENABLED")
-            BagIcons.gamepadWaiting = false
-            BagIcons:ApplyGamepadBag()
-        end)
-    end
-    return hide and ns.Veil:Covers(button)
-end
-
 -- Anything that can change what is an upgrade: the bags, what is worn, the
 -- level, the talents, weapon skills (Dual Wield) and an item's details
 -- arriving from the server.
@@ -548,10 +506,6 @@ local EVENTS = {
 
 function BagIcons:OnEnable()
     self.hooked = self:InstallHooks()
-    pcall(self.ApplyGamepadBag, self)
-    ns.RegisterEvent(self, "PLAYER_ENTERING_WORLD", function()
-        pcall(BagIcons.ApplyGamepadBag, BagIcons)
-    end)
     for _, event in ipairs(EVENTS) do
         ns.RegisterEvent(self, event, self.RefreshSoon)
     end

@@ -23,6 +23,84 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.10.0
+
+- The upgrade quest panel tells you how your gear is doing and why it picked each upgrade.
+- You can choose how you like to gear up, like quick and close, or vendors first.
+- A gold card pops up when you finish an upgrade.
+- Clicking the upgrade's marker on the map aims your arrow at it.
+- The quest log shows how much a quest reward would help you.
+Fixes and changes:
+- The Upgrades window stops refreshing on its own.
+- The controller bag button setting is gone.
+
+## 1.9.2
+
+Fixes and changes:
+- Various bug fixes for Equipment.
+
+## 1.9.1
+
+Fixes and changes:
+- The Upgrades window no longer keeps asking the server, so it stops stuttering.
+
+## 1.9.0
+
+- Windows now remember where you drag them, so they come back in the same spot.
+- A new button on the General page puts every window back where it started.
+
+## 1.8.0
+
+- There is a new box that mutes every sound from all the Blackthornes addons at once. It starts off, so nothing changes until you tick it.
+- Gear with both damage and healing now counts for both, so healers and casters get better upgrade picks.
+
+## 1.7.2
+
+Fixes and changes:
+
+- Butler can now tell which gear your class can never wear.
+
+## 1.7.1
+
+Fixes and changes:
+
+- Holding Shift over a tooltip no longer causes an error.
+
+## 1.7.0
+
+- Set bonuses now count. If a piece is part of a set you're wearing, Equipment thinks about the bonus before it tells you to swap it out.
+
+## 1.6.4
+
+Fixes and changes:
+
+- The game no longer hitches every few seconds while Equipment looks for upgrades.
+
+## 1.6.3
+
+Fixes and changes:
+
+- Equipment now uses much less CPU and memory. It only looks for upgrades when something changes.
+
+## 1.6.2
+
+Fixes and changes:
+
+- Queue It now works for a pattern you learn after your first click.
+
+## 1.6.1
+
+Fixes and changes:
+
+- Soulbound gear on a skipped character now shows the sell coin. It can't be mailed, so it no longer just sits in your bags.
+- If you share your data, it now goes to one more of our characters. It is still off until you turn it on.
+
+## 1.6.0
+
+- Druids have a new Bear Tank spec, so tanks and cats get the right gear.
+- Haste and expertise on gear now count when Equipment looks for upgrades.
+- Destruction, Retribution and Shadow get new stat weights, and the spell hit cap is fixed.
+
 ## 1.5.2
 
 Fixes and changes:

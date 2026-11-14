@@ -80,8 +80,10 @@ jobs:
       # Tells the Discord server: posts this version's changelog in
       # #announcements. Needs the DISCORD_WEBHOOK_URL repository secret, which
       # the owner sets himself; without it this step does nothing. A failure
-      # here shows as a warning and never undoes the upload above.
+      # here shows as a warning and never undoes the upload above. A quiet
+      # release (tag commit message has [no-announce]) skips it.
       - name: Announce on Discord
+        if: ${{ !contains(github.event.head_commit.message, '[no-announce]') }}
         continue-on-error: true
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
