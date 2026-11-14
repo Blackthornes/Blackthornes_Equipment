@@ -23,6 +23,12 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.10.1
+
+Fixes and changes:
+- Words on the upgrade quest panel wrap now, so nothing gets cut off.
+- Show the way skips class trainers who stop teaching too early.
+
 ## 1.10.0
 
 - The upgrade quest panel tells you how your gear is doing and why it picked each upgrade.
