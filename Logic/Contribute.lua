@@ -50,7 +50,7 @@ local Contribute = ns.NewModule("Contribute")
 local Comm = ns.Comm
 
 -- The characters data is sent to: full names, first and last. Kept only
--- here, never shown to players. Empty sends nothing. The same two as
+-- here, never shown to players. Empty sends nothing. The same names as
 -- Farmer's and Tradeskills' lists; change all three together.
 Contribute.RECIPIENTS = {
     "Blackthornes Farmer",
@@ -58,6 +58,7 @@ Contribute.RECIPIENTS = {
     "Blackthornes Tradeskills",
     "Blackthornes Farms",
     "Blackthornes Farmera",
+    "Blackthornes Grinder",
 }
 
 -- North America only, as in Farmer: GetCurrentRegion's 1 is the Americas,
