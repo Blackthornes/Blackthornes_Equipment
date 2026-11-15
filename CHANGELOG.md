@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.10.2
+
+For WoW: Forever (interface 16001). `/reload` is enough.
+
+- **No false upgrades while gear loads.** When the game hasn't finished loading the stats of a piece you wear, Equipment now gives no verdict instead of calling the item in your bags an upgrade. The arrows and banners come back once the stats are read.
+
 ## 1.10.1
 
 For WoW: Forever (interface 16001). `/reload` is enough.
