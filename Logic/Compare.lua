@@ -222,7 +222,7 @@ end
 Compare.Capped = Capped
 
 --- What is worn where this item would go, and the score to beat.
--- @return against (number), empty (true when every slot it could go in is
+-- @return against (number, or nil while what is worn can't be read), empty (true when every slot it could go in is
 --         empty), equipped (true when this very item is already worn), and
 --         the slot it would go in (the weaker of a pair)
 function Compare:Against(link, equipLoc, weights, shieldTank)
@@ -256,7 +256,10 @@ function Compare:Against(link, equipLoc, weights, shieldTank)
         if worn then
             empty = false
             score, hit, value = self:ScoreOf(worn, weights)
-            score = score or 0
+            -- What is worn can't be read yet (the client can let a worn
+            -- item's stats go for a while). Scoring it as nothing made
+            -- anything look like an upgrade, so there's no verdict yet.
+            if not score then return nil end
         end
         if not weakest or score < weakest then
             weakest, weakestSlot, wornHit, wornValue = score, slot, hit or 0, value or 0
@@ -269,7 +272,8 @@ function Compare:Against(link, equipLoc, weights, shieldTank)
         if offHand then
             empty = false
             local score, hit, value = self:ScoreOf(offHand, weights)
-            weakest = weakest + (score or 0)
+            if not score then return nil end
+            weakest = weakest + score
             wornHit, wornValue = wornHit + (hit or 0), wornValue + (value or 0)
         end
     end
@@ -283,7 +287,8 @@ function Compare:Against(link, equipLoc, weights, shieldTank)
         if mainInfo and mainInfo.equipLoc == "INVTYPE_2HWEAPON" then
             empty = false
             local score, hit, value = self:ScoreOf(mainHand, weights)
-            weakest, wornHit, wornValue = score or 0, hit or 0, value or 0
+            if not score then return nil end
+            weakest, wornHit, wornValue = score, hit or 0, value or 0
         end
     end
 
@@ -516,6 +521,7 @@ function Compare:Judge(link)
     if not score then return nil end
 
     local against, empty, equipped, slot, wornHit, wornValue = self:Against(link, info.equipLoc, weights, shieldTank)
+    if against == nil then return nil end
     result.slot = slot
     if equipped then
         result.verdict = "equipped"
@@ -598,7 +604,7 @@ function Compare:JudgeCarried(link)
     local against, wornHit, wornValue = 0, 0, 0
     if worn then
         against, wornHit, wornValue = self:ScoreOf(worn, weights)
-        against = against or 0
+        if not against then return result end
     end
     score, against = Capped(self, weights, score, hit, hitValue, against, wornHit, wornValue)
     score, against = WithSets(link, { other }, weights, score, against)
@@ -660,9 +666,8 @@ function Compare:BestInBags()
             local wornScore, wornHit, wornValue = 0, 0, 0
             if worn then
                 wornScore, wornHit, wornValue = self:ScoreOf(worn, weights)
-                wornScore = wornScore or 0
             end
-            for _, entry in ipairs(paired) do
+            for _, entry in ipairs(wornScore and paired or {}) do
                 local result = entry.result
                 local twin = IDOf(entry.link) == IDOf(taken.link) and self:IsUnique(entry.link)
                 if entry.where ~= taken.where and not twin
