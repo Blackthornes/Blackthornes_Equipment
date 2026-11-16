@@ -113,7 +113,6 @@ UI\SlotUpgrades.lua
 UI\MoreMarks.lua
 UI\QuestPanel.lua
 UI\QuestPanelMore.lua
-UI\SideColumn.lua
 UI\UpgradeDone.lua
 UI\QuestLogTab.lua
 UI\DungeonQuestsWindow.lua

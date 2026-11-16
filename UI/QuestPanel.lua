@@ -1326,19 +1326,11 @@ function QuestPanel:SavePosition()
     -- The offsets are in the panel's own units, which change with its
     -- size, so the size they were taken at goes with them.
     ns.db.questScaleAt = QuestPanel.ScaleOf(self.frame)
-    -- Dragged out of the side column: the rest close up behind it.
-    if ns.SideColumn then ns.SideColumn:Layout() end
 end
 
 function QuestPanel:RestorePosition()
     if not self.frame then return end
     local db = ns.db or {}
-    -- Never dragged: it stands in the side column (UI/SideColumn.lua).
-    if db.questX == nil and ns.SideColumn then
-        ns.SideColumn:Watch(self.frame)
-        ns.SideColumn:Layout()
-        return
-    end
     self.frame:ClearAllPoints()
     -- Saved at another size (or before there were sizes, at 1): the same
     -- spot on the screen, in the units of the size it is now. The starting
@@ -1446,9 +1438,7 @@ function QuestPanel:ApplyScale(scale)
 
     local left, top = frame:GetLeft(), frame:GetTop()
     frame:SetScale(scale)
-    -- In the side column it stays there at its new size, not dragged.
-    local placed = not (ns.SideColumn and ns.SideColumn:Holds("quest"))
-    if placed and type(left) == "number" and type(top) == "number" then
+    if type(left) == "number" and type(top) == "number" then
         frame:ClearAllPoints()
         frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left * old / scale, top * old / scale)
         self:SavePosition()
@@ -1536,12 +1526,7 @@ function QuestPanel:BuildSizeGrip()
         self.sizing = false
         self:SetScript("OnUpdate", nil)
         if ns.db then ns.db.questScale = QuestPanel.ClampScale(QuestPanel.ScaleOf(frame)) end
-        -- Sized from the grip in the side column: it stays in the column.
-        if ns.SideColumn and ns.SideColumn:Holds("quest") then
-            QuestPanel:RestorePosition()
-        else
-            QuestPanel:SavePosition()
-        end
+        QuestPanel:SavePosition()
         if ns.QuestLogUI then ns.QuestLogUI:PlaceItemsSoon() end
         if ns.SettingsUI and ns.SettingsUI.Refresh then ns.SettingsUI:Refresh() end
     end
