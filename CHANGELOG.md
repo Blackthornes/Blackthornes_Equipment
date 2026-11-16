@@ -4,6 +4,17 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.11.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Gear page.** The on and off boxes for what shows on screen (Upgrade Arrows, Sell Coins, Take Reward Button, Upgrades in Chat, Character Sheet, Upgrade Banner, Upgrade Tracker, Map Pins, Upgrade Quest and Quest Arrow) stand in one grid at the top of the Gear page of Settings. The buttons that open a window sit together under Open. The Upgrade Hunts page is gone, and nothing was renamed.
+- **Upgrade Tracker scrolling.** The mouse wheel moves the Upgrade Tracker list when there are more than eight hunts, with a thin gold bar on the right edge.
+- **All Addons page.** The settings every Blackthornes addon shares (Window Style, Text Size, Effects, Mute All Sounds, Combine Addon Buttons, One Window, Window Spots, Sister Addons and What's New) now sit on one All Addons page, behind the gear on the one window's rail. The two What's New boxes became one After Updates: drop-down. Nothing was renamed and your choices carry over.
+- **One window docks in more places.** It sits on the free side of the game's window, shrinks only a little when there is no room, and lets you resize it by hand with the grip. Each addon keeps its own height when you switch between them.
+- **Shared shelves.** Small pieces you never dragged, such as arrows, bars and cards, line up on a top or right shelf instead of starting on one spot.
+- **Fixes.** The Upgrade Tracker, Guide Me card and Upgrade Quest panel take the next free place on the shared shelf. The game's confirm boxes come out on top of Stat Weights, Ignored, Dungeon Loot, Dungeon Quests, the slot panel and the stand-alone windows. The Track and Map buttons on slot upgrades keep one width, so they no longer run over the gain in Deutsch.
+
 ## 1.10.3
 
 For WoW: Forever (interface 16001). `/reload` is enough.

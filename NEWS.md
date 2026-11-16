@@ -23,6 +23,15 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.11.0
+
+- Settings has one grid for what shows on screen, and an All Addons page.
+- You can scroll the Upgrade Tracker past eight hunts.
+- The window can dock in more places and you can resize it by hand.
+Fixes and changes:
+- Game pop-ups no longer hide behind our windows.
+- Slot upgrade buttons no longer run over the gain.
+
 ## 1.10.3
 
 Fixes and changes:
