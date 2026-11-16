@@ -116,6 +116,28 @@ ns.TrackerPanel:ToggleDone()
 ns.TrackerPanel.gems.fold:GetScript("OnClick")(ns.TrackerPanel.gems.fold)
 suite.check("the fold gem hides the rows", not ns.TrackerPanel.rows[1]:IsShown() and ns.TrackerPanel.folded)
 ns.TrackerPanel.gems.fold:GetScript("OnClick")(ns.TrackerPanel.gems.fold)
+-- More hunts than the panel has rows: the wheel reaches the rest.
+do
+    local panel = ns.TrackerPanel
+    local realLines = panel.Lines
+    local many = {}
+    for index = 1, 11 do many[index] = { itemID = 9000 + index, link = "item:" .. (9000 + index) } end
+    panel.Lines = function() return many end
+    panel:Refresh()
+    suite.check("eight of eleven hunts show", panel.rows[8]:IsShown() and panel.rows[1].hunt == many[1])
+    suite.check("with a thumb to say there are more", panel.thumb:IsShown())
+    local wheel = panel.frame:GetScript("OnMouseWheel")
+    wheel(panel.frame, -1)
+    suite.check("the wheel moves the list down one", panel.rows[1].hunt == many[2], panel.offset)
+    for _ = 1, 10 do wheel(panel.frame, -1) end
+    suite.check("and stops at the last hunt", panel.rows[8].hunt == many[11] and panel.offset == 3, panel.offset)
+    for _ = 1, 10 do wheel(panel.frame, 1) end
+    suite.check("and back at the first", panel.rows[1].hunt == many[1] and panel.offset == 0, panel.offset)
+    wheel(panel.frame, -1)
+    panel.Lines = realLines
+    panel:Refresh()
+    suite.check("a list that fits starts at its top", panel.offset == 0 and not panel.thumb:IsShown(), panel.offset)
+end
 local menuRow = ns.TrackerPanel.rows[1]
 menuRow:GetScript("OnClick")(menuRow, "RightButton")
 local stopLine
