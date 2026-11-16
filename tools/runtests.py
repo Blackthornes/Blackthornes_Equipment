@@ -13,6 +13,12 @@ and test_serialize were never added to the list.
 
 A suite fails by raising, which is what the assert and error calls in each file
 do. All of them run regardless, so one failure does not hide the rest.
+
+Only the failures and the last line are printed: what each suite prints as it
+passes ran to hundreds of lines a run. A failing suite's own lines are shown
+with it. For every line from every suite:
+
+    python tools/runtests.py -v
 """
 
 import glob
@@ -22,6 +28,9 @@ import sys
 from lupa import lua51 as luamod
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# The last lines a failing suite printed that are shown with its error.
+TAIL = 40
 
 
 def test_files():
@@ -39,14 +48,32 @@ def main() -> int:
         print("no test files found in tools/", file=sys.stderr)
         return 1
 
+    verbose = "-v" in sys.argv[1:] or "--verbose" in sys.argv[1:]
     failed = []
+    said = []
+
+    # What a suite prints is kept, and shown only when the suite fails.
+    def keep(*parts):
+        said.append("\t".join(str(part) for part in parts))
+
+    if not verbose:
+        lua.execute("local tostring, select = tostring, select\n"
+                    "function print(...)\n"
+                    "  local parts = {}\n"
+                    "  for i = 1, select('#', ...) do parts[i] = tostring((select(i, ...))) end\n"
+                    "  python_keep(table.concat(parts, '\\t'))\n"
+                    "end")
+        lua.globals().python_keep = keep
 
     for path in scripts:
         name = os.path.basename(path)
+        del said[:]
         try:
             lua.execute("dofile([[%s]])" % path.replace("\\", "/"))
         except Exception as error:          # a Lua error, surfaced as LuaError
             failed.append(name)
+            if said:
+                print("\n".join(said[-TAIL:]), file=sys.stderr)
             print("\nFAIL -- %s\n%s" % (name, error), file=sys.stderr)
 
     print("\n%d suite(s) run, %d failure(s)" % (len(scripts), len(failed)))

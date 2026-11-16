@@ -1,4 +1,4 @@
-"""Syntax-check every Lua file in the addon, and check the TOC lists real ones.
+r"""Syntax-check every Lua file in the addon, and check the TOC lists real ones.
 
 WoW silently disables an addon whose first TOC file fails to compile, with no
 error and no hint, so this runs before every deploy.
@@ -9,6 +9,8 @@ and whatever was in it is missing with nothing to say so. That happened on
 2026-09-20 -- a stray carriage return left behind by an edit turned
 `Core\Persist.lua` into a name nothing matched, and the whole persistence
 layer stopped loading while every Lua file still compiled perfectly.
+
+Only failures and the last line are printed; `-v` names every file checked.
 
 Requires: python -m pip install --user lupa
 """
@@ -81,7 +83,9 @@ def main() -> int:
         print("no Lua files found under", ROOT)
         return 1
 
-    print("syntax check with %s\n" % FLAVOR)
+    verbose = "-v" in sys.argv[1:] or "--verbose" in sys.argv[1:]
+    if verbose:
+        print("syntax check with %s\n" % FLAVOR)
 
     failures = 0
     for path in files:
@@ -102,14 +106,15 @@ def main() -> int:
         relative = os.path.relpath(path, ROOT)
 
         if ok:
-            print("  OK    %s" % relative)
+            if verbose:
+                print("  OK    %s" % relative)
         else:
             failures += 1
             print("  FAIL  %s: %s" % (relative, err))
 
     failures += check_toc()
 
-    print("\n%d file(s), %d failure(s)" % (len(files), failures))
+    print("%d file(s), %d failure(s) (%s)" % (len(files), failures, FLAVOR))
     return 1 if failures else 0
 
 
