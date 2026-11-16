@@ -10,8 +10,6 @@ and whatever was in it is missing with nothing to say so. That happened on
 `Core\Persist.lua` into a name nothing matched, and the whole persistence
 layer stopped loading while every Lua file still compiled perfectly.
 
-Only failures and the last line are printed; `-v` names every file checked.
-
 Requires: python -m pip install --user lupa
 """
 
@@ -83,9 +81,7 @@ def main() -> int:
         print("no Lua files found under", ROOT)
         return 1
 
-    verbose = "-v" in sys.argv[1:] or "--verbose" in sys.argv[1:]
-    if verbose:
-        print("syntax check with %s\n" % FLAVOR)
+    print("syntax check with %s\n" % FLAVOR)
 
     failures = 0
     for path in files:
@@ -106,7 +102,7 @@ def main() -> int:
         relative = os.path.relpath(path, ROOT)
 
         if ok:
-            if verbose:
+            if "-q" not in sys.argv[1:]:
                 print("  OK    %s" % relative)
         else:
             failures += 1
@@ -114,7 +110,7 @@ def main() -> int:
 
     failures += check_toc()
 
-    print("%d file(s), %d failure(s) (%s)" % (len(files), failures, FLAVOR))
+    print("\n%d file(s), %d failure(s)" % (len(files), failures))
     return 1 if failures else 0
 
 
