@@ -278,7 +278,7 @@ suite.check("the chat-only commands still work", ns.commands.bags and ns.command
 
 -- An empty description shows no tooltip and nothing under the row.
 local textRow
-for _, row in ipairs(pages.pages.general.rows) do
+for _, row in ipairs(pages.pages.all.rows) do
     if row.labelText == "Text Size:" then textRow = row end
 end
 GameTooltip._lines = {}
