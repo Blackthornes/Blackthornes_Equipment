@@ -201,6 +201,24 @@ end
 -- The Alt-click panel
 --------------------------------------------------------------------------------
 
+--- The width both of a row's buttons take: the longest label, measured.
+function SlotUpgrades.ButtonWidth()
+    local wide = 58
+    for _, text in ipairs({ L["Track"], L["Untrack"], L["Map"] }) do
+        wide = math.max(wide, math.ceil((Theme.TextWidth("small", text) or 0) + 12))
+    end
+    return wide
+end
+
+--- A button's SetText that keeps the width it was given.
+function SlotUpgrades.FixedText(button, wide)
+    local set = button.SetText
+    return function(self, value)
+        set(self, value)
+        self:SetWidth(wide)
+    end
+end
+
 function SlotUpgrades:BuildRow(index)
     local row = CreateFrame("Frame", nil, self.frame)
     row:SetSize(WIDTH - PAD * 2, ROW_HEIGHT)
@@ -235,9 +253,15 @@ function SlotUpgrades:BuildRow(index)
     map:SetPoint("TOPRIGHT", track, "BOTTOMRIGHT", 0, -2)
     row.map = map
 
-    -- The buttons grow to fit their words (German runs longer); the text
-    -- keeps clear of them.
-    local buttons = math.max(70, (tonumber(track:GetWidth()) or 0) + 12, (tonumber(map:GetWidth()) or 0) + 12)
+    -- Both buttons are as wide as the longest label either will wear
+    -- ("Untrack" too, which runs long in German), so neither changes size
+    -- when its words change, and the text keeps clear of them.
+    local wide = SlotUpgrades.ButtonWidth()
+    track.SetText = SlotUpgrades.FixedText(track, wide)
+    map.SetText = SlotUpgrades.FixedText(map, wide)
+    track:SetWidth(wide)
+    map:SetWidth(wide)
+    local buttons = math.max(70, wide + 12)
     local textWidth = WIDTH - PAD * 2 - 6 - 30 - 8 - buttons
     local item = Theme.CreateLabel(row, "normal", "text")
     item:SetPoint("TOPLEFT", 44, -6)
@@ -287,7 +311,8 @@ function SlotUpgrades:Build()
     if self.frame then return self.frame end
     local frame = CreateFrame("Frame", "BlackthornesEquipmentSlotUpgrades", UIParent)
     frame:SetSize(WIDTH, 40 + SHOWN * ROW_HEIGHT + 40)
-    frame:SetFrameStrata("DIALOG")
+    frame:SetFrameStrata("HIGH")
+    frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
     Theme.Fill(frame, "window")

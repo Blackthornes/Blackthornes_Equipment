@@ -699,7 +699,7 @@ function FinderUI:Build()
 
     local frame = CreateFrame("Frame", "BlackthornesEquipmentFinder", UIParent)
     frame:SetSize(WIDTH, HEIGHT)
-    frame:SetFrameStrata("DIALOG")
+    frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
