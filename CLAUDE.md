@@ -236,7 +236,7 @@ After Farmer's fold-in (its `Data/Data_Harvested.lua` feeds the boss drops):
 ## Big files (read these in pieces)
 
 Reading a huge file whole fills the context and the thread dies. Sizes are
-from 2026-11-03 and only grow. Find more with `find . -name '*.lua' | xargs wc -lc | sort -n`.
+from 2026-11-16 and only grow. Find more with `find . -name '*.lua' | xargs wc -lc | sort -n`.
 
 - Never read a file below whole. Use `grep -n` to find the spot, then read
   about 150 lines at a time (Read with `offset` and `limit`).
@@ -245,22 +245,26 @@ from 2026-11-03 and only grow. Find more with `find . -name '*.lua' | xargs wc -
 - Generated files (`Data/`) are written by their `tools/` script. Never edit
   them by hand, and never open them to see what they hold.
 
-Data tables (generated, grep only): `Data/Sources.lua` 6265 lines, 491 KB; `Data/QuestEnds.lua` 1857 lines, 239 KB; `Data/Crafts.lua` 1675 lines, 131 KB; `Data/ClassSpells.lua` 1538 lines, 87 KB.
+Data tables (generated, grep only): `Data/Sources.lua` 6265 lines, 479 KB; `Data/QuestEnds.lua` 1857 lines, 233 KB; `Data/Crafts.lua` 1675 lines, 127 KB; `Data/ForeverQuests.lua` 664 lines, 106 KB; `Data/ClassSpells.lua` 1538 lines, 84 KB; `Data/ForeverDrops.lua` 943 lines, 72 KB; `Data/ItemSets.lua`, `Data/Enchants.lua` and `Data/DungeonQuests.lua` are 36 to 55 KB. Some lines run past 1000 characters (`Data/ForeverVendors.lua`, `Data/ForeverDrops.lua`, `Data/Sources.lua`): grep them with `-o` or cut the output (`| cut -c1-200`).
 
-Locale (grep one key, never read): `Locale/ruRU` 1145 lines, 97 KB; `frFR`, `deDE`, `esES`, `zhCN` are each about 1146 lines, 71 to 78 KB.
+Locale (grep one key, never read): `Locale/ruRU` 1206 lines, 99 KB; `frFR`, `deDE`, `esES`, `zhCN` are each about 1207 lines, 73 to 79 KB.
 
 Code:
-- `UI/FinderWindow.lua` 2788 lines, 113 KB: the gear window and its tabs.
-- `Logic/UpgradeQuest.lua` 1926 lines, 83 KB: the upgrade quest.
-- `UI/Widgets.lua` 1683 lines, 64 KB: shared widgets.
-- `UI/QuestPanel.lua` 1542 lines, 62 KB: quest panel.
-- `Logic/Weights.lua` 1484 lines, 62 KB: stat weights.
-- `UI/Settings.lua` 1267 lines, 55 KB: Settings pages.
-- `Logic/Finder.lua` 1256 lines, 52 KB: upgrade finder.
-- `UI/QuestLogTab.lua` 1136 lines, 45 KB: quest log tab.
-- `Logic/ClassTraining.lua` 1017 lines, 41 KB: class training.
+- `UI/FinderWindow.lua` 2817 lines, 111 KB: the gear window and its tabs.
+- `Logic/UpgradeQuest.lua` 2532 lines, 108 KB: the upgrade quest.
+- `Logic/Weights.lua` 1667 lines, 69 KB: stat weights.
+- `UI/Widgets.lua` 1683 lines, 62 KB: shared widgets.
+- `UI/QuestPanel.lua` 1616 lines, 63 KB: quest panel.
+- `Logic/Finder.lua` 1572 lines, 64 KB: upgrade finder.
+- `UI/Settings.lua` 1357 lines, 57 KB: Settings pages.
+- `UI/WhatsNew.lua` 1245 lines, 46 KB: the What's New window.
+- `UI/QuestLogTab.lua` 1166 lines, 45 KB: quest log tab.
+- `Logic/ClassTraining.lua` 1085 lines, 43 KB: class training.
+- `UI/SharedWindow.lua` 1082 lines, 41 KB: the one window.
 
-Over 800 lines or 30 KB, same rule: `UI/WhatsNew.lua`, `UI/SharedWindow.lua`, `UI/SettingsPages.lua`, `Logic/QuestArrow.lua`, `Logic/Travel.lua`, `CHANGELOG.md` (926 lines).
+Over 800 lines or 30 KB, same rule: `UI/SettingsPages.lua`, `Logic/QuestArrow.lua`, `Logic/Travel.lua`, `Logic/Compare.lua`, `Docs/claude-notes.md` (120 KB), `CHANGELOG.md` (1069 lines), `README.md`, `docs/FOREVER_API_FINDINGS.md`.
+
+The checks are quiet on purpose: `python tools/runtests.py` and `python tools/syntaxcheck.py` print only failures and one last line (`-v` prints every line, about 370; never run it without `| tail`). They need `pip install lupa`.
 
 The same file lives in several addons: `UI/SharedWindow.lua`, `UI/WhatsNew.lua`, `UI/SettingsPages.lua`, `Logic/Travel.lua`, `Logic/ClassTraining.lua`. A fix to one belongs in all.
 
