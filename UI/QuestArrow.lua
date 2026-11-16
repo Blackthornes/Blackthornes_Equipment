@@ -565,8 +565,16 @@ function ArrowUI:RestorePosition()
         local scale = ArrowUI.Scale()
         frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", ns.db.questArrowX / scale, ns.db.questArrowY / scale)
     else
-        -- Top middle, a little lower than Farmer's, so both can be up.
-        frame:SetPoint("TOP", UIParent, "TOP", 0, -330 / ArrowUI.Scale())
+        -- Never dragged: the next free place on the shared top shelf
+        -- (UI/SharedWindow.lua), so it never starts on another piece.
+        local sw = ns.SharedWindow
+        local placed = sw and sw.ShelfPlace and sw.ShelfPlace(frame, "arrow.equipment", {
+            free = function() return not (ns.db and ns.db.questArrowX and ns.db.questArrowY) end,
+            place = function() ArrowUI:RestorePosition() end,
+        })
+        if not placed then
+            frame:SetPoint("TOP", UIParent, "TOP", 0, -330 / ArrowUI.Scale())
+        end
     end
     self:AvoidXPBar()
 end

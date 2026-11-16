@@ -113,8 +113,9 @@ suite.check("a spot saved at this size: as saved", frame._point[4] == -100)
 
 ns.db.questPoint, ns.db.questRelativePoint, ns.db.questX, ns.db.questY, ns.db.questScaleAt = nil, nil, nil, nil, nil
 Panel:RestorePosition()
-suite.check("never moved: its starting spot, on the same place on screen",
-    frame._point[4] == -80 and frame._point[5] == -240)
+local _, shelfX, shelfY = ns.SharedWindow.ShelfSpot("upgradequest.equipment")
+suite.check("never moved: its place on the shared right shelf",
+    frame._point[1] == "TOPRIGHT" and frame._point[4] == shelfX and frame._point[5] == shelfY)
 
 -- 4. The grip.
 local grip = Panel.sizeGrip

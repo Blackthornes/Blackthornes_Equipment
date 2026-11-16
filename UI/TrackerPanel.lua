@@ -332,6 +332,16 @@ function TrackerPanel:RestorePosition()
     if not self.frame then return end
     local db = ns.db or {}
     self.frame:ClearAllPoints()
+    if not (db.trackerX and db.trackerY) then
+        -- Never dragged: the next free place on the shared right shelf,
+        -- left of the game's quest list.
+        local sw = ns.SharedWindow
+        if sw and sw.ShelfPlace and sw.ShelfPlace(self.frame, "upgrades.equipment", {
+            shelf = "right",
+            free = function() local d = ns.db or {}; return not (d.trackerX and d.trackerY) end,
+            place = function() TrackerPanel:RestorePosition() end,
+        }) then return end
+    end
     self.frame:SetPoint(db.trackerPoint or "RIGHT", UIParent, db.trackerRelativePoint or "RIGHT",
         db.trackerX or -40, db.trackerY or 120)
 end
