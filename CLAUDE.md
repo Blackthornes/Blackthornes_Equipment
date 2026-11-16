@@ -63,6 +63,7 @@ Sections there:
 - The sister note
 - One look across the addons (the house kit)
 - Shield tanks
+- Shelves, dock places and the All Addons page
 
 ## One key per character
 
@@ -268,7 +269,7 @@ The same file lives in several addons: `UI/SharedWindow.lua`, `UI/WhatsNew.lua`,
 
 A player asked, the owner said build it (2026-11-12), in all five
 addons: windows remember where they were dragged. `UI/SharedWindow.lua`
-(FILE_VERSION 7; `UI/WhatsNew.lua` FILE_VERSION 7 too) keeps the one
+(FILE_VERSION 8; `UI/WhatsNew.lua` FILE_VERSION 7) keeps the one
 window's spot beside each game window it docks to, once the player drags
 it there (`SharedWindow.Dropped`, account wide in every save as
 `oneWindowDockSpots[place]`), and small windows signed up with
