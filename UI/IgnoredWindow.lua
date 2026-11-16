@@ -53,7 +53,7 @@ function IgnoredUI:Build()
     local height = HEADER + 12 + 2 + ROWS * ROW_HEIGHT + 8 + FOOTER
     local frame = CreateFrame("Frame", NAME, UIParent)
     frame:SetSize(WIDTH, height)
-    frame:SetFrameStrata("DIALOG")
+    frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
