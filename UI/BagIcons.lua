@@ -344,6 +344,26 @@ function BagIcons.IsTool(link)
     return yes
 end
 
+--- Can this class never wear it, however long it plays? Gear for other
+--- classes, an armor or weapon kind it never learns. Not mail or plate
+--- learned later, Best Armor Only, a hidden untrained weapon or a
+--- two-hander while judged as Protection, which are only for now.
+function BagIcons.NeverWears(result)
+    return type(result) == "table" and result.verdict == "cantuse"
+        and not result.laterArmor and not result.lighterArmor
+        and not result.ignoredSkill and not result.tankTwoHand
+end
+
+--- Is it a tool to keep? A known tool by ID always is. Gear that is a tool
+--- only by its tooltip ("Mining +5" on a plate helm) is kept only while
+--- this character could wear it; one it never can is judged as gear.
+function BagIcons.KeptTool(link, result)
+    local id = tonumber(link:match("item:(%d+)"))
+    if id ~= nil and TOOLS[id] == true then return true end
+    if not BagIcons.IsTool(link) then return false end
+    return not BagIcons.NeverWears(result)
+end
+
 --- Should the item in a bag slot get the sell coin? `result` is how it was
 --- judged (Compare:JudgeCarried). Only gear judged and found no upgrade,
 --- now or later, that a vendor pays for: white, or soulbound green and up
@@ -362,7 +382,7 @@ function BagIcons:Sells(bag, slot, link, result)
     local info = Items:Info(link)
     if not info or KEEP_LOC[info.equipLoc] then return false end
     if info.classID == CLASS_WEAPON and info.subclassID == FISHING_POLE then return false end
-    if BagIcons.IsTool(link) then return false end
+    if BagIcons.KeptTool(link, result) then return false end
 
     local quality = Items:SlotQuality(bag, slot, link)
     if type(quality) ~= "number" or quality < 1 then return false end
