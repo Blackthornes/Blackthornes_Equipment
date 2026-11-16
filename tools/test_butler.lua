@@ -31,6 +31,8 @@ local ITEMS = {
     ["item:8"] = { loc = "INVTYPE_2HWEAPON", class = WEAPON, subclass = FISHING_POLE, stats = {} },
     ["item:9"] = { loc = "INVTYPE_WEAPON", class = WEAPON, subclass = DAGGER, stats = {} },
     ["item:6219"] = { loc = "", class = 7, subclass = 0, stats = {} },
+    -- A helm that adds to Mining: a tool only to a class that can wear it.
+    ["item:10"] = { loc = "INVTYPE_HEAD", class = ARMOR, subclass = 4, stats = {} },
 }
 
 -- Quality and soulbound for each bag slot.
@@ -52,6 +54,7 @@ end
 _G.C_TooltipInfo = { GetHyperlink = function(link)
     local lines = { { type = 11, price = 50 } }
     if link == "item:9" then lines[2] = { type = 0, leftText = "Equip: Skinning +10." } end
+    if link == "item:10" then lines[2] = { type = 0, leftText = "Equip: Mining +5." } end
     return { lines = lines }
 end }
 
@@ -129,6 +132,24 @@ suite.check("Best Armor Only is not never", AdviseAs({ verdict = "cantuse", ligh
 suite.check("a hidden untrained weapon is not never",
     AdviseAs({ verdict = "cantuse", ignoredSkill = "Staves" }).never == nil)
 suite.check("a downgrade is not never", AdviseAs({ verdict = "downgrade", percent = -5 }).never == nil)
+
+-- A helm with Mining on it is gear, not a tool, to a class that can never
+-- wear it; worn later (mail or plate at 40) it stays a tool.
+local function HelmAs(result)
+    ns.Compare.JudgeCarried = function() return result end
+    local a = Butler:Advise("item:10")
+    ns.Compare.JudgeCarried = judge
+    return a
+end
+advice = HelmAs({ verdict = "cantuse" })
+suite.check("an unwearable helm with Mining is no tool", advice and advice.tool == false, advice and advice.tool)
+suite.check("and says never", advice and advice.never == true)
+suite.check("and is judged for the sell coin", advice and advice.sell ~= nil)
+suite.check("a Mining helm for later stays a tool",
+    HelmAs({ verdict = "cantuse", laterArmor = 40 }).tool == true)
+suite.check("a wearable Mining helm stays a tool", HelmAs({ verdict = "downgrade", percent = -5 }).tool == true)
+suite.check("BagIcons gives the unwearable helm no tool pass",
+    ns.BagIcons.KeptTool("item:10", { verdict = "cantuse" }) == false)
 
 -- Never raises.
 ns.Compare.JudgeCarried = function() error("boom") end

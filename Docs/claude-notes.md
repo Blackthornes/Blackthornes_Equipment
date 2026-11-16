@@ -94,6 +94,10 @@ otherwise a table:
   on it (2026-11-10, a player's report). Tested in `tools/test_butler.lua`.
 - `tool`: true for gathering and profession tools (`BagIcons.IsTool`,
   `BagIcons.TOOLS`) and fishing poles; a tool is never `sell`.
+  Gear that is a tool only by its tooltip counts while this class
+  could wear it (`BagIcons.KeptTool`): a plate helm with Mining on a
+  mage is gear, so `never` and `sell` apply (2026-11-16, a player's
+  report).
 - `alt`: only when it is no upgrade here, `{ key, gain, level }` for the
   other character it helps most (`Alts:BestFor`, the owner asked
   2026-10-11): `key` that character's GUID (Butler names it from
