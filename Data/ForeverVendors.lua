@@ -11,6 +11,7 @@
 local _, ns = ...
 
 ns.ForeverVendors = {
+    [152] = { name = "Brother Danil", zone = "Elwynn Forest", x = 47.4, y = 41.5, side = "A", items = { [2901] = { 10, 1, 4, false }, [7005] = { 10, 1, 4, false } } },
     [1214] = { name = "Aldren Cordon", zone = "Loch Modan", x = 64.9, y = 66, side = "A", items = { [3428] = { 400, 0, 20, false }, [16059] = { 400, 0, 20, false }, [16060] = { 400, 0, 20, false } } },
     [1285] = { name = "Thurman Mullby", zone = "Stormwind City", x = 64.7, y = 71.8, side = "A", items = { [2901] = { 10, 1, 4, false }, [7005] = { 10, 1, 4, false } } },
     [1298] = { name = "Frederick Stover", zone = "Stormwind City", x = 58.5, y = 69, side = "A", items = { [287063] = { 3612, 12, 17, true } } },
@@ -24,10 +25,12 @@ ns.ForeverVendors = {
     [3486] = { name = "Halija Whitestrider", zone = "The Barrens", x = 52.2, y = 31.8, side = "H", items = { [3428] = { 360, 0, 20, false }, [16059] = { 360, 0, 20, false }, [16060] = { 360, 0, 20, false } } },
     [3497] = { name = "Kilxx", zone = "The Barrens", x = 62.8, y = 38.3, side = "AH", items = { [6365] = { 901, 5, 10, true } } },
     [4185] = { name = "Shaldyn", zone = "Darkshore", x = 38.1, y = 40.5, side = "A", items = { [3428] = { 400, 0, 20, false }, [16059] = { 400, 0, 20, false }, [16060] = { 400, 0, 20, false } } },
+    [5190] = { name = "Merill Pleasance", zone = "Undercity", x = 69.3, y = 44.4, side = "H", items = { [5976] = { 10000, 0, 1, false } } },
     [5510] = { name = "Thulman Flintcrag", zone = "Stormwind City", x = 61.8, y = 36.4, side = "A", items = { [2508] = { 27, 1, 2, false } } },
     [8358] = { name = "Hewa", zone = "Thunder Bluff", x = 45.4, y = 56, side = "H", items = { [3428] = { 400, 0, 20, false }, [16059] = { 400, 0, 20, false }, [16060] = { 400, 0, 20, false } } },
     [8362] = { name = "Kuruk", zone = "Thunder Bluff", x = 38.6, y = 64.1, side = "H", items = { [2901] = { 9, 1, 4, false }, [7005] = { 9, 1, 4, false } } },
     [242498] = { name = "Reagent Bot", zone = "Wetlands", x = 48.2, y = 56.4, side = "AH", items = { [2901] = { 10, 1, 4, false }, [5956] = { 18, 1, 1, false }, [6256] = { 23, 0, 1, false }, [7005] = { 10, 1, 4, false } } },
+    [247227] = { name = "Riley Peltskinner", zone = "Elwynn Forest", x = 46.9, y = 39.9, side = "A", items = { [7005] = { 10, 1, 4, false } } },
     [251364] = { name = "Destin Thriceforged", zone = "Zephras Isle", x = 43.4, y = 23.6, side = "AH", items = { [1194] = { 104, 1, 4, false }, [2130] = { 54, 1, 3, false }, [2131] = { 54, 1, 3, false }, [2132] = { 102, 1, 4, false }, [2134] = { 82, 1, 4, false }, [2139] = { 57, 1, 3, false }, [2479] = { 107, 1, 4, false }, [2480] = { 72, 1, 3, false } } },
     [251537] = { name = "Uualia Suncrest", zone = "Zephras Isle", x = 42.7, y = 24.4, side = "AH", items = { [2901] = { 10, 1, 4, false }, [2947] = { 42, 1, 3, false }, [3111] = { 42, 1, 3, false }, [7005] = { 10, 1, 4, false } } },
     [251913] = { name = "Aedi Thriceforged", zone = "Zephras Isle", x = 44.8, y = 44.4, side = "AH", items = { [2901] = { 10, 1, 4, false }, [5956] = { 18, 1, 1, false } } },
