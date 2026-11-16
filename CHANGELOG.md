@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.10.3
+
+For WoW: Forever (interface 16001). `/reload` is enough.
+
+- **Tool gear your class can't wear is left alone.** Tools your class can never wear no longer count as tools in tooltips, so your bags can let them go.
+
 ## 1.10.2
 
 For WoW: Forever (interface 16001). `/reload` is enough.
