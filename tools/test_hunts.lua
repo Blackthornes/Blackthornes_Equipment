@@ -317,6 +317,15 @@ suite.check("with the pick", row:IsShown() and row.item:GetText() == "item:1002"
 suite.check("already tracked", row.track.label:GetText() == "Untrack", row.track.label:GetText())
 Tracking:Untrack(1002)
 suite.check("the panel follows the tracking", row.track.label:GetText() == "Track")
+-- Both buttons keep one width, the longest label's, whatever they say.
+local wide = ns.SlotUpgrades.ButtonWidth()
+suite.check("the buttons are as wide as their longest label",
+    wide >= ns.Theme.TextWidth("small", "Untrack") + 12, wide)
+suite.check("Track is that wide", row.track:GetWidth() == wide, row.track:GetWidth())
+row.track:SetText("Untrack")
+suite.check("and stays so as Untrack", row.track:GetWidth() == wide, row.track:GetWidth())
+suite.check("Map matches it", row.map:GetWidth() == wide, row.map:GetWidth())
+suite.check("the text keeps clear of the buttons", row.textWidth <= 380 - 24 - 44 - wide - 12, row.textWidth)
 _G.IsAltKeyDown = nil
 
 --------------------------------------------------------------------------------
