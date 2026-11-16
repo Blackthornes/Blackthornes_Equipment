@@ -372,11 +372,19 @@ function TrackerPanel:SavePosition()
     local point, _, relativePoint, x, y = self.frame:GetPoint()
     ns.db.trackerPoint, ns.db.trackerRelativePoint = point, relativePoint
     ns.db.trackerX, ns.db.trackerY = x, y
+    -- Dragged out of the side column: the rest close up behind it.
+    if ns.SideColumn then ns.SideColumn:Layout() end
 end
 
 function TrackerPanel:RestorePosition()
     if not self.frame then return end
     local db = ns.db or {}
+    -- Never dragged: it stands in the side column (UI/SideColumn.lua).
+    if db.trackerX == nil and ns.SideColumn then
+        ns.SideColumn:Watch(self.frame)
+        ns.SideColumn:Layout()
+        return
+    end
     self.frame:ClearAllPoints()
     self.frame:SetPoint(db.trackerPoint or "RIGHT", UIParent, db.trackerRelativePoint or "RIGHT",
         db.trackerX or -40, db.trackerY or 120)

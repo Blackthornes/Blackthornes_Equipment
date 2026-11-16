@@ -92,6 +92,8 @@ frame._height = 400
 
 -- 3. A new size from its top left corner.
 ns.db.questScale = 1
+-- A panel the player dragged (one never dragged stands in the side column).
+ns.db.questPoint, ns.db.questRelativePoint, ns.db.questX, ns.db.questY = "TOPLEFT", "BOTTOMLEFT", 100, 600
 frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 100, 600)
 local now = Panel:SetPanelScale(0.5)
 suite.check("sized to 50%", frame._scale == 0.5)
@@ -113,8 +115,16 @@ suite.check("a spot saved at this size: as saved", frame._point[4] == -100)
 
 ns.db.questPoint, ns.db.questRelativePoint, ns.db.questX, ns.db.questY, ns.db.questScaleAt = nil, nil, nil, nil, nil
 Panel:RestorePosition()
-suite.check("never moved: its starting spot, on the same place on screen",
-    frame._point[4] == -80 and frame._point[5] == -240)
+local Column = ns.SideColumn
+suite.check("never moved: it stands in the side column", Column:Holds("quest"))
+suite.check("at the column's top, on the same place on screen",
+    frame._point[1] == "TOPRIGHT" and frame._point[4] == -Column.EDGE / 0.5
+    and frame._point[5] == Column.TOP / 0.5, frame._point[4], frame._point[5])
+frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 100, 600)
+Panel:SetPanelScale(0.8)
+suite.check("a new size keeps it in the column", Column:Holds("quest") and ns.db.questX == nil
+    and frame._point[1] == "TOPRIGHT")
+ns.db.questPoint, ns.db.questRelativePoint, ns.db.questX, ns.db.questY = "TOPLEFT", "BOTTOMLEFT", 50, 700
 
 -- 4. The grip.
 local grip = Panel.sizeGrip
