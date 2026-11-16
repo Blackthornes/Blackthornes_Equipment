@@ -133,6 +133,33 @@ local pages = SettingsUI.pages
 suite.check("it opens on the first page", pages.shown == "gear", pages.shown)
 suite.check("with the gear rows showing", pages.pages.gear.content:IsShown()
     and not pages.pages.general.content:IsShown())
+-- One grid of what shows on screen at the top of the Gear page; no Upgrade
+-- Hunts page. Each box keeps its own saved key.
+suite.check("no Upgrade Hunts page", pages.pages.hunts == nil)
+suite.check("the grid heads the Gear page", pages.pages.gear.items[1][1] ~= nil
+    and SettingsUI.showGrid[1] == pages.pages.gear.items[1][2].frame)
+suite.check("five lines of two", #SettingsUI.showGrid == 5)
+local gridKeys = { arrows = "bagArrows", sellCoins = "bagSellCoins", rewardButton = "rewardButton",
+    upgradeChat = "upgradeChat", slotUpgrades = "slotUpgrades", upgradeToast = "upgradeToast",
+    showTracker = "showTracker", mapPins = "mapPins" }
+for control, key in pairs(gridKeys) do
+    local box = controls[control]
+    suite.check(control .. " sits in the grid", box ~= nil and box.gridName ~= nil
+        and box.gridName:find(":") == nil, box and box.gridName)
+    ns.db[key] = nil
+    box:SetChecked(true)
+    box:GetScript("OnClick")(box)
+    suite.check(control .. " still saves " .. key, ns.db[key] == false, ns.db[key])
+    box:GetScript("OnClick")(box)
+end
+suite.check("Upgrade Quest and Quest Arrow sit in the grid",
+    controls.upgradeQuest.gridName == "Upgrade Quest" and controls.questArrow.gridName == "Quest Arrow")
+suite.check("a grid name drops its colon", SettingsUI.GridName("Sell Coins:") == "Sell Coins"
+    and SettingsUI.GridName("Pièces :") == "Pièces" and SettingsUI.GridName("地图标记：") == "地图标记")
+local found = pages:Search("map pins")
+suite.check("the search finds a box in the grid", found.gear == 1, found.gear)
+pages:Search("")
+
 local generalPart
 for _, part in ipairs(pages.switch) do
     if part.key == "general" then generalPart = part end
@@ -252,12 +279,12 @@ suite.check("and back off", ns.Muted() == false)
 local ran = {}
 local realSlash = ns.HandleSlash
 ns.HandleSlash = function(text) ran[#ran + 1] = text end
-for _, key in ipairs({ "openWindow", "find", "questArrowNext", "whatsnew" }) do
+for _, key in ipairs({ "openWindow", "find", "questLogOpen", "dungeonQuests", "dungeonLoot", "questArrowNext", "whatsnew" }) do
     controls[key]:GetScript("OnClick")(controls[key])
 end
 ns.HandleSlash = realSlash
 suite.check("the command buttons run their commands",
-    table.concat(ran, ",") == "window,find,arrow next,whatsnew", table.concat(ran, ","))
+    table.concat(ran, ",") == "window,find,quest log,dungeons,loot,arrow next,whatsnew", table.concat(ran, ","))
 
 -- Every command registered has a control here, but for the ones that are
 -- typed only (the owner, 2026-10-15): commands that only list things in

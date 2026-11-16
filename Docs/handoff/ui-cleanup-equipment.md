@@ -62,14 +62,15 @@ and new player words need the owner's yes first.
    in the stack `UI/Notice.lua` already lays out (`_G.BlackthornesNotice`),
    each with its own height. A banner the player dragged keeps its spot.
    `Notice.lua` is shared by all five.
-3. **Side panels in one column.** Mockup `3-side-panels.png`. Starting
+3. **Moved to the shared work** (the one window's right shelf, all five
+   addons). **Side panels in one column.** Mockup `3-side-panels.png`. Starting
    spots: Upgrade Tracker RIGHT -40, 120; Guide Me card RIGHT -60, 60;
    Upgrade Quest panel RIGHT -40, -120. Each is taller than the gaps, and
    all three sit where the game's quest list is. Panels never dragged
    stack in one column left of the game's list, each under the one above,
    closing up when one hides. A dragged panel leaves the column and keeps
    its saved spot (no saved key changes; only the defaults).
-4. **Game pop-ups on top.** Mockup `4-popups-on-top.png`. The one window
+4. **Built 2026-11-16** (the owner said build all). **Game pop-ups on top.** Mockup `4-popups-on-top.png`. The one window
    is strata HIGH; Stat Weights, Ignored, Dungeon Loot, Dungeon Quests,
    the slot panel and the stand-alone gear and Settings windows are
    DIALOG, the game's own layer for confirm boxes, so a clicked window of
@@ -78,7 +79,11 @@ and new player words need the owner's yes first.
 
 ## Recommended: Settings
 
-5. **Four pages and one list of what shows.** Mockup
+5. **Built 2026-11-16** (the owner said build all and picked the words
+   SHOW ON SCREEN and OPEN). The grid is `SettingsUI:BuildShowGrid`, the
+   buttons `SettingsUI:BuildOpenRows` (Gear page, right column, with the
+   Quest Log row and its Tracked Only box); names drop their colon through
+   `SettingsUI.GridName`. **Four pages and one list of what shows.** Mockup
    `5-settings-pages.png`. The Upgrade Hunts page holds five rows. Ten
    on/off boxes (Upgrade Arrows, Sell Coins, Take Reward Button, Upgrades
    in Chat, Character Sheet, Upgrade Banner, Upgrade Tracker, Map Pins,
