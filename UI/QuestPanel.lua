@@ -1332,6 +1332,16 @@ function QuestPanel:RestorePosition()
     if not self.frame then return end
     local db = ns.db or {}
     self.frame:ClearAllPoints()
+    if not (db.questX and db.questY) then
+        -- Never dragged: the next free place on the shared right shelf,
+        -- under the upgrade tracker.
+        local sw = ns.SharedWindow
+        if sw and sw.ShelfPlace and sw.ShelfPlace(self.frame, "upgradequest.equipment", {
+            shelf = "right",
+            free = function() local d = ns.db or {}; return not (d.questX and d.questY) end,
+            place = function() QuestPanel:RestorePosition() end,
+        }) then return end
+    end
     -- Saved at another size (or before there were sizes, at 1): the same
     -- spot on the screen, in the units of the size it is now. The starting
     -- spot is in screen units, so it is divided by the size too.

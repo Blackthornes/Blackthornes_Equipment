@@ -219,6 +219,8 @@ function MinimapButton:JoinShared()
             key = "equipment", order = 3, name = "Equipment", icon = ICON,
             open = function() MinimapButton:Open() end,
             settings = function() if ns.SettingsUI then ns.SettingsUI:Toggle() end end,
+            -- The settings every Blackthornes addon shares (the rail's gear).
+            allAddons = function() if ns.SettingsUI then ns.SettingsUI:ShowAllAddons() end end,
             db = function() return ns.db end,
             -- Every tab shows in it (UI/FinderWindow.lua).
             host = ns.FinderUI and ns.FinderUI.host or nil,

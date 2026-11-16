@@ -174,7 +174,15 @@ function Toast:Place()
     if spot then
         frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", spot[1], spot[2])
     else
-        frame:SetPoint("TOP", UIParent, "TOP", 0, -150)
+        -- Never dragged: the next free place on the shared top shelf.
+        local sw = ns.SharedWindow
+        local placed = sw and sw.ShelfPlace and sw.ShelfPlace(frame, "upgrade.toast", {
+            free = function() return Toast:Spot() == nil end,
+            place = function() Toast:Place() end,
+        })
+        if not placed then
+            frame:SetPoint("TOP", UIParent, "TOP", 0, -150)
+        end
     end
 end
 
