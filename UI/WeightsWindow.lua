@@ -216,7 +216,7 @@ function WeightsUI:Build()
 
     local frame = CreateFrame("Frame", "BlackthornesEquipmentWeights", UIParent)
     frame:SetSize(self.width, 400)
-    frame:SetFrameStrata("DIALOG")
+    frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)

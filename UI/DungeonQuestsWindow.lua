@@ -117,7 +117,7 @@ function DQUI:Build()
     if self.frame then return self.frame end
     local frame = CreateFrame("Frame", NAME, UIParent)
     frame:SetSize(WIDTH, HEIGHT)
-    frame:SetFrameStrata("DIALOG")
+    frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
