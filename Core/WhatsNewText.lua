@@ -5,6 +5,11 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.11.0", lines = {
+        "Settings has one grid for what shows on screen, and an All Addons page.",
+        "You can scroll the Upgrade Tracker past eight hunts.",
+        "The window can dock in more places and you can resize it by hand.",
+    } },
     { version = "1.10.0", lines = {
         "The upgrade quest panel tells you how your gear is doing and why it picked each upgrade.",
         "You can choose how you like to gear up, like quick and close, or vendors first.",
@@ -15,9 +20,5 @@ ns.WHATS_NEW = {
     { version = "1.9.0", lines = {
         "Windows now remember where you drag them, so they come back in the same spot.",
         "A new button on the General page puts every window back where it started.",
-    } },
-    { version = "1.8.0", lines = {
-        "There is a new box that mutes every sound from all the Blackthornes addons at once. It starts off, so nothing changes until you tick it.",
-        "Gear with both damage and healing now counts for both, so healers and casters get better upgrade picks.",
     } },
 }
