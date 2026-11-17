@@ -1582,6 +1582,26 @@ function Weights.HitKind(weights)
     return "melee", melee
 end
 
+local SCHOOL_WEIGHTS = { "arcaneDamage", "fireDamage", "frostDamage",
+    "natureDamage", "shadowDamage", "holyDamage" }
+
+--- What a point of spell power is worth (a player's report, 2026-11-17):
+--- it adds to every school at once, so it is worth at least all the school
+--- weights together. As Affliction (Shadow 1.2, Fire 0.3, spell power 1.2)
+--- +36 spell power scored below +34 Fire and +34 Shadow, though it is the
+--- bigger number on every spell a warlock casts. A spell power weight set
+--- higher than that, by hand or built in, still counts as set.
+function Weights.SpellPowerWeight(weights)
+    local own = weights and weights.spellPower or 0
+    local schools = 0
+    for _, name in ipairs(SCHOOL_WEIGHTS) do
+        local w = weights and weights[name]
+        if type(w) == "number" and w > 0 then schools = schools + w end
+    end
+    if schools > own then return schools end
+    return weights and weights.spellPower
+end
+
 --- One number for how good a set of stats is: each stat times its weight.
 -- `ranged` says whether weapon dps counts as a ranged or a melee weapon.
 -- The second return is how much hit, in percent, counts toward the hit the
@@ -1597,6 +1617,8 @@ function Weights:Score(stats, weights, ranged)
         elseif EITHER[name] then
             local pair = EITHER[name]
             weight = math.max(weights[pair[1]] or 0, weights[pair[2]] or 0)
+        elseif name == "spellPower" then
+            weight = Weights.SpellPowerWeight(weights)
         else
             weight = weights[name]
         end
