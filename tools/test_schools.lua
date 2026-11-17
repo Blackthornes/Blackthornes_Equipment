@@ -90,7 +90,10 @@ suite.check("the line says worse", text and text:find("^Worse for Frost"), text)
 ns = LoadAs("MAGE", "fire", { [LEGS] = PANTS })
 result = ns.Compare:Judge(KILT)
 suite.check("for a Fire mage the kilt is still an upgrade", result.verdict == "upgrade", result.verdict)
-suite.check("but by far less than 57%", result.percent < 30, result.percent)
+-- Spell power is worth every school's weight together (2026-11-17), so to
+-- Fire (1.2 + Frost 0.2 + Arcane 0.2) the kilt's +5 counts for a bit more
+-- than it did: about 34%, still well short of the 57% once reported.
+suite.check("but by far less than 57%", result.percent < 40, result.percent)
 
 -- Shadow damage for the specs that cast shadow.
 for _, case in ipairs({ { "PRIEST", "shadow" }, { "WARLOCK", "affliction" }, { "WARLOCK", "destro" } }) do

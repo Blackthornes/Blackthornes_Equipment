@@ -1423,6 +1423,15 @@ rename it), only for kinds changed, so `customWeights` never holds a table.
 The weights window lists the kinds the class can hold (`SPECS.<CLASS>.weapons`)
 under its stats; its reset clears both.
 
+Spell power against school damage (a player's report, 2026-11-17): as
+Affliction (Shadow 1.2, Fire 0.3, spell power 1.2) a staff with +36 spell
+power showed 12% worse than one with +34 Fire and +34 Shadow, though +36 is
+more on every spell a warlock casts. Spell power adds to every school at
+once, so `Weights:Score` counts it at `Weights.SpellPowerWeight`: the larger
+of the spec's (or the player's) spell power weight and all the school
+weights added up. The weights window still shows the number set. Tested in
+`tools/test_weights.lua`. Not yet seen in game.
+
 ## The one window
 
 The owner approved the mockups and said build it (2026-10-30): one
