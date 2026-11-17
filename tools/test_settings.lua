@@ -172,6 +172,12 @@ suite.check("the page picked is gold", generalPart.label._color[1] == ns.Theme.c
 SettingsUI:Hide()
 SettingsUI:Show()
 suite.check("it opens again on the page left", pages.shown == "general")
+-- One layout for all five (the owner said build it, 2026-11-17): own
+-- pages first, then the shared ones; General reads Windows.
+local pageWords = {}
+for _, def in ipairs(pages.defs) do pageWords[#pageWords + 1] = def.text end
+suite.check("the pages run own first, then the shared ones",
+    table.concat(pageWords, ", ") == "GEAR, UPGRADE QUEST, WINDOWS, ALL ADDONS, ABOUT", table.concat(pageWords, ", "))
 
 -- Every page has rows, and the window is at least two columns wide.
 -- About (UI/About.lua) has its note and its facts instead.

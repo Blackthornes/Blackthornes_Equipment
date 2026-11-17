@@ -1615,6 +1615,12 @@ button's lines, no new words. Never name the bar addon that asked. Tested in
 
 ## The settings pages (from Tradeskills)
 
+**The shared layout (the owner said build it, 2026-11-17, all five
+addons):** own pages first, then the shared ones in the same order
+(TOOLTIPS, SOUNDS, WINDOWS, SHARING, ALL ADDONS, ABOUT; a page shows only
+when the addon has rows for it). General reads WINDOWS and sits before
+ALL ADDONS; its key stays `general`, so a saved page still opens.
+
 The owner asked (2026-10-09) for Tradeskills' Settings upgrade in Pets,
 Equipment and Farmer. `UI/SettingsPages.lua` is the same file in all three
 (a fix to it belongs in all three): category pages along the top
