@@ -286,6 +286,8 @@ def main():
     w("-- recipe). Forever may have changed some of it. The game fills in each")
     w("-- item's stats when asked.")
     w("")
+    w(MARK)
+    w("")
     w("local _, ns = ...")
     w("")
     w("local Crafts = {}")

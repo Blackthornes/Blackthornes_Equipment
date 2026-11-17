@@ -6,6 +6,8 @@
 -- saw dropping on WoW: Forever first, then pfQuest's Classic data. Every
 -- spot is one a source gives (a real spawn), never a made-up one.
 
+-- Mulgore's spots are on Forever's Mulgore map (tools/classic_maps.py).
+
 local _, ns = ...
 
 local Sources = ns.Sources
@@ -24,8 +26,8 @@ Sources.STARTS = {
     [594] = { 4098, "Carefully Folded Note", 1, { "object", "Half-Buried Bottle", "Stranglethorn Vale", 35.7, 71.7, 0, 0, 25, "" } },
     [637] = { 4433, "Waterlogged Envelope", 1, { "object", "Waterlogged Letter", "Arathi Highlands", 44.3, 92.9, 0, 0, 100, "" } },
     [654] = { 8524, "Model 4711-FTZ Power Source", 0 },
-    [770] = { 4854, "Demon Scarred Cloak", 1, { "mob", "Ghost Howl", "Mulgore", 37.3, 14.2, 12, 12, 100, "rare" } },
-    [781] = { 4851, "Dirt-stained Map", 1, { "object", "Dirt-stained Map", "Mulgore", 63.2, 82.7, 0, 0, 100, "" } },
+    [770] = { 4854, "Demon Scarred Cloak", 1, { "mob", "Ghost Howl", "Mulgore", 38.1, 25, 12, 12, 100, "rare" } },
+    [781] = { 4851, "Dirt-stained Map", 1, { "object", "Dirt-stained Map", "Mulgore", 59.8, 82.2, 0, 0, 100, "" } },
     [939] = { 11668, "Flute of Xavaric", 1, { "mob", "Xavaric", "Darkshore", 54.1, 47, 55, 55, 100, "" } },
     [1100] = { 5791, "Henrig Lonebrow's Journal", 1, { "object", "Henrig Lonebrow's Journal", "The Barrens", 43.5, 93.1, 0, 0, 100, "" } },
     [1148] = { 5877, "Cracked Silithid Carapace", 4, { "mob", "Silithid Hive Drone", "Thousand Needles", 68.1, 86, 33, 34, 50, "" }, { "mob", "Silithid Invader", "Thousand Needles", 67.8, 86, 34, 35, 50, "" }, { "mob", "Silithid Ravager", "Thousand Needles", 68.4, 82.3, 36, 36, 50, "rare" } },

@@ -39,6 +39,9 @@ from pathlib import Path
 
 from lupa import lua51
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from classic_maps import MARK, forever_spot  # noqa: E402
+
 # Equippable inventory types, by item_template.InventoryType. Shirts (4),
 # bags (18), tabards (19), ammunition (24) and quivers (27) carry nothing
 # worth weighing.
@@ -221,7 +224,9 @@ def place(entry):
     zone = zones.most_common(1)[0][0]
     for s in spots:
         if s[3] == zone:
-            return zone, round(float(s[1]), 1), round(float(s[2]), 1)
+            # Classic's numbers on Forever's own map (only Mulgore's differ).
+            x, y = forever_spot(zone, float(s[1]), float(s[2]))
+            return zone, round(x, 1), round(y, 1)
     return None
 
 
@@ -533,6 +538,8 @@ def main():
     w("-- which map a creature lives on) and pfQuest's database (vendors, where")
     w("-- every NPC stands). Forever may have changed some of it. The game fills in")
     w("-- each item's stats when asked, so nothing here says what an item is worth.")
+    w("")
+    w(MARK)
     w("")
     w("local _, ns = ...")
     w("")
