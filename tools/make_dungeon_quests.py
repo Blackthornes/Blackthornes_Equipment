@@ -3,7 +3,7 @@
 Run from the repository root, after make_sources.py, with the same two
 Classic 1.12 databases and the Forever client's game tables:
 
-    python tools/make_dungeon_quests.py <mangoszero database> <pfQuest> \
+    python tools/make_dungeon_quests.py <world database> <spawn database> \
         --tables <tables folder>
 
 After a dungeon is added to FOREVER_DUNGEONS in tools/forever_drops.py,
@@ -79,8 +79,8 @@ def rewrite_places(path=OUTPUT):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("mangos", nargs="?")
-    ap.add_argument("pfquest", nargs="?")
+    ap.add_argument("world_db", nargs="?")
+    ap.add_argument("spawn_db", nargs="?")
     ap.add_argument("--tables")
     ap.add_argument("--build", default="")
     ap.add_argument("--places-only", action="store_true",
@@ -90,47 +90,47 @@ def main():
         rewrite_places()
         print(f"wrote {len(FOREVER_DUNGEONS)} Forever dungeons to {OUTPUT}")
         return
-    if not (args.mangos and args.pfquest and args.tables):
-        ap.error("mangos, pfquest and --tables are needed unless --places-only")
+    if not (args.world_db and args.spawn_db and args.tables):
+        ap.error("world_db, spawn_db and --tables are needed unless --places-only")
 
-    mangos = Path(args.mangos) / "World" / "Setup" / "FullDB"
-    pfq = ms.load_pfquest(Path(args.pfquest))
+    world_db = Path(args.world_db) / "World" / "Setup" / "FullDB"
+    spawn = ms.load_spawn_db(Path(args.spawn_db))
     tables = Path(args.tables)
     zone_map = area_maps(tables)
     on_forever = forever_quests(tables)
 
-    units, objects = pfq["units"]["data"], pfq["objects"]["data"]
-    unit_names, object_names = pfq["units"]["enUS"], pfq["objects"]["enUS"]
-    item_names, quest_text = pfq["items"]["enUS"], pfq["quests"]["enUS"]
-    pf_quests = pfq["quests"]["data"]
-    zone_names = pfq["zones"]["enUS"]
+    units, objects = spawn["units"]["data"], spawn["objects"]["data"]
+    unit_names, object_names = spawn["units"]["enUS"], spawn["objects"]["enUS"]
+    item_names, quest_text = spawn["items"]["enUS"], spawn["quests"]["enUS"]
+    sp_quests = spawn["quests"]["data"]
+    zone_names = spawn["zones"]["enUS"]
 
     # Where creatures and objects stand, for quests filed under no zone.
     where_map = {}
-    for r in ms.rows(mangos / "creature.sql", "creature"):
+    for r in ms.rows(world_db / "creature.sql", "creature"):
         if r["map"] in ms.INSTANCES:
             where_map.setdefault(r["id"], r["map"])
     for uid, m in ms.SUMMONED.items():
         where_map.setdefault(uid, m)
     instance_objects = {}
-    for r in ms.rows(mangos / "gameobject.sql", "gameobject"):
+    for r in ms.rows(world_db / "gameobject.sql", "gameobject"):
         if r["map"] in ms.INSTANCES:
             instance_objects.setdefault(r["id"], r["map"])
-    templates = {r["Entry"]: r for r in ms.rows(mangos / "creature_template.sql",
+    templates = {r["Entry"]: r for r in ms.rows(world_db / "creature_template.sql",
                                                 "creature_template")}
     loot_users = collections.defaultdict(set)
     for uid, t in templates.items():
         if t["LootId"]:
             loot_users[t["LootId"]].add(uid)
     dropped_by = collections.defaultdict(set)
-    for r in ms.rows(mangos / "creature_loot_template.sql", "creature_loot_template"):
+    for r in ms.rows(world_db / "creature_loot_template.sql", "creature_loot_template"):
         if r["mincountOrRef"] >= 0:
             dropped_by[r["item"]] |= loot_users.get(r["entry"], set())
-    from_elsewhere = {r["item"] for r in ms.rows(mangos / "gameobject_loot_template.sql",
+    from_elsewhere = {r["item"] for r in ms.rows(world_db / "gameobject_loot_template.sql",
                                                  "gameobject_loot_template")}
 
     gear = set()
-    for r in ms.rows(mangos / "item_template.sql", "item_template"):
+    for r in ms.rows(world_db / "item_template.sql", "item_template"):
         if r["class"] in (2, 4) and r["InventoryType"] in ms.EQUIPPABLE:
             gear.add(r["entry"])
 
@@ -150,11 +150,11 @@ def main():
         return maps.most_common(1)[0][0] if maps else None
 
     out = {}
-    for r in ms.rows(mangos / "quest_template.sql", "quest_template"):
+    for r in ms.rows(world_db / "quest_template.sql", "quest_template"):
         qid = r["entry"]
         if qid not in on_forever:
             continue
-        pq = pf_quests[qid]
+        pq = sp_quests[qid]
         if not pq or not pq["start"] or pq["event"]:
             continue
         title = (quest_text[qid] and quest_text[qid]["T"]) or r["Title"]
