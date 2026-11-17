@@ -377,12 +377,23 @@ end
 
 --- Lay the tabs along one row, as wide as their names and sharing what is
 --- left over; in the smaller letters if the names would not fit.
+-- Only the tabs shown take a place (UpgradeQuest:TabShown): a tab whose
+-- boxes are unticked in the gear window is left out and the rest widen.
 function QuestPanel:LayoutTabs(frame)
-    local room = WIDTH - PAD * 2 - TAB_GAP * (#self.tabs - 1)
+    local logic = ns.UpgradeQuest
+    local tabs = {}
+    for _, button in ipairs(self.tabs) do
+        local shown = button.key == QuestPanel.LOG_TAB.key or not (logic and logic.TabShown)
+            or logic:TabShown(button.key)
+        button.left = not shown
+        if shown then tabs[#tabs + 1] = button end
+    end
+    local room = WIDTH - PAD * 2 - TAB_GAP * (#tabs - 1)
     local size = "small"
+    for _, button in ipairs(tabs) do button.label:SetFont(Theme.FONT, Theme.sizes.small, "") end
     local function Widths()
         local widths, total = {}, 0
-        for index, button in ipairs(self.tabs) do
+        for index, button in ipairs(tabs) do
             widths[index] = Theme.TextWidth(size, button.label:GetText()) + 14
             total = total + widths[index]
         end
@@ -391,7 +402,7 @@ function QuestPanel:LayoutTabs(frame)
     local widths, total = Widths()
     if total > room then
         size = "tiny"
-        for _, button in ipairs(self.tabs) do button.label:SetFont(Theme.FONT, Theme.sizes.tiny, "") end
+        for _, button in ipairs(tabs) do button.label:SetFont(Theme.FONT, Theme.sizes.tiny, "") end
         widths, total = Widths()
     end
     -- Still too wide in the smaller letters (a long language): share the
@@ -400,9 +411,9 @@ function QuestPanel:LayoutTabs(frame)
         for index in ipairs(widths) do widths[index] = widths[index] * room / total end
         total = room
     end
-    local extra = math.max(0, room - total) / #self.tabs
+    local extra = math.max(0, room - total) / #tabs
     local x = PAD
-    for index, button in ipairs(self.tabs) do
+    for index, button in ipairs(tabs) do
         button:ClearAllPoints()
         button:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -HEADER)
         button:SetWidth(widths[index] + extra)
@@ -418,6 +429,14 @@ function QuestPanel:FillTabs()
     local logic = ns.UpgradeQuest
     local shownTab = logic:Tab()
     local log = self:ShowsLog()
+    -- Lay the row out again only when a tab came or went.
+    local changed = false
+    for _, button in ipairs(self.tabs) do
+        if button.key ~= QuestPanel.LOG_TAB.key and (rawget(button, "left") == true) == logic:TabShown(button.key) then
+            changed = true
+        end
+    end
+    if changed and self.frame then self:LayoutTabs(self.frame) end
     for _, button in ipairs(self.tabs) do
         if button.key == QuestPanel.LOG_TAB.key then
             button.shown = log
@@ -427,7 +446,7 @@ function QuestPanel:FillTabs()
             button.empty = logic:QuestOn(button.key) == nil
         end
         button.Light(Motion:Value(button, "hover") or 0)
-        button:SetShown(not self.folded)
+        button:SetShown(not self.folded and rawget(button, "left") ~= true)
     end
 end
 

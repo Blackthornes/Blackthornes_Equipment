@@ -964,6 +964,17 @@ copy reads the flights, crossings and Hearthstone spot the others saved
 (`travelFlights`, `travelCrossings`, `travelHearth`, never renamed).
 Tested in `tools/test_travel.lua`. Not yet seen in game.
 
+Tabs follow the gear window's boxes (the owner said build it 2026-11-17,
+from a mockup): a source tab whose boxes are all unticked in Where to get
+upgrades (`finderSourcesOff`) is left out of the panel and the rest
+widen (`UpgradeQuest:TabShown`, `TAB_BOXES`; Dungeons and Raids stays
+while Dungeons or Raids is ticked). The Quest log tab always stays. A
+picked tab left out gives way to the first one shown (`UpgradeQuest:Tab`,
+saved by `WindowFiltersChanged`). With every box unticked every tab shows.
+`QuestPanel:LayoutTabs` lays out only the tabs shown, and `FillTabs` lays
+the row out again only when one came or went. Tested in
+`tools/test_questtabs.lua`. Not yet seen in game.
+
 ## Dungeon Quests
 
 The owner said build it (2026-10-20, from a mockup): every quest done
