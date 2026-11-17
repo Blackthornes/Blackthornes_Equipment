@@ -50,9 +50,12 @@ local PAGES = {
     -- The settings every Blackthornes addon shares (2026-11-16): reached
     -- by the one window's gear while One Window is on, so it is left off
     -- the switch then; on the switch while each addon has its own window.
-    { key = "all", text = L["All Addons"] },
-    { key = "general", text = L["GENERAL"],
-      tip = L["Window positions, text size and help"] },
+    -- General became Windows and comes before All Addons, the same order
+    -- in all five (the owner said build it, 2026-11-17). Its key stays
+    -- "general", so a saved page still opens.
+    { key = "general", text = L["WINDOWS"],
+      tip = L["Window size and how much the panels let the world show through"] },
+    { key = "all", text = L["ALL ADDONS"] },
     { key = "about", text = L["ABOUT"],
       tip = L["How these addons are made, the version, the Discord and the other Blackthornes addons"] },
 }
