@@ -12,7 +12,7 @@
 --
 -- Skills are the client's weapon subclass IDs (item class 2), the same
 -- numbers Logic/Weights.lua uses for what each class can equip. Each
--- trainer's NPC ID and spot on its city's map are Classic's, from pfQuest's
+-- trainer's NPC ID and spot on its city's map are Classic's, from the spawn database's
 -- database; a spot learned on Forever (Logic/NPCSpots.lua) wins over it.
 
 local _, ns = ...

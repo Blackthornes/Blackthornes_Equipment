@@ -304,23 +304,22 @@ it copies anything, and `.github/workflows/tests.yml` runs all of them on every
 push.
 
 `Data/Sources.lua` is generated, never edited by hand. To rebuild it, check
-out [mangoszero/database](https://github.com/mangoszero/database) and
-[shagu/pfQuest](https://github.com/shagu/pfQuest) anywhere and run:
+out a Classic world database and
+a Classic spawn database anywhere and run:
 
 ```bash
-python tools/make_sources.py <mangoszero database> <pfQuest>
+python tools/make_sources.py <world database> <spawn database>
 ```
 
 The script's opening comment says what it keeps and leaves out.
 
-`Data/Crafts.lua` and `Data/Rolls.lua` are generated too, from the vmangos
-world database (`world_full_14_june_2021.sql` from
-[brotalnia/database](https://github.com/brotalnia/database)) and pfQuest.
+`Data/Crafts.lua` and `Data/Rolls.lua` are generated too, from the Classic
+world database (`world.sql`) and the spawn database.
 Run `make_sources.py` first, since `Rolls.lua` also covers the gear in
 `Sources.lua`, then:
 
 ```bash
-python tools/make_crafts.py <world_full_14_june_2021.sql> <pfQuest>
+python tools/make_crafts.py <world.sql> <spawn database>
 ```
 
 What bosses really drop on Forever comes from Blackthornes Farmer's loot
@@ -340,12 +339,12 @@ now. The dungeon
 level ranges, and the few bosses a script summons rather than spawns, are the
 only parts typed in by hand, at the top of the script.
 
-The upgrade quest's directions come from pfQuest and the same Farmer
+The upgrade quest's directions come from the spawn database and the same Farmer
 checkout. After `make_sources.py`, run:
 
 ```bash
-python tools/make_quest_starts.py <pfQuest> ../Blackthornes_Farmer
-python tools/make_quest_ends.py <pfQuest> ../Blackthornes_Farmer
+python tools/make_quest_starts.py <spawn database> ../Blackthornes_Farmer
+python tools/make_quest_ends.py <spawn database> ../Blackthornes_Farmer
 ```
 
 `Data/QuestStarts.lua` says where to get the item that starts a quest, and

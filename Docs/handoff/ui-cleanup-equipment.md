@@ -18,7 +18,7 @@ and new player words need the owner's yes first.
   thin gold thumb down the right edge while there is more
   (`PlaceThumb`), the same thumb the drop-down menus use. Tested in
   `tools/test_hunts.lua`.
-- **Thread context**: `tools/runtests.py -q` and `tools/syntaxcheck.py -q`
+- **Session room**: `tools/runtests.py -q` and `tools/syntaxcheck.py -q`
   print failures and one total line (a plain run was about 20 KB), and
   `-q word` runs only the suites named. CLAUDE.md went from 16 KB to 7 KB:
   a short form of each standing rule, the full words under "Standing rules
