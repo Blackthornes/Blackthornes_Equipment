@@ -554,6 +554,16 @@ mobs looted there (1 to 60 when none were read). Still only at each
 release's fold-in; a new Forever dungeon needs one line there. Tested in
 `tools/test_forever_drops.py`.
 
+Adding one (The Drowned City, map 2970, a player's report 2026-11-17):
+its line in `FOREVER_DUNGEONS`, then `python tools/make_dungeon_quests.py
+--places-only` (rewrites only `ns.FOREVER_DUNGEON_PLACES`, no Classic
+databases needed), `tools/make_forever_bosses.py <tables>` and
+`tools/forever_drops.py`. Levels go in `forever_facts.json` `dungeons`.
+Its door is Stranglethorn Vale: the client's AreaTable has an outside
+"Sunken Hollow" there under the dungeon's own zone folder. Its zone
+name had kept Farmer's drops there out until it was listed. Tested in
+`tools/test_dungeonloot.lua`. Not yet seen in game.
+
 Gear Forever changed (the owner said "do it all", 2026-10-12, to using
 the Forever client's game tables in every addon): `tools/forever_items.py
 <tables folder> --build <build>` reads only the client's `ItemSparse.csv`

@@ -14,6 +14,7 @@ local _, ns = ...
 -- door is in (its own name when not known), "" for both sides, and true
 -- for a raid.
 ns.Sources.DUNGEONS["2959"] = ns.Sources.DUNGEONS["2959"] or { "City of Dalaran", 28, 33, "Alterac Mountains", "" }
+ns.Sources.DUNGEONS["2970"] = ns.Sources.DUNGEONS["2970"] or { "The Drowned City", 35, 40, "Stranglethorn Vale", "" }
 ns.Sources.DUNGEONS["2998"] = ns.Sources.DUNGEONS["2998"] or { "Excavation Site: Wetlands", 24, 29, "Wetlands", "" }
 ns.Sources.DUNGEONS["2999"] = ns.Sources.DUNGEONS["2999"] or { "Ruins of Lordaeron", 15, 20, "Tirisfal Glades", "" }
 ns.Sources.DUNGEONS["3065"] = ns.Sources.DUNGEONS["3065"] or { "The Hall of Thanes", 13, 18, "Ironforge", "" }
@@ -1126,6 +1127,8 @@ ns.Sources.FOREVER = {
     [274293] = { { "Arcanist Doan", "189Library", 0 } },
     [274294] = { { "Arcanist Doan", "189Library", 0 } },
     [274295] = { { "Herod", "189Armory", 0 } },
+    [274598] = { { "Zul'Alai", "2970", 0 } },
+    [274602] = { { "Var'Taka", "2970", 0 } },
     [274638] = { { "Theka the Martyr", "209", 0 } },
     [274641] = { { "Theka the Martyr", "209", 0 } },
     [274643] = { { "Nekrum Gutchewer", "209", 0 } },
@@ -1148,6 +1151,7 @@ ns.Sources.FOREVER = {
     [284844] = { { "Dragonmaw Thaumaturgist", "2998", 0 } },
     [284845] = { { "Thicket Lurker", "2998", 0 } },
     [285292] = { { "Sneed's Shredder", "36", 0 } },
+    [286650] = { { "\"Pyromancer\" Braxton", "2970", 0 } },
     [286977] = { { "Ghoul", "2999", 0 }, { "Ragged Ghoul", "2999", 0 } },
     [286978] = { { "Broodwidow", "2999", 0 }, { "Deep Widow", "2999", 0 }, { "Flesh Golem", "2999", 0 }, { "Ghoul", "2999", 4 }, { "Skeletal Mage", "2999", 0 }, { "Spider", "2999", 3 } },
     [286979] = { { "Broodling", "2999", 0 }, { "Deep Widow", "2999", 0 }, { "Fallen Necromancer", "2999", 0 }, { "Ghoul", "2999", 5 }, { "Skeletal Soldier", "2999", 5 } },
