@@ -23,6 +23,14 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.12.0
+
+- A one-handed weapon that beats your main hand now shows under Main hand too.
+- Spell power scores fairer for casters.
+- The Drowned City is in Dungeon Loot.
+- Settings pages sit in the same order in every Blackthornes addon.
+- Various bug fixes for Equipment.
+
 ## 1.11.1
 
 Fixes and changes:
