@@ -6,6 +6,10 @@ Classic 1.12 databases and the Forever client's game tables:
     python tools/make_dungeon_quests.py <mangoszero database> <pfQuest> \
         --tables <tables folder>
 
+After a dungeon is added to FOREVER_DUNGEONS in tools/forever_drops.py,
+`python tools/make_dungeon_quests.py --places-only` rewrites just the
+ns.FOREVER_DUNGEON_PLACES block, keeping the quests as they are.
+
 A quest counts as a dungeon's when Classic files it under that dungeon's
 zone, or when what it asks for (a creature to kill, an object to use, an
 item only creatures there drop) is inside one. Seasonal quests and quests
@@ -42,13 +46,52 @@ def forever_quests(tables):
         return {int(r["ID"]) for r in csv.DictReader(f)}
 
 
+PLACES_HEAD = "-- Forever's own dungeons and raids, by the map ID the game gives inside:"
+
+
+def places_lines():
+    """The ns.FOREVER_DUNGEON_PLACES block, from FOREVER_DUNGEONS."""
+    lines = [
+        PLACES_HEAD,
+        "-- name, the zone the door is in (\"\" when not known) and true for a",
+        "-- raid. Their quests are learned in game (Logic/DungeonQuests.lua).",
+        "ns.FOREVER_DUNGEON_PLACES = {",
+    ]
+    for m in sorted(FOREVER_DUNGEONS):
+        name, door, raid = FOREVER_DUNGEONS[m]
+        lines.append('    ["%d"] = { %s, %s%s },' % (m, ms.lua_string(name), ms.lua_string(door or ""),
+                                                  ", true" if raid else ""))
+    lines.append("}")
+    lines.append("")
+    return lines
+
+
+def rewrite_places(path=OUTPUT):
+    """Rewrites only the places block of an existing file, so a Forever
+    dungeon added to FOREVER_DUNGEONS shows up without the Classic
+    databases. The quests above it are left as they are."""
+    text = path.read_text(encoding="utf-8")
+    at = text.find(PLACES_HEAD)
+    if at < 0:
+        raise SystemExit("no FOREVER_DUNGEON_PLACES block in %s" % path)
+    path.write_text(text[:at] + "\n".join(places_lines()), encoding="utf-8", newline="\n")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("mangos")
-    ap.add_argument("pfquest")
-    ap.add_argument("--tables", required=True)
+    ap.add_argument("mangos", nargs="?")
+    ap.add_argument("pfquest", nargs="?")
+    ap.add_argument("--tables")
     ap.add_argument("--build", default="")
+    ap.add_argument("--places-only", action="store_true",
+                    help="only rewrite ns.FOREVER_DUNGEON_PLACES from FOREVER_DUNGEONS")
     args = ap.parse_args()
+    if args.places_only:
+        rewrite_places()
+        print(f"wrote {len(FOREVER_DUNGEONS)} Forever dungeons to {OUTPUT}")
+        return
+    if not (args.mangos and args.pfquest and args.tables):
+        ap.error("mangos, pfquest and --tables are needed unless --places-only")
 
     mangos = Path(args.mangos) / "World" / "Setup" / "FullDB"
     pfq = ms.load_pfquest(Path(args.pfquest))
@@ -188,18 +231,7 @@ def main():
             q[10], q[11]))
     lines.append("}")
     lines.append("")
-    lines += [
-        "-- Forever's own dungeons and raids, by the map ID the game gives inside:",
-        "-- name, the zone the door is in (\"\" when not known) and true for a",
-        "-- raid. Their quests are learned in game (Logic/DungeonQuests.lua).",
-        "ns.FOREVER_DUNGEON_PLACES = {",
-    ]
-    for m in sorted(FOREVER_DUNGEONS):
-        name, door, raid = FOREVER_DUNGEONS[m]
-        lines.append('    ["%d"] = { %s, %s%s },' % (m, ms.lua_string(name), ms.lua_string(door or ""),
-                                                  ", true" if raid else ""))
-    lines.append("}")
-    lines.append("")
+    lines += places_lines()
     OUTPUT.write_text("\n".join(lines), encoding="utf-8", newline="\n")
     by = collections.Counter(q[0] for q in out.values())
     print(f"wrote {len(out)} dungeon quests to {OUTPUT}")

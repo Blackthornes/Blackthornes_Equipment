@@ -318,6 +318,7 @@ ns.FOREVER_DUNGEON_PLACES = {
     ["2875"] = { "Karazhan Crypts", "Deadwind Pass" },
     ["2902"] = { "The Scarab Dais", "" },
     ["2959"] = { "City of Dalaran", "Alterac Mountains" },
+    ["2970"] = { "The Drowned City", "Stranglethorn Vale" },
     ["2998"] = { "Excavation Site: Wetlands", "Wetlands" },
     ["2999"] = { "Ruins of Lordaeron", "Tirisfal Glades" },
     ["3065"] = { "The Hall of Thanes", "Ironforge" },
