@@ -657,6 +657,15 @@ every "zone you are in" check),
 loot arrows). None of it has been seen in game yet; `/beq probe` reports the
 calls they need.
 
+One-handers under Main hand too (the owner said list it, 2026-11-17, after a
+player missed Thrash Blade): `Compare:Against` judges a one-hander against
+the weaker hand, so a rogue's better sword showed only under Off hand. When
+that verdict is an upgrade in the off hand, `Finder:MainHandToo` judges it
+again in the main hand (`Compare:Judge(link, 16)`, kept as `main` beside the
+item's verdict) and, when it beats the main hand weapon, adds a copy of the
+pick to slot 16 marked `mainToo`, left out of `count`. Tested in
+`tools/test_findermainhand.lua`. Not yet seen in game.
+
 ## Quests learned in game
 
 The owner asked (2026-10-13) for the upgrade quest to learn quests and

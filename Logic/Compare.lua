@@ -224,8 +224,9 @@ Compare.Capped = Capped
 --- What is worn where this item would go, and the score to beat.
 -- @return against (number, or nil while what is worn can't be read), empty (true when every slot it could go in is
 --         empty), equipped (true when this very item is already worn), and
---         the slot it would go in (the weaker of a pair)
-function Compare:Against(link, equipLoc, weights, shieldTank)
+--         the slot it would go in (the weaker of a pair, or `only` when
+--         given and the item fits there)
+function Compare:Against(link, equipLoc, weights, shieldTank, only)
     local slots = SLOTS[equipLoc]
 
     -- A one-handed weapon also fits the off hand, for a character who can
@@ -243,6 +244,14 @@ function Compare:Against(link, equipLoc, weights, shieldTank)
         local mainIsTwoHand = mainInfo and mainInfo.equipLoc == "INVTYPE_2HWEAPON"
         if offIsWeapon or (not offHand and mainHand and not mainIsTwoHand) then
             slots = { 16, 17 }
+        end
+    end
+
+    -- Asked about one slot of a pair: the main hand for a one-hander that
+    -- beats the off hand, say. Only where the item fits.
+    if only then
+        for _, slot in ipairs(slots) do
+            if slot == only then slots = { only } break end
         end
     end
 
@@ -426,7 +435,9 @@ end
 --   empty     true when it would go in an empty slot
 --   level     the level it can be worn from, when that is above the player's
 --             (an upgrade that has to wait)
-function Compare:Judge(link)
+-- `only`, when given, judges it in that one slot of a pair (16, the main
+-- hand, for a one-hander that would otherwise go in the weaker hand).
+function Compare:Judge(link, only)
     link = Items.PlainLink(link)
     if not link then return nil end
 
@@ -520,7 +531,7 @@ function Compare:Judge(link)
     local score, hit, hitValue = self:ScoreOf(link, weights)
     if not score then return nil end
 
-    local against, empty, equipped, slot, wornHit, wornValue = self:Against(link, info.equipLoc, weights, shieldTank)
+    local against, empty, equipped, slot, wornHit, wornValue = self:Against(link, info.equipLoc, weights, shieldTank, only)
     if against == nil then return nil end
     result.slot = slot
     if equipped then
