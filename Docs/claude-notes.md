@@ -608,6 +608,23 @@ only `npcSpots` and rewrites `Data/ForeverNPCs.lua`; never hand-edit it
 no NPC ID in the data, so their spots are not learned. Not yet seen in
 game; `/beq probe` shows the target's NPC ID and the spot it would keep.
 
+Mulgore's spots (2026-11-17, after Tradeskills found Thunder Bluff's
+trainers pinned just north of the city): Forever's Mulgore map covers more
+ground than the one Classic's numbers were measured on, and Classic keeps
+Thunder Bluff's NPCs on Mulgore's map (zone 215), so every Classic spot
+there landed north and west of the NPC. Every other zone matched,
+Thunder Bluff's own map too. `tools/classic_maps.py` (the same bounds as
+Tradeskills') moved the Mulgore spots in `Data/Sources.lua`,
+`Data/Crafts.lua`, `Data/DungeonQuests.lua`, `Data/QuestStarts.lua` and
+`Data/QuestEnds.lua` once (a moved file carries its mark in the header);
+a QuestEnds or QuestStarts spot within `NEAR` of one Farmer saw on Forever
+is Farmer's and was kept. `make_sources.py`'s `place` and
+`make_quest_starts.py`'s `spot` call its `forever_spot`, so every generator
+writes Forever's numbers, and each writes the mark. The Forever files
+(`ForeverNPCs`, `ForeverQuests`, `ForeverVendors`,
+`ForeverDungeonQuests`) were already right. Tested in
+`tools/test_bluffspots.lua`. Not yet seen in game.
+
 Vendor prices on Forever (the owner asked 2026-10-08): the same merchant
 window keeps the gold price of gear the finder knows a vendor for, account
 wide in `BlackthornesEquipmentDB.vendorPrices[itemID]` = copper (never
