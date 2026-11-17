@@ -192,10 +192,42 @@ function UpgradeQuest:Quests()
     return char.upgradeQuestTabs
 end
 
---- The tab picked: "vendor" until one is.
+--- The boxes in Where to get upgrades each tab leans on: Dungeons and
+--- Raids stays while either of its two is ticked.
+UpgradeQuest.TAB_BOXES = {
+    vendor = { "vendor" }, quest = { "quest" }, dungeon = { "dungeon", "raid" }, craft = { "craft" },
+}
+
+--- Is this tab shown? A tab whose boxes are all unticked in the gear
+--- window (`finderSourcesOff`) has nothing to chase, so the panel leaves
+--- it out. With every box unticked, every tab shows as before.
+function UpgradeQuest:TabShown(key)
+    if not IS_TAB[key] then return false end
+    local off = ns.db and ns.db.finderSourcesOff
+    if type(off) ~= "table" then return true end
+    local function On(tabKey)
+        for _, kind in ipairs(self.TAB_BOXES[tabKey] or { tabKey }) do
+            if off[kind] ~= true then return true end
+        end
+        return false
+    end
+    if On(key) then return true end
+    for _, tab in ipairs(TABS) do
+        if On(tab.key) then return false end
+    end
+    return true
+end
+
+--- The tab picked: "vendor" until one is. A picked tab that is left out
+--- gives way to the first tab still shown.
 function UpgradeQuest:Tab()
     local tab = ns.charDB and ns.charDB.upgradeQuestTab
-    return IS_TAB[tab] and tab or "vendor"
+    tab = IS_TAB[tab] and tab or "vendor"
+    if self:TabShown(tab) then return tab end
+    for _, each in ipairs(TABS) do
+        if self:TabShown(each.key) then return each.key end
+    end
+    return tab
 end
 
 --- The quest on the picked tab, or nil.
@@ -1850,6 +1882,11 @@ function UpgradeQuest:WindowFiltersChanged()
             and ((quest.here and not keeps) or not self.WindowAllows(quest.source)) then
             quests[tab.key] = nil
         end
+    end
+    -- The tab shown was left out: the first tab still shown takes its
+    -- place, and stays picked when the box is ticked again.
+    if ns.charDB and ns.charDB.upgradeQuestTab and ns.charDB.upgradeQuestTab ~= self:Tab() then
+        ns.charDB.upgradeQuestTab = self:Tab()
     end
     self:Mirror()
     self.rescan = true
