@@ -4,6 +4,20 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.12.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **One-handers under Main hand.** A one-handed weapon that beats your main hand now shows under Main hand in the upgrade finder too.
+- **Spell power.** Spell power now counts for at least as much as every school's weight added together, so it no longer scores below single-school spell power.
+- **The Drowned City.** The Drowned City is listed with the Forever dungeons, so Dungeon Loot shows its six bosses and the gear that drops there.
+- **Upgrade quest tabs.** Upgrade quest tabs whose boxes are unticked stay hidden.
+- **Blackthornes button for addon bars.** If you already use an addon bar, Blackthornes now puts one button on it. Left-click opens the menu and right-click opens the All Addons page of Settings.
+- **Settings pages in one order.** Every Blackthornes addon now lists its Settings pages the same way. General reads Windows.
+- **Butler at a vendor.** At a vendor the one window opens on Butler, then goes back to the addon you had open when you leave.
+- **Thunder Bluff and Mulgore.** NPC spots in Thunder Bluff and Mulgore now sit where the NPCs stand.
+- Various bug fixes for Equipment.
+
 ## 1.11.1
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
