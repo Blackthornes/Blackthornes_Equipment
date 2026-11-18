@@ -1583,9 +1583,11 @@ function UpgradeQuest:Check()
                 end
             end
             if ns.Finder then ns.Finder:MarkStale() end
-        elseif quest and self:NotOffered(quest) then
+        elseif quest and (self:NotOffered(quest) or self:NotForMe(quest)) then
             -- Its giver showed this character its quests without it (Forever
-            -- changed some givers): let it go quietly, and the tab picks again.
+            -- changed some givers), or it is the other side's (or another
+            -- race's or class's) quest, picked before the finder knew: let it
+            -- go quietly, and the tab picks again.
             quests[tab.key] = nil
             if ns.Finder then ns.Finder:MarkStale() end
         elseif quest and (self:LighterArmor(quest) or self:HiddenWeapon(quest)
@@ -2065,6 +2067,17 @@ function UpgradeQuest:NotOffered(quest)
     local finder = ns.Finder
     if not (finder and source and source.kind == "quest" and source.questID) then return false end
     return finder:NotOffered(finder:FirstPickup(source.questID))
+end
+
+--- Is this a quest the character can never be given: the other side's,
+--- another race's or class's, here or anywhere earlier in its chain?
+function UpgradeQuest:NotForMe(quest)
+    local source = quest and quest.source
+    local finder = ns.Finder
+    if not (finder and source and source.kind == "quest" and source.questID) then return false end
+    local player = finder:Player()
+    if not player then return false end
+    return not finder:QuestOpenTo(source.questID, player)
 end
 
 --- What the giver in front of the player offers: its name (lower case) and
