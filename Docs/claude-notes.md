@@ -2338,3 +2338,20 @@ TSM Sold a Day). The same in every addon; keep them the same.
   (`UI/SharedWindow.lua` FILE_VERSION 12, in all five).
 - **Three tries, then ask.** A check still failing after three rounds stops
   the work. Never skip, loosen or rerun a test to get green.
+
+## A fishing pole in hand
+
+A player's report (2026-11-18, on 1.12.2): swapping between a fishing pole
+and a weapon froze the game for 3 to 10 seconds every time. A pole is no
+weapon to measure by, so with it in hand every weapon looked like an
+upgrade, and each swap passed on PLAYER_EQUIPMENT_CHANGED and
+BAG_UPDATE_DELAYED, threw every verdict away and looked at all the gear
+again, both ways. Now while a pole is in the main hand the weapons worn
+before it stand in for it (`Data/Items.lua`): `Items:Equipped(16/17)`
+answers with them, `WornSignature` and `BagSignature` read as before the
+swap (the pole as still in the bag slot its weapon now fills, the off hand
+as still worn), so `ns.NothingChanged` holds the swap back. `Items:WornNow`
+reads what is really worn (`Wear.IsWorn` uses it). The weapons are kept per
+character as `weaponsUnderPole = { main, off }` (never rename it), learned
+whenever a real weapon is in hand; with none known the pole is what is
+worn. Tested in `tools/test_gearswap.lua`. Not yet seen in game.

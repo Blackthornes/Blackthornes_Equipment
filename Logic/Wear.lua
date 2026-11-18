@@ -125,7 +125,7 @@ function Wear.IsWorn(link)
     local wanted = Items.PlainLink(link)
     if not wanted then return false end
     for slot = 1, 19 do
-        if Items:Equipped(slot) == wanted then return true end
+        if Items:WornNow(slot) == wanted then return true end
     end
     return false
 end
