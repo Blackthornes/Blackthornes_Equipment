@@ -317,6 +317,27 @@ function Finder:Chain(questID)
     return chain, unknown
 end
 
+--- Is a quest open to this character, all the way down its chain? Each
+--- quest before it must be open to the character's race and class too: a
+--- quest learned on Forever may not say its side, but the one before it
+--- does (Twisted Hatred came after a night elf quest and was offered to a
+--- Horde rogue).
+function Finder:QuestOpenTo(questID, player)
+    if not player then return false end
+    local seen = {}
+    local quest = ns.Sources.QUESTS[questID]
+    for _ = 1, CHAIN_MOST + 1 do
+        if not quest or seen[quest] then break end
+        seen[quest] = true
+        if not Finder.Allows(quest[4] or 0, player.raceBit or 0)
+            or not Finder.Allows(quest[5] or 0, player.classBit or 0) then
+            return false
+        end
+        quest = quest.p and ns.Sources.QUESTS[quest.p]
+    end
+    return true
+end
+
 --------------------------------------------------------------------------------
 -- Solo quests
 --------------------------------------------------------------------------------
@@ -402,6 +423,7 @@ end
 local function Allows(mask, flag)
     return mask == 0 or flag == 0 or Band(mask, flag) ~= 0
 end
+Finder.Allows = Allows
 
 local function ZoneName(zoneID)
     return ns.Sources.ZONES[zoneID]
@@ -489,8 +511,8 @@ function Finder:SourcesFor(itemID, player)
 
     for _, questID in ipairs(item.q or {}) do
         local quest = S.QUESTS[questID]
-        if quest and quest[2] <= player.level and Allows(quest[4], player.raceBit)
-            and Allows(quest[5], player.classBit) and not self:QuestDone(questID) then
+        if quest and quest[2] <= player.level and self:QuestOpenTo(questID, player)
+            and not self:QuestDone(questID) then
             local chain, unknown = self:Chain(questID)
             -- The first quest still to do in the chain that needs others.
             local chainGroup
