@@ -23,6 +23,11 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.12.1
+
+Fixes and changes:
+- Hovering gear no longer makes the game stutter.
+
 ## 1.12.0
 
 - A one-handed weapon that beats your main hand now shows under Main hand too.
