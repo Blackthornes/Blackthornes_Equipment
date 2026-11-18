@@ -366,11 +366,24 @@ function Tooltip:InstallScriptHooks()
     return installed
 end
 
+--- An item's details arrived. Forever says so each time a tooltip reads
+--- gear it already knows, so the kept lines go only when the item they are
+--- for is the one that arrived (or the client names no item).
+function Tooltip.OnItemInfo(_, _, itemID)
+    local kept = lastLines
+    if not kept then return end
+    local id = tonumber(itemID)
+    local shown = type(kept.link) == "string" and tonumber(kept.link:match("item:(%d+)")) or nil
+    if id and shown and id ~= shown then return end
+    lastLines = nil
+end
+
 function Tooltip:OnEnable()
     for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "TRAIT_CONFIG_UPDATED",
-        "SKILL_LINES_CHANGED", "GET_ITEM_INFO_RECEIVED" }) do
+        "SKILL_LINES_CHANGED" }) do
         ns.RegisterEvent(self, event, Tooltip.ForgetLines)
     end
+    ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", Tooltip.OnItemInfo)
     self.fired = {}
     self.installed = {
         TooltipDataProcessor = self:InstallDataProcessor(),

@@ -426,7 +426,14 @@ one. What holds it:
   answers nil when it can't tell.
 
 A new listener for `GET_ITEM_INFO_RECEIVED` only redraws, debounced and
-while its window shows; it never calls `MarkStale`. No new words for
+while its window shows; it never calls `MarkStale`. Forever says that event each
+time a tooltip reads gear it already knows, so a listener acts only on an
+item it was waiting on: the bag arrows keep `waiting[itemID]` for bag and
+worn items the client had not loaded (`BagIcons:OnItemInfo`), and the
+tooltip drops its kept lines only when the item shown arrives
+(`Tooltip.OnItemInfo`). Before (2026-11-18, a player's report), every
+hover judged every bag item again, tooltip line on or off, and the game
+stuttered. No new words for
 players. Tested in `tools/test_refreshloop.lua`, `tools/test_quietgear.lua`,
 `tools/test_speed.lua`, `tools/test_upgradequest.lua` and
 `tools/test_weights.lua`.
