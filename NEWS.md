@@ -23,6 +23,11 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.12.3
+
+Fixes and changes:
+- Swapping a fishing pole and a weapon no longer freezes the game.
+
 ## 1.12.2
 
 Fixes and changes:
