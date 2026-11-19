@@ -23,6 +23,11 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.13.0
+
+- Every window has a gold gem on its title bar. Click it to switch between the one window and separate windows.
+- The Weights window lists Spirit and Health every 5 sec for every class. Both start at 0.
+
 ## 1.12.3
 
 Fixes and changes:
