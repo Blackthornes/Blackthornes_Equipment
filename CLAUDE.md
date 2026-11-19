@@ -65,7 +65,7 @@ that touches one.
 - **Window spots.** Windows remember where they were dragged
   (`SharedWindow.KeepSpot(frame, key)`, `windowSpots`,
   `oneWindowDockSpots`; never rename). `UI/SharedWindow.lua` is
-  FILE_VERSION 13 (Butler at the vendor, shelves, dock places, All Addons gear, no placing mid-drag; see "Shelves,
+  FILE_VERSION 14 (the swap gem, Butler at the vendor, shelves, dock places, All Addons gear, no placing mid-drag; see "Shelves,
   dock places and the All Addons page" in Docs/claude-notes.md) and
   `UI/WhatsNew.lua` FILE_VERSION 7.
 - **Writing for players.** Plain, warm, sixth grade. Short sentences. No

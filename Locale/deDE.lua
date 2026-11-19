@@ -1110,6 +1110,12 @@ L["%d upgrades you can go and get."] = "%d Verbesserungen, die du dir holen kann
 -- The fold gem beside a window's close gem (2026-10-24)
 L["Collapse this window"] = "Dieses Fenster einklappen"
 L["Expand this window"] = "Dieses Fenster aufklappen"
+L["Split Into Own Windows"] = "In eigene Fenster teilen"
+L["Gives each addon its own window again."] = "Gibt jedem Addon wieder sein eigenes Fenster."
+L["You can join them back with this same button."] = "Mit diesem Knopf kannst du sie wieder verbinden."
+L["Join Into One Window"] = "Zu einem Fenster verbinden"
+L["Puts every Blackthornes addon in one window, with a button for each down the side."] = "Legt alle Blackthornes-Addons in ein Fenster, mit einem Knopf für jedes an der Seite."
+L["You can split them again with this same button."] = "Mit diesem Knopf kannst du sie wieder teilen."
 
 -- The shared Blackthornes minimap button (2026-10-28)
 L["Click a name to open it. Right-click for its settings."] = "Klick auf einen Namen, um ihn zu öffnen. Rechtsklick für seine Einstellungen."

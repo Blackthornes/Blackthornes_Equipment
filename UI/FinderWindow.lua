@@ -731,6 +731,9 @@ function FinderUI:Build()
             if not folded then FinderUI:Refresh() end
         end })
     end
+    -- And left of it, the swap gem: it joins every Blackthornes addon into
+    -- the one window (UI/SharedWindow.lua).
+    if ns.SharedWindow and ns.SharedWindow.AddSwap then ns.SharedWindow.AddSwap(frame, "equipment") end
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -2784,7 +2787,39 @@ end
 FinderUI.host = {
     enter = function(area) FinderUI:Enter(area) end,
     leave = function() FinderUI:Leave() end,
+    -- For the swap gem (SharedWindow.AddSwap): the tab up now, open on a
+    -- tab wherever Equipment now belongs, and close its own windows.
+    tab = function() return FinderUI:SwapTab() end,
+    show = function(key) FinderUI:SwapShow(key) end,
+    hide = function() FinderUI:SwapHide() end,
 }
+
+--- The tab up now (Upgrades, Enchants, Dungeon Quests, Dungeon Loot or
+--- Settings), or nil when none shows.
+function FinderUI:SwapTab()
+    if Shown(self.frame) then
+        return ns.db and ns.db.finderShow == "enchant" and "enchant" or "upgrades"
+    end
+    for key, name in pairs(STAND_INS) do
+        if Shown(StandInFrame(name)) then return key end
+    end
+    return nil
+end
+
+--- Open on `key` (nil: Upgrades or Enchants, as last seen), in the one
+--- window when it is on, else in Equipment's own window.
+function FinderUI:SwapShow(key)
+    key = key or (ns.db and ns.db.finderShow == "enchant" and "enchant") or "upgrades"
+    self:ShowTab(key)
+end
+
+--- Close Equipment's own windows.
+function FinderUI:SwapHide()
+    if self.oneArea then return end
+    for _, frame in ipairs(self:TabFrames()) do
+        if Shown(frame) then pcall(frame.Hide, frame) end
+    end
+end
 
 --- A tab is asked to open. With "One Window:" ticked and Equipment not in
 --- it yet, the one window opens on Equipment instead, on that tab; already
