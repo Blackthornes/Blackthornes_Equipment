@@ -4,6 +4,13 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.13.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **One Window switch.** Every Blackthornes window has a gold gem on its title bar. It swaps between the one window and each addon's own windows.
+- **Stat weights.** The Weights window lists Spirit and Health every 5 sec for every class. Both start at 0, so nothing scores differently until you change them.
+
 ## 1.12.3
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.

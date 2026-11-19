@@ -5,6 +5,10 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.13.0", lines = {
+        "Every window has a gold gem on its title bar. Click it to switch between the one window and separate windows.",
+        "The Weights window lists Spirit and Health every 5 sec for every class. Both start at 0.",
+    } },
     { version = "1.12.0", lines = {
         "A one-handed weapon that beats your main hand now shows under Main hand too.",
         "Spell power scores fairer for casters.",
@@ -16,12 +20,5 @@ ns.WHATS_NEW = {
         "Settings has one grid for what shows on screen, and an All Addons page.",
         "You can scroll the Upgrade Tracker past eight hunts.",
         "The window can dock in more places and you can resize it by hand.",
-    } },
-    { version = "1.10.0", lines = {
-        "The upgrade quest panel tells you how your gear is doing and why it picked each upgrade.",
-        "You can choose how you like to gear up, like quick and close, or vendors first.",
-        "A gold card pops up when you finish an upgrade.",
-        "Clicking the upgrade's marker on the map aims your arrow at it.",
-        "The quest log shows how much a quest reward would help you.",
     } },
 }
