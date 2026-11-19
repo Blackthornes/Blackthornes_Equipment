@@ -517,6 +517,7 @@ L["Healing"] = "治疗"
 L["Spell Damage"] = "法术伤害"
 L["Spell Power"] = "法术强度"
 L["Mana every 5 sec"] = "每5秒恢复法力值"
+L["Health every 5 sec"] = "每5秒恢复生命值"
 L["Armor"] = "护甲"
 
 -- Logic/WeaponSkills.lua

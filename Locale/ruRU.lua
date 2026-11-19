@@ -516,6 +516,7 @@ L["Healing"] = "Исцеление"
 L["Spell Damage"] = "Урон от заклинаний"
 L["Spell Power"] = "Сила заклинаний"
 L["Mana every 5 sec"] = "Мана раз в 5 сек."
+L["Health every 5 sec"] = "Здоровье раз в 5 сек."
 L["Armor"] = "Броня"
 
 -- Logic/WeaponSkills.lua

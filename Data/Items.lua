@@ -135,6 +135,21 @@ function Items.SchoolLine(text)
     return nil
 end
 
+--- Health every 5 sec a line names ("Equip: Restores 3 health per 5 sec."),
+--- or nil. In the client's words when it has the line's format, so other
+--- languages match too; English otherwise.
+function Items.HealthLine(text)
+    if type(text) ~= "string" then return nil end
+    local format = type(_G.ITEM_MOD_HEALTH_REGEN) == "string" and _G.ITEM_MOD_HEALTH_REGEN
+        or "Restores %s health per 5 sec."
+    local pattern = format:gsub("%.$", ""):gsub("([%%%(%)%.%+%-%*%?%[%]%^%$])", "%%%1")
+        :gsub("%%%%s", "(%%d+)"):gsub("%%%%d", "(%%d+)")
+    local ok, amount = pcall(string.match, text, pattern)
+    amount = ok and tonumber(amount)
+    if amount then return "hp5", amount end
+    return nil
+end
+
 --- What one tooltip line says, inside a pcall: in an instance the text can
 --- be a secret value that raises when read.
 local function LineText(line)
@@ -148,7 +163,8 @@ local function LineText(line)
 end
 
 --- School spell damage on an item, as { frostDamage = 10 }, or nil when the
---- tooltip cannot be read. An empty table when it has none.
+--- tooltip cannot be read. An empty table when it has none. Health every 5
+--- sec rides along as `hp5`, for clients whose stats leave it out.
 function Items:SchoolDamage(link)
     link = self.PlainLink(link)
     if not link then return nil end
@@ -167,7 +183,9 @@ function Items:SchoolDamage(link)
     local found, lines = {}, 0
     for _, line in ipairs(data.lines) do
         lines = lines + 1
-        local stat, amount = Items.SchoolLine(LineText(line))
+        local text = LineText(line)
+        local stat, amount = Items.SchoolLine(text)
+        if not stat then stat, amount = Items.HealthLine(text) end
         if stat then found[stat] = (found[stat] or 0) + amount end
     end
     -- Most gear has none, and the finder reads thousands of links, so they
