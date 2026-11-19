@@ -1484,6 +1484,17 @@ of the spec's (or the player's) spell power weight and all the school
 weights added up. The weights window still shows the number set. Tested in
 `tools/test_weights.lua`.
 
+Health every 5 sec and Spirit for everyone (a player asked, the owner said
+add both for every class at 0, 2026-11-19): `hp5` is a weight
+("Health every 5 sec", after Mana every 5 sec), read from
+`ITEM_MOD_HEALTH_REGEN_SHORT` or `ITEM_MOD_HEALTH_REGENERATION_SHORT`, else
+the tooltip's "Restores X health per 5 sec." line (`Items.HealthLine`, read
+with the school lines in `Items:SchoolDamage`, in the client's words through
+`ITEM_MOD_HEALTH_REGEN`). No spec weighs it built in. `Weights.ALWAYS_LISTED`
+(`spirit`, `hp5`) makes the weights window list both for every class and
+spec without Every stat, so warriors see Spirit at 0. Tested in
+`tools/test_hp5spirit.lua`. Not yet seen in game.
+
 ## The one window
 
 The owner approved the mockups and said build it (2026-10-30): one

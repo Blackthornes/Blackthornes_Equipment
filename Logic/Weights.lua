@@ -468,6 +468,10 @@ local STAT_KEYS = {
     ["ITEM_MOD_SPELL_HEALING_DONE_SHORT"] = "healing",
     ["ITEM_MOD_MANA_REGENERATION_SHORT"] = "mp5",
     ["ITEM_MOD_POWER_REGEN0_SHORT"] = "mp5",
+    -- Health every 5 sec ("Restores 3 health per 5 sec."). Not yet seen on
+    -- Forever; Items:SchoolDamage reads the tooltip line too.
+    ["ITEM_MOD_HEALTH_REGEN_SHORT"] = "hp5",
+    ["ITEM_MOD_HEALTH_REGENERATION_SHORT"] = "hp5",
     ["ITEM_MOD_CRIT_SPELL_RATING_SHORT"] = "spellCrit",
     ["ITEM_MOD_SPELL_CRIT_RATING_SHORT"] = "spellCrit",
     ["ITEM_MOD_HIT_SPELL_RATING_SHORT"] = "spellHit",
@@ -561,6 +565,7 @@ local STAT_ORDER = {
     { key = "spellCrit", name = "Spell crit", per = true },
     { key = "spellHit", name = "Spell hit", per = true },
     { key = "mp5", name = "Mana every 5 sec" },
+    { key = "hp5", name = "Health every 5 sec" },
     { key = "defense", name = "Defense" },
     { key = "dodge", name = "Dodge", per = true },
     { key = "parry", name = "Parry", per = true },
@@ -622,7 +627,8 @@ local LABELS = {
     ["Frost spell damage"] = L["Frost spell damage"], ["Nature spell damage"] = L["Nature spell damage"],
     ["Shadow spell damage"] = L["Shadow spell damage"], ["Holy spell damage"] = L["Holy spell damage"],
     ["Healing"] = L["Healing"], ["Spell crit"] = L["Spell crit"], ["Spell hit"] = L["Spell hit"],
-    ["Mana every 5 sec"] = L["Mana every 5 sec"], ["Defense"] = L["Defense"], ["Dodge"] = L["Dodge"],
+    ["Mana every 5 sec"] = L["Mana every 5 sec"],
+    ["Health every 5 sec"] = L["Health every 5 sec"], ["Defense"] = L["Defense"], ["Dodge"] = L["Dodge"],
     ["Parry"] = L["Parry"], ["Block"] = L["Block"], ["Block value"] = L["Block value"],
     -- Kinds of weapon
     ["Daggers"] = L["Daggers"], ["Fist weapons"] = L["Fist weapons"],
@@ -683,6 +689,12 @@ Weights.SPECS = SPECS
 Weights.STAT_KEYS = STAT_KEYS
 Weights.RATINGS = RATINGS
 Weights.STAT_ORDER = STAT_ORDER
+
+-- Rows the weights window lists for every class and spec, even at 0
+-- (the owner, 2026-11-19, after a player asked for Spirit on warriors and
+-- health every 5 sec): a player who wants them can type a weight without
+-- ticking Every stat. A built-in weight of 0 changes no score.
+Weights.ALWAYS_LISTED = { spirit = true, hp5 = true }
 Weights.MAX_WEIGHT = MAX_WEIGHT
 Weights.WEAPON_TYPES = WEAPON_TYPES
 Weights.MAX_TYPE = MAX_TYPE

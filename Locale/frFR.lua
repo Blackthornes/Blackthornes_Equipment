@@ -517,6 +517,7 @@ L["Healing"] = "Soins"
 L["Spell Damage"] = "Dégâts des sorts"
 L["Spell Power"] = "Puissance des sorts"
 L["Mana every 5 sec"] = "Mana toutes les 5 s"
+L["Health every 5 sec"] = "Vie toutes les 5 s"
 L["Armor"] = "Armure"
 
 -- Logic/WeaponSkills.lua

@@ -38,8 +38,10 @@ for _, class in ipairs(CLASSES) do
         end
     end
 end
+-- Health every 5 sec is listed for everyone at 0 (the owner, 2026-11-19):
+-- a player sets it, no spec weighs it built in.
 for stat in pairs(KNOWN) do
-    if stat ~= "dps" then
+    if stat ~= "dps" and stat ~= "hp5" then
         suite.check("some spec weighs " .. stat, used[stat])
     end
 end
