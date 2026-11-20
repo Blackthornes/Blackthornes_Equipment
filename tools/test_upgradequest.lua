@@ -431,6 +431,12 @@ suite.check("saying how many", steps[1].note == "3 quests to do before Wolves of
 suite.check("then the quest itself", steps[5].text:find("Pick up Wolves of the Forest", 1, true) ~= nil
     and #steps == 8, #steps)
 suite.check("the first quest is the step to do now", current == 1 and steps[1].place.x == 74, current)
+-- A quest learned on Forever may not name its giver: no blank "from  in".
+S.QUESTS[13][6] = ""
+steps = Quest:Steps(chainQuest)
+suite.check("a quest with no giver named says only where",
+    steps[1].text == "Do Report to Goldshire: pick it up in Elwynn Forest (74, 72)", steps[1].text)
+S.QUESTS[13][6] = "Guard Thomas"
 
 done[13] = true
 steps = Quest:Steps(chainQuest)

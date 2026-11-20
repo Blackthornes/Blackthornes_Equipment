@@ -112,6 +112,29 @@ function QuestLearn.JoinSides(a, b)
     return "AH"
 end
 
+-- Zones only one side can safely take a quest in: the six capitals and the
+-- six starting zones. A quest given there is that side's, even when the
+-- record does not say (Remember That I Love You, given in Stormwind City,
+-- was offered to a Horde hunter).
+QuestLearn.HOME_SIDES = {
+    ["Stormwind City"] = "A", ["Ironforge"] = "A", ["Darnassus"] = "A",
+    ["Elwynn Forest"] = "A", ["Dun Morogh"] = "A", ["Teldrassil"] = "A",
+    ["Orgrimmar"] = "H", ["Undercity"] = "H", ["Thunder Bluff"] = "H",
+    ["Durotar"] = "H", ["Mulgore"] = "H", ["Tirisfal Glades"] = "H",
+}
+
+--- The side a quest record is for: "A", "H", "AH", or nil when nothing says.
+--- The record's own word wins; then Forever's dungeon quest list; then the
+--- zone it is given in, when only one side lives there.
+function QuestLearn.SideOf(questID, rec)
+    if type(rec) ~= "table" then return nil end
+    local side = rec.side
+    if side == "A" or side == "H" or side == "AH" then return side end
+    local dungeon = type(ns.FOREVER_DUNGEON_QUESTS) == "table" and ns.FOREVER_DUNGEON_QUESTS[questID]
+    if type(dungeon) == "table" and (dungeon[5] == "A" or dungeon[5] == "H") then return dungeon[5] end
+    return type(rec.zone) == "string" and QuestLearn.HOME_SIDES[rec.zone] or nil
+end
+
 --- Lay one quest record over the data. Returns true when it added anything.
 function QuestLearn:Lay(questID, rec)
     local S = ns.Sources
@@ -131,8 +154,9 @@ function QuestLearn:Lay(questID, rec)
     end
     -- A learned quest is kept to the side that was offered it.
     local row = S.QUESTS[questID]
-    if row.learned and rec.side then
-        local races = SideRaces(rec.side)
+    local side = row.learned and QuestLearn.SideOf(questID, rec)
+    if side then
+        local races = SideRaces(side)
         if row[4] ~= races then row[4] = races; added = true end
     end
     -- The quest to do first, so the finder can walk the chain.
