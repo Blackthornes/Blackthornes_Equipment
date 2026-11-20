@@ -845,6 +845,12 @@ UpgradeQuest.QuestReady = QuestReady
 -- The steps
 --------------------------------------------------------------------------------
 
+--- A giver's name, or nil when the data has none ("" for some quests
+--- learned on Forever).
+local function Named(name)
+    return type(name) == "string" and name ~= "" and name or nil
+end
+
 local function At(place)
     if place.x and place.y then return (" (%s, %s)"):format(place.x, place.y) end
     return ""
@@ -1209,11 +1215,22 @@ function UpgradeQuest:Steps(quest)
                 -- Two quests in a row can share a title (The Ravaged
                 -- Caravan): say this one is the next part.
                 local again = index > 1 and chain[index - 1].title == before.title
-                text = again
-                    and L.Format("Then do the next part of %s: pick it up from %s in %s%s",
-                        beforeTitle, before.name or "?", Z(before.zone) or "?", At(spot))
-                    or L.Format("Do %s: pick it up from %s in %s%s",
-                        beforeTitle, before.name or "?", Z(before.zone) or "?", At(spot))
+                -- A quest learned on Forever may not name who gives it:
+                -- then only the zone and the spot are said.
+                local giver = Named(before.name)
+                if giver then
+                    text = again
+                        and L.Format("Then do the next part of %s: pick it up from %s in %s%s",
+                            beforeTitle, giver, Z(before.zone) or "?", At(spot))
+                        or L.Format("Do %s: pick it up from %s in %s%s",
+                            beforeTitle, giver, Z(before.zone) or "?", At(spot))
+                else
+                    text = again
+                        and L.Format("Then do the next part of %s: pick it up in %s%s",
+                            beforeTitle, Z(before.zone) or "?", At(spot))
+                        or L.Format("Do %s: pick it up in %s%s",
+                            beforeTitle, Z(before.zone) or "?", At(spot))
+                end
             end
             local need = NEED_NOTES[before.group]
             if need then note = (note and note .. " " or "") .. need end
@@ -1230,7 +1247,9 @@ function UpgradeQuest:Steps(quest)
         local place = source.x and { zone = source.zone, x = source.x, y = source.y, name = source.name } or nil
         if place then Travel(place) end
         if place then
-            Add(L.Format("Pick up %s from %s%s", shownTitle or L["the quest"], source.name or "?", At(place)),
+            local giver = Named(source.name)
+            Add(giver and L.Format("Pick up %s from %s%s", shownTitle or L["the quest"], giver, At(place))
+                or L.Format("Pick up %s%s", shownTitle or L["the quest"], At(place)),
                 onQuest, place)
         else
             StartFromItem(questID, source.title, source.name, onQuest, true)

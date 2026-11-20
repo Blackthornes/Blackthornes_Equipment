@@ -691,6 +691,14 @@ Classic says is replaced. Nothing is shared with other players.
 Each record notes the side it was offered to (`side`: "A", "H" or "AH";
 an older record without it is offered to both), and a quest seen by one
 side only is laid with that side's Classic race bits (2026-10-14).
+A record with no side (some shipped ones, from tools/forever_facts.json)
+takes one from `QuestLearn.SideOf`: Forever's dungeon quest list
+(`ns.FOREVER_DUNGEON_QUESTS`), else the zone it is given in when only one
+side lives there (`QuestLearn.HOME_SIDES`: the six capitals and six
+starting zones). Remember That I Love You (92415, Stormwind City) and its
+second part were offered to a Horde hunter before this (2026-11-20).
+`tools/forever_quests.py` also fills a missing `side` from the facts'
+`quests` part. Tested in `tools/test_questhomeside.lua`.
 Forever's Skyborne (High Order, race ID 95, Alliance; Windshapers, 96,
 Horde) share the race name "Skyborne", which Classic's race bits lack:
 `Finder.Side` reads the side from `UnitFactionGroup`, else the race ID,
