@@ -145,6 +145,14 @@ suite.check("rings and shields are not armor kinds",
 -- The other side and another realm are never picked, even for an empty slot.
 ns.db.characterGear["Player-2"] = nil
 suite.check("other realms and sides are left out", Alts:BestFor("item:4") == nil)
+-- Forever 1.60.1 hands back an empty realm name (2026-11-20): the note
+-- keeps the realm it had, and other realms are still left out.
+_G.GetRealmName = function() return "" end
+Alts:Record()
+suite.check("an empty realm name keeps the note's realm", ns.db.characterGear["Player-1"].realm == "Here",
+    tostring(ns.db.characterGear["Player-1"].realm))
+suite.check("and other realms are still left out", Alts:BestFor("item:4") == nil)
+_G.GetRealmName = function() return "Here" end
 -- A second account on one realm: Forever names another server for it
 -- ("Here Realm 3" against "Here"), and it is still this realm (2026-11-05).
 ns.db.characterGear["Player-9"] = { class = "ROGUE", level = 20, realm = "Here Realm 3", faction = "Horde",

@@ -77,8 +77,16 @@ function Alts.PlayerGUID()
     return Text(Call(_G.UnitGUID, "player"))
 end
 
+--- The realm's name, or the one this character's note kept from before:
+--- Forever 1.60.1 hands back an empty realm name, and the note is rewritten
+--- at each login, so the saved realm would otherwise be lost.
 function Alts.Realm()
-    return Text(Call(_G.GetRealmName))
+    local realm = Text(Call(_G.GetRealmName))
+    if realm then return realm end
+    local guid = Alts.PlayerGUID()
+    local notes = guid and type(ns.db) == "table" and type(ns.db.characterGear) == "table" and ns.db.characterGear
+    local note = notes and notes[guid]
+    return type(note) == "table" and Text(note.realm) or nil
 end
 
 function Alts.Faction()

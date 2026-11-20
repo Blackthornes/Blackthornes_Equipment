@@ -86,6 +86,20 @@ suite.check("prices show once a trainer is read", text:find("READY NOW|3s", 1, t
     or text:find("READY NOW|", 1, true) ~= nil and CT:Plan().cost == 300, text)
 suite.check("the drawer names the trainer", Drawer.hint:GetText():find("Jennea Cannon", 1, true) ~= nil,
     Drawer.hint:GetText())
+-- Forever 1.60.1 scrambles the server and spawn parts of a creature's
+-- GUID (2026-11-20): the trainer's ID is still read.
+do
+    local savedGUID = _G.UnitGUID
+    _G.UnitGUID = function(unit)
+        if unit == "npc" then return "Creature-0-x9F3A-B7-C1D2-5499-Z0Q8" end
+        return savedGUID(unit)
+    end
+    handler(_G.BlackthornesEquipmentEventFrame, "TRAINER_SHOW")
+    suite.check("a trainer with a scrambled GUID is kept", CT:Data().trainers.MAGE[5499] ~= nil)
+    CT:Data().trainers.MAGE[5499] = nil
+    _G.UnitGUID = savedGUID
+    handler(_G.BlackthornesEquipmentEventFrame, "TRAINER_SHOW")
+end
 
 local aimed
 ns.QuestArrow.AimAtQuest = function(_, questID, title, place) aimed = { title = title, place = place } return true end
