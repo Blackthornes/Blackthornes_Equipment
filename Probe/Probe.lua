@@ -386,6 +386,11 @@ function Probe:Run()
         end
         table.sort(racial)
         Line("racial stat bonuses", #racial > 0 and table.concat(racial, ", ") or "none")
+        if Weights:PlayerClass() == Weights.CAREFUL_AIM.class then
+            local ranks = Weights:CarefulAimRanks()
+            Line("careful aim", ("%d of %d ranks, Intellect +%d%% as attack power"):format(ranks,
+                Weights.CAREFUL_AIM.maxRanks, ranks * Weights.CAREFUL_AIM.perRank))
+        end
     end)
 
     if not Has("GetInventoryItemLink") then return end

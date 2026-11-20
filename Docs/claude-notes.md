@@ -1467,6 +1467,23 @@ bear` (or `tank`, which stays Protection for warriors and paladins:
 `CLASS_ALIASES`, `Weights:ResolveSpec(text, class)`). Tested in
 `tools/test_bearweights.lua`.
 
+## Careful Aim (hunter talent)
+
+A player's report (2026-11-20): a hunter with points in Careful Aim saw
+Intellect on gear scored as if it gave no attack power. Forever's Careful
+Aim (Marksmanship, five ranks, new in Forever) gives melee and ranged
+attack power equal to 20/40/60/80/100% of Intellect. `Weights:WithTalents`
+(called by `ForPlayer` before the racials) adds `share * max(attackPower,
+rangedAttackPower)` to the intellect weight, only for a hunter with ranks
+bought (`Weights:CarefulAimRanks`, `IntellectToAttackPower`, kept like the
+spent points and cleared by `ForgetPoints`). The talent is found by its
+English name or by its spell text naming both `ITEM_MOD_INTELLECT_SHORT`
+and `ITEM_MOD_ATTACK_POWER_SHORT`, so other clients find it; the share
+comes from ranks bought (`Weights.CAREFUL_AIM.perRank` 20), not the text.
+The Weights window still shows the set numbers. `/beq probe` prints a
+"careful aim" line. Not yet seen in game. Tested in
+`tools/test_carefulaim.lua`.
+
 ## Players' own stat weights
 
 Kept in `BlackthornesEquipmentDB.customWeights[CLASS][spec][stat]`, account
