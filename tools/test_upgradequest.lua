@@ -728,5 +728,35 @@ do
     Quest.Changed = realChanged
 end
 
+--------------------------------------------------------------------------------
+-- The percent follows the gear worn now
+--------------------------------------------------------------------------------
+
+-- A player's report: the panel said "+44% over what you wear" while the
+-- item's tooltip said +23%. The panel's number was worked out when the
+-- quest was picked and kept after other gear went on.
+do
+    env.worn[5] = "item:900"
+    env.bags[0] = {}
+    ns.Finder:MarkStale()
+    Quest:Update()
+    local quest = Quest:Current()
+    suite.check("a quest to measure", quest ~= nil)
+    if quest then
+        local before = quest.howMuch
+        env.worn[5] = "item:1003"
+        ns.Finder:MarkStale()
+        Quest:Update()
+        quest = Quest:Current()
+        local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+        local now = ok and result and ns.Compare:HowMuch(result)
+        suite.check("other gear on, the panel's percent is the tooltip's",
+            quest.howMuch == now, tostring(before) .. " -> " .. tostring(quest.howMuch) .. " vs " .. tostring(now))
+        suite.check("and the words under the item say it too",
+            Panel.GainText(quest):find(now, 1, true) ~= nil, Panel.GainText(quest))
+    end
+    env.worn[5] = "item:900"
+end
+
 ns.Toast.Show = realShow
 suite.done()

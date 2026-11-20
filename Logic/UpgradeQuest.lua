@@ -1389,7 +1389,28 @@ function UpgradeQuest:StillWanted(quest)
     local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
     if not ok or not result then return true end
     if result.verdict == "downgrade" or result.verdict == "same" then return false end
+    self:FreshGain(quest, result)
     return true
+end
+
+--- Keep the quest's "+N% over what you wear" true to the gear worn now. It
+--- was worked out once, when the quest was picked, and kept: after a new
+--- weapon or off hand went on, the panel still said the old number while
+--- the item's tooltip said the new one. Judged like the finder judges
+--- (gear with random rolls at its best roll), else like the tooltip.
+function UpgradeQuest:FreshGain(quest, result)
+    local finder = ns.Finder
+    if finder and finder.JudgeOnce and finder.Judged and quest.itemID then
+        local ok, _, judgedOK, judged = pcall(function()
+            return finder:JudgeOnce(finder:Judged(), quest.itemID)
+        end)
+        if ok and judgedOK and type(judged) == "table" and judged.verdict == "upgrade" then
+            result = judged
+        end
+    end
+    if type(result) ~= "table" or result.verdict ~= "upgrade" then return end
+    local how = ns.Compare:HowMuch(result)
+    if how then quest.howMuch = how end
 end
 
 --- Is the quest's item armor Best Armor Only now leaves out?
