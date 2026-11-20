@@ -129,7 +129,6 @@ Why: A reload wiped alts' saved gear (2026-10-11).
 Files: ^Logic/Contribute\.lua$
 Check: The recipient lists match Farmer's and Tradeskills'.
 Why: The three lists are kept the same.
-  list stretched every Butler tab off the bottom of the screen (2026-11-18).
 
 ## Two values from one call
 Lines: local \w+, \w+ = [^,]+ and [\w.:]+\(
