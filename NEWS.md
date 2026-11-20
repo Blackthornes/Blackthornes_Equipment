@@ -23,6 +23,12 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.13.2
+
+Fixes and changes:
+- Horde characters are no longer offered Alliance quests that don't name their side.
+- A quest with no giver named no longer shows a blank line.
+
 ## 1.13.1
 
 Fixes and changes:

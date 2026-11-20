@@ -4,6 +4,13 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.13.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Quest sides.** Horde characters are no longer offered Alliance quests that don't name their side, and the other way round.
+- **Quest giver.** A quest with no giver named no longer shows a blank line.
+
 ## 1.13.1
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
