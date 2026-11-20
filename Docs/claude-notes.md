@@ -2406,3 +2406,7 @@ arrows, bars, trackers, the Zone Board and similar pieces get none.
 - Tested in `tools/test_swapgem.lua` (the same in all five) and
   `tools/test_swapwindows.lua` (this addon's windows in the fake game).
   Not yet seen in game.
+
+## An empty realm name (Forever 1.60.1)
+
+Forever 1.60.1 (a hotfix, announced 2026-11-20) makes GetRealmName, GetRealmID and the C_BattleNet realm fields hand back "" or 0, and scrambles the realm, server and spawn parts of Creature, Vehicle, Pet and GameObject GUIDs (player GUIDs are not named). Every reader of a mob, vendor or trainer ID from a GUID takes any text in parts 2 to 5 (`[^%-]+`), never `%d+`; a new one must too. The gear note and the class training note are rewritten at each login, so a blank realm would have wiped the saved one: `Alts.Realm()` and `ClassTraining`'s `CT.Player()` fall back on this character's saved note. `Logic/ClassTraining.lua` is the same in Butler. Tested in `tools/test_alts.lua` and `tools/test_classtraining.lua`.
