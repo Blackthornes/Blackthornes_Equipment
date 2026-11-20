@@ -23,6 +23,14 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.13.1
+
+Fixes and changes:
+- The trip line and stop dots now draw on the world map.
+- Upgrades for an alt wait until the alt's gear has loaded.
+- Show the way to a class trainer no longer gives an error.
+- The upgrade quest percent follows the gear you wear now.
+
 ## 1.13.0
 
 - Every window has a gold gem on its title bar. Click it to switch between the one window and separate windows.
