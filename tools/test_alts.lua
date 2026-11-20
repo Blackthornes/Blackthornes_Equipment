@@ -91,6 +91,18 @@ suite.check("but an upgrade for the rogue", advice.alt and advice.alt.key == "Pl
 suite.check("by 100 percent", advice.alt.gain == 100, advice.alt.gain)
 suite.check("to wear now", advice.alt.level == nil)
 
+-- An alt whose worn piece the game has not loaded yet (after a patch, or
+-- the first login): its gear is not known to be worse, so nothing is
+-- offered until it loads.
+local rogue = ns.db.characterGear["Player-2"]
+rogue.worn[5] = "item:999"
+suite.check("worn gear the game has not loaded is no empty slot", Alts:Judge(rogue, "item:4") == nil)
+suite.check("so nothing is offered to that alt yet", Alts:BestFor("item:4") == nil)
+advice = Butler:Advise("item:4", 0, 4)
+suite.check("and Butler is told of no alt", advice and advice.alt == nil)
+rogue.worn[5] = "item:11"
+suite.check("once it loads the alt is offered it again", (Alts:BestFor("item:4") or {}).gain == 100)
+
 -- Soulbound gear can't be traded, so it is never offered to an alt.
 suite.check("gear that binds on pickup helps no alt", Alts:BestFor("item:12") == nil)
 suite.check("nor a quest item", Alts:BestFor("item:13") == nil)

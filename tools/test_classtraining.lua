@@ -93,6 +93,14 @@ Drawer.wayButton:GetScript("OnClick")(Drawer.wayButton)
 suite.check("Show the way aims the quest arrow at the trainer", aimed and aimed.place.name == "Jennea Cannon"
     and aimed.place.zone == "Stormwind City" and math.abs(aimed.place.x - 38) < 0.01)
 
+-- When the arrow can't be aimed, Show the way still says where and never
+-- raises (the trip finder it falls back on was missing here).
+ns.QuestArrow.AimAtQuest = function() return false end
+local okWay, wayErr = pcall(CT.ShowTheWay, CT)
+suite.check("Show the way without the arrow raises nothing", okWay, tostring(wayErr))
+suite.check("and still says where the trainer is", env.ChatText():find("Jennea Cannon", 1, true) ~= nil)
+suite.check("the trip finder is there", type(CT.TripTo) == "function")
+
 -- 3b. A starter trainer stops early (a level 8 warlock was sent to the
 -- Northshire trainer, which teaches nothing past 6, 2026-11-14).
 local mageSpots = CT:Data().trainers.MAGE
