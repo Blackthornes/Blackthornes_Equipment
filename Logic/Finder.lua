@@ -1426,11 +1426,9 @@ Pump = function()
             ns.Debug("finder:", tostring(found))
             job.found, job.why = nil, "error"
             finished[#finished + 1] = job
-            break
         elseif coroutine.status(job.worker) == "dead" then
             job.found, job.why = found, why
             finished[#finished + 1] = job
-            break
         else
             -- It stopped because the frame's share is used: to the back of
             -- the line, and the rest wait for the next frame.
@@ -1439,8 +1437,8 @@ Pump = function()
         end
         if SliceSpent(Clock) then break end
     end
-    local finished = Clock()
-    if ns.Perf and started and finished then ns.Perf:Add("Finder:background slice", finished - started) end
+    local ended = Clock()
+    if ns.Perf and started and ended then ns.Perf:Add("Finder:background slice", ended - started) end
     pumping = false
     PumpSoon()
 end
