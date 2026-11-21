@@ -131,5 +131,5 @@ Code:
 
 Over 800 lines or 30 KB, same rule: `UI/SettingsPages.lua`, `Logic/QuestArrow.lua`, `Logic/Travel.lua`, `Logic/Compare.lua`, `Docs/claude-notes.md` (120 KB), `CHANGELOG.md` (1069 lines), `README.md`, `docs/FOREVER_API_FINDINGS.md`.
 
-The same file lives in several addons: `UI/SharedWindow.lua`, `UI/WhatsNew.lua`, `UI/SettingsPages.lua`, `Logic/Travel.lua`, `Logic/ClassTraining.lua`. A fix to one belongs in all.
+The same file lives in several addons: `UI/SharedWindow.lua`, `UI/WhatsNew.lua`, `UI/SettingsPages.lua`, `Logic/Travel.lua`, `Logic/ClassTraining.lua`, `UI/TooltipBlock.lua` (not Pets). A fix to one belongs in all.
 
