@@ -2611,7 +2611,22 @@ function FinderUI:OnEnable()
         if FinderUI.frame and FinderUI.frame:IsShown() then FinderUI:Draw() end
     end)
     -- Only the "need ... more" on vendor rows changes: redraw, no rescan.
-    ns.RegisterEvent(self, "PLAYER_MONEY", function()
+    -- Looting a pile of corpses or selling a bagful says the money moved
+    -- many times in a row: one redraw once it settles, not one for each.
+    ns.RegisterEvent(self, "PLAYER_MONEY", function() FinderUI:DrawSoon() end)
+end
+
+--- Draw the rows again a moment from now, once for a burst of asks.
+function FinderUI:DrawSoon()
+    if not (self.frame and self.frame:IsShown()) or self.drawPending then return end
+    local after = C_Timer and C_Timer.After
+    if type(after) ~= "function" then
+        self:Draw()
+        return
+    end
+    self.drawPending = true
+    after(0.1, function()
+        FinderUI.drawPending = false
         if FinderUI.frame and FinderUI.frame:IsShown() then FinderUI:Draw() end
     end)
 end

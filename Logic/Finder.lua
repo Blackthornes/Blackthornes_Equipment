@@ -474,13 +474,17 @@ function Finder:Needs(itemID)
     return { faction = name, standing = STANDINGS[need] or "?", have = have and STANDINGS[have] }
 end
 
+-- Stand-ins for what an item's row lacks, shared by every item. Read only.
+local NO_ITEM = { 0, 0, 0, 0, 0 }
+local NONE = {}
+
 --- Every place this character can get an item from now, as a list of
 --- tables { kind, ... }, vendors first, then quests, then dungeons.
 function Finder:SourcesFor(itemID, player)
     local S = ns.Sources
     -- Gear only seen on Forever has no Classic entry; the game says what
     -- level it needs when it is judged.
-    local item = S.ITEMS[itemID] or { 0, 0, 0, 0, 0 }
+    local item = S.ITEMS[itemID] or NO_ITEM
     local seen = S.FOREVER and S.FOREVER[itemID]
     -- Gear players make: whoever on the account can make it, or where to
     -- learn it (Logic/Crafting.lua).
@@ -493,7 +497,7 @@ function Finder:SourcesFor(itemID, player)
         return found
     end
 
-    local vendors = item.v or {}
+    local vendors = item.v or NONE
     for i = 1, #vendors, 2 do
         local npc = S.NPCS[vendors[i]]
         if npc and npc[5]:find(player.faction, 1, true) then
@@ -509,7 +513,7 @@ function Finder:SourcesFor(itemID, player)
         end
     end
 
-    for _, questID in ipairs(item.q or {}) do
+    for _, questID in ipairs(item.q or NONE) do
         local quest = S.QUESTS[questID]
         if quest and quest[2] <= player.level and self:QuestOpenTo(questID, player)
             and not self:QuestDone(questID) then
@@ -537,7 +541,7 @@ function Finder:SourcesFor(itemID, player)
         end
     end
 
-    local drops = item.d or {}
+    local drops = item.d or NONE
     for i = 1, #drops, 2 do
         local boss = S.BOSSES[drops[i]]
         local dungeon = boss and S.DUNGEONS[boss[2]]
@@ -555,7 +559,7 @@ function Finder:SourcesFor(itemID, player)
     -- What Farmer's loot records saw drop on Forever: it marks the Classic
     -- drop as confirmed, with Forever's own rate where there is one, or adds
     -- a drop Classic never had.
-    for _, drop in ipairs(seen or {}) do
+    for _, drop in ipairs(seen or NONE) do
         local dungeon = S.DUNGEONS[drop[2]]
         if dungeon and dungeon[2] <= player.level
             and (dungeon[5] == "" or dungeon[5] == player.faction) then
@@ -584,13 +588,21 @@ function Finder:SourcesFor(itemID, player)
     -- Somewhere in the zone the character is standing in comes first: a
     -- vendor down the road beats the same item across the world.
     if player.zone then
-        local here, there = {}, {}
+        -- Most gear has nothing in this zone, or nothing out of it: then
+        -- the order stands as it is and no new lists are made.
+        local inZone = 0
         for _, source in ipairs(found) do
-            local list = source.zone == player.zone and here or there
-            list[#list + 1] = source
+            if source.zone == player.zone then inZone = inZone + 1 end
         end
-        for _, source in ipairs(there) do here[#here + 1] = source end
-        found = here
+        if inZone > 0 and inZone < #found then
+            local here, there = {}, {}
+            for _, source in ipairs(found) do
+                local list = source.zone == player.zone and here or there
+                list[#list + 1] = source
+            end
+            for _, source in ipairs(there) do here[#here + 1] = source end
+            found = here
+        end
     end
 
     return found
@@ -727,16 +739,28 @@ local function Wearable(class, itemID)
 end
 Finder.Wearable = Wearable
 
+local ITEM_INFO = { "C_Item.GetItemInfo", "GetItemInfo" }
+
+-- An item's whole link, once the client gave it: its name and colour never
+-- change, and every scan asked again for every pick.
+local linkOf = {}
+
 --- The item's own link, quality colour and all, where the client has it.
 local function LinkFor(itemID)
-    local _, link = Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, itemID)
-    return Items.PlainLink(link) or ("item:%d"):format(itemID)
+    local kept = linkOf[itemID]
+    if kept then return kept end
+    local _, link = Items.Call(ITEM_INFO, itemID)
+    link = Items.PlainLink(link)
+    -- Kept only whole, with its name in: a link read while the item loads
+    -- has none ("[]").
+    if link and link:find("|H", 1, true) and not link:find("[]", 1, true) then linkOf[itemID] = link end
+    return link or ("item:%d"):format(itemID)
 end
 
 --- A rolled item's link from the client ("[Chain Vest of the Monkey]"),
 --- or the plain item's when the client has none for the roll.
 local function RolledLink(rolled, itemID)
-    local _, link = Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, rolled)
+    local _, link = Items.Call(ITEM_INFO, rolled)
     link = Items.PlainLink(link)
     if link and link:find("|H", 1, true) then return link end
     return LinkFor(itemID)
