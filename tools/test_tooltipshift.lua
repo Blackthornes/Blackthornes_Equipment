@@ -64,8 +64,8 @@ tip._scripts.OnTooltipCleared(tip)
 tip._lines = {}
 postCall(tip, { id = 2, hyperlink = "item:2" })
 suite.check("with Shift down the verdict comes back",
-    tip._lines[1] == "|cff4fd18bUpgrade for Beast Mastery: +50%|r", tip._lines[1])
-suite.check("and no hint", #tip._lines == 1, #tip._lines)
+    tip._lines[2] == "For Beast Mastery: Upgrade, +50%", tip._lines[2])
+suite.check("and no hint", #tip._lines == 2, #tip._lines)
 shiftDown = false
 
 -- Off and back to Always.
@@ -81,8 +81,8 @@ suite.check("so it shows with Shift up", Shift:Shows("upgrade"))
 tip._scripts.OnTooltipCleared(tip)
 tip._lines = {}
 postCall(tip, { id = 2, hyperlink = "item:2" })
-suite.check("and the verdict is back on the tooltip", #tip._lines == 1
-    and tip._lines[1]:find("Upgrade for", 1, true) ~= nil, tip._lines[1])
+suite.check("and the verdict is back on the tooltip", #tip._lines == 2
+    and tip._lines[2]:find("Upgrade, ", 1, true) ~= nil, tip._lines[2])
 
 -- The enchant line on Shift, on a worn piece.
 controls.enchantTooltip:SetValue(1)
@@ -95,8 +95,8 @@ shiftDown = true
 tip._scripts.OnTooltipCleared(tip)
 tip._lines = {}
 postCall(tip, { id = 1, hyperlink = "item:1" })
-suite.check("and shows with Shift down", tip._lines[1] and tip._lines[1]:find("Best enchant: ", 1, true) ~= nil,
-    tip._lines[1])
+suite.check("and shows with Shift down", tip._lines[2] and tip._lines[2]:find("Best Enchant: ", 1, true) ~= nil,
+    tip._lines[2])
 shiftDown = false
 
 --------------------------------------------------------------------------------

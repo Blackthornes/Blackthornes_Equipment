@@ -91,6 +91,7 @@ UI\SharedChoices.lua
 UI\About.lua
 UI\WhatsNew.lua
 UI\TooltipShift.lua
+UI\TooltipBlock.lua
 UI\SettingsPages.lua
 UI\SharedMinimap.lua
 UI\SharedWindow.lua

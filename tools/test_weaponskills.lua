@@ -94,10 +94,9 @@ end
 ns.Tooltip:OnEnable()
 postCall(_G.GameTooltip, { id = 2, hyperlink = "item:2" })
 local lines = _G.GameTooltip._lines
-suite.check("two lines on the tooltip", #lines == 2, #lines)
+suite.check("a blank row and two lines on the tooltip", #lines == 3, #lines)
 suite.check("the trainer line second",
-    lines[2] == "|cffe8c15aLearn Two-Handed Swords from the weapon master in Undercity|r", lines[2])
-suite.check("and only it wraps", wraps[2] == true and not wraps[1])
+    lines[3] == "Weapon Master: Learn Two-Handed Swords in Undercity", lines[3])
 
 -- Every city is a zone the map knows by that name, or the arrow and the
 -- map pin for Show the trainer have nowhere to point.
