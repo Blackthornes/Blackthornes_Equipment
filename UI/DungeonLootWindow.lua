@@ -227,7 +227,7 @@ local function Well(parent)
 end
 
 local function Heading(parent, text)
-    local label = Theme.CreateLabel(parent, "tiny", "muted")
+    local label = Theme.CreateLabel(parent, "tiny", "heading")
     label:SetText(text)
     return label
 end
@@ -442,7 +442,7 @@ end
 function DLUI:PaintHeadings()
     for _, heading in ipairs(self.columnHeads or {}) do
         local on = heading.key == self.sortKey
-        heading.label:SetTextColor(Theme.Unpack(on and "accent" or "muted"))
+        heading.label:SetTextColor(Theme.Unpack(on and "text" or "heading"))
         heading.arrow:SetShown(on)
         if self.sortFlip then heading.arrow:SetTexCoord(0, 1, 1, 0) else heading.arrow:SetTexCoord(0, 1, 0, 1) end
     end

@@ -1171,7 +1171,7 @@ function FinderUI:BuildColumnHeads()
         heading:SetPoint("TOPLEFT", LIST_X + x, self.listTop - LIST_HEAD)
         heading.key = column.key
 
-        local label = Theme.CreateLabel(heading, "tiny", "muted", column.justify)
+        local label = Theme.CreateLabel(heading, "tiny", "heading", column.justify)
         label:SetText(column.label)
         local arrow = SortArrow(heading)
         if column.justify == "RIGHT" then
@@ -1221,7 +1221,7 @@ function FinderUI:PaintHeadings()
     local name = L["Best first"]
     for _, heading in ipairs(self.columnHeads or {}) do
         local on = heading.key == key
-        heading.label:SetTextColor(Theme.Unpack(on and "accent" or "muted"))
+        heading.label:SetTextColor(Theme.Unpack(on and "text" or "heading"))
         heading.arrow:SetShown(on)
         PointArrow(heading.arrow, flip)
     end

@@ -452,7 +452,7 @@ function WeightsUI:BuildRow(entry)
     box:SetScript("OnEditFocusLost", function(self)
         -- Back to sunk: a dim edge with its top in shadow.
         Theme.SetBorderColor(well, "border", 0.8)
-        well.borderTextures[1]:SetColorTexture(0.016, 0.020, 0.028, 1)
+        well.borderTextures[1]:SetColorTexture(0.024, 0.020, 0.012, 1)
         if row.editing then WeightsUI:Commit(row, self:GetText()) end
     end)
 
