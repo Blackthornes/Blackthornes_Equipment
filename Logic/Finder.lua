@@ -1338,7 +1338,7 @@ end
 
 -- How long one frame's slice may run, in milliseconds, and how many items a
 -- slice takes on a client without a timer to measure with.
-local SLICE_MS = 6
+local SLICE_MS = 4
 local SLICE_ITEMS = 40
 
 --- The latest full scan, if nothing has changed since it was started.
@@ -1360,6 +1360,10 @@ end
 -- window's own often run at once (new gear with the window open), and each
 -- taking a whole slice made every frame twice as long.
 local workers = {}
+-- Scans that finished, waiting to be handed over at the start of the next
+-- frame: what takes a scan (the finder window drawing its rows, the upgrade
+-- quest picking) is work of its own, and no slice is stacked on top of it.
+local finished = {}
 local pumping, queued = false, false
 local sliceStarted, sliceCount
 
@@ -1372,7 +1376,7 @@ end
 local Pump
 
 local function PumpSoon()
-    if queued or pumping or #workers == 0 then return end
+    if queued or pumping or (#workers == 0 and #finished == 0) then return end
     queued = true
     _G.C_Timer.After(0, Pump)
 end
@@ -1385,16 +1389,24 @@ Pump = function()
     local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
     local started = Clock()
     sliceStarted, sliceCount = started, 0
-    while workers[1] do
+    local handed = #finished > 0
+    while finished[1] do
+        local job = table.remove(finished, 1)
+        local ok, err = pcall(job.finish, job.found, job.why)
+        if not ok then ns.Debug("finder:", tostring(err)) end
+    end
+    while workers[1] and not handed do
         local job = table.remove(workers, 1)
         local ok, found, why = coroutine.resume(job.worker)
         if not ok then
             ns.Debug("finder:", tostring(found))
-            ok, found = pcall(job.finish, nil, "error")
-            if not ok then ns.Debug("finder:", tostring(found)) end
+            job.found, job.why = nil, "error"
+            finished[#finished + 1] = job
+            break
         elseif coroutine.status(job.worker) == "dead" then
-            ok, found = pcall(job.finish, found, why)
-            if not ok then ns.Debug("finder:", tostring(found)) end
+            job.found, job.why = found, why
+            finished[#finished + 1] = job
+            break
         else
             -- It stopped because the frame's share is used: to the back of
             -- the line, and the rest wait for the next frame.
@@ -1427,14 +1439,15 @@ local function Sliced(build, finish)
     workers[#workers + 1] = {
         worker = coroutine.create(function() return build(Pause) end), finish = finish,
     }
-    -- Its first slice is taken here, as before, unless another scan is
-    -- under way: then it waits its turn in the next frame's share.
-    if not pumping and not queued then Pump() end
+    -- Its first slice waits for the next frame: whatever asked for the scan
+    -- (a bag or gear event, the upgrade quest's own look) has its own work
+    -- to do in this one.
+    PumpSoon()
 end
 
 --- How many scans are under way (for the tests).
 function Finder.SlicedNow()
-    return #workers
+    return #workers + #finished
 end
 
 --- Make a full scan for now, a slice per frame, then call each of the
