@@ -1,0 +1,8 @@
+<!-- Blackthornes Equipment: key bindings, under Options, Keybindings,
+     AddOns. Names are set in UI/MainWindow.lua. The client loads this
+     file by itself; it is not listed in the TOC. -->
+<Bindings>
+    <Binding name="BLACKTHORNESEQUIPMENT_TOGGLE" header="BLACKTHORNESEQUIPMENT" category="ADDONS">
+        if BlackthornesEquipment and BlackthornesEquipment.UI then BlackthornesEquipment.UI:Toggle() end
+    </Binding>
+</Bindings>

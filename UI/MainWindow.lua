@@ -170,6 +170,12 @@ function UI:IsShown()
     return (self.frame ~= nil and self.frame:IsShown()) or StandInAsTab() ~= nil
 end
 
+-- The window's key, under Options, Keybindings, AddOns (Bindings.xml).
+-- No key is set for the player. It does what /beq on its own does, so
+-- with the one window on it opens or closes this addon's tab.
+_G.BINDING_HEADER_BLACKTHORNESEQUIPMENT = "Blackthornes Equipment"
+_G.BINDING_NAME_BLACKTHORNESEQUIPMENT_TOGGLE = L["Open or close the window"]
+
 function UI:Toggle()
     if self:IsShown() then
         self:Hide()
