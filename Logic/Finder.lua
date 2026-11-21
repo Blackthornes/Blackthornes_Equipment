@@ -621,7 +621,8 @@ function Finder:Candidates(player, only, pause)
         -- Gear the class can never wear (plate for a mage) is dropped by the
         -- scan anyway; asked first, from the client's instant item info, its
         -- vendors, quests, drops and crafts are never worked out.
-        if Finder.Wearable(player.class, itemID) ~= false then
+        local wearable = Finder.Wearable(player.class, itemID)
+        if wearable ~= false then
             local sources = self:SourcesFor(itemID, player)
             if only then
                 local kept = {}
@@ -633,6 +634,10 @@ function Finder:Candidates(player, only, pause)
             if #sources > 0 then
                 list[#list + 1] = {
                     itemID = itemID, sources = sources, needs = self:Needs(itemID), rep = Finder.Rep(itemID),
+                    -- Found a moment ago, so the scan need not ask again.
+                    -- Only a yes is kept: an item still loading is asked
+                    -- about again when the scan reaches it.
+                    wearable = wearable == true or nil,
                 }
             end
         end
@@ -892,7 +897,11 @@ end
 function Finder.Order(a, b)
     if (a.needs == nil) ~= (b.needs == nil) then return a.needs == nil end
     if a.remote ~= b.remote then return not a.remote end
-    local pa, pb = Finder.Shown(a.result), Finder.Shown(b.result)
+    -- A scan keeps each pick's percent beside the verdict it came from
+    -- (sorting hundreds of picks worked it out thousands of times).
+    local pa, pb
+    if a.shownFor == a.result then pa = a.shown or nil else pa = Finder.Shown(a.result) end
+    if b.shownFor == b.result then pb = b.shown or nil else pb = Finder.Shown(b.result) end
     if (pa == nil) ~= (pb == nil) then return pa == nil end
     if pa and pa ~= pb then return pa > pb end
     if (a.near or 0) ~= (b.near or 0) then return (a.near or 0) < (b.near or 0) end
@@ -976,7 +985,8 @@ function Finder:Build(only, ahead, pause)
         -- let go of its details since: asking again would start the scans
         -- over and over, and the list would change each time.
         local kept = not carried[itemID] and not worn[itemID] and judged[itemID] ~= nil
-        local wearable = kept or (not carried[itemID] and Wearable(player.class, itemID))
+        local wearable = kept or (not carried[itemID]
+            and (candidate.wearable or Wearable(player.class, itemID)))
         if wearable ~= false then
             if not kept and (wearable == nil or not self:IsCached(itemID)) then
                 -- One the server never answered is not waited on for ever.
@@ -1035,9 +1045,19 @@ function Finder:Build(only, ahead, pause)
 
     local count, all = 0, {}
     local spot = Finder.Spot(player.zone)
-    for slot, list in pairs(slots) do
+    -- The slots in a list of their own, since the loop below changes `slots`
+    -- and may be left and come back to between frames.
+    local order = {}
+    for slot in pairs(slots) do order[#order + 1] = slot end
+    for _, slot in ipairs(order) do
+        local list = slots[slot]
+        -- Sorting every slot in one go was the scan's longest frame.
+        if pause then pause() end
         -- Best first, by Finder.Order.
-        for _, pick in ipairs(list) do pick.near = Finder.Nearness(pick.sources, player.zone, spot) end
+        for _, pick in ipairs(list) do
+            pick.near = Finder.Nearness(pick.sources, player.zone, spot)
+            pick.shown, pick.shownFor = Finder.Shown(pick.result) or false, pick.result
+        end
         table.sort(list, Finder.Order)
         local copy = {}
         for i, pick in ipairs(list) do copy[i] = pick end
@@ -1335,44 +1355,86 @@ function Finder:Scanning()
     return self.background ~= nil
 end
 
+-- The scans under way, the one whose turn it is first. They share one
+-- frame's slice between them: the upgrade quest's scan and the finder
+-- window's own often run at once (new gear with the window open), and each
+-- taking a whole slice made every frame twice as long.
+local workers = {}
+local pumping, queued = false, false
+local sliceStarted, sliceCount
+
+local function SliceSpent(Clock)
+    local now = Clock()
+    if now and sliceStarted then return now - sliceStarted >= SLICE_MS end
+    return sliceCount >= SLICE_ITEMS
+end
+
+local Pump
+
+local function PumpSoon()
+    if queued or pumping or #workers == 0 then return end
+    queued = true
+    _G.C_Timer.After(0, Pump)
+end
+
+--- One frame's share of the scans under way.
+Pump = function()
+    queued = false
+    if pumping then return end
+    pumping = true
+    local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
+    local started = Clock()
+    sliceStarted, sliceCount = started, 0
+    while workers[1] do
+        local job = table.remove(workers, 1)
+        local ok, found, why = coroutine.resume(job.worker)
+        if not ok then
+            ns.Debug("finder:", tostring(found))
+            ok, found = pcall(job.finish, nil, "error")
+            if not ok then ns.Debug("finder:", tostring(found)) end
+        elseif coroutine.status(job.worker) == "dead" then
+            ok, found = pcall(job.finish, found, why)
+            if not ok then ns.Debug("finder:", tostring(found)) end
+        else
+            -- It stopped because the frame's share is used: to the back of
+            -- the line, and the rest wait for the next frame.
+            workers[#workers + 1] = job
+            break
+        end
+        if SliceSpent(Clock) then break end
+    end
+    local finished = Clock()
+    if ns.Perf and started and finished then ns.Perf:Add("Finder:background slice", finished - started) end
+    pumping = false
+    PumpSoon()
+end
+
 --- Run `build(pause)` a slice per frame and hand what it returns to
 --- `finish(found, why)`. Without timers or coroutines it runs at once.
 local function Sliced(build, finish)
     local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
-    local started, count = Clock(), 0
     local after = _G.C_Timer and _G.C_Timer.After
     local canYield = type(after) == "function" and type(coroutine) == "table"
-    local function Pause()
-        if not canYield then return end
-        count = count + 1
-        local now = Clock()
-        if (now and started and now - started >= SLICE_MS) or (not now and count >= SLICE_ITEMS) then
-            coroutine.yield()
-            started, count = Clock(), 0
-        end
-    end
-
     if not canYield then
         finish(build(nil))
         return
     end
 
-    local worker = coroutine.create(function() return build(Pause) end)
-    local function Step()
-        started, count = Clock(), 0
-        local ok, found, why = coroutine.resume(worker)
-        local finished = Clock()
-        if ns.Perf and started and finished then ns.Perf:Add("Finder:background slice", finished - started) end
-        if not ok then
-            ns.Debug("finder:", tostring(found))
-            finish(nil, "error")
-        elseif coroutine.status(worker) == "dead" then
-            finish(found, why)
-        else
-            after(0, Step)
-        end
+    local function Pause()
+        sliceCount = (sliceCount or 0) + 1
+        if SliceSpent(Clock) then coroutine.yield() end
     end
-    Step()
+    workers[#workers + 1] = {
+        worker = coroutine.create(function() return build(Pause) end), finish = finish,
+    }
+    -- Its first slice is taken here, as before, unless another scan is
+    -- under way: then it waits its turn in the next frame's share.
+    if not pumping and not queued then Pump() end
+end
+
+--- How many scans are under way (for the tests).
+function Finder.SlicedNow()
+    return #workers
 end
 
 --- Make a full scan for now, a slice per frame, then call each of the

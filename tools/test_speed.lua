@@ -224,6 +224,30 @@ suite.check("and then the quest is picked", not Finder:Scanning() and Quest:Curr
 local slice = ns.Perf.rows["Finder:background slice"]
 suite.check("no frame's slice ran long", slice and slice.worst <= 12, slice and slice.worst)
 
+-- A bag or quest log change looks at the quests again. Each tab's item is
+-- judged once a look, not once for every question asked about it.
+do
+    local quests, links = 0, {}
+    for _, quest in pairs(Quest:Quests()) do
+        if type(quest) == "table" and quest.link and not links[quest.link] then
+            links[quest.link] = true
+            quests = quests + 1
+        end
+    end
+    local asked = {}
+    local counting = Compare.Judge
+    Compare.Judge = function(self, link, ...)
+        if links[link] then asked[link] = (asked[link] or 0) + 1 end
+        return counting(self, link, ...)
+    end
+    Quest:Update()
+    Compare.Judge = counting
+    local most = 0
+    for _, count in pairs(asked) do most = math.max(most, count) end
+    suite.check("a look judges each quest's item once", quests > 0 and most == 1, most)
+    suite.check("and the quest stays", Quest:Current() ~= nil and Quest.state == "active", Quest.state)
+end
+
 -- Gear changing mid-scan makes the result stale; the quest looks again.
 frames = {}
 Quest.rescan = true
@@ -235,6 +259,57 @@ ns.Finder:MarkStale()
 while #frames > 0 do table.remove(frames, 1)() end
 suite.check("a scan made stale mid-way is not used", Quest:Current() == nil and not Finder:Scanning(),
     Quest:Current() and Quest:Current().itemID)
+
+-- Two scans at once (the upgrade quest's and the finder window's own, after
+-- new gear with the window open) share one frame's slice: each used to take
+-- a whole slice of its own, and every frame was twice as long.
+do
+    frames = {}
+    env.worn[5] = "item:900"
+    ns.Perf:Reset()
+    ns.Finder:MarkStale()
+    local shared, own
+    Finder:ScanInBackground(function(found) shared = found end)
+    Finder:ScanSliced(nil, 0, function(found) own = found end)
+    suite.check("both scans are under way", Finder.SlicedNow() == 2, Finder.SlicedNow())
+    local most, turns = 0, 0
+    while #frames > 0 and turns < 500 do
+        local due = frames
+        frames = {}
+        suite.check("one look a frame, however many scans run", #due == 1, #due)
+        local before = tick
+        for _, fn in ipairs(due) do fn() end
+        most = math.max(most, tick - before)
+        turns = turns + 1
+    end
+    suite.check("both scans finish", shared ~= nil and own ~= nil and Finder.SlicedNow() == 0)
+    suite.check("and find the same upgrades", shared.count == own.count and shared.count > 0, shared.count)
+    suite.check("no frame took more than one scan's share", most <= 12, most)
+    local row = ns.Perf.rows["Finder:background slice"]
+    suite.check("the slices are still timed", row and row.worst <= 12, row and row.worst)
+end
+
+-- A scan's last step, sorting each slot's picks, is spread over frames too.
+do
+    frames = {}
+    ns.Finder:MarkStale()
+    local pauses, realBuild = 0, Finder.Build
+    Finder.Build = function(self, only, ahead, pause)
+        return realBuild(self, only, ahead, pause and function() pauses = pauses + 1 return pause() end)
+    end
+    local candidates = #Finder:Candidates(Finder:Player())
+    local found
+    Finder:ScanInBackground(function(result) found = result end)
+    while #frames > 0 do table.remove(frames, 1)() end
+    Finder.Build = realBuild
+    local slots = 0
+    for _ in pairs(found.slots) do slots = slots + 1 end
+    suite.check("the scan may rest before each slot is sorted", slots > 0 and pauses >= candidates + slots,
+        pauses .. " of " .. candidates + slots)
+    local plain = Finder:Scan()
+    suite.check("and finds what a scan made in one go finds", plain.count == found.count
+        and plain.slots[5][1].itemID == found.slots[5][1].itemID, found.count)
+end
 
 _G.C_Timer.After = realAfter
 _G.debugprofilestop = nil

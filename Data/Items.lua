@@ -70,6 +70,9 @@ function Items.PlainLink(link)
     return nil
 end
 
+-- What Info found, by link, once the client had the whole item.
+local infoOf = {}
+
 --- What kind of item a link is.
 -- @return a table { equipLoc, classID, subclassID, minLevel }, or nil when the
 --         client does not know the item yet. minLevel is nil until the item is
@@ -77,6 +80,12 @@ end
 function Items:Info(link)
     link = self.PlainLink(link)
     if not link then return nil end
+
+    -- What kind of item a link is never changes, and every verdict asks
+    -- (the finder asks thousands of times a scan), so the answer is kept
+    -- once the client has the whole item. Read only: never change it.
+    local kept = infoOf[link]
+    if kept then return kept end
 
     local _, _, _, equipLoc, _, classID, subclassID =
         Call(INSTANT, link)
@@ -90,12 +99,15 @@ function Items:Info(link)
 
     if type(equipLoc) ~= "string" then return nil end
 
-    return {
+    local info = {
         equipLoc = equipLoc,
         classID = tonumber(classID),
         subclassID = tonumber(subclassID),
         minLevel = name and tonumber(minLevel) or nil,
     }
+    -- Kept only with its name in: until then the level it needs is missing.
+    if name then infoOf[link] = info end
+    return info
 end
 
 --- The raw stats table for a link (ITEM_MOD_* keys), or nil.
@@ -420,8 +432,10 @@ function Items:BagSize(bag)
 end
 
 --- The player's level, or nil.
+local UNIT_LEVEL = { "UnitLevel" }
+
 function Items:PlayerLevel()
-    return tonumber((Call({ "UnitLevel" }, "player")))
+    return tonumber((Call(UNIT_LEVEL, "player")))
 end
 
 --------------------------------------------------------------------------------
