@@ -218,7 +218,7 @@ local function Well(parent)
 end
 
 local function Heading(parent, text, colorKey)
-    local label = Theme.CreateLabel(parent, "tiny", colorKey or "muted")
+    local label = Theme.CreateLabel(parent, "tiny", colorKey or "heading")
     label:SetText(text)
     return label
 end
