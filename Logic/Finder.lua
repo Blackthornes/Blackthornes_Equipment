@@ -474,13 +474,17 @@ function Finder:Needs(itemID)
     return { faction = name, standing = STANDINGS[need] or "?", have = have and STANDINGS[have] }
 end
 
+-- Stand-ins for what an item's row lacks, shared by every item. Read only.
+local NO_ITEM = { 0, 0, 0, 0, 0 }
+local NONE = {}
+
 --- Every place this character can get an item from now, as a list of
 --- tables { kind, ... }, vendors first, then quests, then dungeons.
 function Finder:SourcesFor(itemID, player)
     local S = ns.Sources
     -- Gear only seen on Forever has no Classic entry; the game says what
     -- level it needs when it is judged.
-    local item = S.ITEMS[itemID] or { 0, 0, 0, 0, 0 }
+    local item = S.ITEMS[itemID] or NO_ITEM
     local seen = S.FOREVER and S.FOREVER[itemID]
     -- Gear players make: whoever on the account can make it, or where to
     -- learn it (Logic/Crafting.lua).
@@ -493,7 +497,7 @@ function Finder:SourcesFor(itemID, player)
         return found
     end
 
-    local vendors = item.v or {}
+    local vendors = item.v or NONE
     for i = 1, #vendors, 2 do
         local npc = S.NPCS[vendors[i]]
         if npc and npc[5]:find(player.faction, 1, true) then
@@ -509,7 +513,7 @@ function Finder:SourcesFor(itemID, player)
         end
     end
 
-    for _, questID in ipairs(item.q or {}) do
+    for _, questID in ipairs(item.q or NONE) do
         local quest = S.QUESTS[questID]
         if quest and quest[2] <= player.level and self:QuestOpenTo(questID, player)
             and not self:QuestDone(questID) then
@@ -537,7 +541,7 @@ function Finder:SourcesFor(itemID, player)
         end
     end
 
-    local drops = item.d or {}
+    local drops = item.d or NONE
     for i = 1, #drops, 2 do
         local boss = S.BOSSES[drops[i]]
         local dungeon = boss and S.DUNGEONS[boss[2]]
@@ -555,7 +559,7 @@ function Finder:SourcesFor(itemID, player)
     -- What Farmer's loot records saw drop on Forever: it marks the Classic
     -- drop as confirmed, with Forever's own rate where there is one, or adds
     -- a drop Classic never had.
-    for _, drop in ipairs(seen or {}) do
+    for _, drop in ipairs(seen or NONE) do
         local dungeon = S.DUNGEONS[drop[2]]
         if dungeon and dungeon[2] <= player.level
             and (dungeon[5] == "" or dungeon[5] == player.faction) then
@@ -584,13 +588,21 @@ function Finder:SourcesFor(itemID, player)
     -- Somewhere in the zone the character is standing in comes first: a
     -- vendor down the road beats the same item across the world.
     if player.zone then
-        local here, there = {}, {}
+        -- Most gear has nothing in this zone, or nothing out of it: then
+        -- the order stands as it is and no new lists are made.
+        local inZone = 0
         for _, source in ipairs(found) do
-            local list = source.zone == player.zone and here or there
-            list[#list + 1] = source
+            if source.zone == player.zone then inZone = inZone + 1 end
         end
-        for _, source in ipairs(there) do here[#here + 1] = source end
-        found = here
+        if inZone > 0 and inZone < #found then
+            local here, there = {}, {}
+            for _, source in ipairs(found) do
+                local list = source.zone == player.zone and here or there
+                list[#list + 1] = source
+            end
+            for _, source in ipairs(there) do here[#here + 1] = source end
+            found = here
+        end
     end
 
     return found
@@ -621,7 +633,8 @@ function Finder:Candidates(player, only, pause)
         -- Gear the class can never wear (plate for a mage) is dropped by the
         -- scan anyway; asked first, from the client's instant item info, its
         -- vendors, quests, drops and crafts are never worked out.
-        if Finder.Wearable(player.class, itemID) ~= false then
+        local wearable = Finder.Wearable(player.class, itemID)
+        if wearable ~= false then
             local sources = self:SourcesFor(itemID, player)
             if only then
                 local kept = {}
@@ -633,6 +646,10 @@ function Finder:Candidates(player, only, pause)
             if #sources > 0 then
                 list[#list + 1] = {
                     itemID = itemID, sources = sources, needs = self:Needs(itemID), rep = Finder.Rep(itemID),
+                    -- Found a moment ago, so the scan need not ask again.
+                    -- Only a yes is kept: an item still loading is asked
+                    -- about again when the scan reaches it.
+                    wearable = wearable == true or nil,
                 }
             end
         end
@@ -722,16 +739,28 @@ local function Wearable(class, itemID)
 end
 Finder.Wearable = Wearable
 
+local ITEM_INFO = { "C_Item.GetItemInfo", "GetItemInfo" }
+
+-- An item's whole link, once the client gave it: its name and colour never
+-- change, and every scan asked again for every pick.
+local linkOf = {}
+
 --- The item's own link, quality colour and all, where the client has it.
 local function LinkFor(itemID)
-    local _, link = Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, itemID)
-    return Items.PlainLink(link) or ("item:%d"):format(itemID)
+    local kept = linkOf[itemID]
+    if kept then return kept end
+    local _, link = Items.Call(ITEM_INFO, itemID)
+    link = Items.PlainLink(link)
+    -- Kept only whole, with its name in: a link read while the item loads
+    -- has none ("[]").
+    if link and link:find("|H", 1, true) and not link:find("[]", 1, true) then linkOf[itemID] = link end
+    return link or ("item:%d"):format(itemID)
 end
 
 --- A rolled item's link from the client ("[Chain Vest of the Monkey]"),
 --- or the plain item's when the client has none for the roll.
 local function RolledLink(rolled, itemID)
-    local _, link = Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, rolled)
+    local _, link = Items.Call(ITEM_INFO, rolled)
     link = Items.PlainLink(link)
     if link and link:find("|H", 1, true) then return link end
     return LinkFor(itemID)
@@ -892,7 +921,11 @@ end
 function Finder.Order(a, b)
     if (a.needs == nil) ~= (b.needs == nil) then return a.needs == nil end
     if a.remote ~= b.remote then return not a.remote end
-    local pa, pb = Finder.Shown(a.result), Finder.Shown(b.result)
+    -- A scan keeps each pick's percent beside the verdict it came from
+    -- (sorting hundreds of picks worked it out thousands of times).
+    local pa, pb
+    if a.shownFor == a.result then pa = a.shown or nil else pa = Finder.Shown(a.result) end
+    if b.shownFor == b.result then pb = b.shown or nil else pb = Finder.Shown(b.result) end
     if (pa == nil) ~= (pb == nil) then return pa == nil end
     if pa and pa ~= pb then return pa > pb end
     if (a.near or 0) ~= (b.near or 0) then return (a.near or 0) < (b.near or 0) end
@@ -976,7 +1009,8 @@ function Finder:Build(only, ahead, pause)
         -- let go of its details since: asking again would start the scans
         -- over and over, and the list would change each time.
         local kept = not carried[itemID] and not worn[itemID] and judged[itemID] ~= nil
-        local wearable = kept or (not carried[itemID] and Wearable(player.class, itemID))
+        local wearable = kept or (not carried[itemID]
+            and (candidate.wearable or Wearable(player.class, itemID)))
         if wearable ~= false then
             if not kept and (wearable == nil or not self:IsCached(itemID)) then
                 -- One the server never answered is not waited on for ever.
@@ -1035,9 +1069,19 @@ function Finder:Build(only, ahead, pause)
 
     local count, all = 0, {}
     local spot = Finder.Spot(player.zone)
-    for slot, list in pairs(slots) do
+    -- The slots in a list of their own, since the loop below changes `slots`
+    -- and may be left and come back to between frames.
+    local order = {}
+    for slot in pairs(slots) do order[#order + 1] = slot end
+    for _, slot in ipairs(order) do
+        local list = slots[slot]
+        -- Sorting every slot in one go was the scan's longest frame.
+        if pause then pause() end
         -- Best first, by Finder.Order.
-        for _, pick in ipairs(list) do pick.near = Finder.Nearness(pick.sources, player.zone, spot) end
+        for _, pick in ipairs(list) do
+            pick.near = Finder.Nearness(pick.sources, player.zone, spot)
+            pick.shown, pick.shownFor = Finder.Shown(pick.result) or false, pick.result
+        end
         table.sort(list, Finder.Order)
         local copy = {}
         for i, pick in ipairs(list) do copy[i] = pick end
@@ -1318,7 +1362,7 @@ end
 
 -- How long one frame's slice may run, in milliseconds, and how many items a
 -- slice takes on a client without a timer to measure with.
-local SLICE_MS = 6
+local SLICE_MS = 4
 local SLICE_ITEMS = 40
 
 --- The latest full scan, if nothing has changed since it was started.
@@ -1335,44 +1379,97 @@ function Finder:Scanning()
     return self.background ~= nil
 end
 
+-- The scans under way, the one whose turn it is first. They share one
+-- frame's slice between them: the upgrade quest's scan and the finder
+-- window's own often run at once (new gear with the window open), and each
+-- taking a whole slice made every frame twice as long.
+local workers = {}
+-- Scans that finished, waiting to be handed over at the start of the next
+-- frame: what takes a scan (the finder window drawing its rows, the upgrade
+-- quest picking) is work of its own, and no slice is stacked on top of it.
+local finished = {}
+local pumping, queued = false, false
+local sliceStarted, sliceCount
+
+local function SliceSpent(Clock)
+    local now = Clock()
+    if now and sliceStarted then return now - sliceStarted >= SLICE_MS end
+    return sliceCount >= SLICE_ITEMS
+end
+
+local Pump
+
+local function PumpSoon()
+    if queued or pumping or (#workers == 0 and #finished == 0) then return end
+    queued = true
+    _G.C_Timer.After(0, Pump)
+end
+
+--- One frame's share of the scans under way.
+Pump = function()
+    queued = false
+    if pumping then return end
+    pumping = true
+    local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
+    local started = Clock()
+    sliceStarted, sliceCount = started, 0
+    local handed = #finished > 0
+    while finished[1] do
+        local job = table.remove(finished, 1)
+        local ok, err = pcall(job.finish, job.found, job.why)
+        if not ok then ns.Debug("finder:", tostring(err)) end
+    end
+    while workers[1] and not handed do
+        local job = table.remove(workers, 1)
+        local ok, found, why = coroutine.resume(job.worker)
+        if not ok then
+            ns.Debug("finder:", tostring(found))
+            job.found, job.why = nil, "error"
+            finished[#finished + 1] = job
+        elseif coroutine.status(job.worker) == "dead" then
+            job.found, job.why = found, why
+            finished[#finished + 1] = job
+        else
+            -- It stopped because the frame's share is used: to the back of
+            -- the line, and the rest wait for the next frame.
+            workers[#workers + 1] = job
+            break
+        end
+        if SliceSpent(Clock) then break end
+    end
+    local ended = Clock()
+    if ns.Perf and started and ended then ns.Perf:Add("Finder:background slice", ended - started) end
+    pumping = false
+    PumpSoon()
+end
+
 --- Run `build(pause)` a slice per frame and hand what it returns to
 --- `finish(found, why)`. Without timers or coroutines it runs at once.
 local function Sliced(build, finish)
     local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
-    local started, count = Clock(), 0
     local after = _G.C_Timer and _G.C_Timer.After
     local canYield = type(after) == "function" and type(coroutine) == "table"
-    local function Pause()
-        if not canYield then return end
-        count = count + 1
-        local now = Clock()
-        if (now and started and now - started >= SLICE_MS) or (not now and count >= SLICE_ITEMS) then
-            coroutine.yield()
-            started, count = Clock(), 0
-        end
-    end
-
     if not canYield then
         finish(build(nil))
         return
     end
 
-    local worker = coroutine.create(function() return build(Pause) end)
-    local function Step()
-        started, count = Clock(), 0
-        local ok, found, why = coroutine.resume(worker)
-        local finished = Clock()
-        if ns.Perf and started and finished then ns.Perf:Add("Finder:background slice", finished - started) end
-        if not ok then
-            ns.Debug("finder:", tostring(found))
-            finish(nil, "error")
-        elseif coroutine.status(worker) == "dead" then
-            finish(found, why)
-        else
-            after(0, Step)
-        end
+    local function Pause()
+        sliceCount = (sliceCount or 0) + 1
+        if SliceSpent(Clock) then coroutine.yield() end
     end
-    Step()
+    workers[#workers + 1] = {
+        worker = coroutine.create(function() return build(Pause) end), finish = finish,
+    }
+    -- Its first slice waits for the next frame: whatever asked for the scan
+    -- (a bag or gear event, the upgrade quest's own look) has its own work
+    -- to do in this one.
+    PumpSoon()
+end
+
+--- How many scans are under way (for the tests).
+function Finder.SlicedNow()
+    return #workers + #finished
 end
 
 --- Make a full scan for now, a slice per frame, then call each of the

@@ -1402,10 +1402,23 @@ function UpgradeQuest:Changed()
     end
 end
 
+--- The verdict on a quest's item. One look at the quests (Check) asks
+--- about each item four or five times over, on every bag and quest log
+--- change; it is judged once per look and the answer shared. Read only.
+function UpgradeQuest:JudgeQuest(quest)
+    local memo = self.judgedThisLook
+    local link = quest.link
+    local kept = memo and link ~= nil and memo[link]
+    if kept then return kept.ok, kept.result end
+    local ok, result = pcall(ns.Compare.Judge, ns.Compare, link)
+    if memo and link ~= nil then memo[link] = { ok = ok, result = result } end
+    return ok, result
+end
+
 --- Is the quest's item still an upgrade worth the trip? False when
 --- something as good or better is worn now (found elsewhere, say).
 function UpgradeQuest:StillWanted(quest)
-    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    local ok, result = self:JudgeQuest(quest)
     if not ok or not result then return true end
     if result.verdict == "downgrade" or result.verdict == "same" then return false end
     self:FreshGain(quest, result)
@@ -1434,20 +1447,20 @@ end
 
 --- Is the quest's item armor Best Armor Only now leaves out?
 function UpgradeQuest:LighterArmor(quest)
-    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    local ok, result = self:JudgeQuest(quest)
     return ok and type(result) == "table" and result.lighterArmor == true
 end
 
 --- Is the quest's item a two-hander, while judged as a shield tank spec?
 function UpgradeQuest:TankTwoHand(quest)
-    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    local ok, result = self:JudgeQuest(quest)
     return ok and type(result) == "table" and result.tankTwoHand == true
 end
 
 --- Is the quest's item a weapon this character hides until trained
 --- (Settings' Untrained Weapons on Hide, or its type ignored from a banner)?
 function UpgradeQuest:HiddenWeapon(quest)
-    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    local ok, result = self:JudgeQuest(quest)
     return ok and type(result) == "table" and result.ignoredSkill ~= nil
 end
 
@@ -1565,7 +1578,9 @@ end
 --- no longer an upgrade, and pick the next one when there is none.
 function UpgradeQuest:Update()
     self.updating = true
+    self.judgedThisLook = {}
     local ok, err = pcall(self.Check, self)
+    self.judgedThisLook = nil
     self.updating = false
     if not ok then error(err, 0) end
     -- Still waiting on the server: look again shortly, in case no more

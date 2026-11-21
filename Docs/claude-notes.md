@@ -376,6 +376,27 @@ bounded. The quest arrow reads its state every `REST_STEP` (0.5 s) while
 it has nowhere to point ("nowhere", "blind"); the glow still breathes every
 step. Tested in `tools/test_speed.lua` and `tools/test_upgradequest.lua`.
 
+One frame's share for every scan (the owner, 2026-11-21: stalls while it
+checked for upgrades). Timed in the fake game with the real data
+(`tools/testenv.lua`, every item answered): with the finder window open,
+new gear or a level started the upgrade quest's scan and the window's own
+at once, each taking a whole slice of every frame, and the frame a scan
+ended in also sorted every slot and drew the window. Now every sliced scan
+shares one `SLICE_MS` (4) a frame (`Pump` in `Logic/Finder.lua`, the scans
+in turn; `Finder.SlicedNow()` for the tests), a scan's first slice waits
+for the next frame, and a finished scan is handed to whoever asked at the
+start of the frame after, with no slice on top. `Build` rests before each
+slot is sorted and keeps each pick's percent on it (`shown`, `shownFor`;
+`Finder.Order` reads them). `Items:Info` keeps a link's kind once the
+client has the whole item and `LinkFor` an item's whole link (both read
+only, both for the session). `UpgradeQuest:JudgeQuest` judges each tab's
+item once per look (`judgedThisLook`, set by `Update`), where a look
+asked four or five times, on every bag and quest log change.
+`FinderUI:DrawSoon` draws once for a burst of `PLAYER_MONEY`. No verdict,
+pick or order changed: a dump of every scan, quest pick, slot list and
+bag verdict on the real data matched `main` byte for byte. Tested in
+`tools/test_speed.lua`.
+
 Asking for the rest (a player's report, 2026-11-13: "Still querying the
 server" went up and down and never finished, with stutters, since the
 window scanned again after every burst of answers): a scan asks about
