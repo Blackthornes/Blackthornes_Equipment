@@ -28,7 +28,7 @@ end
 -- section changes this line too, and tools/check_release.py refuses a tag it
 -- does not match. Played straight from the repository there is no packager
 -- to fill in the TOC's version, so this is the one shown.
-ns.RELEASED_VERSION = "1.12.0"
+ns.RELEASED_VERSION = "1.13.5"
 
 -- The TOC carries @project-version@, which the release packager rewrites to
 -- the tag it is building, "v0.2.0" say. Running straight from the repository
@@ -303,15 +303,21 @@ function Perf:Add(label, ms)
     if ms > row.worst then row.worst = ms end
 end
 
+-- The end of a timed run: note how long it took and pass on what it
+-- returned (or its error), with no table made to hold the returns. Some of
+-- what is timed is asked about every bag slot.
+local function Timed(label, started, ok, ...)
+    local finished = Perf.Clock()
+    if finished then Perf:Add(label, finished - started) end
+    if not ok then error((...), 0) end
+    return ...
+end
+
 --- Run fn, timing it under `label`. Errors are passed on unchanged.
 function Perf:Run(label, fn, ...)
     local started = self.Clock()
     if not started then return fn(...) end
-    local result = { pcall(fn, ...) }
-    local finished = self.Clock()
-    if finished then Perf:Add(label, finished - started) end
-    if not result[1] then error(result[2], 0) end
-    return unpack(result, 2)
+    return Timed(label, started, pcall(fn, ...))
 end
 
 --- Time `module[method]` from now on, under "Module:Method".

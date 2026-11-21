@@ -201,6 +201,27 @@ def facts():
     return found
 
 
+def dungeon_sides():
+    """Each quest's side from the "quests" part of tools/forever_facts.json
+    (Forever's dungeon quests), "A" or "H"; {} when there are none. A quest
+    listed there may sit in the rewards part without its side (Remember
+    That I Love You did, and was offered to Horde)."""
+    import json
+    if not os.path.exists(FACTS):
+        return {}
+    with open(FACTS, encoding="utf-8") as f:
+        raw = (json.load(f) or {}).get("quests") or {}
+    found = {}
+    for quest_id, rec in raw.items():
+        try:
+            quest_id = int(quest_id)
+        except ValueError:
+            continue
+        if isinstance(rec, dict) and rec.get("side") in ("A", "H"):
+            found[quest_id] = rec["side"]
+    return found
+
+
 def fill(rec, extra):
     """rec with what only extra says added; rec wins wherever both say."""
     out = dict(rec)
@@ -294,6 +315,9 @@ def main(argv):
             records[quest_id] = merge(records[quest_id], rec) if quest_id in records else rec
     for quest_id, rec in facts().items():
         records[quest_id] = fill(records[quest_id], rec) if quest_id in records else rec
+    for quest_id, side in dungeon_sides().items():
+        if quest_id in records and "side" not in records[quest_id]:
+            records[quest_id]["side"] = side
     kept = {q: r for q, r in records.items() if new_to_classic(q, r, quests, items)}
     text = render(kept)
     if to_stdout:

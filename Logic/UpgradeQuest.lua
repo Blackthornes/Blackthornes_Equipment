@@ -845,6 +845,12 @@ UpgradeQuest.QuestReady = QuestReady
 -- The steps
 --------------------------------------------------------------------------------
 
+--- A giver's name, or nil when the data has none ("" for some quests
+--- learned on Forever).
+local function Named(name)
+    return type(name) == "string" and name ~= "" and name or nil
+end
+
 local function At(place)
     if place.x and place.y then return (" (%s, %s)"):format(place.x, place.y) end
     return ""
@@ -1209,11 +1215,22 @@ function UpgradeQuest:Steps(quest)
                 -- Two quests in a row can share a title (The Ravaged
                 -- Caravan): say this one is the next part.
                 local again = index > 1 and chain[index - 1].title == before.title
-                text = again
-                    and L.Format("Then do the next part of %s: pick it up from %s in %s%s",
-                        beforeTitle, before.name or "?", Z(before.zone) or "?", At(spot))
-                    or L.Format("Do %s: pick it up from %s in %s%s",
-                        beforeTitle, before.name or "?", Z(before.zone) or "?", At(spot))
+                -- A quest learned on Forever may not name who gives it:
+                -- then only the zone and the spot are said.
+                local giver = Named(before.name)
+                if giver then
+                    text = again
+                        and L.Format("Then do the next part of %s: pick it up from %s in %s%s",
+                            beforeTitle, giver, Z(before.zone) or "?", At(spot))
+                        or L.Format("Do %s: pick it up from %s in %s%s",
+                            beforeTitle, giver, Z(before.zone) or "?", At(spot))
+                else
+                    text = again
+                        and L.Format("Then do the next part of %s: pick it up in %s%s",
+                            beforeTitle, Z(before.zone) or "?", At(spot))
+                        or L.Format("Do %s: pick it up in %s%s",
+                            beforeTitle, Z(before.zone) or "?", At(spot))
+                end
             end
             local need = NEED_NOTES[before.group]
             if need then note = (note and note .. " " or "") .. need end
@@ -1230,7 +1247,9 @@ function UpgradeQuest:Steps(quest)
         local place = source.x and { zone = source.zone, x = source.x, y = source.y, name = source.name } or nil
         if place then Travel(place) end
         if place then
-            Add(L.Format("Pick up %s from %s%s", shownTitle or L["the quest"], source.name or "?", At(place)),
+            local giver = Named(source.name)
+            Add(giver and L.Format("Pick up %s from %s%s", shownTitle or L["the quest"], giver, At(place))
+                or L.Format("Pick up %s%s", shownTitle or L["the quest"], At(place)),
                 onQuest, place)
         else
             StartFromItem(questID, source.title, source.name, onQuest, true)
@@ -1383,31 +1402,65 @@ function UpgradeQuest:Changed()
     end
 end
 
+--- The verdict on a quest's item. One look at the quests (Check) asks
+--- about each item four or five times over, on every bag and quest log
+--- change; it is judged once per look and the answer shared. Read only.
+function UpgradeQuest:JudgeQuest(quest)
+    local memo = self.judgedThisLook
+    local link = quest.link
+    local kept = memo and link ~= nil and memo[link]
+    if kept then return kept.ok, kept.result end
+    local ok, result = pcall(ns.Compare.Judge, ns.Compare, link)
+    if memo and link ~= nil then memo[link] = { ok = ok, result = result } end
+    return ok, result
+end
+
 --- Is the quest's item still an upgrade worth the trip? False when
 --- something as good or better is worn now (found elsewhere, say).
 function UpgradeQuest:StillWanted(quest)
-    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    local ok, result = self:JudgeQuest(quest)
     if not ok or not result then return true end
     if result.verdict == "downgrade" or result.verdict == "same" then return false end
+    self:FreshGain(quest, result)
     return true
+end
+
+--- Keep the quest's "+N% over what you wear" true to the gear worn now. It
+--- was worked out once, when the quest was picked, and kept: after a new
+--- weapon or off hand went on, the panel still said the old number while
+--- the item's tooltip said the new one. Judged like the finder judges
+--- (gear with random rolls at its best roll), else like the tooltip.
+function UpgradeQuest:FreshGain(quest, result)
+    local finder = ns.Finder
+    if finder and finder.JudgeOnce and finder.Judged and quest.itemID then
+        local ok, _, judgedOK, judged = pcall(function()
+            return finder:JudgeOnce(finder:Judged(), quest.itemID)
+        end)
+        if ok and judgedOK and type(judged) == "table" and judged.verdict == "upgrade" then
+            result = judged
+        end
+    end
+    if type(result) ~= "table" or result.verdict ~= "upgrade" then return end
+    local how = ns.Compare:HowMuch(result)
+    if how then quest.howMuch = how end
 end
 
 --- Is the quest's item armor Best Armor Only now leaves out?
 function UpgradeQuest:LighterArmor(quest)
-    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    local ok, result = self:JudgeQuest(quest)
     return ok and type(result) == "table" and result.lighterArmor == true
 end
 
 --- Is the quest's item a two-hander, while judged as a shield tank spec?
 function UpgradeQuest:TankTwoHand(quest)
-    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    local ok, result = self:JudgeQuest(quest)
     return ok and type(result) == "table" and result.tankTwoHand == true
 end
 
 --- Is the quest's item a weapon this character hides until trained
 --- (Settings' Untrained Weapons on Hide, or its type ignored from a banner)?
 function UpgradeQuest:HiddenWeapon(quest)
-    local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+    local ok, result = self:JudgeQuest(quest)
     return ok and type(result) == "table" and result.ignoredSkill ~= nil
 end
 
@@ -1525,7 +1578,9 @@ end
 --- no longer an upgrade, and pick the next one when there is none.
 function UpgradeQuest:Update()
     self.updating = true
+    self.judgedThisLook = {}
     local ok, err = pcall(self.Check, self)
+    self.judgedThisLook = nil
     self.updating = false
     if not ok then error(err, 0) end
     -- Still waiting on the server: look again shortly, in case no more
@@ -1583,9 +1638,11 @@ function UpgradeQuest:Check()
                 end
             end
             if ns.Finder then ns.Finder:MarkStale() end
-        elseif quest and self:NotOffered(quest) then
+        elseif quest and (self:NotOffered(quest) or self:NotForMe(quest)) then
             -- Its giver showed this character its quests without it (Forever
-            -- changed some givers): let it go quietly, and the tab picks again.
+            -- changed some givers), or it is the other side's (or another
+            -- race's or class's) quest, picked before the finder knew: let it
+            -- go quietly, and the tab picks again.
             quests[tab.key] = nil
             if ns.Finder then ns.Finder:MarkStale() end
         elseif quest and (self:LighterArmor(quest) or self:HiddenWeapon(quest)
@@ -2065,6 +2122,17 @@ function UpgradeQuest:NotOffered(quest)
     local finder = ns.Finder
     if not (finder and source and source.kind == "quest" and source.questID) then return false end
     return finder:NotOffered(finder:FirstPickup(source.questID))
+end
+
+--- Is this a quest the character can never be given: the other side's,
+--- another race's or class's, here or anywhere earlier in its chain?
+function UpgradeQuest:NotForMe(quest)
+    local source = quest and quest.source
+    local finder = ns.Finder
+    if not (finder and source and source.kind == "quest" and source.questID) then return false end
+    local player = finder:Player()
+    if not player then return false end
+    return not finder:QuestOpenTo(source.questID, player)
 end
 
 --- What the giver in front of the player offers: its name (lower case) and

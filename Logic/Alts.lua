@@ -77,8 +77,16 @@ function Alts.PlayerGUID()
     return Text(Call(_G.UnitGUID, "player"))
 end
 
+--- The realm's name, or the one this character's note kept from before:
+--- Forever 1.60.1 hands back an empty realm name, and the note is rewritten
+--- at each login, so the saved realm would otherwise be lost.
 function Alts.Realm()
-    return Text(Call(_G.GetRealmName))
+    local realm = Text(Call(_G.GetRealmName))
+    if realm then return realm end
+    local guid = Alts.PlayerGUID()
+    local notes = guid and type(ns.db) == "table" and type(ns.db.characterGear) == "table" and ns.db.characterGear
+    local note = notes and notes[guid]
+    return type(note) == "table" and Text(note.realm) or nil
 end
 
 function Alts.Faction()
@@ -336,10 +344,16 @@ local function Against(note, link, info, weights)
     local slots = Compare.SLOTS[info.equipLoc]
     local worn = note.worn or {}
 
+    -- A worn piece the game has not loaded yet has no score: it is not
+    -- known to be worse, so the whole answer waits (`unknown`), as the
+    -- character playing's does (Compare:Against).
+    local unknown = false
     local function Score(slot)
         local item = worn[slot]
         if not item then return 0, true end
-        return Compare:ScoreOf(item, weights) or 0, false
+        local score = Compare:ScoreOf(item, weights)
+        if not score then unknown = true end
+        return score or 0, false
     end
     local function Kind(slot)
         local item = worn[slot]
@@ -373,7 +387,7 @@ local function Against(note, link, info, weights)
         empty = false
         weakest = (Score(16))
     end
-    return weakest or 0, empty, false
+    return weakest or 0, empty, false, unknown
 end
 
 --- How one item does for one character's note: nil when it is no upgrade
@@ -414,8 +428,8 @@ function Alts:Judge(note, link)
 
     local score = Compare:ScoreOf(link, weights)
     if not score or score <= 0 then return nil end
-    local against, empty, equipped = Against(note, link, info, weights)
-    if equipped then return nil end
+    local against, empty, equipped, unknown = Against(note, link, info, weights)
+    if equipped or unknown then return nil end
 
     local result = {}
     local needs = math.max(info.minLevel or 0, fromLevel or 0)

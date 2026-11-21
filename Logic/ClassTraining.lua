@@ -157,14 +157,22 @@ function CT.Player()
     local className, class = Call("UnitClass", "player")
     local _, _, race = Call("UnitRace", "player")
     local faction = Call("UnitFactionGroup", "player")
+    local guid = Text(Call("UnitGUID", "player"))
+    -- Forever 1.60.1 hands back an empty realm name: the one this
+    -- character's note kept from before stands in, so it is never lost.
+    local realm = Text(Call("GetRealmName"))
+    if not realm and guid then
+        local note = CT:Data().characters[guid]
+        realm = type(note) == "table" and Text(note.realm) or nil
+    end
     return {
         class = Text(class),
         className = Text(className) or Text(class),
         level = Number(Call("UnitLevel", "player")) or 1,
         race = Number(race),
         faction = Text(faction),
-        realm = Text(Call("GetRealmName")),
-        guid = Text(Call("UnitGUID", "player")),
+        realm = realm,
+        guid = guid,
         name = Text(Call("UnitName", "player")),
     }
 end
@@ -648,6 +656,10 @@ function CT:ShowTheWay()
     end
     local title = L.Format("%s trainer: %s", player.className or "", spot.name or "")
     local shown = false
+    -- Our own gold marker always goes on the map (UI/SpotMarker.lua):
+    -- Forever turns the game's pin down (a German player found nothing at
+    -- the Crossroads, 2026-10-29). It goes when you stand there.
+    CT.Mark(spot)
     local guide = self:GuideFn()
     if guide then
         local ok, done = pcall(guide, spot, title)
@@ -698,7 +710,17 @@ end
 function CT.Mark(spot)
     local marker = ns.SpotMarker
     local mapID = spot and Number(spot.mapID)
-    local x, y = spot and Number(spot.x), spot and T.TripTo(spot)
+    local x, y = spot and Number(spot.x), spot and Number(spot.y)
+    if not (marker and marker.Show and mapID and x and y) then return false end
+    local ok, laid = pcall(marker.Show, marker, { map = mapID, x = x * 100, y = y * 100 },
+        { name = spot.name, arrow = ns.WayArrow })
+    return ok and laid == true
+end
+
+--- The way there to a trainer far away, by Logic/Travel.lua (the same
+--- file in every Blackthornes addon): { lines, point }, or nil when it is
+--- near, "Guide Me:" is off, the addon has no Travel or no way is known.
+function CT.TripTo(spot)
     local Travel = ns.Travel
     if not (Travel and Travel.IsOn and Travel.IsOn() and spot and spot.zone) then return nil end
     local target = { name = spot.name, zone = spot.zone, map = spot.mapID, mx = spot.x, my = spot.y }
@@ -834,7 +856,7 @@ function CT:ReadTrainer()
 
     -- Where it stands.
     local guid = Text(Call("UnitGUID", "npc"))
-    local npcID = guid and Number(guid:match("^%a+%-%d+%-%d+%-%d+%-%d+%-(%d+)"))
+    local npcID = guid and Number(guid:match("^%a+%-[^%-]+%-[^%-]+%-[^%-]+%-[^%-]+%-(%d+)"))
     if npcID then
         local trainers = data.trainers
         trainers[player.class] = type(trainers[player.class]) == "table" and trainers[player.class] or {}

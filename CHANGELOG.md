@@ -4,6 +4,65 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.13.5
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Upgrade checks.** The gear finder and upgrade quest stall less while they look for upgrades.
+
+## 1.13.4
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Hunters.** Careful Aim's attack power now counts when Intellect is weighed.
+
+## 1.13.3
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Saved realm.** Each character keeps its own saved realm.
+
+## 1.13.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Quest sides.** Horde characters are no longer offered Alliance quests that don't name their side, and the other way round.
+- **Quest giver.** A quest with no giver named no longer shows a blank line.
+
+## 1.13.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Trip line.** The trip line and stop dots now draw on the world map.
+- **Alt upgrades.** Upgrades for an alt wait until the alt's gear has loaded.
+- **Show the way.** Show the way to a class trainer no longer gives an error.
+- **Upgrade quest.** The upgrade quest percent follows the gear you wear now.
+
+## 1.13.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **One Window switch.** Every Blackthornes window has a gold gem on its title bar. It swaps between the one window and each addon's own windows.
+- **Stat weights.** The Weights window lists Spirit and Health every 5 sec for every class. Both start at 0, so nothing scores differently until you change them.
+
+## 1.12.3
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Fishing pole.** Swapping a fishing pole and a weapon no longer freezes the game.
+
+## 1.12.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Quest rewards.** Upgrade recommendations no longer show the other faction's quest rewards.
+
+## 1.12.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Hover stutter.** Hovering gear no longer makes the game judge the whole bag again, so the stutter is gone.
+
 ## 1.12.0
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.

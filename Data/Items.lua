@@ -70,6 +70,9 @@ function Items.PlainLink(link)
     return nil
 end
 
+-- What Info found, by link, once the client had the whole item.
+local infoOf = {}
+
 --- What kind of item a link is.
 -- @return a table { equipLoc, classID, subclassID, minLevel }, or nil when the
 --         client does not know the item yet. minLevel is nil until the item is
@@ -77,6 +80,12 @@ end
 function Items:Info(link)
     link = self.PlainLink(link)
     if not link then return nil end
+
+    -- What kind of item a link is never changes, and every verdict asks
+    -- (the finder asks thousands of times a scan), so the answer is kept
+    -- once the client has the whole item. Read only: never change it.
+    local kept = infoOf[link]
+    if kept then return kept end
 
     local _, _, _, equipLoc, _, classID, subclassID =
         Call(INSTANT, link)
@@ -90,12 +99,15 @@ function Items:Info(link)
 
     if type(equipLoc) ~= "string" then return nil end
 
-    return {
+    local info = {
         equipLoc = equipLoc,
         classID = tonumber(classID),
         subclassID = tonumber(subclassID),
         minLevel = name and tonumber(minLevel) or nil,
     }
+    -- Kept only with its name in: until then the level it needs is missing.
+    if name then infoOf[link] = info end
+    return info
 end
 
 --- The raw stats table for a link (ITEM_MOD_* keys), or nil.
@@ -135,6 +147,21 @@ function Items.SchoolLine(text)
     return nil
 end
 
+--- Health every 5 sec a line names ("Equip: Restores 3 health per 5 sec."),
+--- or nil. In the client's words when it has the line's format, so other
+--- languages match too; English otherwise.
+function Items.HealthLine(text)
+    if type(text) ~= "string" then return nil end
+    local format = type(_G.ITEM_MOD_HEALTH_REGEN) == "string" and _G.ITEM_MOD_HEALTH_REGEN
+        or "Restores %s health per 5 sec."
+    local pattern = format:gsub("%.$", ""):gsub("([%%%(%)%.%+%-%*%?%[%]%^%$])", "%%%1")
+        :gsub("%%%%s", "(%%d+)"):gsub("%%%%d", "(%%d+)")
+    local ok, amount = pcall(string.match, text, pattern)
+    amount = ok and tonumber(amount)
+    if amount then return "hp5", amount end
+    return nil
+end
+
 --- What one tooltip line says, inside a pcall: in an instance the text can
 --- be a secret value that raises when read.
 local function LineText(line)
@@ -148,7 +175,8 @@ local function LineText(line)
 end
 
 --- School spell damage on an item, as { frostDamage = 10 }, or nil when the
---- tooltip cannot be read. An empty table when it has none.
+--- tooltip cannot be read. An empty table when it has none. Health every 5
+--- sec rides along as `hp5`, for clients whose stats leave it out.
 function Items:SchoolDamage(link)
     link = self.PlainLink(link)
     if not link then return nil end
@@ -167,7 +195,9 @@ function Items:SchoolDamage(link)
     local found, lines = {}, 0
     for _, line in ipairs(data.lines) do
         lines = lines + 1
-        local stat, amount = Items.SchoolLine(LineText(line))
+        local text = LineText(line)
+        local stat, amount = Items.SchoolLine(text)
+        if not stat then stat, amount = Items.HealthLine(text) end
         if stat then found[stat] = (found[stat] or 0) + amount end
     end
     -- Most gear has none, and the finder reads thousands of links, so they
@@ -260,9 +290,87 @@ function Items:SellPrice(link)
     return ok and price or nil
 end
 
---- The link of what is worn in an inventory slot, or nil when it is empty.
-function Items:Equipped(slot)
+--------------------------------------------------------------------------------
+-- A fishing pole in the hands
+--
+-- Fishing means swapping a pole into the main hand and back, again and again.
+-- A pole is no weapon to measure gear by: with it in hand every weapon looked
+-- like an upgrade, so each swap threw every verdict away and looked at all
+-- the gear again, both ways, and the game froze for seconds (a player's
+-- report, 2026-11-18). So while a pole is worn, the weapons worn before it
+-- stand in for it: Equipped answers with them, and the worn and bag
+-- signatures read as they did before the swap, so nothing is looked at
+-- again. Kept per character (`weaponsUnderPole`, never rename it) so a
+-- /reload with the pole in hand still knows them.
+--------------------------------------------------------------------------------
+
+local CLASS_WEAPON, FISHING_POLE = 2, 20
+local MAIN_HAND, OFF_HAND = 16, 17
+Items.MAIN_HAND, Items.OFF_HAND = MAIN_HAND, OFF_HAND
+
+-- Whether each item is a fishing pole, by item string; a kind never changes.
+local poles = {}
+
+--- Is `link` a fishing pole? False while the client cannot say.
+function Items:IsFishingPole(link)
+    local key = Items.LinkKey(self.PlainLink(link))
+    if not key then return false end
+    local known = poles[key]
+    if known ~= nil then return known end
+    local _, _, _, _, _, classID, subclassID = Call(INSTANT, link)
+    if classID == nil then return false end
+    local yes = tonumber(classID) == CLASS_WEAPON and tonumber(subclassID) == FISHING_POLE
+    poles[key] = yes
+    return yes
+end
+
+--- What is really worn in an inventory slot right now, pole or not.
+function Items:WornNow(slot)
     return self.PlainLink(Call(WORN_LINK, "player", slot))
+end
+
+--- The weapons worn before the pole, as { main = link or false, off = link
+--- or false }, or nil when none were seen yet.
+function Items:WeaponsUnderPole()
+    local db = ns.charDB
+    local under = type(db) == "table" and db.weaponsUnderPole
+    if type(under) == "table" and type(under.main) == "string" then return under end
+    return nil
+end
+
+--- Remember the weapons in hand, for the next time a pole goes on.
+local function Remember(main, off)
+    local db = ns.charDB
+    if type(db) ~= "table" then return end
+    off = off or false
+    local under = db.weaponsUnderPole
+    if type(under) == "table" and under.main == main and under.off == off then return end
+    db.weaponsUnderPole = { main = main, off = off }
+end
+
+--- Is a fishing pole in the main hand, with the weapons from before it
+--- known? Then they stand in for it.
+function Items:PoleInHand()
+    local main = self:WornNow(MAIN_HAND)
+    return main ~= nil and self:IsFishingPole(main) and self:WeaponsUnderPole() ~= nil, main
+end
+
+--- The link of what is worn in an inventory slot, or nil when it is empty.
+--- While a fishing pole is in hand, the weapons worn before it.
+function Items:Equipped(slot)
+    local link = self:WornNow(slot)
+    if slot ~= MAIN_HAND and slot ~= OFF_HAND then return link end
+    local main = slot == MAIN_HAND and link or self:WornNow(MAIN_HAND)
+    if not main then return link end
+    if self:IsFishingPole(main) then
+        local under = self:WeaponsUnderPole()
+        if not under then return link end
+        local stand = slot == MAIN_HAND and under.main or under.off
+        return type(stand) == "string" and stand or nil
+    end
+    -- A real weapon in hand: remember it (and the off hand) for the pole.
+    Remember(main, slot == OFF_HAND and link or self:WornNow(OFF_HAND))
+    return link
 end
 
 --- The link of the item in a bag slot, or nil.
@@ -324,8 +432,10 @@ function Items:BagSize(bag)
 end
 
 --- The player's level, or nil.
+local UNIT_LEVEL = { "UnitLevel" }
+
 function Items:PlayerLevel()
-    return tonumber((Call({ "UnitLevel" }, "player")))
+    return tonumber((Call(UNIT_LEVEL, "player")))
 end
 
 --------------------------------------------------------------------------------
@@ -361,14 +471,27 @@ end
 
 --- Everything in the bags with how many, ammo without its count, as one
 --- string: the same string means nothing changed but the ammo spent.
+--- While a fishing pole is in hand, it reads as still in the bags where its
+--- weapon now lies, and the off hand taken off for it as still worn: the
+--- swap is no change.
 function Items:BagSignature()
     local parts = {}
+    local inHand, pole = self:PoleInHand()
+    local under = inHand and self:WeaponsUnderPole()
+    local main = under and Items.LinkKey(under.main)
+    local off = under and type(under.off) == "string" and Items.LinkKey(under.off) or nil
     for bag = 0, 4 do
         for slot = 1, self:BagSize(bag) do
             local link = self:InBag(bag, slot)
             if link then
+                local key = Items.LinkKey(link)
                 local count = self.IsAmmo(link) and "" or ("x" .. self:SlotCount(bag, slot))
-                parts[#parts + 1] = bag .. ":" .. slot .. "=" .. Items.LinkKey(link) .. count
+                if main and key == main then
+                    key, count, main = Items.LinkKey(pole), "x1", nil
+                elseif off and key == off then
+                    key, off = nil, nil
+                end
+                if key then parts[#parts + 1] = bag .. ":" .. slot .. "=" .. key .. count end
             end
         end
     end

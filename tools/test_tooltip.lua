@@ -99,6 +99,24 @@ postCall(tip, { id = 1, hyperlink = "item:1" })
 tip._scripts.OnTooltipCleared(tip)
 postCall(tip, { id = 1, hyperlink = "item:1" })
 suite.check("and new stat weights judge it afresh", judges == 1, judges)
+
+-- Forever says GET_ITEM_INFO_RECEIVED each time a tooltip reads gear it
+-- knows. That threw the kept lines away on every draw, so hovering judged
+-- the item over and over. Only the item shown arriving does that now.
+local function Fire(...) ns.eventFrame:GetScript("OnEvent")(ns.eventFrame, "GET_ITEM_INFO_RECEIVED", ...) end
+judges = 0
+for _ = 1, 5 do
+    Fire(2, true)
+    tip._scripts.OnTooltipCleared(tip)
+    tip._lines = {}
+    postCall(tip, { id = 1, hyperlink = "item:1" })
+    clock = clock + 0.15
+end
+suite.check("another item arriving keeps the lines while hovering", judges == 0, judges)
+Fire(1, true)
+tip._scripts.OnTooltipCleared(tip)
+postCall(tip, { id = 1, hyperlink = "item:1" })
+suite.check("the item shown arriving judges it afresh", judges == 1, judges)
 ns.Compare.Judge = realJudge
 _G.GetTime = nil
 

@@ -376,6 +376,27 @@ bounded. The quest arrow reads its state every `REST_STEP` (0.5 s) while
 it has nowhere to point ("nowhere", "blind"); the glow still breathes every
 step. Tested in `tools/test_speed.lua` and `tools/test_upgradequest.lua`.
 
+One frame's share for every scan (the owner, 2026-11-21: stalls while it
+checked for upgrades). Timed in the fake game with the real data
+(`tools/testenv.lua`, every item answered): with the finder window open,
+new gear or a level started the upgrade quest's scan and the window's own
+at once, each taking a whole slice of every frame, and the frame a scan
+ended in also sorted every slot and drew the window. Now every sliced scan
+shares one `SLICE_MS` (4) a frame (`Pump` in `Logic/Finder.lua`, the scans
+in turn; `Finder.SlicedNow()` for the tests), a scan's first slice waits
+for the next frame, and a finished scan is handed to whoever asked at the
+start of the frame after, with no slice on top. `Build` rests before each
+slot is sorted and keeps each pick's percent on it (`shown`, `shownFor`;
+`Finder.Order` reads them). `Items:Info` keeps a link's kind once the
+client has the whole item and `LinkFor` an item's whole link (both read
+only, both for the session). `UpgradeQuest:JudgeQuest` judges each tab's
+item once per look (`judgedThisLook`, set by `Update`), where a look
+asked four or five times, on every bag and quest log change.
+`FinderUI:DrawSoon` draws once for a burst of `PLAYER_MONEY`. No verdict,
+pick or order changed: a dump of every scan, quest pick, slot list and
+bag verdict on the real data matched `main` byte for byte. Tested in
+`tools/test_speed.lua`.
+
 Asking for the rest (a player's report, 2026-11-13: "Still querying the
 server" went up and down and never finished, with stutters, since the
 window scanned again after every burst of answers): a scan asks about
@@ -426,7 +447,14 @@ one. What holds it:
   answers nil when it can't tell.
 
 A new listener for `GET_ITEM_INFO_RECEIVED` only redraws, debounced and
-while its window shows; it never calls `MarkStale`. No new words for
+while its window shows; it never calls `MarkStale`. Forever says that event each
+time a tooltip reads gear it already knows, so a listener acts only on an
+item it was waiting on: the bag arrows keep `waiting[itemID]` for bag and
+worn items the client had not loaded (`BagIcons:OnItemInfo`), and the
+tooltip drops its kept lines only when the item shown arrives
+(`Tooltip.OnItemInfo`). Before (2026-11-18, a player's report), every
+hover judged every bag item again, tooltip line on or off, and the game
+stuttered. No new words for
 players. Tested in `tools/test_refreshloop.lua`, `tools/test_quietgear.lua`,
 `tools/test_speed.lua`, `tools/test_upgradequest.lua` and
 `tools/test_weights.lua`.
@@ -684,6 +712,14 @@ Classic says is replaced. Nothing is shared with other players.
 Each record notes the side it was offered to (`side`: "A", "H" or "AH";
 an older record without it is offered to both), and a quest seen by one
 side only is laid with that side's Classic race bits (2026-10-14).
+A record with no side (some shipped ones, from tools/forever_facts.json)
+takes one from `QuestLearn.SideOf`: Forever's dungeon quest list
+(`ns.FOREVER_DUNGEON_QUESTS`), else the zone it is given in when only one
+side lives there (`QuestLearn.HOME_SIDES`: the six capitals and six
+starting zones). Remember That I Love You (92415, Stormwind City) and its
+second part were offered to a Horde hunter before this (2026-11-20).
+`tools/forever_quests.py` also fills a missing `side` from the facts'
+`quests` part. Tested in `tools/test_questhomeside.lua`.
 Forever's Skyborne (High Order, race ID 95, Alliance; Windshapers, 96,
 Horde) share the race name "Skyborne", which Classic's race bits lack:
 `Finder.Side` reads the side from `UnitFactionGroup`, else the race ID,
@@ -1452,6 +1488,23 @@ bear` (or `tank`, which stays Protection for warriors and paladins:
 `CLASS_ALIASES`, `Weights:ResolveSpec(text, class)`). Tested in
 `tools/test_bearweights.lua`.
 
+## Careful Aim (hunter talent)
+
+A player's report (2026-11-20): a hunter with points in Careful Aim saw
+Intellect on gear scored as if it gave no attack power. Forever's Careful
+Aim (Marksmanship, five ranks, new in Forever) gives melee and ranged
+attack power equal to 20/40/60/80/100% of Intellect. `Weights:WithTalents`
+(called by `ForPlayer` before the racials) adds `share * max(attackPower,
+rangedAttackPower)` to the intellect weight, only for a hunter with ranks
+bought (`Weights:CarefulAimRanks`, `IntellectToAttackPower`, kept like the
+spent points and cleared by `ForgetPoints`). The talent is found by its
+English name or by its spell text naming both `ITEM_MOD_INTELLECT_SHORT`
+and `ITEM_MOD_ATTACK_POWER_SHORT`, so other clients find it; the share
+comes from ranks bought (`Weights.CAREFUL_AIM.perRank` 20), not the text.
+The Weights window still shows the set numbers. `/beq probe` prints a
+"careful aim" line. Not yet seen in game. Tested in
+`tools/test_carefulaim.lua`.
+
 ## Players' own stat weights
 
 Kept in `BlackthornesEquipmentDB.customWeights[CLASS][spec][stat]`, account
@@ -1476,6 +1529,17 @@ once, so `Weights:Score` counts it at `Weights.SpellPowerWeight`: the larger
 of the spec's (or the player's) spell power weight and all the school
 weights added up. The weights window still shows the number set. Tested in
 `tools/test_weights.lua`.
+
+Health every 5 sec and Spirit for everyone (a player asked, the owner said
+add both for every class at 0, 2026-11-19): `hp5` is a weight
+("Health every 5 sec", after Mana every 5 sec), read from
+`ITEM_MOD_HEALTH_REGEN_SHORT` or `ITEM_MOD_HEALTH_REGENERATION_SHORT`, else
+the tooltip's "Restores X health per 5 sec." line (`Items.HealthLine`, read
+with the school lines in `Items:SchoolDamage`, in the client's words through
+`ITEM_MOD_HEALTH_REGEN`). No spec weighs it built in. `Weights.ALWAYS_LISTED`
+(`spirit`, `hp5`) makes the weights window list both for every class and
+spec without Every stat, so warriors see Spirit at 0. Tested in
+`tools/test_hp5spirit.lua`. Not yet seen in game.
 
 ## The one window
 
@@ -2332,6 +2396,58 @@ TSM Sold a Day). The same in every addon; keep them the same.
 - **Three tries, then ask.** A check still failing after three rounds stops
   the work. Never skip, loosen or rerun a test to get green.
 
+## A fishing pole in hand
+
+A player's report (2026-11-18, on 1.12.2): swapping between a fishing pole
+and a weapon froze the game for 3 to 10 seconds every time. A pole is no
+weapon to measure by, so with it in hand every weapon looked like an
+upgrade, and each swap passed on PLAYER_EQUIPMENT_CHANGED and
+BAG_UPDATE_DELAYED, threw every verdict away and looked at all the gear
+again, both ways. Now while a pole is in the main hand the weapons worn
+before it stand in for it (`Data/Items.lua`): `Items:Equipped(16/17)`
+answers with them, `WornSignature` and `BagSignature` read as before the
+swap (the pole as still in the bag slot its weapon now fills, the off hand
+as still worn), so `ns.NothingChanged` holds the swap back. `Items:WornNow`
+reads what is really worn (`Wear.IsWorn` uses it). The weapons are kept per
+character as `weaponsUnderPole = { main, off }` (never rename it), learned
+whenever a real weapon is in hand; with none known the pole is what is
+worn. Tested in `tools/test_gearswap.lua`. Not yet seen in game.
+
+## The swap gem (One Window toggle, 2026-11-19)
+
+The owner asked for a toggle on each window to swap between the one window
+and each addon's own windows, and said build it from the mockup
+(2026-11-19). A gold gem sits left of the fold gem on every real
+Blackthornes window, so the gems run swap, fold, close. On the one window it
+shows two panes and splits ("Split Into Own Windows"); on an own window it
+shows one pane with a rail line and joins ("Join Into One Window"). Floating
+arrows, bars, trackers, the Zone Board and similar pieces get none.
+
+- `UI/SharedWindow.lua` (FILE_VERSION 14, the same in all five):
+  `SharedWindow.AddSwap(frame, key)` puts the gem on a dressed window's
+  trim (so it hides with the trim inside the one window); `key` nil is the
+  one window. `SharedWindow.Swap(key, join)` is its click. Split: the
+  addon showing is asked its tab, `SetOn(false)` closes the one window,
+  then the addon opens on its own on that tab. Join: every addon closes its
+  own windows, `SetOn(true)`, then the clicked addon opens in the one
+  window on the same tab. In a fight nothing moves; it runs at
+  PLAYER_REGEN_ENABLED (`hub.swapAfterFight`).
+- Same `oneWindow` / `oneWindowAt` keys, no new setting or key. The "One
+  Window:" box reads `On()` as Settings refreshes, so it follows.
+- Each host gives three optional calls beside `enter` and `leave`:
+  `tab()`, `show(tab)` (opens in the one window or its own as the choice
+  now stands, through its Route) and `hide()`. Without them a split falls
+  back to `open` and a join to `SharedWindow.Open(key)`, so an older
+  copy still works.
+- Here: the gear window, Dungeon Quests, Dungeon Loot and Settings (`FinderUI` in `UI/FinderWindow.lua`) carry the join gem.
+- Words: the six tooltip strings in every locale (deDE from the mockup).
+- Tested in `tools/test_swapgem.lua` (the same in all five) and
+  `tools/test_swapwindows.lua` (this addon's windows in the fake game).
+  Not yet seen in game.
+
+## An empty realm name (Forever 1.60.1)
+
+Forever 1.60.1 (a hotfix, announced 2026-11-20) makes GetRealmName, GetRealmID and the C_BattleNet realm fields hand back "" or 0, and scrambles the realm, server and spawn parts of Creature, Vehicle, Pet and GameObject GUIDs (player GUIDs are not named). Every reader of a mob, vendor or trainer ID from a GUID takes any text in parts 2 to 5 (`[^%-]+`), never `%d+`; a new one must too. The gear note and the class training note are rewritten at each login, so a blank realm would have wiped the saved one: `Alts.Realm()` and `ClassTraining`'s `CT.Player()` fall back on this character's saved note. `Logic/ClassTraining.lua` is the same in Butler. Tested in `tools/test_alts.lua` and `tools/test_classtraining.lua`.
 ## Warm glass (2026-11-21)
 
 The owner said build it from the UI pass mockup (ui-pass-1-warm-glass): the

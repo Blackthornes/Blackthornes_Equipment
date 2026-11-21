@@ -468,6 +468,10 @@ local STAT_KEYS = {
     ["ITEM_MOD_SPELL_HEALING_DONE_SHORT"] = "healing",
     ["ITEM_MOD_MANA_REGENERATION_SHORT"] = "mp5",
     ["ITEM_MOD_POWER_REGEN0_SHORT"] = "mp5",
+    -- Health every 5 sec ("Restores 3 health per 5 sec."). Not yet seen on
+    -- Forever; Items:SchoolDamage reads the tooltip line too.
+    ["ITEM_MOD_HEALTH_REGEN_SHORT"] = "hp5",
+    ["ITEM_MOD_HEALTH_REGENERATION_SHORT"] = "hp5",
     ["ITEM_MOD_CRIT_SPELL_RATING_SHORT"] = "spellCrit",
     ["ITEM_MOD_SPELL_CRIT_RATING_SHORT"] = "spellCrit",
     ["ITEM_MOD_HIT_SPELL_RATING_SHORT"] = "spellHit",
@@ -561,6 +565,7 @@ local STAT_ORDER = {
     { key = "spellCrit", name = "Spell crit", per = true },
     { key = "spellHit", name = "Spell hit", per = true },
     { key = "mp5", name = "Mana every 5 sec" },
+    { key = "hp5", name = "Health every 5 sec" },
     { key = "defense", name = "Defense" },
     { key = "dodge", name = "Dodge", per = true },
     { key = "parry", name = "Parry", per = true },
@@ -622,7 +627,8 @@ local LABELS = {
     ["Frost spell damage"] = L["Frost spell damage"], ["Nature spell damage"] = L["Nature spell damage"],
     ["Shadow spell damage"] = L["Shadow spell damage"], ["Holy spell damage"] = L["Holy spell damage"],
     ["Healing"] = L["Healing"], ["Spell crit"] = L["Spell crit"], ["Spell hit"] = L["Spell hit"],
-    ["Mana every 5 sec"] = L["Mana every 5 sec"], ["Defense"] = L["Defense"], ["Dodge"] = L["Dodge"],
+    ["Mana every 5 sec"] = L["Mana every 5 sec"],
+    ["Health every 5 sec"] = L["Health every 5 sec"], ["Defense"] = L["Defense"], ["Dodge"] = L["Dodge"],
     ["Parry"] = L["Parry"], ["Block"] = L["Block"], ["Block value"] = L["Block value"],
     -- Kinds of weapon
     ["Daggers"] = L["Daggers"], ["Fist weapons"] = L["Fist weapons"],
@@ -683,6 +689,12 @@ Weights.SPECS = SPECS
 Weights.STAT_KEYS = STAT_KEYS
 Weights.RATINGS = RATINGS
 Weights.STAT_ORDER = STAT_ORDER
+
+-- Rows the weights window lists for every class and spec, even at 0
+-- (the owner, 2026-11-19, after a player asked for Spirit on warriors and
+-- health every 5 sec): a player who wants them can type a weight without
+-- ticking Every stat. A built-in weight of 0 changes no score.
+Weights.ALWAYS_LISTED = { spirit = true, hp5 = true }
 Weights.MAX_WEIGHT = MAX_WEIGHT
 Weights.WEAPON_TYPES = WEAPON_TYPES
 Weights.MAX_TYPE = MAX_TYPE
@@ -790,6 +802,8 @@ end
 -- seconds in case the client says nothing.
 local POINTS_KEPT = 5
 local pointsRead = nil
+-- Careful Aim's share, kept the same way (see WithTalents).
+local talentRead = nil
 
 local function Now()
     local clock = rawget(_G, "GetTime")
@@ -814,6 +828,7 @@ end
 --- Read the talents afresh on the next ask.
 function Weights:ForgetPoints()
     pointsRead = nil
+    talentRead = nil
 end
 
 --- The talents the character has bought, as one string: the same string
@@ -913,7 +928,7 @@ local typesOf = setmetatable({}, { __mode = "k" })
 function Weights:ForPlayer()
     local spec, _, class = self:CurrentSpec()
     if not spec then return nil end
-    return self:WithRacials(self:Get(class, spec)), spec
+    return self:WithRacials(self:WithTalents(self:Get(class, spec), class)), spec
 end
 
 --------------------------------------------------------------------------------
@@ -1005,6 +1020,127 @@ function Weights:WithRacials(weights)
     end
     typesOf[copy] = typesOf[weights]
     withRacials[weights] = copy
+    return copy
+end
+
+--------------------------------------------------------------------------------
+-- Talents that turn one stat into another
+--
+-- Forever gave hunters Careful Aim (Marksmanship, five ranks): melee and
+-- ranged attack power equal to 20/40/60/80/100% of the hunter's Intellect.
+-- With points in it, each Intellect on gear also brings that much attack
+-- power, so Intellect is worth more by that share of attack power's weight.
+-- The bonus is both kinds of attack power, so it is worth the larger of the
+-- two weights. Nothing changes for a hunter with no points in it.
+--
+-- The talent is found by its name, or by its text naming both Intellect and
+-- attack power in the client's own words, so other language clients find it
+-- too. The share comes from the ranks bought, which the client always gives,
+-- not from the text, which may show only the first rank.
+--------------------------------------------------------------------------------
+
+Weights.CAREFUL_AIM = { class = "HUNTER", name = "Careful Aim", perRank = 20, maxRanks = 5 }
+
+local Lower = function(text)
+    local ok, low = pcall(function()
+        if type(text) == "string" then return text:lower() end
+    end)
+    return ok and low or nil
+end
+
+-- The talent's spell from a node: node, entry, definition. Each in a pcall.
+local function NodeSpell(traits, configID, node)
+    local entryID = type(node.activeEntry) == "table" and node.activeEntry.entryID
+        or (type(node.entryIDs) == "table" and node.entryIDs[1])
+    if not entryID or type(traits.GetEntryInfo) ~= "function"
+        or type(traits.GetDefinitionInfo) ~= "function" then
+        return nil
+    end
+    local ok, entry = pcall(traits.GetEntryInfo, configID, entryID)
+    if not ok or type(entry) ~= "table" or not entry.definitionID then return nil end
+    local okDef, definition = pcall(traits.GetDefinitionInfo, entry.definitionID)
+    if not okDef or type(definition) ~= "table" then return nil end
+    return definition.spellID, definition.overrideName
+end
+
+local function IsCarefulAim(spellID, overrideName)
+    local Call = ns.Items and ns.Items.Call
+    local want = Lower(Weights.CAREFUL_AIM.name)
+    local name = Lower(overrideName)
+        or (Call and spellID and Lower(Call({ "C_Spell.GetSpellName", "GetSpellInfo" }, spellID)))
+    if name and name == want then return true end
+
+    local text = Call and spellID and Lower(Call(SPELL_TEXT, spellID))
+    local intellect = Lower(rawget(_G, "ITEM_MOD_INTELLECT_SHORT"))
+    local power = Lower(rawget(_G, "ITEM_MOD_ATTACK_POWER_SHORT"))
+    if not (text and intellect and power) then return false end
+    local ok, found = pcall(function()
+        return text:find(intellect, 1, true) ~= nil and text:find(power, 1, true) ~= nil
+    end)
+    return ok and found or false
+end
+
+--- Ranks bought in Careful Aim, 0 when none or when the talents can't be read.
+function Weights:CarefulAimRanks()
+    local talents = type(C_ClassTalents) == "table" and C_ClassTalents
+    local traits = type(C_Traits) == "table" and C_Traits
+    if not (talents and traits and type(talents.GetActiveConfigID) == "function"
+        and type(traits.GetConfigInfo) == "function"
+        and type(traits.GetTreeNodes) == "function"
+        and type(traits.GetNodeInfo) == "function") then
+        return 0
+    end
+    local ok, configID = pcall(talents.GetActiveConfigID)
+    if not ok or not configID then return 0 end
+    local okInfo, info = pcall(traits.GetConfigInfo, configID)
+    if not okInfo or type(info) ~= "table" or type(info.treeIDs) ~= "table" then return 0 end
+
+    for _, treeID in ipairs(info.treeIDs) do
+        local okNodes, nodes = pcall(traits.GetTreeNodes, treeID)
+        if okNodes and type(nodes) == "table" then
+            for _, nodeID in ipairs(nodes) do
+                local okNode, node = pcall(traits.GetNodeInfo, configID, nodeID)
+                local ranks = okNode and type(node) == "table" and tonumber(node.ranksPurchased) or 0
+                if ranks > 0 and IsCarefulAim(NodeSpell(traits, configID, node)) then
+                    return math.min(ranks, self.CAREFUL_AIM.maxRanks)
+                end
+            end
+        end
+    end
+    return 0
+end
+
+--- The share of Intellect that turns into attack power, 0 to 1.
+function Weights:IntellectToAttackPower(class)
+    if class ~= self.CAREFUL_AIM.class then return 0 end
+    local now = Now()
+    local kept = talentRead
+    if now and kept and now >= kept.at and now - kept.at < POINTS_KEPT then
+        return kept.share
+    end
+    local share = self:CarefulAimRanks() * self.CAREFUL_AIM.perRank / 100
+    talentRead = now and { at = now, share = share } or nil
+    return share
+end
+
+-- The tables with a talent laid on, by the table they came from.
+local withTalents = setmetatable({}, { __mode = "k" })
+
+--- A weights table with the player's talents laid over it. The same table
+--- back when no talent changes a stat, so nothing is copied for most.
+function Weights:WithTalents(weights, class)
+    if type(weights) ~= "table" then return weights end
+    local share = self:IntellectToAttackPower(class)
+    if share <= 0 or not weights.intellect then return weights end
+    local kept = withTalents[weights]
+    if kept and kept.share == share then return kept.copy end
+
+    local copy = {}
+    for stat, value in pairs(weights) do copy[stat] = value end
+    local power = math.max(weights.attackPower or 0, weights.rangedAttackPower or 0)
+    copy.intellect = copy.intellect + share * power
+    typesOf[copy] = typesOf[weights]
+    withTalents[weights] = { share = share, copy = copy }
     return copy
 end
 

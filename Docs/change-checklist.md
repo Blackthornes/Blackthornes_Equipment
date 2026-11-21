@@ -129,3 +129,10 @@ Why: A reload wiped alts' saved gear (2026-10-11).
 Files: ^Logic/Contribute\.lua$
 Check: The recipient lists match Farmer's and Tradeskills'.
 Why: The three lists are kept the same.
+
+## Two values from one call
+Lines: local \w+, \w+ = [^,]+ and [\w.:]+\(
+Check: `local x, y = thing and Call()` keeps only the first value, so `y` is
+  always nil. Declare the locals, then `if thing then x, y = Call() end`.
+Why: The trip line never drew on the world map: y was nil and the draw
+  raised inside its pcall, in all five addons (2026-11-20).

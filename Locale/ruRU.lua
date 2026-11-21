@@ -110,6 +110,9 @@ L["Complete %s"] = "Выполни %s"
 L["Then do the next part of %s: pick it up from %s in %s%s"] = "Потом выполни следующую часть %s: возьми её у %s в зоне %s%s"
 L["Do %s: pick it up from %s in %s%s"] = "Выполни %s: возьми его у %s в зоне %s%s"
 L["Pick up %s from %s%s"] = "Возьми %s у %s%s"
+L["Then do the next part of %s: pick it up in %s%s"] = "Потом выполни следующую часть %s: возьми её в зоне %s%s"
+L["Do %s: pick it up in %s%s"] = "Выполни %s: возьми его в зоне %s%s"
+L["Pick up %s%s"] = "Возьми %s%s"
 L["Complete %s (level %d): %s"] = "Выполни %s (уровень %d): %s"
 L["Complete %s (level %d)"] = "Выполни %s (уровень %d)"
 L["Hand it in %s to get %s"] = "Сдай его %s и получи %s"
@@ -516,6 +519,7 @@ L["Healing"] = "Исцеление"
 L["Spell Damage"] = "Урон от заклинаний"
 L["Spell Power"] = "Сила заклинаний"
 L["Mana every 5 sec"] = "Мана раз в 5 сек."
+L["Health every 5 sec"] = "Здоровье раз в 5 сек."
 L["Armor"] = "Броня"
 
 -- Logic/WeaponSkills.lua
@@ -1108,6 +1112,12 @@ L["%d upgrades you can go and get."] = "Можно добыть улучшени
 -- The fold gem beside a window's close gem (2026-10-24)
 L["Collapse this window"] = "Свернуть это окно"
 L["Expand this window"] = "Развернуть это окно"
+L["Split Into Own Windows"] = "Разделить на отдельные окна"
+L["Gives each addon its own window again."] = "Снова даёт каждому аддону своё окно."
+L["You can join them back with this same button."] = "Этой же кнопкой ты можешь снова их объединить."
+L["Join Into One Window"] = "Объединить в одно окно"
+L["Puts every Blackthornes addon in one window, with a button for each down the side."] = "Собирает все аддоны Blackthornes в одно окно, с кнопкой для каждого сбоку."
+L["You can split them again with this same button."] = "Этой же кнопкой ты можешь снова их разделить."
 
 -- The shared Blackthornes minimap button (2026-10-28)
 L["Click a name to open it. Right-click for its settings."] = "Нажми на название, чтобы открыть. Правый клик открывает его настройки."

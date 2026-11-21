@@ -23,6 +23,55 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.13.5
+
+Fixes and changes:
+- The gear finder and upgrade quest stall less while they look for upgrades.
+
+## 1.13.4
+
+Fixes and changes:
+- Hunters get the attack power from Careful Aim counted when Intellect is weighed.
+
+## 1.13.3
+
+Fixes and changes:
+- Each character keeps its own saved realm.
+
+## 1.13.2
+
+Fixes and changes:
+- Horde characters are no longer offered Alliance quests that don't name their side.
+- A quest with no giver named no longer shows a blank line.
+
+## 1.13.1
+
+Fixes and changes:
+- The trip line and stop dots now draw on the world map.
+- Upgrades for an alt wait until the alt's gear has loaded.
+- Show the way to a class trainer no longer gives an error.
+- The upgrade quest percent follows the gear you wear now.
+
+## 1.13.0
+
+- Every window has a gold gem on its title bar. Click it to switch between the one window and separate windows.
+- The Weights window lists Spirit and Health every 5 sec for every class. Both start at 0.
+
+## 1.12.3
+
+Fixes and changes:
+- Swapping a fishing pole and a weapon no longer freezes the game.
+
+## 1.12.2
+
+Fixes and changes:
+- Upgrade picks no longer show the other side's quest rewards.
+
+## 1.12.1
+
+Fixes and changes:
+- Hovering gear no longer makes the game stutter.
+
 ## 1.12.0
 
 - A one-handed weapon that beats your main hand now shows under Main hand too.
