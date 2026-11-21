@@ -105,6 +105,9 @@ function env.InstallClient()
     -- The arrows' shared table (one Blackthornes arrow at a time) would
     -- carry one suite's arrow into the next.
     _G.BlackthornesArrows = nil
+    -- The tooltip block hooks the game once for every copy; each suite
+    -- starts with a game nobody hooked.
+    _G.BlackthornesTooltipBlock = nil
 
     -- A default-sized minimap, and a cursor parked somewhere unambiguous so a
     -- simulated drag lands at a known angle.
@@ -116,6 +119,8 @@ function env.InstallClient()
             _lines = {},
             SetOwner = function(self) self._lines = {} end,
             AddLine = function(self, text) self._lines[#self._lines + 1] = text end,
+            -- A two-part line reads as "name answer", so a suite can find it.
+            AddDoubleLine = function(self, left, right) self._lines[#self._lines + 1] = left .. " " .. right end,
             NumLines = function(self) return #self._lines end,
             ClearLines = function(self) self._lines = {} end,
         })

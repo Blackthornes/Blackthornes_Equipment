@@ -145,17 +145,20 @@ function Tooltip:MoreLines(link)
         local name, stats = ns.Rolls:Describe(link)
         if stats then
             lines[#lines + 1] = { name and (name .. ": " .. stats) or L.Format("Random roll: %s", stats), "accent",
-                key = "suffix" }
+                key = "suffix", label = name and (name .. ":") or L["Random Roll:"], answer = stats }
         end
     end
     local itemID = tonumber(link:match("item:(%d+)"))
     if itemID and not (ns.db and ns.db.dropsTooltip == false) then
-        local drop = Tooltip.DropLine(itemID)
-        if drop then lines[#lines + 1] = { drop, "muted", key = "drops" } end
+        local drop, boss, where = Tooltip.DropLine(itemID)
+        if drop then
+            lines[#lines + 1] = { drop, "muted", key = "drops", label = L["Drops From:"],
+                answer = L.Format("%s, %s", boss, where) }
+        end
     end
     if itemID and ns.Crafting then
         local text, color = ns.Crafting:TooltipLine(itemID)
-        if text then lines[#lines + 1] = { text, color } end
+        if text then lines[#lines + 1] = { text, color, label = L["Crafting:"], answer = text } end
     end
     return lines
 end
@@ -190,8 +193,12 @@ function Tooltip:AltLine(link, result, bag, slot)
     if not alt then return nil end
     local name = ns.Alts:NameOf(alt.key) or L["another of your characters"]
     local how = alt.gain and ("%+d%%"):format(alt.gain) or L["fills an empty slot"]
-    if alt.level then return L.Format("Upgrade for %s at level %d: %s", name, alt.level, how) end
-    return L.Format("Upgrade for %s: %s", name, how)
+    local label = L.Format("For %s:", name)
+    if alt.level then
+        return L.Format("Upgrade for %s at level %d: %s", name, alt.level, how), label,
+            L.Format("Upgrade at level %d, %s", alt.level, how)
+    end
+    return L.Format("Upgrade for %s: %s", name, how), label, L.Format("Upgrade, %s", how)
 end
 
 --- "Drops from BOSS in DUNGEON" for gear a dungeon drops, or nil (the
@@ -228,7 +235,7 @@ function Tooltip.DropLine(itemID)
         end
     end
     if not best then return nil end
-    return L.Format("Drops from %s in %s", best[1], best[2])
+    return L.Format("Drops from %s in %s", best[1], best[2]), best[1], best[2]
 end
 
 --- The lines for one item, worked out afresh.
@@ -239,16 +246,29 @@ function Tooltip:WorkOutLines(link, carried, bag, slot)
     local judge = carried and Compare.JudgeCarried or Compare.Judge
     local result = judge(Compare, link)
     local text, color = Compare:Describe(result)
-    if text then lines[#lines + 1] = { text, color, key = "upgrade" } end
+    if text then
+        local label, answer = Tooltip.VerdictPair(result)
+        lines[#lines + 1] = { text, color, key = "upgrade", label = label, answer = answer }
+    end
     -- No use to you, but an upgrade for another of your characters.
-    local okAlt, altLine = pcall(Tooltip.AltLine, Tooltip, link, result, bag, slot)
-    if okAlt and altLine then lines[#lines + 1] = { altLine, "accent", key = "alt" } end
+    local okAlt, altLine, altLabel, altAnswer = pcall(Tooltip.AltLine, Tooltip, link, result, bag, slot)
+    if okAlt and altLine then
+        lines[#lines + 1] = { altLine, "accent", key = "alt", label = altLabel, answer = altAnswer }
+    end
     local okTrainer, trainer, trainerColor = pcall(WeaponSkills.Describe, WeaponSkills, link)
-    if okTrainer and trainer then lines[#lines + 1] = { trainer, trainerColor, true, key = "upgrade" } end
+    if okTrainer and trainer then
+        local okPair, answer = pcall(Tooltip.TrainerAnswer, link)
+        lines[#lines + 1] = { trainer, trainerColor, true, key = "upgrade",
+            label = okPair and answer and L["Weapon Master:"] or nil, answer = okPair and answer or nil }
+    end
     -- On a piece you wear: the best enchant for it (Logic/Enchants.lua).
     if ns.Enchants then
         local okEnchant, enchantLine = pcall(ns.Enchants.TooltipLine, ns.Enchants, link)
-        if okEnchant and enchantLine then lines[#lines + 1] = { enchantLine, "accent", key = "enchant" } end
+        if okEnchant and enchantLine then
+            local answer = enchantLine:match("^[^:]+:%s*(.+)$")
+            lines[#lines + 1] = { enchantLine, "accent", key = "enchant",
+                label = answer and L["Best Enchant:"] or nil, answer = answer }
+        end
     end
     local okMore, more = pcall(Tooltip.MoreLines, Tooltip, link)
     if okMore then
@@ -378,6 +398,82 @@ function Tooltip.OnItemInfo(_, _, itemID)
     lastLines = nil
 end
 
+--------------------------------------------------------------------------------
+-- The shared tooltip block (UI/TooltipBlock.lua, 2026-11-21)
+--------------------------------------------------------------------------------
+
+--- The verdict as a name and an answer: "For Fury:" and "Upgrade, +12%".
+--- Nil for a verdict with nothing to say, as Compare:Describe.
+function Tooltip.VerdictPair(result)
+    if type(result) ~= "table" then return nil end
+    local verdict = result.verdict
+    local who = result.specName or result.className or L["You"]
+    local label = L.Format("For %s:", who)
+    local percent = result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5)) or nil
+    if verdict == "cantuse" and result.ignoredSkill then
+        return label, L.Format("Ignored until you train %s", result.ignoredSkill)
+    elseif verdict == "cantuse" then
+        return label, L["Can't use this"]
+    elseif verdict == "upgrade" then
+        local how = result.empty and L["fills an empty slot"] or percent or L["better stats"]
+        if result.level then return label, L.Format("Upgrade at level %d, %s", result.level, how) end
+        if result.train or result.skill then
+            return label, L.Format("Upgrade once you train %s, %s", result.train or result.skill, how)
+        end
+        return label, L.Format("Upgrade, %s", how)
+    elseif verdict == "downgrade" then
+        return label, L.Format("Worse, %s", percent or "")
+    end
+    return label, L["About the same"]
+end
+
+--- "Learn Maces in Orgrimmar" for the weapon master line, or nil.
+function Tooltip.TrainerAnswer(link)
+    local name, cities, from = WeaponSkills:TrainerFor(link)
+    if not name or type(cities) ~= "table" or #cities == 0 then return nil end
+    local list = cities[1]
+    if #cities > 1 then
+        list = L.Format("%s or %s", table.concat(cities, ", ", 1, #cities - 1), cities[#cities])
+    end
+    if from then return L.Format("Learn %s at level %d in %s", name, from, list) end
+    return L.Format("Learn %s in %s", name, list)
+end
+
+-- Line colors the answer keeps; "accent" and "text" lines get white, since
+-- the name is the yellow part now.
+local function AnswerColor(key)
+    if key == nil or key == "accent" or key == "text" then return nil end
+    local hex = ns.COLORS[key]
+    if type(hex) ~= "string" or #hex < 8 then return nil end
+    local function c(i) return (tonumber(hex:sub(i, i + 1), 16) or 255) / 255 end
+    return { c(3), c(5), c(7) }
+end
+Tooltip.AnswerColor = AnswerColor
+
+--- Equipment's lines for one section of the shared block ("source" holds
+--- the boss drop, "advice" the rest), and whether one was held back.
+function Tooltip:BlockLines(tooltip, data, section)
+    if not self:IsEnabled() or not self:Wanted(tooltip) then return nil end
+    local link = self:LinkFor(tooltip, data)
+    if not link then return nil end
+    local bag, slot = self:BagSlot(tooltip)
+    local lines = self:LinesFor(link, self:FromBag(tooltip), bag, slot)
+    local shift = ns.TooltipShift
+    local out, held = {}, false
+    for _, line in ipairs(lines) do
+        if ((line.key == "drops") and "source" or "advice") == section then
+            if line.key and shift and not shift:Shows(line.key) then
+                held = true
+            elseif line.label and line.answer then
+                out[#out + 1] = { line.label, line.answer, rightColor = AnswerColor(line[2]) }
+            else
+                out[#out + 1] = { line[1], leftColor = AnswerColor(line[2]) or { 1, 1, 1 }, wrap = line[3] and true }
+            end
+        end
+    end
+    return out, held
+end
+
 function Tooltip:OnEnable()
     for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "TRAIT_CONFIG_UPDATED",
         "SKILL_LINES_CHANGED" }) do
@@ -385,6 +481,19 @@ function Tooltip:OnEnable()
     end
     ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", Tooltip.OnItemInfo)
     self.fired = {}
+    -- The shared block writes every Blackthornes addon's lines in one go,
+    -- in one order; Equipment hands it its lines instead of writing them.
+    local block = ns.TooltipBlock
+    if block then
+        block:Provide("Equipment:source", "source", 2, function(tooltip, data)
+            return Tooltip:BlockLines(tooltip, data, "source")
+        end)
+        block:Provide("Equipment:advice", "advice", 1, function(tooltip, data)
+            return Tooltip:BlockLines(tooltip, data, "advice")
+        end)
+        self.installed = { ["tooltip block"] = block:Install() }
+        return
+    end
     self.installed = {
         TooltipDataProcessor = self:InstallDataProcessor(),
         OnTooltipSetItem = self:InstallScriptHooks(),
