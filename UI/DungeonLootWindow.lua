@@ -227,7 +227,7 @@ local function Well(parent)
 end
 
 local function Heading(parent, text)
-    local label = Theme.CreateLabel(parent, "tiny", "muted")
+    local label = Theme.CreateLabel(parent, "tiny", "heading")
     label:SetText(text)
     return label
 end
@@ -337,6 +337,10 @@ function DLUI:BuildList()
         row.name:SetPoint("LEFT", row.icon, "RIGHT", 8, 0)
         row.name:SetPoint("RIGHT", row.slot, "LEFT", -6, 0)
         row.name:SetWordWrap(true)
+        -- Shift-click links the item in chat, Ctrl-click tries it on.
+        row:SetScript("OnClick", function(self)
+            if self.line and self.line.link then Widgets.ItemClick(nil, self.line.link) end
+        end)
         row.onHover = function(self)
             if not (self.line and self.line.link) then return end
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -442,7 +446,7 @@ end
 function DLUI:PaintHeadings()
     for _, heading in ipairs(self.columnHeads or {}) do
         local on = heading.key == self.sortKey
-        heading.label:SetTextColor(Theme.Unpack(on and "accent" or "muted"))
+        heading.label:SetTextColor(Theme.Unpack(on and "text" or "heading"))
         heading.arrow:SetShown(on)
         if self.sortFlip then heading.arrow:SetTexCoord(0, 1, 1, 0) else heading.arrow:SetTexCoord(0, 1, 0, 1) end
     end

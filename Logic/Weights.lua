@@ -191,8 +191,10 @@ local SPECS = {
         columns = CLASSIC_COLUMNS,
         dualWield = 10,
         armor = { [0] = 0, [1] = 0, [2] = 0 },
+        -- Forever lets rogues train one-handed axes (classic never did; a
+        -- player had it trained, 2026-11-21).
         weapons = {
-            [2] = 0, [3] = 0, [4] = 0, [7] = 0, [13] = 0, [15] = 0, [16] = 0, [18] = 0,
+            [0] = 0, [2] = 0, [3] = 0, [4] = 0, [7] = 0, [13] = 0, [15] = 0, [16] = 0, [18] = 0,
         },
         assassination = {
             name = "Assassination",
@@ -1474,6 +1476,19 @@ function Weights:CanUse(class, classID, subclassID, equipLoc)
     -- Anything else that goes in a slot (a shirt, a quiver) is not judged by
     -- class, and a class with no list yet is not second-guessed.
     if not list then return true end
+
+    -- A weapon skill the game says this character knows proves the class
+    -- can use it, whatever the list says: the list is classic's rules with
+    -- the Forever changes we know of, and Forever may change more.
+    if classID == CLASS_WEAPON and subclassID ~= nil and class == self:PlayerClass()
+        and not (RANGED_SLOTS[equipLoc] and not RANGED_WEAPONS[subclassID]) then
+        local skills = ns.WeaponSkills
+        local ok, known = pcall(function() return skills and skills:Known() end)
+        if ok and type(known) == "table" and known[subclassID] then
+            local level = list[subclassID]
+            return true, level and level > 0 and level or nil
+        end
+    end
 
     -- A weapon of a kind the client did not say, or something in the ranged
     -- slot that is not a ranged weapon, is never called wearable.
