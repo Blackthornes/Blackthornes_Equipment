@@ -261,7 +261,18 @@ side by side, split at 4000 and 8000, in classic's order. What is still
 unseen is gear stats past the starting levels: block value, defense, dodge,
 healing and mp5 on real items, and the resistances above.
 
-## Not yet checked: weapon skills and faction
+## Weapon skills: seen, and Forever differs from classic
+
+Known weapon skills read on Forever: the owner's hunter got "Learn Guns from
+the weapon master in Thunder Bluff" (2026-10-02). Forever also lets rogues
+train One-Handed Axes (spell 196; a player had it trained, 2026-11-21), and
+druids Polearms. Classic's class lists missed both, so `Weights:CanUse` now
+counts any weapon skill the game says this character knows as usable for
+its class, whatever the list says. Other differences fix themselves once the
+skill is trained; add them to the class lists in `Logic/Weights.lua` when
+seen, so an untrained character is sent to the trainer.
+
+## Not yet checked: weapon skills and faction (first notes)
 
 The weapon master line (`Logic/WeaponSkills.lua`) reads which weapon skills
 the character knows from the spell each skill gives (196 One-Handed Axes,
