@@ -131,20 +131,6 @@ function UI.ShortWhere(where)
     return name and L.Format("on %s", name) or L["on an alt"]
 end
 
---- The best cell's words for gear in the bank or on another character:
---- the link and "(on NAME)" when the whole name fits, else "(on an alt)",
---- so a last name is never cut short. The tooltip names the character.
-function UI.BestElsewhereText(label, link, where)
-    local text = ("%s |c%s(%s)|r"):format(link, ns.COLORS.accent, UI.ShortWhere(where))
-    if where == "bank" or not Theme.TextWidth then return text end
-    local ok, room = pcall(label.GetWidth, label)
-    local okText, wide = pcall(Theme.TextWidth, "small", text)
-    if ok and okText and type(room) == "number" and room > 0 and type(wide) == "number" and wide > room then
-        return ("%s |c%s(%s)|r"):format(link, ns.COLORS.accent, L["on an alt"])
-    end
-    return text
-end
-
 --- Refresh once a burst of events settles.
 function UI:RefreshSoon()
     if ns.FinderUI then ns.FinderUI:RefreshSoon() end

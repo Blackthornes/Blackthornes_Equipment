@@ -23,6 +23,88 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.13.4
+
+Fixes and changes:
+- Hunters get the attack power from Careful Aim counted when Intellect is weighed.
+
+## 1.13.3
+
+Fixes and changes:
+- Each character keeps its own saved realm.
+
+## 1.13.2
+
+Fixes and changes:
+- Horde characters are no longer offered Alliance quests that don't name their side.
+- A quest with no giver named no longer shows a blank line.
+
+## 1.13.1
+
+Fixes and changes:
+- The trip line and stop dots now draw on the world map.
+- Upgrades for an alt wait until the alt's gear has loaded.
+- Show the way to a class trainer no longer gives an error.
+- The upgrade quest percent follows the gear you wear now.
+
+## 1.13.0
+
+- Every window has a gold gem on its title bar. Click it to switch between the one window and separate windows.
+- The Weights window lists Spirit and Health every 5 sec for every class. Both start at 0.
+
+## 1.12.3
+
+Fixes and changes:
+- Swapping a fishing pole and a weapon no longer freezes the game.
+
+## 1.12.2
+
+Fixes and changes:
+- Upgrade picks no longer show the other side's quest rewards.
+
+## 1.12.1
+
+Fixes and changes:
+- Hovering gear no longer makes the game stutter.
+
+## 1.12.0
+
+- A one-handed weapon that beats your main hand now shows under Main hand too.
+- Spell power scores fairer for casters.
+- The Drowned City is in Dungeon Loot.
+- Settings pages sit in the same order in every Blackthornes addon.
+- Various bug fixes for Equipment.
+
+## 1.11.1
+
+Fixes and changes:
+- The window stays where you drag it.
+
+## 1.11.0
+
+- Settings has one grid for what shows on screen, and an All Addons page.
+- You can scroll the Upgrade Tracker past eight hunts.
+- The window can dock in more places and you can resize it by hand.
+Fixes and changes:
+- Game pop-ups no longer hide behind our windows.
+- Slot upgrade buttons no longer run over the gain.
+
+## 1.10.3
+
+Fixes and changes:
+- Tool gear your class can never wear no longer counts as a tool in tooltips.
+
+## 1.10.2
+
+Fixes and changes:
+- Upgrade arrows no longer show by mistake while your worn gear is still loading.
+
+## 1.10.1
+
+Fixes and changes:
+- Words on the upgrade quest panel wrap now, so nothing gets cut off.
+- Show the way skips class trainers who stop teaching too early.
+
 ## 1.10.0
 
 - The upgrade quest panel tells you how your gear is doing and why it picked each upgrade.

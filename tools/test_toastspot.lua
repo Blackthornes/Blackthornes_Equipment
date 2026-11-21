@@ -12,8 +12,10 @@ _G.GetTime = function() return now end
 
 local Toast = ns.Toast
 -- The drop-in nudges the point a few pixels while it plays.
+-- Never dragged, it takes its place on the shared top shelf.
 local function AtTop(point)
-    return point and point[1] == "TOP" and math.abs(point[5] + 150) <= 12
+    local _, _, y = ns.SharedWindow.ShelfSpot("upgrade.toast")
+    return point and point[1] == "TOP" and math.abs(point[5] - y) <= 12
 end
 local function Near(a, b) return type(a) == "number" and math.abs(a - b) <= 12 end
 local opened = 0

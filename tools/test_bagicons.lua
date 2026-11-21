@@ -79,6 +79,43 @@ env.bags[0][1] = "item:2"
 ns.HandleSlash("spec mm")
 suite.check("/beq spec refreshes the arrows", Arrow(upgrade):IsShown())
 
+-- Hovering gear: Forever says GET_ITEM_INFO_RECEIVED each time a tooltip
+-- reads an item it already knows. Every bag item was judged again on each
+-- one, with the tooltip line on or off, and the game stuttered while the
+-- mouse sat on gear. Only an item the bags were waiting on is worth a look.
+do
+    local function Fire(event, ...)
+        ns.eventFrame:GetScript("OnEvent")(ns.eventFrame, event, ...)
+    end
+    local judged = 0
+    local realJudge = ns.Compare.JudgeCarried
+    ns.Compare.JudgeCarried = function(...) judged = judged + 1 return realJudge(...) end
+    ns.db.tooltipLine = false
+    ns.BagIcons:Refresh()
+    judged = 0
+    for _ = 1, 5 do Fire("GET_ITEM_INFO_RECEIVED", 1, true) end
+    suite.check("hovering known gear judges no bag item again", judged == 0, judged)
+
+    -- An item the client had not seen yet is judged once it arrives.
+    env.bags[0][1] = "item:9"
+    ns.BagIcons:Refresh()
+    suite.check("an unknown item gets no arrow yet", not Arrow(upgrade):IsShown())
+    env.items["item:9"] = { loc = "INVTYPE_CHEST", class = 4, subclass = 2, stats = { ITEM_MOD_AGILITY_SHORT = 20 } }
+    judged = 0
+    Fire("GET_ITEM_INFO_RECEIVED", 7, true)
+    suite.check("another item arriving still judges nothing", judged == 0, judged)
+    Fire("GET_ITEM_INFO_RECEIVED", 9, true)
+    suite.check("the awaited item arriving looks again", judged > 0, judged)
+    suite.check("and it gets its arrow", Arrow(upgrade):IsShown())
+    judged = 0
+    Fire("GET_ITEM_INFO_RECEIVED", 9, true)
+    suite.check("once it is known, it is not waited on again", judged == 0, judged)
+    ns.Compare.JudgeCarried = realJudge
+    ns.db.tooltipLine = true
+    env.bags[0][1] = "item:2"
+    ns.BagIcons:Refresh()
+end
+
 -- Classic's shape: numbered windows, named buttons, one update function.
 ns = Load()
 _G.C_Texture = nil

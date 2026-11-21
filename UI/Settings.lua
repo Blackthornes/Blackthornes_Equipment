@@ -45,12 +45,17 @@ local TITLE = "Blackthornes Equipment"
 local PAGES = {
     { key = "gear", text = L["GEAR"],
       tip = L["How gear is judged, and the arrows, tooltip lines and chat lines that say so"] },
-    { key = "hunts", text = L["UPGRADE HUNTS"],
-      tip = L["Where to get upgrades, tracking them, map pins and the banner"] },
     { key = "quest", text = L["UPGRADE QUEST"],
       tip = L["The upgrade quest, its panel and the arrow that points the way"] },
-    { key = "general", text = L["GENERAL"],
-      tip = L["Window positions, text size and help"] },
+    -- The settings every Blackthornes addon shares (2026-11-16): reached
+    -- by the one window's gear while One Window is on, so it is left off
+    -- the switch then; on the switch while each addon has its own window.
+    -- General became Windows and comes before All Addons, the same order
+    -- in all five (the owner said build it, 2026-11-17). Its key stays
+    -- "general", so a saved page still opens.
+    { key = "general", text = L["WINDOWS"],
+      tip = L["Window size and how much the panels let the world show through"] },
+    { key = "all", text = L["ALL ADDONS"] },
     { key = "about", text = L["ABOUT"],
       tip = L["How these addons are made, the version, the Discord and the other Blackthornes addons"] },
 }
@@ -190,7 +195,7 @@ function SettingsUI:Build()
     COLUMN_WIDTH = TabColumnWidth()
     local frame = CreateFrame("Frame", "BlackthornesEquipmentSettings", UIParent)
     frame:SetSize(COLUMN_WIDTH * 2 + COLUMN_GAP + PADDING * 2, 600)
-    frame:SetFrameStrata("DIALOG")
+    frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
@@ -221,6 +226,9 @@ function SettingsUI:Build()
             if not folded then SettingsUI:Refresh() end
         end })
     end
+    -- And left of it, the swap gem: it joins every Blackthornes addon into
+    -- the one window (UI/SharedWindow.lua).
+    if ns.SharedWindow and ns.SharedWindow.AddSwap then ns.SharedWindow.AddSwap(frame, "equipment") end
 
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
@@ -257,7 +265,6 @@ function SettingsUI:Build()
         db = function() return ns.db end,
     })
     self:BuildGear()
-    self:BuildHunts()
     self:BuildQuest()
     self:BuildGeneral()
     -- About (UI/About.lua): the note on how the addons are made, then the
@@ -399,6 +406,10 @@ function SettingsUI:BuildGear()
     local controls = self.controls
     local pages = self.pages
 
+    -- Every on/off box for something on screen, in one grid (the owner,
+    -- 2026-11-16). Each box keeps its saved key.
+    self:BuildShowGrid()
+
     pages:Section("gear", 1, L["JUDGING GEAR"])
 
     local specRow = pages:Row("gear", 1, L["Judge Gear As:"], function() return SettingsUI:SpecHint() end)
@@ -431,35 +442,6 @@ function SettingsUI:BuildGear()
         L["Says if gear beats what you wear."])
     controls.tooltip = ShiftStepper(tooltipRow, "tooltipLine", "upgrade")
 
-    local arrowRow = pages:Row("gear", 1, L["Upgrade Arrows:"],
-        L["A green arrow on upgrades you can wear now."])
-    controls.arrows = Tick(arrowRow, L["Show"], "bagArrows", true, function()
-        if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
-        if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
-        if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
-        if ns.MoreMarks then
-            pcall(ns.MoreMarks.RefreshMerchant, ns.MoreMarks)
-            pcall(ns.MoreMarks.RefreshLoot, ns.MoreMarks)
-        end
-    end)
-
-    local coinRow = pages:Row("gear", 1, L["Sell Coins:"],
-        L["A gold coin on bag gear that's no upgrade and sells to a vendor."])
-    controls.sellCoins = Tick(coinRow, L["Show"], "bagSellCoins", true, function()
-        if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
-    end)
-
-    local takeRow = pages:Row("gear", 1, L["Take Reward Button:"],
-        L["A button under the quest window takes the best reward."])
-    controls.rewardButton = Tick(takeRow, L["Show"], "rewardButton", true, function()
-        if ns.QuestRewards then pcall(ns.QuestRewards.UpdateTake, ns.QuestRewards) end
-    end)
-
-    local chatRow = pages:Row("gear", 1, L["Upgrades in Chat:"],
-        L["A chat line when an upgrade lands in your bags."])
-    controls.upgradeChat = Tick(chatRow, L["On"], "upgradeChat", true)
-    self.chatRow = chatRow
-
     local autoRow = pages:Row("gear", 1, L["Put On Upgrades:"],
         L["Puts an upgrade on as soon as you get it. Gear that would bind waits for your click."])
     controls.autoEquip = Tick(autoRow, L["On"], "autoEquip", false)
@@ -488,13 +470,15 @@ function SettingsUI:BuildGear()
     controls.skipUpgrades:SetPoint("TOPLEFT", CONTROL_X, -2)
     self.skipRow = skipRow
 
-    pages:Section("gear", 2, L["GEAR WINDOW"])
+    -- The buttons that open a window, together.
+    pages:Section("gear", 2, L["OPEN"])
 
     local windowRow = pages:Row("gear", 2, L["Gear Window:"], "")
     controls.openWindow = Widgets.CreateButton(windowRow, L["Open"], function()
         ns.HandleSlash("window")
     end, { width = 100, height = 20, primary = true })
     controls.openWindow:SetPoint("TOPLEFT", CONTROL_X, 0)
+    self:BuildOpenRows()
 
     pages:Section("gear", 2, L["BAGS AND TOOLTIPS"])
 
@@ -637,33 +621,144 @@ local HUNTING = {
         L["Shows where each tracked upgrade comes from."], L["Show"], "MapPins" },
 }
 
---- Upgrade hunts: finding upgrades on the left, tracking them on the right.
-function SettingsUI:BuildHunts()
+--- A box's name in the grid: its Settings label without the colon.
+function SettingsUI.GridName(label)
+    local name = tostring(label or ""):gsub("%s*\239\188\154%s*$", "")  -- the wide colon
+    return (name:gsub("%s*:%s*$", ""))
+end
+
+--- SHOW ON SCREEN: the on/off boxes for everything Equipment draws, two to a
+--- line, each on its own saved key as before. What a box does is its
+--- tooltip.
+function SettingsUI:BuildShowGrid()
+    local controls = self.controls
+    local pages = self.pages
+    pages:Section("gear", 1, L["SHOW ON SCREEN"])
+
+    local function Plain(key, initial, after)
+        return function(parent, text)
+            return Widgets.CreateCheckbox(parent, text, function(checked)
+                ns.db[key] = checked
+                if after then after(checked) end
+            end, initial)
+        end
+    end
+    local function Hunt(entry)
+        local redraw = entry[6]
+        return { entry[1], entry[3], entry[4], Plain(entry[1], true, function()
+            local module = redraw and ns[redraw]
+            if module and module.OnTrackingChanged then pcall(module.OnTrackingChanged, module) end
+        end) }
+    end
+
+    -- { control, label, what it does, make(parent, text) }; the left
+    -- column top to bottom, then the right.
+    local cells = {
+        { "arrows", L["Upgrade Arrows:"], L["A green arrow on upgrades you can wear now."],
+          Plain("bagArrows", true, function()
+              if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
+              if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
+              if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
+              if ns.MoreMarks then
+                  pcall(ns.MoreMarks.RefreshMerchant, ns.MoreMarks)
+                  pcall(ns.MoreMarks.RefreshLoot, ns.MoreMarks)
+              end
+          end) },
+        { "sellCoins", L["Sell Coins:"], L["A gold coin on bag gear that's no upgrade and sells to a vendor."],
+          Plain("bagSellCoins", true, function()
+              if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
+          end) },
+        { "rewardButton", L["Take Reward Button:"], L["A button under the quest window takes the best reward."],
+          Plain("rewardButton", true, function()
+              if ns.QuestRewards then pcall(ns.QuestRewards.UpdateTake, ns.QuestRewards) end
+          end) },
+        { "upgradeChat", L["Upgrades in Chat:"], L["A chat line when an upgrade lands in your bags."],
+          Plain("upgradeChat", true) },
+        Hunt(HUNTING[1]),
+        Hunt(HUNTING[2]),
+        Hunt(HUNTING[3]),
+        Hunt(HUNTING[4]),
+        -- Off unless the player turns it on, unlike the rest.
+        { "upgradeQuest", L["Upgrade Quest:"], L["A quest for your best next upgrade, with steps to get it."],
+          function(parent, text)
+              return Widgets.CreateCheckbox(parent, text, function(checked)
+                  if ns.UpgradeQuest then ns.UpgradeQuest:SetEnabled(checked) end
+              end, false)
+          end },
+        { "questArrow", L["Quest Arrow:"], L["Points the way to the quest's next place. Click a step to aim it."],
+          function(parent, text)
+              return Widgets.CreateCheckbox(parent, text, function(checked)
+                  if ns.QuestArrow then ns.QuestArrow:SetOn(checked) end
+              end, false)
+          end },
+    }
+
+    local width = pages.opts.columnWidth
+    local half = math.floor(width / 2)
+    local content = pages.pages.gear.content
+    local lines = math.ceil(#cells / 2)
+    self.showGrid = {}
+    for line = 1, lines do
+        local row = CreateFrame("Frame", nil, content)
+        row:SetSize(width, 24)
+        row.fixedHeight = 24
+        pages:Place("gear", 1, row)
+        self.showGrid[line] = row
+        for side, index in ipairs({ line, line + lines }) do
+            local cell = cells[index]
+            if cell then
+                local name = SettingsUI.GridName(cell[2])
+                local box = cell[4](row, name)
+                box:SetPoint("TOPLEFT", (side - 1) * half, -3)
+                -- A long name in another language wraps in its half.
+                local room = half - 28
+                if Theme.TextWidth("small", name) > room then
+                    box.label:SetWidth(room)
+                    box.label:SetWordWrap(true)
+                    box:SetWidth(half - 4)
+                    row.fixedHeight = 36
+                    row:SetHeight(36)
+                end
+                if cell[3] and cell[3] ~= "" then Explain(box, name, cell[3]) end
+                controls[cell[1]] = box
+                box.gridName = name
+                pages:Searchable("gear", row, name .. " " .. (cell[3] or ""))
+            end
+        end
+    end
+end
+
+--- OPEN: the buttons that open a window, under the gear window's own.
+function SettingsUI:BuildOpenRows()
     local controls = self.controls
     local pages = self.pages
 
-    pages:Section("hunts", 1, L["FINDING UPGRADES"])
-
-    local _, findButton = CommandRow(pages, "hunts", 1, L["Where to Get Upgrades:"], "",
+    local _, findButton = CommandRow(pages, "gear", 2, L["Where to Get Upgrades:"], "",
         L["Open"], "find", { primary = true })
     controls.find = findButton
 
-    local function HuntRow(entry)
-        local key, column, redraw = entry[1], entry[2], entry[6]
-        local row = pages:Row("hunts", column, entry[3], entry[4])
-        controls[key] = Tick(row, entry[5], key, true, function()
-            local module = redraw and ns[redraw]
-            if module and module.OnTrackingChanged then pcall(module.OnTrackingChanged, module) end
-        end)
-    end
+    -- The panel's Quest log tab (UI/QuestLogTab.lua), and the box that
+    -- keeps it to tracked quests.
+    local logRow = pages:Row("gear", 2, L["Quest Log:"],
+        L["Your quests on a tab of the quest panel."])
+    controls.questLogOpen = Widgets.CreateButton(logRow, L["Show"], function()
+        ns.HandleSlash("quest log")
+    end, { width = 64, height = 20 })
+    controls.questLogOpen:SetPoint("TOPLEFT", CONTROL_X, 0)
+    controls.questLogTracked = Widgets.CreateCheckbox(logRow, L["Tracked Only"], function(checked)
+        if ns.QuestLogUI then ns.QuestLogUI:SetTrackedOnly(checked) end
+    end, false)
+    controls.questLogTracked:SetPoint("TOPLEFT", CONTROL_X + math.max(76, controls.questLogOpen:GetWidth() + 12), -2)
 
-    HuntRow(HUNTING[1])
-    HuntRow(HUNTING[2])
+    -- Every quest done inside a dungeon or raid (UI/DungeonQuestsWindow.lua).
+    local _, dungeonsButton = CommandRow(pages, "gear", 2, L["Dungeon Quests:"], nil,
+        L["Open"], "dungeons")
+    controls.dungeonQuests = dungeonsButton
 
-    pages:Section("hunts", 2, L["TRACKING"])
-
-    HuntRow(HUNTING[3])
-    HuntRow(HUNTING[4])
+    -- What each dungeon's bosses drop (UI/DungeonLootWindow.lua).
+    local _, lootButton = CommandRow(pages, "gear", 2, L["Dungeon Loot:"], nil,
+        L["Open"], "loot")
+    controls.dungeonLoot = lootButton
 end
 
 --- The upgrade quest on the left, the arrow that leads there on the right.
@@ -672,15 +767,6 @@ function SettingsUI:BuildQuest()
     local pages = self.pages
 
     pages:Section("quest", 1, L["UPGRADE QUEST"])
-
-    -- Off unless the player turns it on, unlike the switches on the other
-    -- pages.
-    local questRow = pages:Row("quest", 1, L["Upgrade Quest:"],
-        L["A quest for your best next upgrade, with steps to get it."])
-    controls.upgradeQuest = Widgets.CreateCheckbox(questRow, L["On"], function(checked)
-        if ns.UpgradeQuest then ns.UpgradeQuest:SetEnabled(checked) end
-    end, false)
-    controls.upgradeQuest:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- Ignore, Switch and the tab to show are on the panel itself, and stay
     -- typed (/beq quest ignore, switch, vendor...); the owner, 2026-10-15.
@@ -771,13 +857,6 @@ function SettingsUI:BuildQuest()
     -- typed only (the owner, 2026-10-23).
     pages:Section("quest", 2, L["ARROW"])
 
-    local arrowRow = pages:Row("quest", 2, L["Quest Arrow:"],
-        L["Points the way to the quest's next place. Click a step to aim it."])
-    controls.questArrow = Widgets.CreateCheckbox(arrowRow, L["Show"], function(checked)
-        if ns.QuestArrow then ns.QuestArrow:SetOn(checked) end
-    end, false)
-    controls.questArrow:SetPoint("TOPLEFT", CONTROL_X, -2)
-
     local _, nextButton = CommandRow(pages, "quest", 2, L["Next Place:"],
         L["Points the arrow at the next step's place."],
         L["Next"], "arrow next")
@@ -814,18 +893,9 @@ function SettingsUI:BuildQuest()
     controls.arrowSize:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- The panel's Quest log tab (UI/QuestLogTab.lua) and its two tick boxes.
+    -- The Quest log tab's Show button and Tracked Only box are under OPEN on
+    -- the Gear page.
     pages:Section("quest", 2, L["QUEST LOG"])
-
-    local logRow = pages:Row("quest", 2, L["Quest Log:"],
-        L["Your quests on a tab of the quest panel."])
-    controls.questLogOpen = Widgets.CreateButton(logRow, L["Show"], function()
-        ns.HandleSlash("quest log")
-    end, { width = 64, height = 20 })
-    controls.questLogOpen:SetPoint("TOPLEFT", CONTROL_X, 0)
-    controls.questLogTracked = Widgets.CreateCheckbox(logRow, L["Tracked Only"], function(checked)
-        if ns.QuestLogUI then ns.QuestLogUI:SetTrackedOnly(checked) end
-    end, false)
-    controls.questLogTracked:SetPoint("TOPLEFT", CONTROL_X + math.max(76, controls.questLogOpen:GetWidth() + 12), -2)
 
     local trackerRow = pages:Row("quest", 2, L["Hide Game's Tracker:"],
         L["Hides the game's quest tracker while the panel is up."])
@@ -834,15 +904,6 @@ function SettingsUI:BuildQuest()
     end, false)
     controls.hideQuestTracker:SetPoint("TOPLEFT", CONTROL_X, -2)
 
-    -- Every quest done inside a dungeon or raid (UI/DungeonQuestsWindow.lua).
-    local _, dungeonsButton = CommandRow(pages, "quest", 2, L["Dungeon Quests:"], nil,
-        L["Open"], "dungeons")
-    controls.dungeonQuests = dungeonsButton
-
-    -- What each dungeon's bosses drop (UI/DungeonLootWindow.lua).
-    local _, lootButton = CommandRow(pages, "quest", 2, L["Dungeon Loot:"], nil,
-        L["Open"], "loot")
-    controls.dungeonLoot = lootButton
 end
 
 --- General: windows and text on the left, help and problems on the right.
@@ -852,18 +913,23 @@ function SettingsUI:BuildGeneral()
 
     -- The rows every Blackthornes addon shares, in the same order (the
     -- unified look, card 13), then this addon's own.
+    -- All Addons: the rows every Blackthornes addon shares, shown once in
+    -- the one window behind its gear (the owner said build it,
+    -- 2026-11-16). General keeps this addon's own. No setting was renamed
+    -- and no saved choice changed.
+    pages:Section("all", 1, L["ALL BLACKTHORNES ADDONS"])
     pages:Section("general", 1, L["WINDOWS"])
 
     -- Asked 2026-10-10: the game's own look for players who would rather
     -- the windows matched the rest of their screen. Read at login, so it
     -- waits for /reload as Text size does. See UI/BlizzardLook.lua. A
     -- stepper, as Text size is: this addon's Widgets have no dropdown.
-    local styleRow = pages:Row("general", 1, L["Window Style:"], "")
+    local styleRow = pages:Row("all", 1, L["Window Style:"], "")
     controls.windowStyle = self:WindowStyleControl(styleRow)
 
     -- Bigger letters in the same windows, as Tradeskills has. Every size
     -- is read as text is drawn, so it waits for /reload.
-    local textRow = pages:Row("general", 1, L["Text Size:"], "")
+    local textRow = pages:Row("all", 1, L["Text Size:"], "")
     controls.textSize = ns.SettingsPages.TextSizeControl(textRow, CONTROL_X, function() return ns.db end)
 
     -- The size every gear window tab shares, the one its grip saves.
@@ -878,7 +944,7 @@ function SettingsUI:BuildGeneral()
 
     -- How much the windows move: they rise in, glow and glint at Full,
     -- only fade at Subtle and stay still at Off. Full until picked.
-    local effectsRow = pages:Row("general", 1, L["Effects:"], nil)
+    local effectsRow = pages:Row("all", 1, L["Effects:"], nil)
     local Motion = ns.Motion
     local effectNames = { full = L["Full"], subtle = L["Subtle"], off = L["Off"] }
     local function EffectIndex()
@@ -898,7 +964,7 @@ function SettingsUI:BuildGeneral()
 
     -- Quiets every sound every Blackthornes addon plays (UI/SharedChoices.lua,
     -- a player asked, 2026-11-12). Off unless ticked; ticked in one is ticked in all.
-    local muteRow = pages:Row("general", 1, L["Mute All Sounds:"], nil)
+    local muteRow = pages:Row("all", 1, L["Mute All Sounds:"], nil)
     controls.muteSounds = Widgets.CreateCheckbox(muteRow, L["On"], function(checked)
         SettingsUI:SetMuteSounds(checked)
     end, false)
@@ -906,7 +972,7 @@ function SettingsUI:BuildGeneral()
 
     -- One minimap button for every Blackthornes addon (UI/SharedMinimap.lua,
     -- the owner, 2026-10-28): ticked unless unticked, the same in all five.
-    local combineRow = pages:Row("general", 1, L["Combine Addon Buttons:"], nil)
+    local combineRow = pages:Row("all", 1, L["Combine Addon Buttons:"], nil)
     controls.combineButtons = Widgets.CreateCheckbox(combineRow, L["On"], function(checked)
         if ns.SharedMinimap then ns.SharedMinimap.SetCombined(checked) end
     end, true)
@@ -915,7 +981,7 @@ function SettingsUI:BuildGeneral()
     -- One window for every Blackthornes addon (UI/SharedWindow.lua, the
     -- owner, 2026-10-30): off unless ticked, the same in all five. Ticked or
     -- not, Settings opens again where it now belongs.
-    local oneRow = pages:Row("general", 1, L["One Window:"], nil)
+    local oneRow = pages:Row("all", 1, L["One Window:"], nil)
     controls.oneWindow = Widgets.CreateCheckbox(oneRow, L["On"], function(checked)
         SettingsUI:SetOneWindow(checked)
     end, false)
@@ -923,7 +989,7 @@ function SettingsUI:BuildGeneral()
 
     -- The minimap button always shows (the owner, 2026-10-15); a saved
     -- minimapHidden is kept but no longer read.
-    local positionRow = pages:Row("general", 1, L["Window Spots:"],
+    local positionRow = pages:Row("all", 1, L["Window Spots:"],
         L["Puts every Blackthornes window back where it started. Your settings and data stay the same."])
     local reset = Widgets.CreateButton(positionRow, L["Set Default"], function()
         SettingsUI:ResetAllWindows()
@@ -931,14 +997,13 @@ function SettingsUI:BuildGeneral()
     reset:SetPoint("TOPLEFT", CONTROL_X, 0)
     controls.resetPositions = reset
 
-    pages:Section("general", 2, L["ADDONS"])
 
     -- Debug, the speed check and the client check are typed only (/beq
     -- debug, perf, probe; the owner, 2026-10-23): players don't need them.
 
     -- Core/SisterNote.lua: one chat line, once, naming the Blackthornes
     -- addons the player does not have. Off here is off in all of them.
-    local sistersRow = pages:Row("general", 2, L["Sister Addons:"],
+    local sistersRow = pages:Row("all", 1, L["Sister Addons:"],
         L["Says once in chat which Blackthornes addons you don't have."])
     controls.sisters = Widgets.CreateCheckbox(sistersRow, L["On"], function(checked)
         ns.SisterNote:SetOn(checked)
@@ -947,22 +1012,16 @@ function SettingsUI:BuildGeneral()
 
     -- UI/WhatsNew.lua: one window after an update for every Blackthornes
     -- addon. Off here is off in all of them, as the sister note is.
-    local _, whatsNewButton = CommandRow(pages, "general", 2, L["What's New:"], "",
+    pages:Section("all", 2, L["WHAT'S NEW"])
+    local _, whatsNewButton = CommandRow(pages, "all", 2, L["What's New:"], "",
         L["Open"], "whatsnew")
     controls.whatsnew = whatsNewButton
 
-    local whatsNewRow = pages:Row("general", 2, L["What's New After Updates:"],
+    -- One drop-down for the two What's New boxes (UI/SettingsPages.lua).
+    local afterRow = pages:Row("all", 2, L["After Updates:"],
         L["Opens What's New the first time you play after an update."])
-    controls.whatsNewPopup = Widgets.CreateCheckbox(whatsNewRow, L["On"], function(checked)
-        ns.WhatsNew:SetOn(checked)
-    end, true)
-    controls.whatsNewPopup:SetPoint("TOPLEFT", CONTROL_X, -2)
-
-    local whatsNewMotionRow = pages:Row("general", 2, L["What's New Motion:"], "")
-    controls.whatsNewMotion = Widgets.CreateCheckbox(whatsNewMotionRow, L["On"], function(checked)
-        ns.WhatsNew:SetMotionOn(checked)
-    end, true)
-    controls.whatsNewMotion:SetPoint("TOPLEFT", CONTROL_X, -2)
+    controls.whatsNewAfter = ns.SettingsPages.AfterUpdatesControl(afterRow, CONTROL_X,
+        function() return ns.WhatsNew end)
 
     -- The two panels that stay up while you play let the world show through
     -- (UI/SeeThrough.lua, card 14 of the unified look): Off unless picked.
@@ -1046,8 +1105,7 @@ function SettingsUI:Refresh()
     local controls = self.controls
     if controls.shareData then controls.shareData:SetChecked(ns.db.shareData == true) end
     controls.sisters:SetChecked(ns.SisterNote:IsOn())
-    controls.whatsNewPopup:SetChecked(ns.WhatsNew:IsOn())
-    controls.whatsNewMotion:SetChecked(ns.WhatsNew:IsMotionOn())
+    controls.whatsNewAfter:Sync()
     controls.tooltip:Sync()
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
     controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)
@@ -1113,7 +1171,16 @@ function SettingsUI:Refresh()
         for id, choice in pairs(controls.seeThrough or {}) do choice:SetValue(ns.SeeThrough:Level(id), true) end
     end
     controls.windowScale:Sync()
+    -- In the one window, All Addons is behind its gear, not on the switch.
+    local OneAll = ns.FinderUI and ns.FinderUI.One and ns.FinderUI.One()
+    self.pages:SetHidden("all", OneAll ~= nil and OneAll.On() == true)
     self.pages:Refresh()
+end
+
+--- Open Settings on the All Addons page (the one window's gear).
+function SettingsUI:ShowAllAddons()
+    self:Show()
+    if self.pages then self.pages:Show("all") end
 end
 
 --- The quest panel's size buttons: the one in use is lit green.

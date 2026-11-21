@@ -3,13 +3,13 @@
 Run from the repository root with two Classic 1.12 databases checked out
 somewhere:
 
-    python tools/make_sources.py <mangoszero database> <pfQuest>
+    python tools/make_sources.py <world database> <spawn database>
 
-  github.com/mangoszero/database   World/Setup/FullDB: what each item is
+  a Classic world database   World/Setup/FullDB: what each item is
                                    (slot, level, quality, who may use it),
                                    quest rewards, loot tables, and which map
                                    a creature lives on
-  github.com/shagu/pfQuest         db/: vendors and their stock, which
+  a Classic spawn database         db/: vendors and their stock, which
                                    quests are really given out, and where
                                    every NPC and object stands, in zone map
                                    coordinates
@@ -38,6 +38,9 @@ import sys
 from pathlib import Path
 
 from lupa import lua51
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from classic_maps import MARK, forever_spot  # noqa: E402
 
 # Equippable inventory types, by item_template.InventoryType. Shirts (4),
 # bags (18), tabards (19), ammunition (24) and quivers (27) carry nothing
@@ -193,7 +196,7 @@ def rows(path, table):
     return out
 
 
-def load_pfquest(folder):
+def load_spawn_db(folder):
     lua = lua51.LuaRuntime(unpack_returned_tuples=True)
     lua.execute("pfDB = setmetatable({}, {__index = function(t, k) "
                 "local v = {} rawset(t, k, v) return v end})")
@@ -221,7 +224,9 @@ def place(entry):
     zone = zones.most_common(1)[0][0]
     for s in spots:
         if s[3] == zone:
-            return zone, round(float(s[1]), 1), round(float(s[2]), 1)
+            # Classic's numbers on Forever's own map (only Mulgore's differ).
+            x, y = forever_spot(zone, float(s[1]), float(s[2]))
+            return zone, round(x, 1), round(y, 1)
     return None
 
 
@@ -241,12 +246,12 @@ def num(x):
 
 
 def main():
-    mangos = Path(sys.argv[1]) / "World" / "Setup" / "FullDB"
-    pfq = load_pfquest(Path(sys.argv[2]))
+    world_db = Path(sys.argv[1]) / "World" / "Setup" / "FullDB"
+    spawn = load_spawn_db(Path(sys.argv[2]))
 
     # What each item is.
     items = {}
-    for r in rows(mangos / "item_template.sql", "item_template"):
+    for r in rows(world_db / "item_template.sql", "item_template"):
         if r["class"] not in (2, 4) or r["InventoryType"] not in EQUIPPABLE:
             continue
         if r["Quality"] < 1 or r["Quality"] > 5:
@@ -266,10 +271,10 @@ def main():
             "rep": r["RequiredReputationFaction"], "repRank": r["RequiredReputationRank"],
         }
 
-    units, objects = pfq["units"]["data"], pfq["objects"]["data"]
-    unit_names, object_names = pfq["units"]["enUS"], pfq["objects"]["enUS"]
-    item_names, quest_text = pfq["items"]["enUS"], pfq["quests"]["enUS"]
-    zone_names = pfq["zones"]["enUS"]
+    units, objects = spawn["units"]["data"], spawn["objects"]["data"]
+    unit_names, object_names = spawn["units"]["enUS"], spawn["objects"]["enUS"]
+    item_names, quest_text = spawn["items"]["enUS"], spawn["quests"]["enUS"]
+    zone_names = spawn["zones"]["enUS"]
 
     npcs = {}            # npcID -> (name, zone, x, y, fac)
     used_zones = set()
@@ -288,9 +293,9 @@ def main():
     sources = collections.defaultdict(lambda: {"v": [], "q": [], "d": [], "g": []})
 
     # Vendors.
-    pf_items = pfq["items"]["data"]
+    sp_items = spawn["items"]["data"]
     for itemID in items:
-        entry = pf_items[itemID]
+        entry = sp_items[itemID]
         if not entry or not entry["V"]:
             continue
         for uid, stock in lua_table(entry["V"]).items():
@@ -301,11 +306,11 @@ def main():
             sources[itemID]["v"].append((uid, int(stock or 0)))
 
     # Quests.
-    quest_rows = {r["entry"]: r for r in rows(mangos / "quest_template.sql", "quest_template")}
-    pf_quests = pfq["quests"]["data"]
+    quest_rows = {r["entry"]: r for r in rows(world_db / "quest_template.sql", "quest_template")}
+    sp_quests = spawn["quests"]["data"]
     quests = {}
     for qid, r in quest_rows.items():
-        pq = pf_quests[qid]
+        pq = sp_quests[qid]
         if not pq or not pq["start"] or pq["event"]:
             continue
         rewards = [r[f"RewChoiceItemId{i}"] for i in range(1, 7)] + \
@@ -363,12 +368,12 @@ def main():
 
     # Dungeon drops.
     where_map = {}
-    for r in rows(mangos / "creature.sql", "creature"):
+    for r in rows(world_db / "creature.sql", "creature"):
         if r["map"] in INSTANCES:
             where_map.setdefault(r["id"], r["map"])
     for uid, m in SUMMONED.items():
         where_map.setdefault(uid, m)
-    templates = {r["Entry"]: r for r in rows(mangos / "creature_template.sql", "creature_template")}
+    templates = {r["Entry"]: r for r in rows(world_db / "creature_template.sql", "creature_template")}
     wing_of = {}
     for wing, (_, _, wing_bosses) in WINGS.items():
         for b in wing_bosses:
@@ -377,7 +382,7 @@ def main():
     def loot_lists(table):
         """entry -> [(item or -reference, chance %, group, rolls)]"""
         lists = collections.defaultdict(list)
-        for r in rows(mangos / f"{table}.sql", table):
+        for r in rows(world_db / f"{table}.sql", table):
             lists[r["entry"]].append((r["item"], float(r["ChanceOrQuestChance"]),
                                       r["groupid"], r["mincountOrRef"], r["maxcount"]))
         return lists
@@ -413,14 +418,14 @@ def main():
     # rest are caught by what they ask for: something to kill or use inside
     # an instance, an item only creatures in one drop, or an elite to kill.
     instance_objects = {}
-    for r in rows(mangos / "gameobject.sql", "gameobject"):
+    for r in rows(world_db / "gameobject.sql", "gameobject"):
         if r["map"] in INSTANCES:
             instance_objects.setdefault(r["id"], r["map"])
     # Items a chest, a plant or a container gives too: their creature
     # drops say nothing about where the item has to be got.
-    from_elsewhere = {r["item"] for r in rows(mangos / "gameobject_loot_template.sql",
+    from_elsewhere = {r["item"] for r in rows(world_db / "gameobject_loot_template.sql",
                                               "gameobject_loot_template")}
-    from_elsewhere |= {r["item"] for r in rows(mangos / "item_loot_template.sql",
+    from_elsewhere |= {r["item"] for r in rows(world_db / "item_loot_template.sql",
                                                "item_loot_template")}
     loot_users = collections.defaultdict(set)
     for uid, template in templates.items():
@@ -529,10 +534,12 @@ def main():
     w("-- Where gear comes from: vendors, quest rewards and dungeon drops.")
     w("--")
     w("-- Generated by tools/make_sources.py from Classic 1.12 data, never typed by")
-    w("-- hand: the mangoszero world database (items, quest rewards, loot tables,")
-    w("-- which map a creature lives on) and pfQuest's database (vendors, where")
+    w("-- hand: the Classic world database (items, quest rewards, loot tables,")
+    w("-- which map a creature lives on) and the Classic spawn database (vendors, where")
     w("-- every NPC stands). Forever may have changed some of it. The game fills in")
     w("-- each item's stats when asked, so nothing here says what an item is worth.")
+    w("")
+    w(MARK)
     w("")
     w("local _, ns = ...")
     w("")

@@ -164,7 +164,7 @@ function DLUI:Build()
     if self.frame then return self.frame end
     local frame = CreateFrame("Frame", NAME, UIParent)
     frame:SetSize(WIDTH, HEIGHT)
-    frame:SetFrameStrata("DIALOG")
+    frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
@@ -190,6 +190,9 @@ function DLUI:Build()
             if not folded then DLUI:Refresh() end
         end })
     end
+    -- And left of it, the swap gem: it joins every Blackthornes addon into
+    -- the one window (UI/SharedWindow.lua).
+    if ns.SharedWindow and ns.SharedWindow.AddSwap then ns.SharedWindow.AddSwap(frame, "equipment") end
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()

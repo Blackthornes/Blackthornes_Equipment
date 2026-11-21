@@ -71,6 +71,7 @@ FOREVER_DUNGEONS = {
     2999: ("Ruins of Lordaeron", "Tirisfal Glades", False),
     3065: ("The Hall of Thanes", "Ironforge", False),
     3109: ("Manor Mistmantle", None, False),
+    2970: ("The Drowned City", "Stranglethorn Vale", False),
     2720: ("The Searing Basin", None, False),
     2789: ("The Tainted Scar", "Blasted Lands", True),
     2791: ("Storm Cliffs", "Azshara", True),

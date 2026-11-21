@@ -60,9 +60,12 @@ local function Read(item, bag, slot)
     end
 
     local result = Compare:JudgeCarried(link)
+    -- Gear that is a tool only by its tooltip counts while this class
+    -- could wear it (BagIcons.KeptTool); a plate helm with Mining on it is
+    -- gear to a mage.
     local tool = knownTool
         or (info.classID == CLASS_WEAPON and info.subclassID == FISHING_POLE)
-        or BagIcons.IsTool(link)
+        or BagIcons.KeptTool(link, result)
     if type(result) ~= "table" and not tool then return nil end
 
     local advice = { tool = tool, sell = false }
@@ -70,15 +73,8 @@ local function Read(item, bag, slot)
         advice.upgrade = (Compare.WearableUpgrade(result) and not result.skill) and "now" or "later"
         advice.gain = Gain(result)
     end
-    -- No way this class ever wears it: gear for other classes, an armor or
-    -- weapon kind it never learns. Not mail or plate learned later, Best
-    -- Armor Only, a hidden untrained weapon or a two-hander while judged as
-    -- Protection, which are only for now.
-    if type(result) == "table" and result.verdict == "cantuse" and not result.laterArmor
-        and not result.lighterArmor and not result.ignoredSkill
-        and not result.tankTwoHand then
-        advice.never = true
-    end
+    -- No way this class ever wears it (BagIcons.NeverWears).
+    if BagIcons.NeverWears(result) then advice.never = true end
     if not tool then
         advice.sell = BagIcons:Sells(bag, slot, link, result) == true
         -- No use to the character playing: is it an upgrade for another?
@@ -102,7 +98,8 @@ end
 --   never    true when this class can never wear it (other classes only,
 --            or an armor or weapon kind it never learns)
 --   tool     true for gathering and profession tools and fishing poles,
---            kept to use and never sold
+--            kept to use and never sold; gear that is a tool only by its
+--            tooltip counts while this class could wear it
 --   alt      when it is no upgrade here but is for another of the player's
 --            characters on this realm and side (Alts:BestFor): { key (that
 --            character's GUID), gain (whole percent, nil for an empty

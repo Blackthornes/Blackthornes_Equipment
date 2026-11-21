@@ -3,8 +3,12 @@
 Run from the repository root, after make_sources.py, with the same two
 Classic 1.12 databases and the Forever client's game tables:
 
-    python tools/make_dungeon_quests.py <mangoszero database> <pfQuest> \
+    python tools/make_dungeon_quests.py <world database> <spawn database> \
         --tables <tables folder>
+
+After a dungeon is added to FOREVER_DUNGEONS in tools/forever_drops.py,
+`python tools/make_dungeon_quests.py --places-only` rewrites just the
+ns.FOREVER_DUNGEON_PLACES block, keeping the quests as they are.
 
 A quest counts as a dungeon's when Classic files it under that dungeon's
 zone, or when what it asks for (a creature to kill, an object to use, an
@@ -42,52 +46,91 @@ def forever_quests(tables):
         return {int(r["ID"]) for r in csv.DictReader(f)}
 
 
+PLACES_HEAD = "-- Forever's own dungeons and raids, by the map ID the game gives inside:"
+
+
+def places_lines():
+    """The ns.FOREVER_DUNGEON_PLACES block, from FOREVER_DUNGEONS."""
+    lines = [
+        PLACES_HEAD,
+        "-- name, the zone the door is in (\"\" when not known) and true for a",
+        "-- raid. Their quests are learned in game (Logic/DungeonQuests.lua).",
+        "ns.FOREVER_DUNGEON_PLACES = {",
+    ]
+    for m in sorted(FOREVER_DUNGEONS):
+        name, door, raid = FOREVER_DUNGEONS[m]
+        lines.append('    ["%d"] = { %s, %s%s },' % (m, ms.lua_string(name), ms.lua_string(door or ""),
+                                                  ", true" if raid else ""))
+    lines.append("}")
+    lines.append("")
+    return lines
+
+
+def rewrite_places(path=OUTPUT):
+    """Rewrites only the places block of an existing file, so a Forever
+    dungeon added to FOREVER_DUNGEONS shows up without the Classic
+    databases. The quests above it are left as they are."""
+    text = path.read_text(encoding="utf-8")
+    at = text.find(PLACES_HEAD)
+    if at < 0:
+        raise SystemExit("no FOREVER_DUNGEON_PLACES block in %s" % path)
+    path.write_text(text[:at] + "\n".join(places_lines()), encoding="utf-8", newline="\n")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("mangos")
-    ap.add_argument("pfquest")
-    ap.add_argument("--tables", required=True)
+    ap.add_argument("world_db", nargs="?")
+    ap.add_argument("spawn_db", nargs="?")
+    ap.add_argument("--tables")
     ap.add_argument("--build", default="")
+    ap.add_argument("--places-only", action="store_true",
+                    help="only rewrite ns.FOREVER_DUNGEON_PLACES from FOREVER_DUNGEONS")
     args = ap.parse_args()
+    if args.places_only:
+        rewrite_places()
+        print(f"wrote {len(FOREVER_DUNGEONS)} Forever dungeons to {OUTPUT}")
+        return
+    if not (args.world_db and args.spawn_db and args.tables):
+        ap.error("world_db, spawn_db and --tables are needed unless --places-only")
 
-    mangos = Path(args.mangos) / "World" / "Setup" / "FullDB"
-    pfq = ms.load_pfquest(Path(args.pfquest))
+    world_db = Path(args.world_db) / "World" / "Setup" / "FullDB"
+    spawn = ms.load_spawn_db(Path(args.spawn_db))
     tables = Path(args.tables)
     zone_map = area_maps(tables)
     on_forever = forever_quests(tables)
 
-    units, objects = pfq["units"]["data"], pfq["objects"]["data"]
-    unit_names, object_names = pfq["units"]["enUS"], pfq["objects"]["enUS"]
-    item_names, quest_text = pfq["items"]["enUS"], pfq["quests"]["enUS"]
-    pf_quests = pfq["quests"]["data"]
-    zone_names = pfq["zones"]["enUS"]
+    units, objects = spawn["units"]["data"], spawn["objects"]["data"]
+    unit_names, object_names = spawn["units"]["enUS"], spawn["objects"]["enUS"]
+    item_names, quest_text = spawn["items"]["enUS"], spawn["quests"]["enUS"]
+    sp_quests = spawn["quests"]["data"]
+    zone_names = spawn["zones"]["enUS"]
 
     # Where creatures and objects stand, for quests filed under no zone.
     where_map = {}
-    for r in ms.rows(mangos / "creature.sql", "creature"):
+    for r in ms.rows(world_db / "creature.sql", "creature"):
         if r["map"] in ms.INSTANCES:
             where_map.setdefault(r["id"], r["map"])
     for uid, m in ms.SUMMONED.items():
         where_map.setdefault(uid, m)
     instance_objects = {}
-    for r in ms.rows(mangos / "gameobject.sql", "gameobject"):
+    for r in ms.rows(world_db / "gameobject.sql", "gameobject"):
         if r["map"] in ms.INSTANCES:
             instance_objects.setdefault(r["id"], r["map"])
-    templates = {r["Entry"]: r for r in ms.rows(mangos / "creature_template.sql",
+    templates = {r["Entry"]: r for r in ms.rows(world_db / "creature_template.sql",
                                                 "creature_template")}
     loot_users = collections.defaultdict(set)
     for uid, t in templates.items():
         if t["LootId"]:
             loot_users[t["LootId"]].add(uid)
     dropped_by = collections.defaultdict(set)
-    for r in ms.rows(mangos / "creature_loot_template.sql", "creature_loot_template"):
+    for r in ms.rows(world_db / "creature_loot_template.sql", "creature_loot_template"):
         if r["mincountOrRef"] >= 0:
             dropped_by[r["item"]] |= loot_users.get(r["entry"], set())
-    from_elsewhere = {r["item"] for r in ms.rows(mangos / "gameobject_loot_template.sql",
+    from_elsewhere = {r["item"] for r in ms.rows(world_db / "gameobject_loot_template.sql",
                                                  "gameobject_loot_template")}
 
     gear = set()
-    for r in ms.rows(mangos / "item_template.sql", "item_template"):
+    for r in ms.rows(world_db / "item_template.sql", "item_template"):
         if r["class"] in (2, 4) and r["InventoryType"] in ms.EQUIPPABLE:
             gear.add(r["entry"])
 
@@ -107,11 +150,11 @@ def main():
         return maps.most_common(1)[0][0] if maps else None
 
     out = {}
-    for r in ms.rows(mangos / "quest_template.sql", "quest_template"):
+    for r in ms.rows(world_db / "quest_template.sql", "quest_template"):
         qid = r["entry"]
         if qid not in on_forever:
             continue
-        pq = pf_quests[qid]
+        pq = sp_quests[qid]
         if not pq or not pq["start"] or pq["event"]:
             continue
         title = (quest_text[qid] and quest_text[qid]["T"]) or r["Title"]
@@ -173,6 +216,8 @@ def main():
     lines = [
         "-- Generated by tools/make_dungeon_quests.py from Classic's quest data,",
         "-- kept only for quests the Forever client has. Do not edit by hand.",
+        ms.MARK,
+        "",
         "local _, ns = ...",
         "",
         "-- [questID] = { dungeon (a Sources.DUNGEONS key), title, lowest level,",
@@ -188,18 +233,7 @@ def main():
             q[10], q[11]))
     lines.append("}")
     lines.append("")
-    lines += [
-        "-- Forever's own dungeons and raids, by the map ID the game gives inside:",
-        "-- name, the zone the door is in (\"\" when not known) and true for a",
-        "-- raid. Their quests are learned in game (Logic/DungeonQuests.lua).",
-        "ns.FOREVER_DUNGEON_PLACES = {",
-    ]
-    for m in sorted(FOREVER_DUNGEONS):
-        name, door, raid = FOREVER_DUNGEONS[m]
-        lines.append('    ["%d"] = { %s, %s%s },' % (m, ms.lua_string(name), ms.lua_string(door or ""),
-                                                  ", true" if raid else ""))
-    lines.append("}")
-    lines.append("")
+    lines += places_lines()
     OUTPUT.write_text("\n".join(lines), encoding="utf-8", newline="\n")
     by = collections.Counter(q[0] for q in out.values())
     print(f"wrote {len(out)} dungeon quests to {OUTPUT}")

@@ -317,6 +317,27 @@ function Finder:Chain(questID)
     return chain, unknown
 end
 
+--- Is a quest open to this character, all the way down its chain? Each
+--- quest before it must be open to the character's race and class too: a
+--- quest learned on Forever may not say its side, but the one before it
+--- does (Twisted Hatred came after a night elf quest and was offered to a
+--- Horde rogue).
+function Finder:QuestOpenTo(questID, player)
+    if not player then return false end
+    local seen = {}
+    local quest = ns.Sources.QUESTS[questID]
+    for _ = 1, CHAIN_MOST + 1 do
+        if not quest or seen[quest] then break end
+        seen[quest] = true
+        if not Finder.Allows(quest[4] or 0, player.raceBit or 0)
+            or not Finder.Allows(quest[5] or 0, player.classBit or 0) then
+            return false
+        end
+        quest = quest.p and ns.Sources.QUESTS[quest.p]
+    end
+    return true
+end
+
 --------------------------------------------------------------------------------
 -- Solo quests
 --------------------------------------------------------------------------------
@@ -402,6 +423,7 @@ end
 local function Allows(mask, flag)
     return mask == 0 or flag == 0 or Band(mask, flag) ~= 0
 end
+Finder.Allows = Allows
 
 local function ZoneName(zoneID)
     return ns.Sources.ZONES[zoneID]
@@ -489,8 +511,8 @@ function Finder:SourcesFor(itemID, player)
 
     for _, questID in ipairs(item.q or {}) do
         local quest = S.QUESTS[questID]
-        if quest and quest[2] <= player.level and Allows(quest[4], player.raceBit)
-            and Allows(quest[5], player.classBit) and not self:QuestDone(questID) then
+        if quest and quest[2] <= player.level and self:QuestOpenTo(questID, player)
+            and not self:QuestDone(questID) then
             local chain, unknown = self:Chain(questID)
             -- The first quest still to do in the chain that needs others.
             local chainGroup
@@ -841,6 +863,23 @@ function Finder:JudgeOnce(judged, itemID)
     return best, ok, result
 end
 
+--- A one-hand weapon judged against the off hand (the weaker hand), judged
+--- again in the main hand: that verdict when it is an upgrade there too,
+--- else nil. Kept with the item's verdict, so later scans ask no more.
+function Finder:MainHandToo(judged, itemID, best, result)
+    if type(result) ~= "table" or result.slot ~= 17 or result.verdict ~= "upgrade" then return nil end
+    local link = best and best.link or ("item:%d"):format(itemID)
+    local info = Items:Info(link)
+    if not info or info.equipLoc ~= "INVTYPE_WEAPON" then return nil end
+    local kept = judged[itemID]
+    if kept and kept.main ~= nil then return kept.main or nil end
+    local ok, main = pcall(Compare.Judge, Compare, link, 16)
+    if not ok or type(main) ~= "table" then return nil end
+    if main.slot ~= 16 or main.verdict ~= "upgrade" then main = false end
+    if kept then kept.main = main end
+    return main or nil
+end
+
 --- The order picks show in, best first: what can be had now before gear
 --- that waits on a reputation, both before gear someone else would have to
 --- make, then by the percent shown (an empty slot, which shows none, ahead
@@ -971,6 +1010,20 @@ function Finder:Build(only, ahead, pause)
                             sources = candidate.sources, needs = candidate.needs, rep = candidate.rep,
                             roll = best, at = result.level, remote = Remote(candidate.sources),
                         }
+                        -- A one-hander that beats the off hand may beat the
+                        -- main hand too, where it hits harder for most.
+                        local main = self:MainHandToo(judged, itemID, best, result)
+                        if main and Counts(main, reach, level) then
+                            local mainList = slots[16] or {}
+                            slots[16] = mainList
+                            local pick = {}
+                            for key, value in pairs(list[#list]) do pick[key] = value end
+                            pick.result = main
+                            pick.gain = (main.score or 0) - (main.against or 0)
+                            pick.at = main.level
+                            pick.mainToo = true
+                            mainList[#mainList + 1] = pick
+                        end
                     end
                 elseif ok then
                     -- Known to the client but its stats are not in yet.
@@ -990,7 +1043,10 @@ function Finder:Build(only, ahead, pause)
         for i, pick in ipairs(list) do copy[i] = pick end
         all[slot] = copy
         for i = #list, PER_SLOT + 1, -1 do list[i] = nil end
-        count = count + #list
+        -- A one-hander shown under both hands is one upgrade to go and get.
+        for _, pick in ipairs(list) do
+            if not pick.mainToo then count = count + 1 end
+        end
         slots[slot] = list
     end
 

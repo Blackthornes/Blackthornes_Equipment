@@ -233,4 +233,38 @@ suite.check("agility beats the same points of stamina for every hunter spec", (f
     return true
 end)())
 
+-- A player's report (2026-11-17): as Affliction, a staff with +36 spell
+-- power (damage to every school) showed 12% worse than one with +34 Fire
+-- and +34 Shadow. Every spell a warlock casts is one of those two, so the
+-- +36 is better on each one. Spell power adds to every school at once, so
+-- it is worth at least all the school weights together.
+local aff = ns.Weights.SPECS.WARLOCK.affliction.weights
+local spine = ns.Weights:Score({ stamina = 14, spellPower = 36, dps = 20.7 }, aff, false)
+local soranruk = ns.Weights:Score({ stamina = 14, fireDamage = 34, shadowDamage = 34, dps = 15.7 },
+    aff, false)
+suite.check("to Affliction +36 spell power beats +34 Fire and +34 Shadow", spine > soranruk,
+    spine .. " vs " .. soranruk)
+
+local SCHOOLS = { "arcaneDamage", "fireDamage", "frostDamage", "natureDamage",
+    "shadowDamage", "holyDamage" }
+suite.check("for every spec a point of spell power is worth every school's point together",
+    (function()
+        for class, info in pairs(ns.Weights.SPECS) do
+            for _, key in ipairs(info.order or {}) do
+                local w = info[key].weights
+                local all = {}
+                for _, name in ipairs(SCHOOLS) do all[name] = 10 end
+                if ns.Weights:Score({ spellPower = 10 }, w, false)
+                    < ns.Weights:Score(all, w, false) - 1e-9 then
+                    return false, class .. " " .. key
+                end
+            end
+        end
+        return true
+    end)())
+
+local custom = { spellPower = 2, shadowDamage = 1.2, fireDamage = 0.3 }
+suite.check("a spell power weight set higher by hand still counts as set",
+    ns.Weights:Score({ spellPower = 10 }, custom, false) == 20)
+
 suite.done()

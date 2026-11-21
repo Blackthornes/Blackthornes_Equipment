@@ -180,6 +180,7 @@ function TrackerPanel:Build()
         { key = "done", text = L["Done"] },
     }, function(key)
         TrackerPanel.showingDone = key == "done"
+        TrackerPanel.offset = 0
         TrackerPanel:Refresh()
     end, { selected = "hunts", height = TABS })
     tabs:SetPoint("TOPLEFT", PAD, -(HEADER + 4))
@@ -194,6 +195,16 @@ function TrackerPanel:Build()
     self.frame = frame
     self.rows = {}
     for index = 1, MOST_ROWS do self.rows[index] = self:BuildRow(index) end
+
+    -- More hunts than rows: the mouse wheel moves the list, and a thin gold
+    -- thumb down the right edge shows where it is.
+    frame:EnableMouseWheel(true)
+    frame:SetScript("OnMouseWheel", function(_, delta) TrackerPanel:Scroll(-delta) end)
+    local thumb = frame:CreateTexture(nil, "OVERLAY")
+    thumb:SetWidth(3)
+    thumb:SetColorTexture(Theme.Unpack("borderLit"))
+    thumb:Hide()
+    self.thumb = thumb
 
     self:RestorePosition()
     if ns.SeeThrough then
@@ -233,6 +244,37 @@ function TrackerPanel:Lines()
     return ns.Tracking:List()
 end
 
+--- Move the list by `rows` (the mouse wheel: down is +1).
+function TrackerPanel:Scroll(rows)
+    if self.folded then return end
+    local before = self.offset or 0
+    self.offset = before + rows
+    self:Refresh()
+end
+
+--- The first line shown, kept inside the list: 0 while it all fits.
+function TrackerPanel.Offset(offset, total)
+    return math.min(math.max(0, total - MOST_ROWS), math.max(0, tonumber(offset) or 0))
+end
+
+--- Place the thumb for `total` lines from `offset`, or hide it when they
+--- all fit.
+function TrackerPanel:PlaceThumb(offset, total, shown)
+    local thumb = self.thumb
+    if not thumb then return end
+    if self.folded or total <= MOST_ROWS or shown == 0 then
+        thumb:Hide()
+        return
+    end
+    local track = shown * ROW_HEIGHT
+    local size = math.max(12, track * MOST_ROWS / total)
+    local travel = (track - size) * offset / (total - MOST_ROWS)
+    thumb:SetHeight(size)
+    thumb:ClearAllPoints()
+    thumb:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -2, -(HEADER + TABS + 6 + travel))
+    thumb:Show()
+end
+
 function TrackerPanel:Refresh()
     if not ns.Tracking then return end
     local count = ns.Tracking:Count()
@@ -250,9 +292,11 @@ function TrackerPanel:Refresh()
     self.tabs:SetShown(not self.folded)
     self.gems:SetFolded(self.folded)
 
+    local offset = TrackerPanel.Offset(self.offset, #lines)
+    self.offset = offset
     local shown = 0
     for index, row in ipairs(self.rows) do
-        local hunt = not self.folded and lines[index] or nil
+        local hunt = not self.folded and lines[index + offset] or nil
         row.hunt = hunt
         if hunt then
             shown = shown + 1
@@ -271,6 +315,7 @@ function TrackerPanel:Refresh()
     local height = HEADER
     if not self.folded then height = HEADER + TABS + 10 + math.max(shown, empty and 1 or 0) * ROW_HEIGHT end
     self.frame:SetHeight(height)
+    self:PlaceThumb(offset, #lines, shown)
 
     if not self.frame:IsShown() then
         self.frame:Show()
@@ -308,6 +353,7 @@ end
 
 function TrackerPanel:ToggleDone()
     self.showingDone = not self.showingDone
+    self.offset = 0
     self.folded = false
     self:Refresh()
 end
@@ -332,6 +378,16 @@ function TrackerPanel:RestorePosition()
     if not self.frame then return end
     local db = ns.db or {}
     self.frame:ClearAllPoints()
+    if not (db.trackerX and db.trackerY) then
+        -- Never dragged: the next free place on the shared right shelf,
+        -- left of the game's quest list.
+        local sw = ns.SharedWindow
+        if sw and sw.ShelfPlace and sw.ShelfPlace(self.frame, "upgrades.equipment", {
+            shelf = "right",
+            free = function() local d = ns.db or {}; return not (d.trackerX and d.trackerY) end,
+            place = function() TrackerPanel:RestorePosition() end,
+        }) then return end
+    end
     self.frame:SetPoint(db.trackerPoint or "RIGHT", UIParent, db.trackerRelativePoint or "RIGHT",
         db.trackerX or -40, db.trackerY or 120)
 end

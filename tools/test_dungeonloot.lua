@@ -17,6 +17,21 @@ local dungeonsWithDrops = 0
 for _ in pairs(index) do dungeonsWithDrops = dungeonsWithDrops + 1 end
 suite.check("the data's boss drops lay out by dungeon", dungeonsWithDrops > 10, dungeonsWithDrops)
 
+-- The Drowned City (a player saw none of its gear): listed with its door,
+-- levels and bosses, and the gear Farmer saw drop there laid in.
+local drowned
+for _, d in ipairs(DL:Dungeons({ level = 38, faction = "A" })) do
+    if d.name == "The Drowned City" then drowned = d end
+end
+suite.check("The Drowned City is listed", drowned ~= nil)
+suite.check("its door is in Stranglethorn Vale", drowned and drowned.door == "Stranglethorn Vale",
+    drowned and drowned.door)
+suite.check("its levels are 35 to 40", drowned and drowned.low == 35 and drowned.high == 40,
+    drowned and tostring(drowned.low) .. "-" .. tostring(drowned.high))
+suite.check("its gear is laid in", drowned and (drowned.count or 0) >= 3, drowned and drowned.count)
+local drownedBosses = DL:Bosses("2970") or {}
+suite.check("its six bosses are listed", #drownedBosses == 6, #drownedBosses)
+
 -- A pretend dungeon and its drops.
 local S = ns.Sources
 S.DUNGEONS["test_wc"] = { "Test Caverns", 17, 24, "The Barrens", "" }

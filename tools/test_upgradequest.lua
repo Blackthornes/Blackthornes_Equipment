@@ -431,6 +431,12 @@ suite.check("saying how many", steps[1].note == "3 quests to do before Wolves of
 suite.check("then the quest itself", steps[5].text:find("Pick up Wolves of the Forest", 1, true) ~= nil
     and #steps == 8, #steps)
 suite.check("the first quest is the step to do now", current == 1 and steps[1].place.x == 74, current)
+-- A quest learned on Forever may not name its giver: no blank "from  in".
+S.QUESTS[13][6] = ""
+steps = Quest:Steps(chainQuest)
+suite.check("a quest with no giver named says only where",
+    steps[1].text == "Do Report to Goldshire: pick it up in Elwynn Forest (74, 72)", steps[1].text)
+S.QUESTS[13][6] = "Guard Thomas"
 
 done[13] = true
 steps = Quest:Steps(chainQuest)
@@ -726,6 +732,36 @@ do
     Quest:SelectTab(other)
     suite.check("a click always draws", draws >= 1, draws)
     Quest.Changed = realChanged
+end
+
+--------------------------------------------------------------------------------
+-- The percent follows the gear worn now
+--------------------------------------------------------------------------------
+
+-- A player's report: the panel said "+44% over what you wear" while the
+-- item's tooltip said +23%. The panel's number was worked out when the
+-- quest was picked and kept after other gear went on.
+do
+    env.worn[5] = "item:900"
+    env.bags[0] = {}
+    ns.Finder:MarkStale()
+    Quest:Update()
+    local quest = Quest:Current()
+    suite.check("a quest to measure", quest ~= nil)
+    if quest then
+        local before = quest.howMuch
+        env.worn[5] = "item:1003"
+        ns.Finder:MarkStale()
+        Quest:Update()
+        quest = Quest:Current()
+        local ok, result = pcall(ns.Compare.Judge, ns.Compare, quest.link)
+        local now = ok and result and ns.Compare:HowMuch(result)
+        suite.check("other gear on, the panel's percent is the tooltip's",
+            quest.howMuch == now, tostring(before) .. " -> " .. tostring(quest.howMuch) .. " vs " .. tostring(now))
+        suite.check("and the words under the item say it too",
+            Panel.GainText(quest):find(now, 1, true) ~= nil, Panel.GainText(quest))
+    end
+    env.worn[5] = "item:900"
 end
 
 ns.Toast.Show = realShow

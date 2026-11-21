@@ -115,10 +115,12 @@ end
 --------------------------------------------------------------------------------
 
 --- The stat entries to list for a class and spec: those any of the class's
---- specs weighs, plus any the player has given a weight, or every stat when
+--- specs weighs, Weights.ALWAYS_LISTED (Spirit and health every 5 sec),
+--- plus any the player has given a weight, or every stat when
 --- `all` is set.
 function WeightsUI:StatsFor(class, spec, all)
     local wanted = {}
+    for stat in pairs(Weights.ALWAYS_LISTED or {}) do wanted[stat] = true end
     local specs = Weights.SPECS[class]
     if specs then
         for _, key in ipairs(specs.order) do
@@ -216,7 +218,7 @@ function WeightsUI:Build()
 
     local frame = CreateFrame("Frame", "BlackthornesEquipmentWeights", UIParent)
     frame:SetSize(self.width, 400)
-    frame:SetFrameStrata("DIALOG")
+    frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)

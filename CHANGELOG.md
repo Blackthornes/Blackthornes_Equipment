@@ -4,6 +4,109 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.13.4
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Hunters.** Careful Aim's attack power now counts when Intellect is weighed.
+
+## 1.13.3
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Saved realm.** Each character keeps its own saved realm.
+
+## 1.13.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Quest sides.** Horde characters are no longer offered Alliance quests that don't name their side, and the other way round.
+- **Quest giver.** A quest with no giver named no longer shows a blank line.
+
+## 1.13.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Trip line.** The trip line and stop dots now draw on the world map.
+- **Alt upgrades.** Upgrades for an alt wait until the alt's gear has loaded.
+- **Show the way.** Show the way to a class trainer no longer gives an error.
+- **Upgrade quest.** The upgrade quest percent follows the gear you wear now.
+
+## 1.13.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **One Window switch.** Every Blackthornes window has a gold gem on its title bar. It swaps between the one window and each addon's own windows.
+- **Stat weights.** The Weights window lists Spirit and Health every 5 sec for every class. Both start at 0, so nothing scores differently until you change them.
+
+## 1.12.3
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Fishing pole.** Swapping a fishing pole and a weapon no longer freezes the game.
+
+## 1.12.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Quest rewards.** Upgrade recommendations no longer show the other faction's quest rewards.
+
+## 1.12.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Hover stutter.** Hovering gear no longer makes the game judge the whole bag again, so the stutter is gone.
+
+## 1.12.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **One-handers under Main hand.** A one-handed weapon that beats your main hand now shows under Main hand in the upgrade finder too.
+- **Spell power.** Spell power now counts for at least as much as every school's weight added together, so it no longer scores below single-school spell power.
+- **The Drowned City.** The Drowned City is listed with the Forever dungeons, so Dungeon Loot shows its six bosses and the gear that drops there.
+- **Upgrade quest tabs.** Upgrade quest tabs whose boxes are unticked stay hidden.
+- **Blackthornes button for addon bars.** If you already use an addon bar, Blackthornes now puts one button on it. Left-click opens the menu and right-click opens the All Addons page of Settings.
+- **Settings pages in one order.** Every Blackthornes addon now lists its Settings pages the same way. General reads Windows.
+- **Butler at a vendor.** At a vendor the one window opens on Butler, then goes back to the addon you had open when you leave.
+- **Thunder Bluff and Mulgore.** NPC spots in Thunder Bluff and Mulgore now sit where the NPCs stand.
+- Various bug fixes for Equipment.
+
+## 1.11.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Window spot.** The one window stays where you drag it.
+
+## 1.11.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Gear page.** The on and off boxes for what shows on screen (Upgrade Arrows, Sell Coins, Take Reward Button, Upgrades in Chat, Character Sheet, Upgrade Banner, Upgrade Tracker, Map Pins, Upgrade Quest and Quest Arrow) stand in one grid at the top of the Gear page of Settings. The buttons that open a window sit together under Open. The Upgrade Hunts page is gone, and nothing was renamed.
+- **Upgrade Tracker scrolling.** The mouse wheel moves the Upgrade Tracker list when there are more than eight hunts, with a thin gold bar on the right edge.
+- **All Addons page.** The settings every Blackthornes addon shares (Window Style, Text Size, Effects, Mute All Sounds, Combine Addon Buttons, One Window, Window Spots, Sister Addons and What's New) now sit on one All Addons page, behind the gear on the one window's rail. The two What's New boxes became one After Updates: drop-down. Nothing was renamed and your choices carry over.
+- **One window docks in more places.** It sits on the free side of the game's window, shrinks only a little when there is no room, and lets you resize it by hand with the grip. Each addon keeps its own height when you switch between them.
+- **Shared shelves.** Small pieces you never dragged, such as arrows, bars and cards, line up on a top or right shelf instead of starting on one spot.
+- **Fixes.** The Upgrade Tracker, Guide Me card and Upgrade Quest panel take the next free place on the shared shelf. The game's confirm boxes come out on top of Stat Weights, Ignored, Dungeon Loot, Dungeon Quests, the slot panel and the stand-alone windows. The Track and Map buttons on slot upgrades keep one width, so they no longer run over the gain in Deutsch.
+
+## 1.10.3
+
+For WoW: Forever (interface 16001). `/reload` is enough.
+
+- **Tool gear your class can't wear is left alone.** Tools your class can never wear no longer count as tools in tooltips, so your bags can let them go.
+
+## 1.10.2
+
+For WoW: Forever (interface 16001). `/reload` is enough.
+
+- **No false upgrades while gear loads.** When the game hasn't finished loading the stats of a piece you wear, Equipment now gives no verdict instead of calling the item in your bags an upgrade. The arrows and banners come back once the stats are read.
+
+## 1.10.1
+
+For WoW: Forever (interface 16001). `/reload` is enough.
+
+- **Upgrade quest labels wrap.** The chips, tabs, item name, gear rating words and gain on the upgrade quest panel now grow or wrap to fit, in every language, instead of being cut off.
+- **Show the way skips early trainers.** Starter class trainers only teach the first few levels, so Show the way no longer sends a higher level character to one. If none of the trainers seen teach far enough, chat says how far they go.
+
 ## 1.10.0
 
 For WoW: Forever (interface 16001). A full restart is needed after updating, because files were added.

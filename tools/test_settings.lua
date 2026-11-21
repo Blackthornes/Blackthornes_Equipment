@@ -133,6 +133,33 @@ local pages = SettingsUI.pages
 suite.check("it opens on the first page", pages.shown == "gear", pages.shown)
 suite.check("with the gear rows showing", pages.pages.gear.content:IsShown()
     and not pages.pages.general.content:IsShown())
+-- One grid of what shows on screen at the top of the Gear page; no Upgrade
+-- Hunts page. Each box keeps its own saved key.
+suite.check("no Upgrade Hunts page", pages.pages.hunts == nil)
+suite.check("the grid heads the Gear page", pages.pages.gear.items[1][1] ~= nil
+    and SettingsUI.showGrid[1] == pages.pages.gear.items[1][2].frame)
+suite.check("five lines of two", #SettingsUI.showGrid == 5)
+local gridKeys = { arrows = "bagArrows", sellCoins = "bagSellCoins", rewardButton = "rewardButton",
+    upgradeChat = "upgradeChat", slotUpgrades = "slotUpgrades", upgradeToast = "upgradeToast",
+    showTracker = "showTracker", mapPins = "mapPins" }
+for control, key in pairs(gridKeys) do
+    local box = controls[control]
+    suite.check(control .. " sits in the grid", box ~= nil and box.gridName ~= nil
+        and box.gridName:find(":") == nil, box and box.gridName)
+    ns.db[key] = nil
+    box:SetChecked(true)
+    box:GetScript("OnClick")(box)
+    suite.check(control .. " still saves " .. key, ns.db[key] == false, ns.db[key])
+    box:GetScript("OnClick")(box)
+end
+suite.check("Upgrade Quest and Quest Arrow sit in the grid",
+    controls.upgradeQuest.gridName == "Upgrade Quest" and controls.questArrow.gridName == "Quest Arrow")
+suite.check("a grid name drops its colon", SettingsUI.GridName("Sell Coins:") == "Sell Coins"
+    and SettingsUI.GridName("Pièces :") == "Pièces" and SettingsUI.GridName("地图标记：") == "地图标记")
+local found = pages:Search("map pins")
+suite.check("the search finds a box in the grid", found.gear == 1, found.gear)
+pages:Search("")
+
 local generalPart
 for _, part in ipairs(pages.switch) do
     if part.key == "general" then generalPart = part end
@@ -145,6 +172,12 @@ suite.check("the page picked is gold", generalPart.label._color[1] == ns.Theme.c
 SettingsUI:Hide()
 SettingsUI:Show()
 suite.check("it opens again on the page left", pages.shown == "general")
+-- One layout for all five (the owner said build it, 2026-11-17): own
+-- pages first, then the shared ones; General reads Windows.
+local pageWords = {}
+for _, def in ipairs(pages.defs) do pageWords[#pageWords + 1] = def.text end
+suite.check("the pages run own first, then the shared ones",
+    table.concat(pageWords, ", ") == "GEAR, UPGRADE QUEST, WINDOWS, ALL ADDONS, ABOUT", table.concat(pageWords, ", "))
 
 -- Every page has rows, and the window is at least two columns wide.
 -- About (UI/About.lua) has its note and its facts instead.
@@ -252,12 +285,12 @@ suite.check("and back off", ns.Muted() == false)
 local ran = {}
 local realSlash = ns.HandleSlash
 ns.HandleSlash = function(text) ran[#ran + 1] = text end
-for _, key in ipairs({ "openWindow", "find", "questArrowNext", "whatsnew" }) do
+for _, key in ipairs({ "openWindow", "find", "questLogOpen", "dungeonQuests", "dungeonLoot", "questArrowNext", "whatsnew" }) do
     controls[key]:GetScript("OnClick")(controls[key])
 end
 ns.HandleSlash = realSlash
 suite.check("the command buttons run their commands",
-    table.concat(ran, ",") == "window,find,arrow next,whatsnew", table.concat(ran, ","))
+    table.concat(ran, ",") == "window,find,quest log,dungeons,loot,arrow next,whatsnew", table.concat(ran, ","))
 
 -- Every command registered has a control here, but for the ones that are
 -- typed only (the owner, 2026-10-15): commands that only list things in
@@ -278,7 +311,7 @@ suite.check("the chat-only commands still work", ns.commands.bags and ns.command
 
 -- An empty description shows no tooltip and nothing under the row.
 local textRow
-for _, row in ipairs(pages.pages.general.rows) do
+for _, row in ipairs(pages.pages.all.rows) do
     if row.labelText == "Text Size:" then textRow = row end
 end
 GameTooltip._lines = {}
@@ -331,5 +364,35 @@ suite.check("unticked at first", share and not share:GetChecked())
 if share then share:GetScript("OnClick")(share) end
 suite.check("ticking it turns sharing on", ns3.db.shareData == true)
 _G.GetCurrentRegion = nil
+
+-- The switch never runs under the search box (2026-11-17)
+--------------------------------------------------------------------------------
+
+-- Seen in game in Tradeskills: the last page name was drawn on the search
+-- box. Laid into a window narrower than the bar asked for, the switch lays
+-- itself out again at the bar's real width.
+do
+    local pages = SettingsUI.pages
+    local bar = pages.bar
+    local before = pages.lines or 1
+    local wide = pages.need[1]
+    bar:SetWidth(420)
+    bar:GetScript("OnSizeChanged")(bar)
+    local room = 420 - pages.opts.padding * 2 - pages:ToolsWidth()
+    local right, line, clear = 0, 0, true
+    for _, part in ipairs(pages.switch) do
+        if part.button:IsShown() then
+            local _, relativeTo, _, x = part.button:GetPoint()
+            if relativeTo == bar then line, right = line + 1, 0 else right = right + x end
+            right = right + part.button:GetWidth()
+            if line == 1 and right > room then clear = false end
+        end
+    end
+    suite.check("a narrow bar keeps the switch clear of the search box", clear)
+    suite.check("by putting the rest on more lines", (pages.lines or 1) > before, pages.lines)
+    bar:SetWidth(wide)
+    bar:GetScript("OnSizeChanged")(bar)
+    suite.check("and back to as many lines as before at the full width", (pages.lines or 1) == before, pages.lines)
+end
 
 suite.done()

@@ -38,6 +38,24 @@ local FALLBACK_TEXTURE = [[Interface\Buttons\UI-MicroStream-Green]]
 local arrows = setmetatable({}, { __mode = "k" })
 local coins = setmetatable({}, { __mode = "k" })
 
+-- Items in the bags or worn whose details the client had not loaded at the
+-- last look, by item ID. Only one of these arriving is worth another look:
+-- Forever says GET_ITEM_INFO_RECEIVED each time a tooltip reads gear it
+-- already knows, and judging every bag item on each one made hovering
+-- stutter.
+local waiting = {}
+
+local function ItemID(link)
+    local id = type(link) == "string" and link:match("item:(%d+)")
+    return id and tonumber(id) or nil
+end
+
+--- Remember an item the client has not loaded yet, so its arrival is heard.
+local function WaitIfUnknown(link)
+    local id = ItemID(link)
+    if id and not Items:Info(link) then waiting[id] = true end
+end
+
 -- The quest reward coin's look (UI/QuestRewards.lua).
 local COIN_TEXTURE = "Interface\\MoneyFrame\\UI-GoldIcon"
 -- Disenchant, the spell Enchanting teaches.
@@ -344,6 +362,26 @@ function BagIcons.IsTool(link)
     return yes
 end
 
+--- Can this class never wear it, however long it plays? Gear for other
+--- classes, an armor or weapon kind it never learns. Not mail or plate
+--- learned later, Best Armor Only, a hidden untrained weapon or a
+--- two-hander while judged as Protection, which are only for now.
+function BagIcons.NeverWears(result)
+    return type(result) == "table" and result.verdict == "cantuse"
+        and not result.laterArmor and not result.lighterArmor
+        and not result.ignoredSkill and not result.tankTwoHand
+end
+
+--- Is it a tool to keep? A known tool by ID always is. Gear that is a tool
+--- only by its tooltip ("Mining +5" on a plate helm) is kept only while
+--- this character could wear it; one it never can is judged as gear.
+function BagIcons.KeptTool(link, result)
+    local id = tonumber(link:match("item:(%d+)"))
+    if id ~= nil and TOOLS[id] == true then return true end
+    if not BagIcons.IsTool(link) then return false end
+    return not BagIcons.NeverWears(result)
+end
+
 --- Should the item in a bag slot get the sell coin? `result` is how it was
 --- judged (Compare:JudgeCarried). Only gear judged and found no upgrade,
 --- now or later, that a vendor pays for: white, or soulbound green and up
@@ -362,7 +400,7 @@ function BagIcons:Sells(bag, slot, link, result)
     local info = Items:Info(link)
     if not info or KEEP_LOC[info.equipLoc] then return false end
     if info.classID == CLASS_WEAPON and info.subclassID == FISHING_POLE then return false end
-    if BagIcons.IsTool(link) then return false end
+    if BagIcons.KeptTool(link, result) then return false end
 
     local quality = Items:SlotQuality(bag, slot, link)
     if type(quality) ~= "number" or quality < 1 then return false end
@@ -381,6 +419,7 @@ function BagIcons:UpdateButton(button, frame)
         local bag, slot = self:Location(button, frame)
         local link = bag and Items:InBag(bag, slot)
         if link then
+            WaitIfUnknown(link)
             local ok, result = pcall(Compare.JudgeCarried, Compare, link)
             if not ok then result = nil end
             show = self:IsEnabled() and Compare.WearableUpgrade(result)
@@ -406,6 +445,15 @@ end
 --- Look again at every open bag window.
 function BagIcons:Refresh()
     local shown = 0
+    waiting = {}
+    -- What is worn is what bag gear is measured against.
+    local getWorn = rawget(_G, "GetInventoryItemLink")
+    if type(getWorn) == "function" then
+        for slot = 1, 19 do
+            local ok, link = pcall(getWorn, "player", slot)
+            if ok and link then WaitIfUnknown(link) end
+        end
+    end
     for _, frame in ipairs(self:Frames()) do
         if Ask(frame, "IsShown") then
             shown = shown + self:RefreshFrame(frame)
@@ -497,18 +545,39 @@ function BagIcons:Describe()
 end
 
 -- Anything that can change what is an upgrade: the bags, what is worn, the
--- level, the talents, weapon skills (Dual Wield) and an item's details
--- arriving from the server.
+-- level, the talents and weapon skills (Dual Wield). An item's details
+-- arriving from the server is heard by OnItemInfo.
 local EVENTS = {
     "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
-    "GET_ITEM_INFO_RECEIVED", "TRAIT_CONFIG_UPDATED", "SKILL_LINES_CHANGED",
+    "TRAIT_CONFIG_UPDATED", "SKILL_LINES_CHANGED",
 }
+
+--- An item's details arrived: look again only when it is one the bags were
+--- waiting on. A client that names no item counts as any awaited one.
+function BagIcons:OnItemInfo(_, itemID)
+    local id = tonumber(itemID)
+    if id then
+        if not waiting[id] then return end
+        waiting[id] = nil
+    elseif not next(waiting) then
+        return
+    end
+    self:RefreshSoon()
+end
+
+--- How many items the bags are waiting on (for tests and the probe).
+function BagIcons.Waiting()
+    local count = 0
+    for _ in pairs(waiting) do count = count + 1 end
+    return count
+end
 
 function BagIcons:OnEnable()
     self.hooked = self:InstallHooks()
     for _, event in ipairs(EVENTS) do
         ns.RegisterEvent(self, event, self.RefreshSoon)
     end
+    ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", self.OnItemInfo)
     -- Learning or dropping Enchanting changes which greens get a coin.
     for _, event in ipairs({ "SKILL_LINES_CHANGED", "LEARNED_SPELL_IN_TAB", "SPELLS_CHANGED" }) do
         ns.RegisterEvent(self, event, self.ForgetEnchanter)

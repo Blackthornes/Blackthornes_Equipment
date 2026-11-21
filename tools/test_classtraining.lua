@@ -86,12 +86,34 @@ suite.check("prices show once a trainer is read", text:find("READY NOW|3s", 1, t
     or text:find("READY NOW|", 1, true) ~= nil and CT:Plan().cost == 300, text)
 suite.check("the drawer names the trainer", Drawer.hint:GetText():find("Jennea Cannon", 1, true) ~= nil,
     Drawer.hint:GetText())
+-- Forever 1.60.1 scrambles the server and spawn parts of a creature's
+-- GUID (2026-11-20): the trainer's ID is still read.
+do
+    local savedGUID = _G.UnitGUID
+    _G.UnitGUID = function(unit)
+        if unit == "npc" then return "Creature-0-x9F3A-B7-C1D2-5499-Z0Q8" end
+        return savedGUID(unit)
+    end
+    handler(_G.BlackthornesEquipmentEventFrame, "TRAINER_SHOW")
+    suite.check("a trainer with a scrambled GUID is kept", CT:Data().trainers.MAGE[5499] ~= nil)
+    CT:Data().trainers.MAGE[5499] = nil
+    _G.UnitGUID = savedGUID
+    handler(_G.BlackthornesEquipmentEventFrame, "TRAINER_SHOW")
+end
 
 local aimed
 ns.QuestArrow.AimAtQuest = function(_, questID, title, place) aimed = { title = title, place = place } return true end
 Drawer.wayButton:GetScript("OnClick")(Drawer.wayButton)
 suite.check("Show the way aims the quest arrow at the trainer", aimed and aimed.place.name == "Jennea Cannon"
     and aimed.place.zone == "Stormwind City" and math.abs(aimed.place.x - 38) < 0.01)
+
+-- When the arrow can't be aimed, Show the way still says where and never
+-- raises (the trip finder it falls back on was missing here).
+ns.QuestArrow.AimAtQuest = function() return false end
+local okWay, wayErr = pcall(CT.ShowTheWay, CT)
+suite.check("Show the way without the arrow raises nothing", okWay, tostring(wayErr))
+suite.check("and still says where the trainer is", env.ChatText():find("Jennea Cannon", 1, true) ~= nil)
+suite.check("the trip finder is there", type(CT.TripTo) == "function")
 
 -- 3b. A starter trainer stops early (a level 8 warlock was sent to the
 -- Northshire trainer, which teaches nothing past 6, 2026-11-14).

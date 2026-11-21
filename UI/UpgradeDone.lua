@@ -19,6 +19,26 @@ Done.FADE = 0.8
 Done.SPARKS = 12
 Done.TOP = -150
 
+--- Where the plaque stands: its place on the shared top shelf (it is never
+--- dragged), else Done.TOP.
+function Done.Top()
+    local sw = ns.SharedWindow
+    local frame = Done.frame
+    if frame and sw and sw.ShelfJoin and sw.ShelfSpot then
+        sw.ShelfJoin("upgrade.done", {
+            frame = frame,
+            height = function()
+                local ok, h = pcall(function() return Done.plaque:GetHeight() + 20 end)
+                return ok and h or 60
+            end,
+            place = function() pcall(frame.SetPoint, frame, "TOP", UIParent, "TOP", 0, Done.Top()) end,
+        })
+        local ok, _, _, y = pcall(sw.ShelfSpot, "upgrade.done")
+        if ok and type(y) == "number" then return y end
+    end
+    return Done.TOP
+end
+
 local function Level()
     local motion = ns.Motion
     return motion and motion.Level and motion.Level() or "full"
@@ -85,11 +105,12 @@ function Done:Show(quest, count)
     self.shown = 0
     self.timer:Show()
 
+    local top = Done.Top()
     local motion = ns.Motion
     if level == "full" and motion then
         -- Rises a little and "Done" ticks up from the last count.
         motion:Run(frame, "rise", 0.5, function(p)
-            frame:SetPoint("TOP", UIParent, "TOP", 0, Done.TOP - 16 * (1 - p))
+            frame:SetPoint("TOP", UIParent, "TOP", 0, top - 16 * (1 - p))
         end, { ease = motion.EaseOutBack })
         self.count:SetText(L.Format("Done: %d", math.max(0, count - 1)))
         motion:Run(self.count, "tick", 0.6, function(p)
@@ -98,7 +119,7 @@ function Done:Show(quest, count)
         self:Sparks()
         pcall(plaque.Flash, plaque)
     else
-        frame:SetPoint("TOP", UIParent, "TOP", 0, Done.TOP)
+        frame:SetPoint("TOP", UIParent, "TOP", 0, top)
         self.count:SetText(L.Format("Done: %d", count))
         for _, spark in ipairs(self.sparks) do spark:Hide() end
         if level == "subtle" then pcall(plaque.Flash, plaque) end
