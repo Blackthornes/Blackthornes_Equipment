@@ -23,6 +23,11 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.13.4
+
+Fixes and changes:
+- Hunters get the attack power from Careful Aim counted when Intellect is weighed.
+
 ## 1.13.3
 
 Fixes and changes:
