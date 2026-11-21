@@ -23,6 +23,11 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.13.5
+
+Fixes and changes:
+- The gear finder and upgrade quest stall less while they look for upgrades.
+
 ## 1.13.4
 
 Fixes and changes:
