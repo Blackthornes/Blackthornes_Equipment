@@ -279,6 +279,8 @@ local function BuildAlsoRow(panel, index)
     end)
     row:SetScript("OnClick", function(self)
         local quest = ns.UpgradeQuest
+        -- Shift-click links it in chat, Ctrl-click tries it on.
+        if self.pick and self.pick.link and Widgets.ItemClick(nil, self.pick.link) then return end
         if self.pick and quest.CanFollow(self.pick) then quest:Follow(self.pick) end
     end)
     return row

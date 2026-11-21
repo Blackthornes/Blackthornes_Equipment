@@ -736,6 +736,11 @@ function QuestPanel:Build()
         GameTooltip:Show()
     end)
     offerItem:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    -- Shift-click links the offered item in chat, Ctrl-click tries it on.
+    offerItem:SetScript("OnClick", function()
+        local on = ns.UpgradeQuest and ns.UpgradeQuest:Offer()
+        if on and on.pick and on.pick.link then Widgets.ItemClick(nil, on.pick.link) end
+    end)
     self.offerItem = offerItem
 
     local offerIcon = Theme.CreateItemIcon(offerItem, OFFER_ICON)

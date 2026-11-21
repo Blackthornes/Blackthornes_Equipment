@@ -2496,3 +2496,19 @@ game's yellow), colours column headings; the heading that sorts the list
 is `text` (white) with its arrow. Gold rim, buttons and gems are untouched,
 and so are the Blizzard window style (`UI/BlizzardLook.lua`) and the shared
 files' fallback palettes. New lists use these keys, never numbers.
+## Item rows answer the game's clicks
+
+The owner said build it (2026-11-21, from the UI pass mockup 5): every item
+row in all five addons answers the clicks the game's bags do.
+`Widgets.ItemClick(itemID, link)` in `UI/Widgets.lua` (the same helper as
+the sisters): Shift-click (`IsModifiedClick("CHATLINK")`) puts the link in
+the chat box only while one is open (`Widgets.ChatBoxOpen`); Ctrl-click
+(`DRESSUP`) tries gear on, by `item:ID` while it loads. The game's
+`HandleModifiedItemClick` does the work where it is there, else
+`ChatEdit_InsertLink` / `DressUpItemLink`, in pcall. `Widgets.ItemTryOn`
+is Ctrl alone, for rows that already linked with Shift (the Finder's owned
+and upgrade rows, the hunts panel, the ignored list); `ItemClick` is used
+where rows had neither (the Finder's slot buttons for the worn piece,
+dungeon loot rows, the upgrade quest's offer, its other picks and the slot
+upgrades list). Quest rows still link the quest. Tested in
+`tools/test_itemclicks.lua`.

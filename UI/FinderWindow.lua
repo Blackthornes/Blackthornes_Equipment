@@ -567,6 +567,8 @@ function FinderUI:BuildRow(index)
         -- Gear you own: Shift-click links it, a click puts on one in your bags.
         local owned = rawget(self, "owned")
         if owned then
+            -- Ctrl-click tries it on, as the game's bags do.
+            if Widgets.ItemTryOn(nil, owned.link) then return end
             if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
                 local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
                 if ok and chatLink then
@@ -600,6 +602,7 @@ function FinderUI:BuildRow(index)
             if place and ns.Waypoints then ns.Waypoints:Show(place, place.name, Theme.ItemIcon(pick.link)) end
             return
         end
+        if Widgets.ItemTryOn(nil, pick.link) then return end
         if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
             local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
             if ok and chatLink then
@@ -1113,7 +1116,12 @@ function FinderUI:BuildSlots(height)
             FinderUI:PaintSlot(self)
             GameTooltip:Hide()
         end)
-        button:SetScript("OnClick", function(self) FinderUI:PickSlot(self.group) end)
+        button:SetScript("OnClick", function(self)
+            -- The gear worn there: Shift-click links it, Ctrl-click tries it on.
+            local link = rawget(self, "wornLink")
+            if type(link) == "string" and Widgets.ItemClick(nil, link) then return end
+            FinderUI:PickSlot(self.group)
+        end)
         self.slotButtons[index] = button
     end
 end
