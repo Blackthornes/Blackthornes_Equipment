@@ -200,6 +200,7 @@ function IgnoredUI:BuildRow(index)
     end)
     row:SetScript("OnClick", function(self)
         local entry = self.entry
+        if entry and entry.link and Widgets.ItemTryOn(nil, entry.link) then return end
         if entry and entry.link and type(IsModifiedClick) == "function" and IsModifiedClick("CHATLINK") then
             pcall(ChatEdit_InsertLink, entry.link)
         end

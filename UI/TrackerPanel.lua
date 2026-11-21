@@ -113,6 +113,7 @@ function TrackerPanel:BuildRow(index)
             TrackerPanel:OpenMenu(hunt)
             return
         end
+        if Widgets.ItemTryOn(nil, hunt.link) then return end
         if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
             local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
             if ok and chatLink then

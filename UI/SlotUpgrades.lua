@@ -297,6 +297,10 @@ function SlotUpgrades:BuildRow(index)
         Motion:Blend(self, "hover", 0, 0.18, Lit)
         GameTooltip:Hide()
     end)
+    -- Shift-click links it in chat, Ctrl-click tries it on.
+    row:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" and self.pick and self.pick.link then Widgets.ItemClick(nil, self.pick.link) end
+    end)
     -- Hidden under the mouse, no leave comes: start dark next time.
     row:SetScript("OnHide", function(self)
         Motion:Stop(self, "hover")
