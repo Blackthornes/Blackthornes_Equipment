@@ -5,6 +5,9 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.15.0", lines = {
+        "Windows fold into a round button with the Equipment badge.",
+    } },
     { version = "1.14.0", lines = {
         "Panels and rows have a warm brown-black look.",
         "Item rows link in chat and try on gear.",
@@ -13,12 +16,5 @@ ns.WHATS_NEW = {
     { version = "1.13.0", lines = {
         "Every window has a gold gem on its title bar. Click it to switch between the one window and separate windows.",
         "The Weights window lists Spirit and Health every 5 sec for every class. Both start at 0.",
-    } },
-    { version = "1.12.0", lines = {
-        "A one-handed weapon that beats your main hand now shows under Main hand too.",
-        "Spell power scores fairer for casters.",
-        "The Drowned City is in Dungeon Loot.",
-        "Settings pages sit in the same order in every Blackthornes addon.",
-        "Various bug fixes for Equipment.",
     } },
 }
