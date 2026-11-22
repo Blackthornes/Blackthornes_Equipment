@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.16.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Held one-handers.** A second copy of a one-hander you hold, sitting in your bags, no longer counts as equipped. The off hand arrow shows for it.
+
 ## 1.16.0
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
