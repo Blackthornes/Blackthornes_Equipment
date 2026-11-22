@@ -56,7 +56,8 @@ that touches one.
 - **One key per character.** A character is its GUID in saved data and in
   every call between addons, never a name. A GUID the client won't read
   means write nothing and offer nothing for an alt. Old records stay
-  readable; nothing is deleted. Ask `Alts.PlayerGUID()` for "the one
+  readable; nothing is deleted. Ask `Alts:IsPlaying(key)` (an old note
+  of the one playing counts) or `Alts.PlayerGUID()` for "the one
   playing"; never compare keys or names by hand. Tested in
   `tools/test_alts.lua`.
 - **Mute All Sounds.** Every `PlaySound` and `PlaySoundFile` asks
