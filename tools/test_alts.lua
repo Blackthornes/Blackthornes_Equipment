@@ -285,4 +285,58 @@ ns.db.altTooltipLine = false
 suite.check("the setting turns it off", Tooltip:AltLine("item:4", result) == nil)
 ns.db.altTooltipLine = nil
 
+-- Old records (a player's report, 2026-11-22): an older note of the
+-- character playing, under another key, and notes from the beta realm,
+-- were judged as alts ("Upgrade for Agnes at level 12" while playing her).
+for key in pairs(ns.db.characterGear) do if key ~= "Player-1" then ns.db.characterGear[key] = nil end end
+_G.UnitName = function() return "Ana" end
+ns.db.characterGear["Player-old"] = { class = "HUNTER", level = 12, realm = "Here", faction = "Horde",
+    worn = { [5] = "item:11" }, name = "Ana" }
+suite.check("an old note of the one playing is not an alt", Alts:BestFor("item:4") == nil,
+    (Alts:BestFor("item:4") or {}).key)
+suite.check("so the tooltip names no one", Tooltip:AltLine("item:4", result) == nil)
+suite.check("it is the one playing", Alts:IsPlaying("Player-old") == true)
+suite.check("and can still be forgotten", Alts:CanForget("Player-old") == true)
+-- Two characters can share a first name: when Tradeskills knows both by
+-- whole name and the names differ, the other one is an alt.
+_G.BlackthornesTS = { db = { characters = { ["Player-1"] = {}, ["Player-old"] = {} } },
+    Recipes = { GetCharacterName = function(_, key)
+        return key == "Player-1" and "Ana Smith" or "Ana Jones" end } }
+suite.check("a namesake Tradeskills tells apart is an alt", (Alts:BestFor("item:4") or {}).key == "Player-old")
+_G.BlackthornesTS = nil
+ns.db.characterGear["Player-old"].class = "ROGUE"
+suite.check("another class with the same name is an alt", (Alts:BestFor("item:4") or {}).key == "Player-old")
+ns.db.characterGear["Player-old"] = nil
+
+-- A beta realm's note, once the realm name reads empty and this
+-- character's note kept none (written before the empty name was handled).
+ns.db.characterGear["Player-beta"] = { class = "ROGUE", level = 20, realm = "Classic Beta PvE", faction = "Horde",
+    worn = { [5] = "item:11" }, name = "Bea" }
+_G.GetRealmName = function() return "" end
+mine.realm = nil
+suite.check("a beta realm's note is left out when the realm is unknown", Alts:BestFor("item:4") == nil)
+suite.check("and from gear owned elsewhere", (Alts:BetterElsewhere()[5] or {}).where ~= "Player-beta")
+local entries = Alts:Characters()
+local betaName
+for _, entry in ipairs(entries) do if entry.key == "Player-beta" then betaName = entry.name end end
+suite.check("the picker shows its realm", betaName == "Bea (Classic Beta PvE)", betaName)
+ns.db.characterGear["Player-beta"] = nil
+
+-- The realm, when the game won't say and this note kept none: an alt on
+-- the same server (the second part of the key) says it.
+local guid = _G.UnitGUID
+_G.UnitGUID = function() return "Player-77-0001" end
+ns.db.characterGear["Player-77-0002"] = { class = "ROGUE", level = 20, realm = "Here", faction = "Horde",
+    worn = { [5] = "item:11" }, at = 10 }
+ns.db.characterGear["Player-88-0003"] = { class = "ROGUE", level = 20, realm = "Elsewhere", faction = "Horde",
+    worn = { [5] = "item:11" }, at = 20 }
+suite.check("the realm comes from an alt on the same server", Alts.Realm() == "Here", tostring(Alts.Realm()))
+suite.check("so other realms are still left out", (Alts:BestFor("item:4") or {}).key == "Player-77-0002",
+    (Alts:BestFor("item:4") or {}).key)
+_G.UnitGUID = guid
+ns.db.characterGear["Player-77-0002"] = nil
+ns.db.characterGear["Player-88-0003"] = nil
+_G.GetRealmName = function() return "Here" end
+mine.realm = "Here"
+
 suite.done()

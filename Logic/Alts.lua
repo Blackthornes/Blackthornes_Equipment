@@ -43,6 +43,18 @@ local function RealmKey(name)
     return key
 end
 
+--- The server part of a character's key ("Player-<server>-<id>"), or nil.
+--- One account's characters on one realm share it.
+local function ServerOf(guid)
+    return type(guid) == "string" and guid:match("^Player%-([^%-]+)%-") or nil
+end
+
+--- Is this a beta realm's key? The beta's characters are another game
+--- world, and their notes stay in the save when a player copies it over.
+local function BetaRealm(key)
+    return key ~= nil and key:find("beta", 1, true) ~= nil
+end
+
 local Items = ns.Items
 local Weights = ns.Weights
 local Compare = ns.Compare
@@ -79,14 +91,81 @@ end
 
 --- The realm's name, or the one this character's note kept from before:
 --- Forever 1.60.1 hands back an empty realm name, and the note is rewritten
---- at each login, so the saved realm would otherwise be lost.
+--- at each login, so the saved realm would otherwise be lost. A note
+--- written before that was handled kept no realm; then the newest note of
+--- an alt on the same server (the same account and realm) says it, never
+--- a beta realm's.
 function Alts.Realm()
     local realm = Text(Call(_G.GetRealmName))
     if realm then return realm end
     local guid = Alts.PlayerGUID()
     local notes = guid and type(ns.db) == "table" and type(ns.db.characterGear) == "table" and ns.db.characterGear
-    local note = notes and notes[guid]
-    return type(note) == "table" and Text(note.realm) or nil
+    if not notes then return nil end
+    local note = notes[guid]
+    realm = type(note) == "table" and Text(note.realm) or nil
+    if realm then return realm end
+    local server = ServerOf(guid)
+    if not server then return nil end
+    local newest, newestAt
+    for key, other in pairs(notes) do
+        if key ~= guid and ServerOf(key) == server and type(other) == "table" then
+            local name = Text(other.realm)
+            local at = tonumber(other.at) or 0
+            if name and not BetaRealm(RealmKey(name)) and (not newest or at > newestAt) then
+                newest, newestAt = name, at
+            end
+        end
+    end
+    return newest
+end
+
+--- Is this note from the realm playing? Different realm keys are not.
+--- When either can't be told (Forever 1.60.1 hands back an empty name),
+--- it counts, except a note from a beta realm (2026-11-22: a player's
+--- beta characters were judged as alts once the realm read empty).
+function Alts.SameRealm(note, realm)
+    local mine, theirs = RealmKey(realm), RealmKey(type(note) == "table" and note.realm or nil)
+    if mine and theirs then return mine == theirs end
+    return not BetaRealm(theirs)
+end
+
+--- Tradeskills' whole name for a character (first and last), or nil.
+local function WholeName(key)
+    local ts = rawget(_G, "BlackthornesTS")
+    local recipes = type(ts) == "table" and rawget(ts, "Recipes")
+    local db = type(ts) == "table" and rawget(ts, "db")
+    if type(key) == "string" and type(recipes) == "table" and type(db) == "table"
+        and type(db.characters) == "table" and db.characters[key]
+        and type(recipes.GetCharacterName) == "function" then
+        local ok, name = pcall(recipes.GetCharacterName, recipes, key)
+        if ok and type(name) == "string" and name ~= "" and name ~= "?" then return name end
+    end
+    return nil
+end
+
+--- Is this key the character playing? Its GUID, or an older note of it
+--- kept under another key (2026-11-22: a player saw "Upgrade for Agnes at
+--- level 12" while playing Agnes at level 21): the same name and class on
+--- this realm and side. Two characters can share a first name, so when
+--- Tradeskills knows both by whole name and they differ, it is not. False
+--- while the client won't say who is playing. This is the one test for
+--- "the one playing"; ask it, never compare keys or names by hand.
+function Alts:IsPlaying(key)
+    local me = self.PlayerGUID()
+    if not me or type(key) ~= "string" then return false end
+    if key == me then return true end
+    local note = self:Notes()[key]
+    if type(note) ~= "table" or type(note.name) ~= "string" then return false end
+    local name = Text(Call(_G.UnitName, "player"))
+    if not name or note.name ~= name then return false end
+    local class = Weights:PlayerClass()
+    if note.class and class and note.class ~= class then return false end
+    local faction = self.Faction()
+    if note.faction and faction and note.faction ~= faction then return false end
+    if not self.SameRealm(note, self.Realm()) then return false end
+    local theirs, mine = WholeName(key), WholeName(me)
+    if theirs and mine and theirs ~= mine then return false end
+    return true
 end
 
 function Alts.Faction()
@@ -152,10 +231,19 @@ end
 --- { key, name } with the whole name (or nil when none is known).
 function Alts:Characters()
     local me = self.PlayerGUID()
+    local realm = self.Realm()
     local list = {}
     for key, note in pairs(self:Notes()) do
         if type(key) == "string" and type(note) == "table" then
-            list[#list + 1] = { key = key, name = self:NameOf(key), me = key == me }
+            local name = self:NameOf(key)
+            -- A note from another realm (the beta's, say) shows its realm,
+            -- so two of one name can be told apart.
+            local theirs = Text(note.realm)
+            if name and theirs and not (RealmKey(realm) and RealmKey(theirs) == RealmKey(realm))
+                and (RealmKey(realm) or BetaRealm(RealmKey(theirs))) then
+                name = ("%s (%s)"):format(name, theirs)
+            end
+            list[#list + 1] = { key = key, name = name, me = key == me }
         end
     end
     table.sort(list, function(a, b)
@@ -310,14 +398,8 @@ end
 --- A character's whole name: Tradeskills' record (first and last) when it
 --- has one, else the name the note kept. Nil when neither knows.
 function Alts:NameOf(key)
-    local ts = rawget(_G, "BlackthornesTS")
-    local recipes = type(ts) == "table" and rawget(ts, "Recipes")
-    local db = type(ts) == "table" and rawget(ts, "db")
-    if type(recipes) == "table" and type(db) == "table" and type(db.characters) == "table"
-        and db.characters[key] and type(recipes.GetCharacterName) == "function" then
-        local ok, name = pcall(recipes.GetCharacterName, recipes, key)
-        if ok and type(name) == "string" and name ~= "" and name ~= "?" then return name end
-    end
+    local whole = WholeName(key)
+    if whole then return whole end
     local note = self:Notes()[key]
     return type(note) == "table" and note.name or nil
 end
@@ -351,7 +433,7 @@ function Alts:BetterElsewhere()
                 for _, entry in ipairs(type(note.bank) == "table" and note.bank or {}) do
                     if type(entry) == "table" and entry.link then Consider(entry.link, "bank") end
                 end
-            elseif (not RealmKey(realm) or not RealmKey(note.realm) or RealmKey(note.realm) == RealmKey(realm))
+            elseif not self:IsPlaying(key) and self.SameRealm(note, realm)
                 and (not faction or not note.faction or note.faction == faction) then
                 for _, link in ipairs(type(note.spare) == "table" and note.spare or {}) do
                     Consider(link, key)
@@ -502,7 +584,7 @@ function Alts:BestFor(link, bag, slot)
     local best, bestKey
     for key, note in pairs(self:Notes()) do
         if key ~= me and type(note) == "table" and not self:IsSkipped(key)
-            and (not RealmKey(realm) or not RealmKey(note.realm) or RealmKey(note.realm) == RealmKey(realm))
+            and self.SameRealm(note, realm) and not self:IsPlaying(key)
             and (not faction or not note.faction or note.faction == faction) then
             local result = self:Judge(note, link)
             if result then
