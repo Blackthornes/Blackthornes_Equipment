@@ -41,11 +41,13 @@ FACTS = os.path.join(ROOT, "tools", "forever_facts.json")
 
 
 def classic(lua):
-    """(quest IDs, {itemID: (quest IDs, given quest IDs)}) from Data/Sources.lua."""
+    """({quest ID: the quest before it or None}, {itemID: (quest IDs, given
+    quest IDs)}) from Data/Sources.lua."""
     lua.execute("ns = {}")
     run_file(lua, os.path.join(ROOT, "Data", "Sources.lua"))
     data = lua.eval("ns.Sources")
-    quests = {int(q) for q in data.QUESTS}
+    quests = {int(q): (int(data.QUESTS[q].p) if data.QUESTS[q].p else None)
+              for q in data.QUESTS}
     items = {}
     for item_id in data.ITEMS:
         row = data.ITEMS[item_id]
@@ -236,6 +238,10 @@ def fill(rec, extra):
 def new_to_classic(quest_id, rec, quests, items):
     """Does the record say anything Classic's data does not?"""
     if quest_id not in quests:
+        return True
+    # Forever asks for a quest first that Classic does not (Land Ho! before
+    # Sunken Treasure).
+    if rec.get("prev") and isinstance(quests, dict) and not quests.get(quest_id):
         return True
     for item_id, _req, _ilvl, given in rec["rewards"]:
         q, g = items.get(item_id, (set(), set()))

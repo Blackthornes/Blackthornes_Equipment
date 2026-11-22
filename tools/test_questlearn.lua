@@ -183,4 +183,13 @@ suite.check("a laid quest keeps the quest before it", S.QUESTS[90050] and S.QUES
 Learn:Lay(90050, { title = "Second Step", prev = 90048, rewards = {} })
 suite.check("and a later reading does not change it", S.QUESTS[90050].p == 90049)
 
+-- Forever asks for a quest first that Classic's data does not (Land Ho!
+-- before Sunken Treasure at Faldir's Cove): the shipped record names it
+S.QUESTS[90060] = { "Classic First", 35, 40, 0, 0, "Giver", 45, 30, 80, "" }
+S.QUESTS[90061] = { "Classic Second", 35, 40, 0, 0, "Giver", 45, 30, 80, "Classic First", p = 90062 }
+Learn:Lay(90060, { title = "Classic First", prev = 90059, rewards = {} })
+suite.check("a Classic quest takes the quest before it from Forever", S.QUESTS[90060].p == 90059)
+Learn:Lay(90061, { title = "Classic Second", prev = 90059, rewards = {} })
+suite.check("but a quest before it that Classic names stays", S.QUESTS[90061].p == 90062)
+
 suite.done()

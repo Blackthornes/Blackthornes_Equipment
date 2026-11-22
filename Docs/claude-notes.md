@@ -731,6 +731,17 @@ Before a release, `tools/forever_quests.py <save>` reads only
 characters), keeping what is there and dropping what Classic already has.
 Tested in `tools/test_questlearn.lua` and `tools/test_forever_quests.py`.
 
+Quests Forever asks for first (2026-11-22, the owner at Faldir's Cove):
+Professor Phizzlethorpe offers Sunken Treasure (665) only after Land Ho!
+(663) is handed in, which Classic's data does not say, so the upgrade
+quest for the Gnomish Zapper sent a level 39 warlock to the Professor
+first. A shipped or learned record's `prev` now also sets the quest before
+a Classic quest that names none (`QuestLearn:Lay`; one Classic names is
+kept), and `tools/forever_quests.py` keeps a record whose `prev` Classic
+lacks. 665's `prev` is in the facts' `rewards` part. The same change let
+the facts' Broken Tears (1369) and Stealing Supplies (1370) chains into
+the shipped file. Tested in `tools/test_faldirscove.lua`.
+
 Learning more (the owner said build it, 2026-10-14, for Zephras Isle,
 where Classic's data has nothing): `QuestLearn:LearnLog` reads every quest
 in the log the same way, a few a frame, 6 and 30 seconds after login and

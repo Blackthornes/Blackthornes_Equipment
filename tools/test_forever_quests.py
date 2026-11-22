@@ -106,6 +106,10 @@ extra = read(EXTRAS)[90010]
 expect("other reward items are read with their counts", extra["items"] == [(4540, 5, True)])
 expect("money and XP are read", extra["money"] == 250 and extra["xp"] == 300)
 expect("a quest with no gear Classic lacks is new", new_to_classic(90010, extra, quests, items))
+expect("a quest before it that Classic lacks is new",
+       new_to_classic(665, {"title": "x", "prev": 663, "rewards": []}, {665: None}, {}))
+expect("but not when Classic names one",
+       not new_to_classic(666, {"title": "x", "prev": 663, "rewards": []}, {666: 665}, {}))
 again = merge(extra, {"title": "Bring Bread", "rewards": [], "items": [(4541, 1, False)], "money": 999})
 expect("a newer reading adds an item", (4541, 1, False) in again["items"])
 expect("money stays as first read", again["money"] == 250)
