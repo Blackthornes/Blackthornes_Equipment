@@ -23,6 +23,13 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.16.2
+
+Fixes and changes:
+- Old copies of the character you play no longer get upgrade tips.
+- Beta characters stay out when the realm name is blank.
+- The character list in Settings shows the realm for names from another realm.
+
 ## 1.16.1
 
 Fixes and changes:
