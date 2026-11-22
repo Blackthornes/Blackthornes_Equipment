@@ -616,6 +616,7 @@ function QuestPanel:Build()
         -- The house fold gem, left of the close gem: folds to the plate.
         if ns.FoldWindow then
             ns.FoldWindow:Add(frame, {
+                key = "Quest",
                 onToggle = function(folded)
                     QuestPanel.folded = folded and true or false
                     QuestPanel:Refresh()

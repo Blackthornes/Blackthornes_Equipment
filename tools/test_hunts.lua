@@ -113,9 +113,14 @@ ns.TrackerPanel:ToggleDone()
 suite.check("the tracker lists finished hunts", ns.TrackerPanel.tabs.selected == "done"
     and ns.TrackerPanel.countChip.label:GetText() == "1")
 ns.TrackerPanel:ToggleDone()
+local huntsFrame = ns.TrackerPanel.frame
+huntsFrame._left, huntsFrame._top = 100, 600
 ns.TrackerPanel.gems.fold:GetScript("OnClick")(ns.TrackerPanel.gems.fold)
-suite.check("the fold gem hides the rows", not ns.TrackerPanel.rows[1]:IsShown() and ns.TrackerPanel.folded)
-ns.TrackerPanel.gems.fold:GetScript("OnClick")(ns.TrackerPanel.gems.fold)
+local huntsRound = ns.FoldWindow.rounds["Blackthornes_Equipment:Hunts"]
+suite.check("the fold gem folds it into a round button", ns.FoldWindow:IsFolded(huntsFrame)
+    and huntsRound and huntsRound.button:IsShown())
+huntsRound.button:GetScript("OnClick")(huntsRound.button)
+suite.check("a click on the button opens it", not ns.FoldWindow:IsFolded(huntsFrame) and not huntsRound.button:IsShown())
 -- More hunts than the panel has rows: the wheel reaches the rest.
 do
     local panel = ns.TrackerPanel
