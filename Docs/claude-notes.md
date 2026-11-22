@@ -1373,6 +1373,13 @@ whose tooltip adds to Mining, Skinning, Herbalism or Fishing; the owner
 asked 2026-10-10) get none. "Sell coins" in Settings (`bagSellCoins`, account wide, on unless
 unticked).
 
+A second copy of the one-hander held in one hand (2026-11-22): its link is
+the worn one's, so `Judge` said "equipped" and a white copy got the coin
+and no arrow. `Compare:JudgeCarried` now judges it for the other hand
+(`Judge(link, otherHand)`), as it does a ring or trinket, where the
+character holds two weapons and the weapon is not unique. Tested in
+`tools/test_secondweapon.lua`.
+
 ## The controller bag button (taken out)
 
 Forever's beta client drew a controller bag button (`GamepadBackpackButton`)
