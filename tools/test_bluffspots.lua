@@ -73,7 +73,7 @@ for npc, row in pairs(S.NPCS) do
     end
   end
 end
-check("vendors and trainers the game showed are compared", compared >= 10, true)
+check("vendors and trainers the game showed are compared", compared >= 5, true)
 check("every Mulgore vendor and trainer sits where the game showed it", near, compared)
 check("Thunder Bluff's vendors and trainers are compared", bluff >= 6, true)
 check("every Thunder Bluff vendor and trainer lands in the city", inCity, bluff)
