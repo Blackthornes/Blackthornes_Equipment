@@ -570,6 +570,8 @@ end
 
 -- Rings and trinkets come in pairs: the slot that is not the weaker one.
 local PAIRED = { [11] = 12, [12] = 11, [13] = 14, [14] = 13 }
+-- The two hands a one-handed weapon can go in.
+local HANDS = { [16] = 17, [17] = 16 }
 
 local function IDOf(link)
     return type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil
@@ -602,7 +604,22 @@ end
 -- or trinket slot, so it is measured against that one instead.
 function Compare:JudgeCarried(link)
     local result = self:Judge(link)
-    if not (result and result.verdict == "equipped" and PAIRED[result.slot]) then return result end
+    if not (result and result.verdict == "equipped") then return result end
+
+    -- A second copy of the one-hander held in one hand can go in the other,
+    -- for a character holding two weapons. Judged for that hand alone;
+    -- where it does not fit there (a shield, no dual wield) the answer is
+    -- "equipped" again and stands.
+    local otherHand = HANDS[result.slot]
+    if otherHand then
+        local info = Items:Info(link)
+        if info and info.equipLoc == "INVTYPE_WEAPON" and not self:IsUnique(link) then
+            local again = self:Judge(link, otherHand)
+            if again and again.verdict ~= "equipped" then return again end
+        end
+        return result
+    end
+    if not PAIRED[result.slot] then return result end
 
     local weights = Weights:ForPlayer()
     if not weights then return result end
