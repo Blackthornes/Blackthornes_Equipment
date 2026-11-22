@@ -4,6 +4,14 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.16.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Your own character.** An old copy of the character you are playing no longer gets upgrade tips. Tooltips could say an item was an upgrade for you at an old level.
+- **Beta characters.** Characters saved on the beta are left out when the realm name is blank.
+- **Character list.** The list in Settings shows the realm after a name from another realm.
+
 ## 1.16.1
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
