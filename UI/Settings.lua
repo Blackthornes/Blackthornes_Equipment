@@ -470,6 +470,17 @@ function SettingsUI:BuildGear()
     controls.skipUpgrades:SetPoint("TOPLEFT", CONTROL_X, -2)
     self.skipRow = skipRow
 
+    -- Forget the picked character (a player asked, the owner said build
+    -- it, 2026-11-22): for one that was deleted. The first click turns the
+    -- button to Confirm for a few seconds; the second forgets.
+    local forgetRow = pages:Row("gear", 1, L["Forget Character:"],
+        function() return SettingsUI:ForgetHint() end)
+    controls.forget = Widgets.CreateButton(forgetRow, L["Forget"], function(button)
+        SettingsUI:ForgetClicked(button)
+    end, { width = math.max(100, Theme.TextWidth("small", L["Confirm"]) + 24), height = 20 })
+    controls.forget:SetPoint("TOPLEFT", CONTROL_X, 0)
+    self.forgetRow = forgetRow
+
     -- The buttons that open a window, together.
     pages:Section("gear", 2, L["OPEN"])
 
@@ -583,6 +594,54 @@ function SettingsUI:SkipHint()
         table.concat(names, ", "))
 end
 
+-- How long the Forget button waits on Confirm, in seconds.
+SettingsUI.FORGET_ARMED = 4
+
+--- What the Forget row says, for the character picked.
+function SettingsUI:ForgetHint()
+    local entry = self.controls and self.controls.skipPicker and self.controls.skipPicker:GetEntry()
+    if entry and entry.me then
+        return L["This is the character you're playing, so it can't be forgotten."]
+    end
+    return L["For a character you deleted. Equipment stops picking gear for it. It shows up again if it logs in."]
+end
+
+--- Turn the Forget button to Confirm, or back.
+function SettingsUI:ArmForget(button, on)
+    button.armed = on and true or false
+    button.armedAt = on and (type(GetTime) == "function" and GetTime() or 0) or nil
+    button:SetText(on and L["Confirm"] or L["Forget"])
+    if button.SetLabelColor then button:SetLabelColor(on and "loss" or "gilt") end
+    if on and C_Timer and C_Timer.After then
+        local at = button.armedAt
+        C_Timer.After(self.FORGET_ARMED, function()
+            if button.armed and button.armedAt == at then SettingsUI:ArmForget(button, false) end
+        end)
+    end
+end
+
+--- First click asks for Confirm; the second forgets the picked character.
+function SettingsUI:ForgetClicked(button)
+    local entry = self.controls.skipPicker:GetEntry()
+    if not (entry and ns.Alts and ns.Alts:CanForget(entry.key)) then
+        self:ArmForget(button, false)
+        return
+    end
+    -- A Confirm armed for another character starts over.
+    if not button.armed or button.armedKey ~= entry.key then
+        self:ArmForget(button, true)
+        button.armedKey = entry.key
+        return
+    end
+    self:ArmForget(button, false)
+    local done = ns.Alts:Forget(entry.key)
+    if done then
+        local name = type(done) == "string" and done or L["A character not seen yet"]
+        ns.Print(L.Format("Equipment forgot %s.", name))
+    end
+    self:RefreshSkip()
+end
+
 --- The picker's characters and the tick for the one shown.
 function SettingsUI:RefreshSkip()
     local controls = self.controls
@@ -592,6 +651,13 @@ function SettingsUI:RefreshSkip()
     controls.skipUpgrades:SetChecked(entry ~= nil and ns.Alts:IsSkipped(entry.key))
     controls.skipUpgrades:SetAlpha(entry and 1 or 0.45)
     if self.skipRow then self.skipRow:SetDescription(self:SkipHint()) end
+    if controls.forget then
+        local can = entry ~= nil and ns.Alts:CanForget(entry.key)
+        if not can and controls.forget.armed then self:ArmForget(controls.forget, false) end
+        controls.forget.canForget = can
+        controls.forget:SetAlpha(can and 1 or 0.45)
+        if self.forgetRow then self.forgetRow:SetDescription(self:ForgetHint()) end
+    end
 end
 
 --- What the Untrained weapons row says: which types this character
