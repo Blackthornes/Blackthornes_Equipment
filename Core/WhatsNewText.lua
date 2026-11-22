@@ -5,6 +5,11 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.14.0", lines = {
+        "Panels and rows have a warm brown-black look.",
+        "Item rows link in chat and try on gear.",
+        "Equipment has its own key in Key Bindings.",
+    } },
     { version = "1.13.0", lines = {
         "Every window has a gold gem on its title bar. Click it to switch between the one window and separate windows.",
         "The Weights window lists Spirit and Health every 5 sec for every class. Both start at 0.",
@@ -15,10 +20,5 @@ ns.WHATS_NEW = {
         "The Drowned City is in Dungeon Loot.",
         "Settings pages sit in the same order in every Blackthornes addon.",
         "Various bug fixes for Equipment.",
-    } },
-    { version = "1.11.0", lines = {
-        "Settings has one grid for what shows on screen, and an All Addons page.",
-        "You can scroll the Upgrade Tracker past eight hunts.",
-        "The window can dock in more places and you can resize it by hand.",
     } },
 }
