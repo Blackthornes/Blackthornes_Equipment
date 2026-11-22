@@ -159,9 +159,11 @@ function QuestLearn:Lay(questID, rec)
         local races = SideRaces(side)
         if row[4] ~= races then row[4] = races; added = true end
     end
-    -- The quest to do first, so the finder can walk the chain.
+    -- The quest to do first, so the finder can walk the chain. Forever
+    -- asks for some first that Classic's data does not (Land Ho! before
+    -- Sunken Treasure), so a Classic quest with none takes it too.
     local prev = tonumber(rec.prev)
-    if row.learned and prev and prev > 0 and not row.p then
+    if prev and prev > 0 and prev ~= questID and not row.p then
         row.p = prev
         added = true
     end

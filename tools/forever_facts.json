@@ -2307,6 +2307,17 @@
    "y": 89.9,
    "zone": "The Barrens"
   },
+  "665": {
+   "giver": "Professor Phizzlethorpe",
+   "level": 40,
+   "min": 35,
+   "prev": 663,
+   "rewards": [],
+   "title": "Sunken Treasure",
+   "x": 33.9,
+   "y": 80.5,
+   "zone": "Arathi Highlands"
+  },
   "704": {
    "level": 30,
    "min": 30,
