@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.16.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Forget Character.** The Gear page in Settings has a Forget Character row under Your Characters. Pick a character you deleted and press Forget, then Confirm. Equipment stops picking gear for that character. It comes back if the character logs in again. You can't forget the character you are playing.
+
 ## 1.15.0
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
