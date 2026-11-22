@@ -23,6 +23,11 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.16.1
+
+Fixes and changes:
+- A second copy of a one-hander you hold gets its off hand arrow in your bags.
+
 ## 1.16.0
 
 - Settings has a Forget button for characters you deleted.
