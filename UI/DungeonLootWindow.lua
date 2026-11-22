@@ -186,7 +186,7 @@ function DLUI:Build()
     -- The fold gem beside the close gem folds the window down to its plate
     -- (UI/FoldWindow.lua, a player asked, 2026-10-24).
     if ns.FoldWindow then
-        ns.FoldWindow:Add(frame, { onToggle = function(folded)
+        ns.FoldWindow:Add(frame, { key = "DungeonLoot", onToggle = function(folded)
             if not folded then DLUI:Refresh() end
         end })
     end
@@ -663,4 +663,9 @@ function DLUI:OnEnable()
     for _, event in ipairs({ "GET_ITEM_INFO_RECEIVED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP" }) do
         ns.RegisterEvent(self, event, function() DLUI:RefreshSoon() end)
     end
+end
+
+-- Kept folded through a /reload, its round button opens it (UI/FoldWindow.lua).
+if ns.FoldWindow and ns.FoldWindow.Opener then
+    ns.FoldWindow:Opener("DungeonLoot", { open = function() DLUI:Show() end })
 end

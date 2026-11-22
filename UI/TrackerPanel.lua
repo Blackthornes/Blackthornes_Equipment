@@ -161,6 +161,9 @@ function TrackerPanel:Build()
             TrackerPanel:Refresh()
         end,
         onClose = function() TrackerPanel:Close() end,
+        -- Folds into a round button (UI/FoldWindow.lua, 2026-11-22).
+        round = { frame = frame, key = "Hunts", title = L["Upgrade Hunts"],
+            onToggle = function(folded) if not folded then TrackerPanel:Refresh() end end },
     })
     self.gems = gems
 

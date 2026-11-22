@@ -730,7 +730,7 @@ function FinderUI:Build()
     -- The fold gem beside the close gem folds the window down to its plate
     -- (UI/FoldWindow.lua, a player asked, 2026-10-24).
     if ns.FoldWindow then
-        ns.FoldWindow:Add(frame, { onToggle = function(folded)
+        ns.FoldWindow:Add(frame, { key = "Finder", onToggle = function(folded)
             if not folded then FinderUI:Refresh() end
         end })
     end
@@ -2872,4 +2872,9 @@ function FinderUI:Closed(frame)
     if frame and frame.GetParent and frame:GetParent() ~= self.oneArea then return end
     local One = FinderUI.One()
     if One and One.Close then pcall(One.Close) end
+end
+
+-- Kept folded through a /reload, its round button opens it (UI/FoldWindow.lua).
+if ns.FoldWindow and ns.FoldWindow.Opener then
+    ns.FoldWindow:Opener("Finder", { open = function() FinderUI:Show() end })
 end
