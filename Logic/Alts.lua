@@ -178,6 +178,41 @@ function Alts:SkippedNames()
     return names
 end
 
+--------------------------------------------------------------------------------
+-- Forget a character
+--
+-- A player asked, the owner said build it (2026-11-22): a deleted alt kept
+-- being offered gear. Forget drops one character's note
+-- (characterGear[guid]) and its skip tick (skipUpgrades[guid]), so nothing
+-- judges gear for it or names it any more. Nothing else is touched. It
+-- never forgets the character playing, nor any character while the GUID
+-- can't be read (a dungeon): not sure who's playing means change nothing.
+-- A forgotten character that logs in again writes a new note.
+--------------------------------------------------------------------------------
+
+--- Can this character be forgotten? False for the one playing, or when the
+--- client won't say who that is.
+function Alts:CanForget(key)
+    if type(key) ~= "string" then return false end
+    local me = self.PlayerGUID()
+    if not me or key == me then return false end
+    return type(self:Notes()[key]) == "table" or self:IsSkipped(key)
+end
+
+--- Forget one character. Answers its whole name (or true) when done, nil
+--- when refused.
+function Alts:Forget(key)
+    if not self:CanForget(key) then return nil end
+    local name = self:NameOf(key)
+    self:Notes()[key] = nil
+    self:Skipped()[key] = nil
+    self.version = (self.version or 0) + 1
+    -- Every kept verdict may have named it; judge everything again.
+    if Weights.Changed then pcall(Weights.Changed, Weights) end
+    if ns.SettingsUI and ns.SettingsUI.Refresh then pcall(ns.SettingsUI.Refresh, ns.SettingsUI) end
+    return name or true
+end
+
 --- Write the character playing's note now.
 function Alts:Record()
     self.settling = false

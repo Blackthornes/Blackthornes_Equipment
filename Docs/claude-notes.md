@@ -155,6 +155,18 @@ character wants. `Alts:BestFor` never names a skipped character. Settings,
 Gear page, YOUR CHARACTERS (a picker by whole name and a tick), and `/beq
 skip [on|off|list]`. Tested in `tools/test_skipupgrades.lua`.
 
+Forget a character (a player's deleted alt kept being offered gear; the
+owner said build it 2026-11-22): `Alts:Forget(guid)` drops that one
+character's `characterGear[guid]` and `skipUpgrades[guid]`, then judges
+everything again (`Weights.Changed`). Nothing else is touched (class
+training notes stay). `Alts:CanForget` refuses the character playing and
+every character while `Alts.PlayerGUID()` can't be read. One that logs in
+again writes a new note. Settings, Gear page, YOUR CHARACTERS, "Forget
+Character:" under Skip Upgrades: the first click turns Forget to Confirm
+for `SettingsUI.FORGET_ARMED` (4) seconds, a second click on the same
+character forgets it, and chat says "Equipment forgot NAME." Greyed for
+the one playing. No slash command. Tested in `tools/test_forgetalt.lua`.
+
 
 Advise never raises, scans no bags and, past the notes above, keeps nothing new: scores, sell prices
 and tools are the per-link caches the bag icons already keep, since Butler
