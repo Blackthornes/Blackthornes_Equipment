@@ -23,6 +23,19 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.17.0
+
+- I was not happy with the overall quality of Equipment and did a full rework of the Addon. Feedback is appreciated.
+- One new window with five tabs: My Gear, Find Upgrades, Upgrade Quest, Dungeons and Training.
+- Your character sheet shows green arrows on slots with an upgrade. Alt-click a slot to see it in My Gear.
+- Arrows on bags, bank, vendor and loot show how much better the item is.
+- Four more dungeons are in, and This Zone Only shows dungeon drops from any zone.
+
+Fixes and changes:
+- The arrow works less while you stand still.
+- The gold plaque has no red gems on its sides.
+
+
 ## 1.16.2
 
 Fixes and changes:
