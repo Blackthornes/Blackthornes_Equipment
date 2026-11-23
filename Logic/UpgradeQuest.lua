@@ -433,11 +433,14 @@ function UpgradeQuest:SetStepOnly(on)
     end
 end
 
---- Is a source in the zone `here`? A dungeon counts from its entrance's
---- zone and from inside. Gear made from what you know has no place, so it
---- is in every zone, and so is anything when the zone is not known.
+--- Is a source in the zone `here`? Dungeon and raid drops are in every
+--- zone: you are never standing in a dungeon's zone while you look for one,
+--- so "This zone only" hid them all (Trent, 2026-11-22). The Dungeons and
+--- Raids boxes still hide them. Gear made from what you know has no place,
+--- so it is in every zone, and so is anything when the zone is not known.
 function UpgradeQuest.InZone(source, here)
     if not here or type(source) ~= "table" then return true end
+    if source.kind == "dungeon" then return true end
     local zone = UpgradeQuest.SourceZone(source)
     if not zone then
         -- A quest is always somewhere: one whose start is not known is not

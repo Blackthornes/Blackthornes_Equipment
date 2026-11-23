@@ -378,7 +378,7 @@ L["It becomes your upgrade quest, with steps to get it. A green Quest tag marks 
 L["Alt-click to pin it on your map"] = "按住 Alt 点击，在地图上标记它"
 L["How far above your level a quest can be."] = "任务最多可以比你高几级。"
 L["Hides quests that need a group, and the quests after them. Elite kills count as group quests."] = "隐藏需要队伍的任务，以及它们之后的任务。要打精英怪的算作队伍任务。"
-L["Only upgrades from the zone you're in, plus gear you can make. The list changes as you travel."] = "只看你所在区域的升级，再加上你能制造的装备。你走到新地方时列表会变。"
+L["Only upgrades from the zone you're in, plus dungeon drops and gear you can make. The list changes as you travel."] = "只看你所在区域的升级，再加上地下城掉落和你能制造的装备。你走到新地方时列表会变。"
 L["Any"] = "任意"
 L["Up to my level"] = "不超过我的等级"
 L["Up to +%d"] = "最多 +%d"

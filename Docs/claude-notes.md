@@ -509,6 +509,11 @@ The finder has its own "This zone only" (a player asked, 2026-10-09;
 apart from the panel's so ticking it never lets a quest go:
 `FinderUI:Groups` then reads `found.all` through `UpgradeQuest.InZone`, and
 `ZONE_CHANGED_NEW_AREA` refreshes the window.
+Dungeon and raid drops pass `UpgradeQuest.InZone` from any zone (Trent,
+2026-11-22: "dungeons should show no matter where you are if you have it
+enabled as an option"). Before, a drop counted only in its door's zone or
+inside, so a player rarely saw one. The Dungeons and Raids boxes still
+hide them. Tested in `tools/test_zonequest.lua`.
 The upgrade quest follows the window's filters too (a player's report,
 2026-11-13: the window kept to the zone and the quest did not):
 `UpgradeQuest:KeepsToZone` is true while either zone box is ticked, and

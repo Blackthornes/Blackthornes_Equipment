@@ -377,7 +377,7 @@ L["It becomes your upgrade quest, with steps to get it. A green Quest tag marks 
 L["Alt-click to pin it on your map"] = "Alt-щелчок, чтобы поставить метку на карте"
 L["How far above your level a quest can be."] = "Насколько выше твоего уровня может быть задание."
 L["Hides quests that need a group, and the quests after them. Elite kills count as group quests."] = "Скрывает задания, для которых нужна группа, и задания после них. Задания на элитных противников считаются групповыми."
-L["Only upgrades from the zone you're in, plus gear you can make. The list changes as you travel."] = "Только улучшения из зоны, где ты сейчас, и вещи, которые ты можешь сделать. Список меняется, пока ты путешествуешь."
+L["Only upgrades from the zone you're in, plus dungeon drops and gear you can make. The list changes as you travel."] = "Только улучшения из зоны, где ты сейчас, а также добыча из подземелий и вещи, которые ты можешь сделать. Список меняется, пока ты путешествуешь."
 L["Any"] = "Любой"
 L["Up to my level"] = "До моего уровня"
 L["Up to +%d"] = "До +%d"
