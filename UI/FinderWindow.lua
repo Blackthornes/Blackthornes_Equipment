@@ -1325,7 +1325,10 @@ function FinderUI:BuildHeader()
 
     -- Opens the Training drawer beside the window (UI/TrainingDrawer.lua):
     -- class spells to train and what they cost. It says how many wait.
+    -- The Training tab (UI/TrainingTab.lua) stands in for the drawer.
     local training = Widgets.CreateButton(header, L["Training"], function()
+        local tab = ns.TrainingTab
+        if tab and tab.standsIn and ns.GearWindow and ns.GearWindow.pages[tab.KEY] then return tab:Open() end
         if ns.TrainingDrawer then ns.TrainingDrawer:Toggle() end
     end, { width = 80, height = 20 })
     training:SetPoint("RIGHT", quest, "LEFT", -6, 0)

@@ -55,8 +55,8 @@ suite.check("the header has Training and Upgrade quest",
 suite.check("Dungeon Loot is a tab now, not a header button", UI.lootButton == nil)
 local tabKeys = {}
 for _, tab in ipairs(Gear.strip.tabs) do tabKeys[#tabKeys + 1] = tab.key end
-suite.check("the tabs are My Gear, Find Upgrades, Upgrade Quest, Enchants, Dungeon Quests, Dungeon Loot and Settings",
-    table.concat(tabKeys, ",") == "gear,find,quest,enchant,dungeons,loot,settings", table.concat(tabKeys, ","))
+suite.check("the tabs are My Gear, Find Upgrades, Upgrade Quest, Dungeons, Training, Enchants and Settings",
+    table.concat(tabKeys, ",") == "gear,find,quest,instances,training,enchant,settings", table.concat(tabKeys, ","))
 
 suite.check("the bigger of two chest upgrades", Owned(5) == "item:2", Owned(5))
 suite.check("an item above your level is not offered", not Owned(5):find("item:8", 1, true))
@@ -125,8 +125,16 @@ suite.check("Settings takes Dungeon Loot's place", ns.SettingsUI.frame:IsShown()
 Finder:ShowTab("upgrades")
 suite.check("and Upgrades brings the gear back", Finder.frame:IsShown() and not ns.SettingsUI.frame:IsShown())
 ns.HandleSlash("dungeons")
-suite.check("/beq dungeons opens the tab in the gear window's place",
-    dq.frame:IsShown() and not Finder.frame:IsShown() and Gear.strip.selected == "dungeons")
+suite.check("/beq dungeons opens the Dungeons tab",
+    ns.DungeonsTab:IsShown() and not dq.frame:IsShown() and Gear.strip.selected == "instances")
+ns.HandleSlash("loot")
+suite.check("and so does /beq loot",
+    ns.DungeonsTab:IsShown() and not dl.frame:IsShown() and Gear.strip.selected == "instances")
+Gear:ShowTab("training")
+suite.check("Training has a tab of its own", ns.TrainingTab:IsShown() and not ns.DungeonsTab:IsShown())
+Gear:ShowTab("dungeons")
+suite.check("the old Dungeon Quests window still shows when code asks",
+    dq.frame:IsShown() and not ns.TrainingTab:IsShown())
 Gear:ShowTab("gear")
 suite.check("My Gear takes an old tab's place", ns.MyGear:IsShown() and not dq.frame:IsShown() and UI:IsShown())
 Gear:ShowTab("dungeons")

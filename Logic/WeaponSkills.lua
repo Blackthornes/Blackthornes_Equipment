@@ -113,6 +113,7 @@ function WeaponSkills:Look()
     if ns.UpgradeChat and ns.UpgradeChat.SkillsChanged then
         pcall(ns.UpgradeChat.SkillsChanged, ns.UpgradeChat)
     end
+    if ns.TrainingTab then pcall(ns.TrainingTab.RefreshSoon, ns.TrainingTab) end
     return true
 end
 
@@ -350,6 +351,86 @@ end
 --- where in chat. True when there was one to point at.
 function WeaponSkills:ShowMaster(link)
     local place = self:Master(link)
+    if not place then
+        ns.Print(L["no weapon master to show for that."])
+        return false
+    end
+    local where = place.x and ("%s (%.0f, %.0f)"):format(place.zone, place.x, place.y) or place.zone
+    ns.Print(L.Format("%s teaches %s, in %s.", place.name, place.skill, where))
+    local arrow = ns.QuestArrow
+    if arrow and arrow.AimAtQuest then
+        pcall(arrow.AimAtQuest, arrow, nil, L.Format("Learn %s", place.skill),
+            { zone = place.zone, x = place.x, y = place.y, name = place.name })
+    end
+    return true
+end
+
+--- Every weapon skill this character's class can learn, for the Training
+--- tab: { subclassID, name (the client's own word for it when it has one),
+--- known, from (the level it opens at, when that is above the
+--- character's), cities (where this side learns it) }. Known ones first,
+--- then by name. Empty when the client says nothing about skills: a wrong
+--- "go learn this" is worse than none.
+function WeaponSkills:All()
+    local class = Weights:PlayerClass()
+    local known = self:Known()
+    if not (class and known) then return {} end
+    local faction = self:Faction()
+    local level = Items:PlayerLevel()
+    local list = {}
+    for subclassID, skill in pairs(WeaponTrainers.SKILLS) do
+        local ok, usable, from = pcall(Weights.CanUse, Weights, class, CLASS_WEAPON, subclassID, nil)
+        if ok and usable then
+            if not (from and level and level < from) then from = nil end
+            local cities = faction and WeaponTrainers:Cities(faction, subclassID) or {}
+            if known[subclassID] or #cities > 0 then
+                list[#list + 1] = {
+                    subclassID = subclassID, name = SpellName(skill.spell) or skill.name, skill = skill.name,
+                    known = known[subclassID] == true, from = from, cities = cities,
+                }
+            end
+        end
+    end
+    table.sort(list, function(a, b)
+        if a.known ~= b.known then return a.known end
+        return a.name < b.name
+    end)
+    return list
+end
+
+--- "Orgrimmar", "Orgrimmar or Undercity": the cities as a line says them.
+function WeaponSkills.CityList(cities)
+    if type(cities) ~= "table" or #cities == 0 then return "" end
+    if #cities == 1 then return cities[1] end
+    return L.Format("%s or %s", table.concat(cities, ", ", 1, #cities - 1), cities[#cities])
+end
+
+--- Where to learn a weapon skill by its subclass ID: { name, zone, x, y,
+--- skill }, the trainer in the city the character is in first. Nil when
+--- this side has none.
+function WeaponSkills:MasterOf(subclassID)
+    local skill = WeaponTrainers.SKILLS[subclassID]
+    local faction = skill and self:Faction()
+    if not faction then return nil end
+    local teachers = WeaponTrainers:Teachers(faction, subclassID)
+    if #teachers == 0 then return nil end
+    local here = ZoneNow()
+    local pick = teachers[1]
+    for _, trainer in ipairs(teachers) do
+        if trainer.city == here then pick = trainer break end
+    end
+    local name, zone, x, y = pick.name, pick.city, pick.x, pick.y
+    if ns.NPCSpots and pick.npc then
+        local ok, a, b, c, d = pcall(ns.NPCSpots.Place, ns.NPCSpots, pick.npc, name, zone, x, y)
+        if ok and a then name, zone, x, y = a, b, c, d end
+    end
+    return { name = name, zone = zone, x = x, y = y, skill = SpellName(skill.spell) or skill.name }
+end
+
+--- Point the quest arrow at the weapon master for a skill, and say where
+--- in chat. True when there was one to point at.
+function WeaponSkills:ShowMasterOf(subclassID)
+    local place = self:MasterOf(subclassID)
     if not place then
         ns.Print(L["no weapon master to show for that."])
         return false

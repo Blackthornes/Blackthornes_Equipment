@@ -336,6 +336,10 @@ function env.Load(locale)
     -- and Tracking panel. Their code stays until rework step 6, and a suite
     -- that tests them sets env.OLD_PANELS before loading.
     if env.OLD_PANELS and ns.SmallPanel then ns.SmallPanel.standsIn = false end
+    -- The Dungeons and Training tabs (rework step 5) stand in for /beq loot,
+    -- /beq dungeons and the Training drawer the same way.
+    if env.OLD_PANELS and ns.DungeonsTab then ns.DungeonsTab.standsIn = false end
+    if env.OLD_PANELS and ns.TrainingTab then ns.TrainingTab.standsIn = false end
 
     env.ns = ns
     return ns

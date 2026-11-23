@@ -12,6 +12,9 @@
 --   4. Turned off, the button goes and nothing is listed.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
+-- This suite tests the Training drawer, kept until rework step 6; the Training tab
+-- (UI/TrainingTab.lua) stands in for it in play.
+env.OLD_PANELS = true
 local suite = env.NewSuite("classtraining")
 
 local ns = env.Load()

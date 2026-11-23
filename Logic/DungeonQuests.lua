@@ -240,11 +240,13 @@ end
 
 --- What the window shows: { dungeons = { { key, name, low, high, door,
 --- raid, forever, done, all, quests = { quest + status } } }, done, all }.
---- Counts follow My Level Only; Hide Done only takes rows out.
-function DQ:Build()
+--- Counts follow My Level Only; Hide Done only takes rows out. With
+--- `everyLevel` (the Dungeons tab, UI/DungeonsTab.lua) My Level Only is
+--- passed by, so a dungeon counts every quest this character can ever take.
+function DQ:Build(everyLevel)
     local player = ns.Finder and ns.Finder.Player and ns.Finder:Player()
     local level = player and player.level
-    local myLevel, hideDone = DQ.MyLevelOnly(), DQ.HideDone()
+    local myLevel, hideDone = not everyLevel and DQ.MyLevelOnly(), DQ.HideDone()
     local byKey, done, all = {}, 0, 0
     for _, quest in pairs(self:All()) do
         if DQ.ForMe(quest, player) and (not myLevel or DQ.AtLevel(quest, level)) then
@@ -367,7 +369,8 @@ function DQ:TitleLoaded(questID, success)
     after(DQ.SETTLE, function()
         DQ.titleRedraw = false
         local ui = ns.DungeonQuestsUI
-        if ui and ui.Showing and ui:Showing() then DQ:Changed() end
+        local tab = ns.DungeonsTab
+        if (ui and ui.Showing and ui:Showing()) or (tab and tab.IsShown and tab:IsShown()) then DQ:Changed() end
         -- The upgrade quest's steps and the finder's rows name quests the
         -- game's way too, so they redraw if they are up.
         if ns.QuestPanel and ns.QuestPanel.RefreshSoon then pcall(ns.QuestPanel.RefreshSoon, ns.QuestPanel) end
@@ -448,6 +451,8 @@ end
 function DQ:Changed()
     local ui = ns.DungeonQuestsUI
     if ui and ui.Refresh then pcall(ui.Refresh, ui) end
+    local tab = ns.DungeonsTab
+    if tab and tab.OnDungeonQuestsChanged then pcall(tab.OnDungeonQuestsChanged, tab) end
 end
 
 function DQ:LogMoved()
@@ -462,7 +467,8 @@ function DQ:LogMoved()
     after(DQ.SETTLE, function()
         DQ.pending = false
         local ui = ns.DungeonQuestsUI
-        if ui and ui.Showing and ui:Showing() then DQ:Changed() end
+        local tab = ns.DungeonsTab
+        if (ui and ui.Showing and ui:Showing()) or (tab and tab.IsShown and tab:IsShown()) then DQ:Changed() end
     end)
 end
 
@@ -498,6 +504,9 @@ function DQ:OnEnable()
     if _G.C_Timer then _G.C_Timer.After(8, function() DQ:LearnLog() end) end
 end
 
+-- The Dungeons tab (UI/DungeonsTab.lua) took the old tab's place.
 ns.RegisterCommand("dungeons", L["your dungeon quests and which ones you've done"], function()
+    local tab = ns.DungeonsTab
+    if tab and tab.standsIn and ns.GearWindow and ns.GearWindow.pages[tab.KEY] then return tab:Open() end
     if ns.DungeonQuestsUI then ns.DungeonQuestsUI:Toggle() end
 end)

@@ -107,6 +107,8 @@ UI\GearWindow.lua
 UI\MyGear.lua
 UI\FindUpgrades.lua
 UI\UpgradeQuestTab.lua
+UI\DungeonsTab.lua
+UI\TrainingTab.lua
 UI\Tooltip.lua
 UI\BagIcons.lua
 UI\QuestRewards.lua

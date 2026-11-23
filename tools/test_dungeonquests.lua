@@ -3,6 +3,9 @@
 -- learned from the quest log, with Done, In Log or To Do for each.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
+-- This suite tests the old Dungeon Quests tab, kept until rework step 6; the Dungeons tab
+-- (UI/DungeonsTab.lua) stands in for it in play.
+env.OLD_PANELS = true
 local suite = env.NewSuite("dungeonquests")
 
 local ns = env.Load()

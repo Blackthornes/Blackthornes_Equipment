@@ -138,6 +138,7 @@ end
 function UI:RefreshSoon()
     if ns.FinderUI then ns.FinderUI:RefreshSoon() end
     if ns.MyGear then ns.MyGear:RefreshSoon() end
+    if ns.DungeonsTab then ns.DungeonsTab:RefreshSoon() end
 end
 
 --------------------------------------------------------------------------------
