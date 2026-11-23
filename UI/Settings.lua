@@ -748,6 +748,15 @@ function SettingsUI:BuildQuest()
     controls.questStyle:SetPoint("TOPLEFT", CONTROL_X, -2)
     SettingsUI.StyleDescription = StyleDescription
 
+    -- Biggest Upgrade First (the owner asked 2026-11-23): each tab picks
+    -- the biggest % gain, off unless ticked.
+    local biggestRow = pages:Row("quest", 1, L["Biggest Upgrade First:"],
+        L["Picks the upgrade with the biggest % gain on each tab, even when it's far away or harder to get."])
+    controls.questBiggest = Widgets.CreateCheckbox(biggestRow, L["On"], function(checked)
+        if ns.UpgradeQuest then ns.UpgradeQuest:SetBiggestFirst(checked) end
+    end, false)
+    controls.questBiggest:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- The quest arrow, as the Arrow button on the quest panel and /beq
     -- arrow switch it, and /beq arrow next as a button. /beq arrow check is
     -- typed only (the owner, 2026-10-23).
@@ -1043,6 +1052,7 @@ function SettingsUI:Refresh()
     controls.weapons:Sync()
     controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
     controls.questZoneSwap:SetChecked(ns.db.upgradeQuestZoneSwap ~= false)
+    controls.questBiggest:SetChecked(ns.db.upgradeQuestBiggest == true)
     if controls.questStyle and ns.UpgradeQuest then
         local now = ns.UpgradeQuest:Style()
         for index, style in ipairs(ns.UpgradeQuest.STYLES) do
