@@ -22,6 +22,7 @@ Locale\esES.lua
 Locale\ruRU.lua
 
 Core\Init.lua
+Core\Worker.lua
 Core\Serialize.lua
 Core\Comm.lua
 Core\SisterNote.lua
@@ -64,6 +65,7 @@ Logic\Enchants.lua
 Logic\TradeskillsQueue.lua
 Logic\Rolls.lua
 Logic\Finder.lua
+Logic\GearList.lua
 Logic\Tracking.lua
 Logic\Waypoints.lua
 Logic\UpgradeQuest.lua

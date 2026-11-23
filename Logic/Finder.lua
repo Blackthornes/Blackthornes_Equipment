@@ -1360,11 +1360,6 @@ end
 -- done a slice per frame instead, and is told when it is finished.
 --------------------------------------------------------------------------------
 
--- How long one frame's slice may run, in milliseconds, and how many items a
--- slice takes on a client without a timer to measure with.
-local SLICE_MS = 4
-local SLICE_ITEMS = 40
-
 --- The latest full scan, if nothing has changed since it was started.
 function Finder:Fresh()
     -- While a scan runs, the last one is out of date. The key catches a
@@ -1379,97 +1374,16 @@ function Finder:Scanning()
     return self.background ~= nil
 end
 
--- The scans under way, the one whose turn it is first. They share one
--- frame's slice between them: the upgrade quest's scan and the finder
--- window's own often run at once (new gear with the window open), and each
--- taking a whole slice made every frame twice as long.
-local workers = {}
--- Scans that finished, waiting to be handed over at the start of the next
--- frame: what takes a scan (the finder window drawing its rows, the upgrade
--- quest picking) is work of its own, and no slice is stacked on top of it.
-local finished = {}
-local pumping, queued = false, false
-local sliceStarted, sliceCount
-
-local function SliceSpent(Clock)
-    local now = Clock()
-    if now and sliceStarted then return now - sliceStarted >= SLICE_MS end
-    return sliceCount >= SLICE_ITEMS
-end
-
-local Pump
-
-local function PumpSoon()
-    if queued or pumping or (#workers == 0 and #finished == 0) then return end
-    queued = true
-    _G.C_Timer.After(0, Pump)
-end
-
---- One frame's share of the scans under way.
-Pump = function()
-    queued = false
-    if pumping then return end
-    pumping = true
-    local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
-    local started = Clock()
-    sliceStarted, sliceCount = started, 0
-    local handed = #finished > 0
-    while finished[1] do
-        local job = table.remove(finished, 1)
-        local ok, err = pcall(job.finish, job.found, job.why)
-        if not ok then ns.Debug("finder:", tostring(err)) end
-    end
-    while workers[1] and not handed do
-        local job = table.remove(workers, 1)
-        local ok, found, why = coroutine.resume(job.worker)
-        if not ok then
-            ns.Debug("finder:", tostring(found))
-            job.found, job.why = nil, "error"
-            finished[#finished + 1] = job
-        elseif coroutine.status(job.worker) == "dead" then
-            job.found, job.why = found, why
-            finished[#finished + 1] = job
-        else
-            -- It stopped because the frame's share is used: to the back of
-            -- the line, and the rest wait for the next frame.
-            workers[#workers + 1] = job
-            break
-        end
-        if SliceSpent(Clock) then break end
-    end
-    local ended = Clock()
-    if ns.Perf and started and ended then ns.Perf:Add("Finder:background slice", ended - started) end
-    pumping = false
-    PumpSoon()
-end
-
---- Run `build(pause)` a slice per frame and hand what it returns to
---- `finish(found, why)`. Without timers or coroutines it runs at once.
-local function Sliced(build, finish)
-    local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
-    local after = _G.C_Timer and _G.C_Timer.After
-    local canYield = type(after) == "function" and type(coroutine) == "table"
-    if not canYield then
-        finish(build(nil))
-        return
-    end
-
-    local function Pause()
-        sliceCount = (sliceCount or 0) + 1
-        if SliceSpent(Clock) then coroutine.yield() end
-    end
-    workers[#workers + 1] = {
-        worker = coroutine.create(function() return build(Pause) end), finish = finish,
-    }
-    -- Its first slice waits for the next frame: whatever asked for the scan
-    -- (a bag or gear event, the upgrade quest's own look) has its own work
-    -- to do in this one.
-    PumpSoon()
+--- Run `build(pause)` a slice per frame on the frame worker
+--- (Core/Worker.lua) and hand what it returns to `finish(found, why)`.
+--- A `calm` scan rests while the character fights.
+local function Sliced(build, finish, calm)
+    ns.Worker:Run(build, finish, calm)
 end
 
 --- How many scans are under way (for the tests).
 function Finder.SlicedNow()
-    return #workers + #finished
+    return ns.Worker.Count()
 end
 
 --- Make a full scan for now, a slice per frame, then call each of the
