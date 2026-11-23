@@ -2874,6 +2874,15 @@ placed right after the last tab in `Panel:FillBar`, so it moves with
 Upgrade Quest tab). Tooltip: "Upgrade Quest" and "Opens the Upgrade Quest
 tab." Hidden with the bar when folded. Tested in `tools/test_smallpanel.lua`.
 
+The Search Again glass (the owner said build it, 2026-11-23, from a
+mockup): `Panel.searchButton`, the same 18 by 18 gold button with the
+game's `UI-Searchbox-Icon`, 4 pixels right of the scroll. A click runs
+`UpgradeQuest:SearchAgain()`: `Finder:ForgetVerdicts()`, `rescan`, then
+`Update()`, which starts a background scan. Nothing happens while
+`Finder:Scanning()`; the glass dims then (`search.dimmed`). Tooltip:
+"Search Again" and "Looks for upgrades again now." Tested in
+`tools/test_smallpanel.lua`.
+
 ## Dungeons and Training tabs (rework step 5, 2026-11-23)
 
 Step 5 of the rework. The mockups the owner approved are the plan's

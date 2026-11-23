@@ -210,6 +210,40 @@ do
     suite.check("the panel keeps its tab", Panel:View() == "log")
 end
 
+do
+    local open, search = Panel.openTab, Panel.searchButton
+    suite.check("a magnifying glass sits right of the scroll", Up(search))
+    local _, anchor, _, x = search:GetPoint()
+    suite.check("4 pixels after it", anchor == open and x == 4, tostring(x))
+    local _, _, _, openX = open:GetPoint()
+    suite.check("both clear of the gems", openX + 18 + 4 + 18 <= Panel.WIDTH - (15 * 2 + 14), tostring(openX))
+    search:GetScript("OnEnter")(search)
+    suite.check("its tooltip says what it does", _G.GameTooltip:IsShown())
+    search:GetScript("OnLeave")(search)
+    local finder, logic = ns.Finder, ns.UpgradeQuest
+    local forgot, asked = 0, 0
+    local realForget, realUpdate = finder.ForgetVerdicts, logic.Update
+    finder.ForgetVerdicts = function(self, ...) forgot = forgot + 1; return realForget(self, ...) end
+    logic.Update = function(self, ...) asked = asked + 1; return realUpdate(self, ...) end
+    local realScanning = finder.Scanning
+    finder.Scanning = function() return false end
+    Quiet()
+    Click(search, "LeftButton")
+    suite.check("a click forgets the old verdicts and looks again", forgot == 1 and asked == 1,
+        forgot .. " " .. asked)
+    finder.Scanning = function() return true end
+    Click(search, "LeftButton")
+    suite.check("a click while it searches does nothing more", forgot == 1, forgot)
+    Panel:FillBar(Panel:View(), false)
+    suite.check("the glass dims while it searches", search.dimmed == true)
+    suite.check("and it really searches", Worked() > 0, Worked())
+    Quiet()
+    finder.Scanning = realScanning
+    finder.ForgetVerdicts, logic.Update = realForget, realUpdate
+    Panel:FillBar(Panel:View(), false)
+    suite.check("and lights again after", search.dimmed == false)
+end
+
 Click(Panel.tabs.quest, "LeftButton")
 suite.check("and back to Quest", Panel:View() == "quest" and ns.charDB.questLogTab == nil and Up(Panel.item))
 suite.check("changing tabs judges nothing", Worked() == 0, Worked())
