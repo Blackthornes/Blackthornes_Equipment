@@ -8,6 +8,14 @@
    "high": 40,
    "low": 35
   },
+  "2974": {
+   "high": 60,
+   "low": 55
+  },
+  "2994": {
+   "high": 53,
+   "low": 48
+  },
   "2998": {
    "high": 29,
    "low": 24
@@ -15,6 +23,14 @@
   "2999": {
    "high": 20,
    "low": 15
+  },
+  "3001": {
+   "high": 60,
+   "low": 58
+  },
+  "3039": {
+   "high": 45,
+   "low": 40
   },
   "3065": {
    "high": 18,
@@ -1889,6 +1905,17 @@
    "x": 32.6,
    "y": 44.6,
    "zone": "Ironforge"
+  },
+  "96772": {
+   "dungeon": "2994",
+   "giver": "Archmage Lan'dalock",
+   "level": 53,
+   "min": 46,
+   "side": "A",
+   "title": "The Dragon's Journal",
+   "x": 15.4,
+   "y": 73.8,
+   "zone": "Alterac Mountains"
   },
   "96800": {
    "dungeon": "189",
