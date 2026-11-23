@@ -53,6 +53,7 @@ local MARK = 12
 local GEM = 15
 local OPEN_SIZE = 18
 local OPEN_ICON = [[Interface\Icons\INV_Scroll_03]]
+local SEARCH_ICON = [[Interface\Common\UI-Searchbox-Icon]]
 local MARKS = 5
 local MARK_HEIGHT = 4
 local MOST_STEPS = 14
@@ -351,27 +352,28 @@ function Panel:BuildTab(key)
     return tab
 end
 
---- The small gold button after the tabs: opens the Upgrade Quest tab.
-function Panel:BuildOpenButton()
-    local button = CreateFrame("Button", nil, self.bar)
+--- A small gold button on the bar: an icon, a tooltip (words already in
+--- the player's language) and a click.
+local function BarButton(bar, icon, crop, title, line, onClick)
+    local button = CreateFrame("Button", nil, bar)
     button:SetSize(OPEN_SIZE, OPEN_SIZE)
     button.fill = Theme.Fill(button, "header")
     Theme.Border(button, "accent")
     button.icon = button:CreateTexture(nil, "ARTWORK")
     button.icon:SetPoint("TOPLEFT", 2, -2)
     button.icon:SetPoint("BOTTOMRIGHT", -2, 2)
-    button.icon:SetTexture(OPEN_ICON)
-    button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    button.icon:SetTexture(icon)
+    if crop then button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) end
     button:SetScript("OnClick", function()
         GameTooltip:Hide()
-        Panel:OpenTab()
+        onClick()
     end)
     button:SetScript("OnEnter", function(self)
         Theme.SetBorderColor(self, "accentHi")
         self.fill:SetColorTexture(Theme.Unpack("glassHover"))
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText(L["Upgrade Quest"], Theme.Unpack("accent"))
-        GameTooltip:AddLine(L["Opens the Upgrade Quest tab."], 1, 1, 1, true)
+        GameTooltip:SetText(title, Theme.Unpack("accent"))
+        GameTooltip:AddLine(line, 1, 1, 1, true)
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", function(self)
@@ -380,6 +382,32 @@ function Panel:BuildOpenButton()
         GameTooltip:Hide()
     end)
     return button
+end
+
+--- The small gold button after the tabs: opens the Upgrade Quest tab.
+function Panel:BuildOpenButton()
+    return BarButton(self.bar, OPEN_ICON, true, L["Upgrade Quest"], L["Opens the Upgrade Quest tab."],
+        function() Panel:OpenTab() end)
+end
+
+--- The magnifying glass right of the scroll: Equipment looks for upgrades
+--- again. Dimmed while a search runs.
+function Panel:BuildSearchButton()
+    return BarButton(self.bar, SEARCH_ICON, false, L["Search Again"], L["Looks for upgrades again now."],
+        function() Panel:SearchAgain() end)
+end
+
+--- Look for upgrades again now (the glass on the bar).
+function Panel:SearchAgain()
+    local logic = ns.UpgradeQuest
+    if logic and logic.SearchAgain then logic:SearchAgain() end
+    self:Refresh()
+end
+
+--- Is a search for upgrades under way?
+function Panel.Searching()
+    local finder = ns.Finder
+    return finder ~= nil and type(finder.Scanning) == "function" and finder:Scanning() == true
 end
 
 function Panel:BuildStepRow(index)
@@ -496,6 +524,7 @@ function Panel:Build()
     self.tabs = {}
     for _, key in ipairs(VIEWS) do self.tabs[key] = self:BuildTab(key) end
     self.openTab = self:BuildOpenButton()
+    self.searchButton = self:BuildSearchButton()
 
     -- The gems ride on a holder of their own, so the fold gem can stay on
     -- the one line when the bar is gone.
@@ -948,6 +977,18 @@ function Panel:FillBar(view, line)
         open:ClearAllPoints()
         open:SetPoint("LEFT", bar, "LEFT", x + 4, 0)
         open:Show()
+    end
+    local search = self.searchButton
+    if search then
+        search:ClearAllPoints()
+        if open then
+            search:SetPoint("LEFT", open, "RIGHT", 4, 0)
+        else
+            search:SetPoint("LEFT", bar, "LEFT", x + 4, 0)
+        end
+        search.dimmed = Panel.Searching()
+        search:SetAlpha(search.dimmed and 0.45 or 1)
+        search:Show()
     end
 end
 

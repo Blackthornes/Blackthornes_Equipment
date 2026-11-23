@@ -715,6 +715,22 @@ function UpgradeQuest:FreshScan()
     return nil, "waiting"
 end
 
+--- Search for upgrades again now (the glass on the small panel): forget
+--- what the finder judged and scan every place again, a slice per frame.
+--- Does nothing while a search is already running.
+-- @return true when a new search was asked for
+function UpgradeQuest:SearchAgain()
+    local finder = ns.Finder
+    if not finder or finder:Scanning() then return false end
+    finder:ForgetVerdicts()
+    self.rescan = true
+    self.staleScans = 0
+    self.scanFailed = nil
+    self.letGo = nil
+    if self:IsEnabled() then self:Update() else self:Changed() end
+    return true
+end
+
 --- A finder scan to pick from. Waits a little for the server to answer
 --- about gear the client has not seen, so the pick is made from all of it.
 -- @return the scan, or nil and "waiting" or "none"
