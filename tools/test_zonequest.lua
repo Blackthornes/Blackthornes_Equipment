@@ -295,6 +295,14 @@ suite.check("not in Durotar", not Quest.InZone(cloak, "Durotar"))
 suite.check("in Mulgore", Quest.InZone(cloak, "Mulgore"))
 suite.check("an item's quest with no known start is in no zone", not Quest.InZone({ kind = "quest", questID = 13 }, "Durotar"))
 suite.check("gear made from what you know is in every zone", Quest.InZone({ kind = "craft" }, "Durotar"))
+-- Dungeon and raid drops show from anywhere: a dungeon is never the zone
+-- you are standing in, so This Zone Only hid them (Trent, 2026-11-22).
+suite.check("a dungeon drop is in every zone", Quest.InZone({ kind = "dungeon", name = "Edwin VanCleef",
+    dungeon = "The Deadmines", zone = "Westfall" }, "Durotar"))
+suite.check("a raid drop is in every zone", Quest.InZone({ kind = "dungeon", raid = true, name = "Ragnaros",
+    dungeon = "Molten Core", zone = "Searing Gorge" }, "Durotar"))
+suite.check("a dungeon with no door zone is in every zone", Quest.InZone({ kind = "dungeon", name = "Boss",
+    dungeon = "Shadow Hold", zone = "Shadow Hold" }, "Ashenvale"))
 S.STARTS = {}
 
 Quest:SetZoneOnly(false)

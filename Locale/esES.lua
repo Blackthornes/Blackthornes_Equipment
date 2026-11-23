@@ -378,7 +378,7 @@ L["It becomes your upgrade quest, with steps to get it. A green Quest tag marks 
 L["Alt-click to pin it on your map"] = "Alt-clic para marcarla en tu mapa"
 L["How far above your level a quest can be."] = "Cuántos niveles por encima del tuyo puede estar una misión."
 L["Hides quests that need a group, and the quests after them. Elite kills count as group quests."] = "Oculta las misiones que necesitan un grupo y las que vienen después. Matar élites cuenta como misión de grupo."
-L["Only upgrades from the zone you're in, plus gear you can make. The list changes as you travel."] = "Solo mejoras de la zona en la que estás, y el equipo que puedes fabricar. La lista cambia mientras viajas."
+L["Only upgrades from the zone you're in, plus dungeon drops and gear you can make. The list changes as you travel."] = "Solo mejoras de la zona en la que estás, más el botín de mazmorras y el equipo que puedes fabricar. La lista cambia mientras viajas."
 L["Any"] = "Cualquiera"
 L["Up to my level"] = "Hasta mi nivel"
 L["Up to +%d"] = "Hasta +%d"
