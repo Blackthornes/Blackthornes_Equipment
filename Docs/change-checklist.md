@@ -136,3 +136,14 @@ Check: `local x, y = thing and Call()` keeps only the first value, so `y` is
   always nil. Declare the locals, then `if thing then x, y = Call() end`.
 Why: The trip line never drew on the world map: y was nil and the draw
   raised inside its pcall, in all five addons (2026-11-20).
+
+## Something new a verdict reads
+Files: ^Logic/(Compare|ItemSets|Weights)\.lua$
+Lines: Items:Equipped|CurrentHit|PlayerLevel
+Check: A verdict that reads worn gear outside its own slot, or anything
+  else that can change in play, must be in what the finder's kept verdicts
+  lean on (`Entry`, `Stamp` and `Finder:VerdictKey` in Logic/Finder.lua),
+  with a count for it in tools/test_engine.lua.
+Why: Verdicts are kept across gear swaps since 2026-11-23; one that reads
+  something new and is not dropped when it changes would show a stale
+  upgrade.

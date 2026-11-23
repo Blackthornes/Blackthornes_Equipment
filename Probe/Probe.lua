@@ -320,6 +320,11 @@ function Probe:Run()
         Line("dungeon doors", ok and text or "could not read")
     end
 
+    if ns.GearList then
+        local ok, text = pcall(ns.GearList.Describe, ns.GearList)
+        Line("gear list", ok and text or "could not read")
+    end
+
     local spec, why = Weights:CurrentSpec()
     Line("judged as", spec and (spec .. " (" .. why .. ")") or "no weights for this class")
 

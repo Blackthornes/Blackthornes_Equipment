@@ -259,12 +259,17 @@ function MinimapButton:OnEnable()
         C_Timer.After(1, function() MinimapButton:Reposition() end)
     end
 
-    -- Cheap enough to check, and catches a minimap resized at any point.
-    if C_Timer and C_Timer.NewTicker then
-        self.ticker = C_Timer.NewTicker(5, function()
-            if Minimap and MinimapButton.lastMinimapWidth ~= Minimap:GetWidth() then
-                MinimapButton:Reposition()
-            end
-        end)
+    -- A minimap resized later (other addons do it at any point) says so
+    -- itself, so nothing looks on a clock. Only a client whose minimap
+    -- can't be listened to falls back on a look every few seconds.
+    local function Resized()
+        if Minimap and MinimapButton.lastMinimapWidth ~= Minimap:GetWidth() then
+            MinimapButton:Reposition()
+        end
+    end
+    local hooked = Minimap and type(Minimap.HookScript) == "function"
+        and pcall(Minimap.HookScript, Minimap, "OnSizeChanged", Resized)
+    if not hooked and C_Timer and C_Timer.NewTicker then
+        self.ticker = C_Timer.NewTicker(5, Resized)
     end
 end

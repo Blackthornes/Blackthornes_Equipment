@@ -608,53 +608,73 @@ function Finder:SourcesFor(itemID, player)
     return found
 end
 
---- The items worth judging for this character: in level range, with at least
---- one source open to them. A list of { itemID, sources }.
-function Finder:Candidates(player, only, pause)
-    local list = {}
+--- The item IDs a scan looks at for this character: in level range, lowest
+--- first. Gear the gear list has already found is never for them
+--- (Logic/GearList.lua) is passed by with one lookup.
+function Finder:CandidateIDs(player)
+    local list = ns.GearList
     local floor = player.level - LEVELS_BELOW
     local ids = {}
     for itemID, item in pairs(ns.Sources.ITEMS) do
-        if item[2] >= floor and item[1] <= player.level then ids[#ids + 1] = itemID end
+        if item[2] >= floor and item[1] <= player.level and not (list and list:Out(itemID)) then
+            ids[#ids + 1] = itemID
+        end
     end
     for itemID in pairs(ns.Sources.FOREVER or {}) do
-        if not ns.Sources.ITEMS[itemID] then ids[#ids + 1] = itemID end
+        if not ns.Sources.ITEMS[itemID] and not (list and list:Out(itemID)) then ids[#ids + 1] = itemID end
     end
     -- Recipes the characters learned that Classic's data lacks.
     if ns.Crafting and ns.Crafting.LayLearned then ns.Crafting:LayLearned() end
     for itemID, craft in pairs(ns.Crafts and ns.Crafts.ITEMS or {}) do
         if not ns.Sources.ITEMS[itemID] and not (ns.Sources.FOREVER or {})[itemID]
-            and craft[5] >= floor and craft[4] <= player.level then
+            and craft[5] >= floor and craft[4] <= player.level and not (list and list:Out(itemID)) then
             ids[#ids + 1] = itemID
         end
     end
-    for _, itemID in ipairs(ids) do
-        if pause then pause() end
-        -- Gear the class can never wear (plate for a mage) is dropped by the
-        -- scan anyway; asked first, from the client's instant item info, its
-        -- vendors, quests, drops and crafts are never worked out.
-        local wearable = Finder.Wearable(player.class, itemID)
-        if wearable ~= false then
-            local sources = self:SourcesFor(itemID, player)
-            if only then
-                local kept = {}
-                for _, source in ipairs(sources) do
-                    if source.kind == only then kept[#kept + 1] = source end
-                end
-                sources = kept
-            end
-            if #sources > 0 then
-                list[#list + 1] = {
-                    itemID = itemID, sources = sources, needs = self:Needs(itemID), rep = Finder.Rep(itemID),
-                    -- Found a moment ago, so the scan need not ask again.
-                    -- Only a yes is kept: an item still loading is asked
-                    -- about again when the scan reaches it.
-                    wearable = wearable == true or nil,
-                }
-            end
+    table.sort(ids)
+    return ids
+end
+
+--- One item as something to judge: { itemID, sources, needs, rep,
+--- wearable }, or nil when the class can never wear it or nothing is open
+--- to the character that gives it.
+function Finder:Candidate(itemID, player, only)
+    -- Sorted once a session: never for this class or race, or a weapon
+    -- the class has no skill for.
+    local list = ns.GearList
+    local state = list and list:State(itemID, player)
+    if state == false or state == "skill" then return nil end
+    -- Gear the class can never wear (plate for a mage) is dropped by the
+    -- scan anyway; asked first, from the client's instant item info, its
+    -- vendors, quests, drops and crafts are never worked out.
+    local wearable = Finder.Wearable(player.class, itemID)
+    if wearable == false then return nil end
+    local sources = self:SourcesFor(itemID, player)
+    if only then
+        local kept = {}
+        for _, source in ipairs(sources) do
+            if source.kind == only then kept[#kept + 1] = source end
         end
+        sources = kept
     end
-    table.sort(list, function(a, b) return a.itemID < b.itemID end)
+    if #sources == 0 then return nil end
+    return {
+        itemID = itemID, sources = sources, needs = self:Needs(itemID), rep = Finder.Rep(itemID),
+        -- Found a moment ago, so the scan need not ask again.
+        -- Only a yes is kept: an item still loading is asked
+        -- about again when the scan reaches it.
+        wearable = wearable == true or nil,
+    }
+end
+
+--- The items worth judging for this character: in level range, with at least
+--- one source open to them. A list of { itemID, sources }.
+function Finder:Candidates(player, only, pause)
+    local list = {}
+    for _, itemID in ipairs(self:CandidateIDs(player)) do
+        if pause then pause() end
+        list[#list + 1] = self:Candidate(itemID, player, only)
+    end
     return list
 end
 
@@ -856,17 +876,172 @@ function Finder:JudgeKey()
     }, "|")
 end
 
+--- What every kept verdict leans on besides the gear worn: level, stat
+--- weights, talents and weapon skills, the skip setting and dual wield.
+--- When it changes, every verdict is made again.
+function Finder:VerdictKey()
+    return table.concat({
+        tostring(Items:PlayerLevel()),
+        tostring(Weights.generation or 0), tostring(self.judgeGeneration or 0),
+        tostring(ns.Alts and ns.Alts:PlayerSkipped() or false),
+        tostring(Weights:CanDualWield(Weights:PlayerClass(), Items:PlayerLevel())),
+    }, "|")
+end
+
+-- The two hands lean on each other (a two-hander empties the off hand, a
+-- one-hander may go in either), so a change in one looks at both.
+local HANDS = { 16, 17 }
+
+--- The slots a verdict on this kind of gear leans on.
+local function GroupOf(equipLoc)
+    local slots = Compare.SLOTS[equipLoc]
+    if not slots then return nil end
+    if slots[1] == 16 or slots[1] == 17 then return HANDS end
+    return slots
+end
+
+local function HitOf(link, weights)
+    if not link then return 0 end
+    local ok, score, hit = pcall(Compare.ScoreOf, Compare, link, weights)
+    -- Not readable: counted as having hit, to be safe.
+    if not ok or not score then return nil end
+    return hit or 0
+end
+
+--- The gear worn changed in one slot. Verdicts for that slot (and the
+--- other hand) are made again; the rest are kept, unless the piece taken
+--- off or put on reaches further: hit counts against the cap with every
+--- other piece's hit, and a set piece changes what its set is worth.
+function Finder:SlotChanged(slot, was, now)
+    local looks = self.slotLooks
+    looks[slot] = (looks[slot] or 0) + 1
+    self.toLook[slot] = true
+    local weights = Weights:ForPlayer()
+    local far = false
+    if weights and Weights.HitKind(weights) then
+        -- Swinging two weapons moves the cap itself.
+        if slot == 16 or slot == 17 then far = true end
+        if HitOf(was, weights) ~= 0 or HitOf(now, weights) ~= 0 then far = true end
+    end
+    if far then self.hitLooks = (self.hitLooks or 0) + 1 end
+    local sets = ns.ItemSets
+    if sets and sets.SetOf then
+        local okWas, setWas = pcall(sets.SetOf, sets, was)
+        local okNow, setNow = pcall(sets.SetOf, sets, now)
+        if not okWas or not okNow or setWas or setNow then self.setLooks = (self.setLooks or 0) + 1 end
+    end
+end
+
+--- Compare the gear worn with what was worn at the last look, slot by
+--- slot. Read from the gear itself, not from an event, so a change whose
+--- event was missed is still caught.
+function Finder:LookAtWorn()
+    self.slotLooks = self.slotLooks or {}
+    self.toLook = self.toLook or {}
+    local seen, links = self.wornSeen, self.wornLinks
+    local first = seen == nil
+    if first then
+        seen, links = {}, {}
+        self.wornSeen, self.wornLinks = seen, links
+    end
+    for slot = 1, 19 do
+        local link = Items:Equipped(slot)
+        -- By item string only: a link the client let go of reads with no
+        -- name, and that is no change (WornKey).
+        local key = link and (link:match("item:[^|%[]+") or link) or "-"
+        if seen[slot] ~= key then
+            local was = links[slot]
+            seen[slot], links[slot] = key, link
+            if not first then self:SlotChanged(slot, was, link) end
+        elseif link and not link:find("[]", 1, true) then
+            -- The whole link, name and all, once the client has it.
+            links[slot] = link
+        end
+    end
+end
+
+--- Does this slot need a new look: has what is worn there changed since
+--- the last whole scan?
+function Finder:NeedsLook(slot)
+    return self.toLook ~= nil and self.toLook[slot] == true
+end
+
+--- What a kept verdict leans on, as one number: it moves when any of the
+--- slots, the hit or the sets the verdict reads have changed.
+local function Stamp(self, entry)
+    local looks = self.slotLooks or {}
+    local stamp = 0
+    for _, slot in ipairs(entry.slots) do stamp = stamp + (looks[slot] or 0) end
+    if entry.hit then stamp = stamp + (self.hitLooks or 0) end
+    if entry.set then stamp = stamp + (self.setLooks or 0) end
+    return stamp
+end
+
+--- A new verdict to keep, with what it leans on. Nil when that can't be
+--- told (then it is judged again next time).
+local function Entry(self, link, best, result)
+    local info = Items:Info(link)
+    local slots = info and GroupOf(info.equipLoc)
+    if not slots then return nil end
+    local entry = { best = best, result = result, slots = slots }
+    local weights = Weights:ForPlayer()
+    if weights and Weights.HitKind(weights) and result.verdict ~= "cantuse" then
+        -- Gear with random rolls: any roll may carry hit.
+        entry.hit = best ~= nil or HitOf(link, weights) ~= 0
+        for _, slot in ipairs(slots) do
+            if not entry.hit and HitOf(Items:Equipped(slot), weights) ~= 0 then entry.hit = true end
+        end
+    end
+    local sets = ns.ItemSets
+    if sets and sets.SetOf then
+        local ok, set = pcall(sets.SetOf, sets, link)
+        entry.set = not ok or set ~= nil
+        for _, slot in ipairs(slots) do
+            if not entry.set then
+                local okWorn, wornSet = pcall(sets.SetOf, sets, Items:Equipped(slot))
+                entry.set = not okWorn or wornSet ~= nil
+            end
+        end
+    end
+    entry.stamp = Stamp(self, entry)
+    return entry
+end
+
+--- The verdicts kept from earlier scans. All of them start afresh when
+--- the level, weights, talents or weapon skills change; a change of gear
+--- drops only the verdicts that lean on the slot that changed (Kept).
 function Finder:Judged()
     local key = self:JudgeKey()
-    if key ~= self.judgedKey or type(self.judged) ~= "table" then
-        self.judgedKey, self.judged = key, {}
+    local verdictKey = self:VerdictKey()
+    -- `judgedKey` cleared by hand starts afresh too.
+    if verdictKey ~= self.verdictKey or self.judgedKey == nil or type(self.judged) ~= "table" then
+        self.verdictKey, self.judged = verdictKey, {}
+        -- Every slot is looked at again.
+        self.toLook = self.toLook or {}
+        for slot = 1, 19 do self.toLook[slot] = true end
     end
+    self.judgedKey = key
+    self:LookAtWorn()
     return self.judged
+end
+
+--- An item's kept verdict, if nothing it leans on has changed since:
+--- { best, result, main }, or nil.
+function Finder:Kept(judged, itemID)
+    local entry = judged[itemID]
+    if not entry then return nil end
+    if entry.stamp ~= Stamp(self, entry) then
+        judged[itemID] = nil
+        return nil
+    end
+    return entry
 end
 
 --- Forget the kept verdicts (talents or weapon skills changed).
 function Finder:ForgetVerdicts()
     self.judgeGeneration = (self.judgeGeneration or 0) + 1
+    -- A skill learned may open weapons the gear list had set aside.
+    if ns.GearList then ns.GearList:SkillsChanged() end
     self:MarkStale()
 end
 
@@ -874,7 +1049,7 @@ end
 --- is judged at its best roll.
 -- @return best roll (or nil), ok, result
 function Finder:JudgeOnce(judged, itemID)
-    local kept = judged[itemID]
+    local kept = self:Kept(judged, itemID)
     if kept then return kept.best, true, kept.result end
     local best = ns.Rolls and ns.Rolls.Best and ns.Rolls:Best(itemID)
     local link = best and best.link or ("item:%d"):format(itemID)
@@ -886,8 +1061,8 @@ function Finder:JudgeOnce(judged, itemID)
     local group = data and data.ITEMS and data.ITEMS[itemID]
     local rolls = group and data.GROUPS and data.GROUPS[group]
     local allRolls = not rolls or (best and (best.rolls or 0) * 2 >= #rolls)
-    if ok and result and allRolls then
-        judged[itemID] = { best = best, result = result }
+    if ok and type(result) == "table" and allRolls then
+        judged[itemID] = Entry(self, link, best, result)
     end
     return best, ok, result
 end
@@ -1002,16 +1177,30 @@ function Finder:Build(only, ahead, pause)
             if id and not Items:Stats(link) then self:Request(id) end
         end
     end
-    for _, candidate in ipairs(self:Candidates(plan, only, pause)) do
+    -- The slots waiting for a look as this scan begins.
+    local looking = {}
+    for slot, yes in pairs(self.toLook or {}) do
+        if yes then looking[slot] = (self.slotLooks or {})[slot] or 0 end
+    end
+    for _, itemID in ipairs(self:CandidateIDs(plan)) do
         if pause then pause() end
-        local itemID = candidate.itemID
         -- An item judged before keeps its verdict, even when the client has
         -- let go of its details since: asking again would start the scans
         -- over and over, and the list would change each time.
-        local kept = not carried[itemID] and not worn[itemID] and judged[itemID] ~= nil
-        local wearable = kept or (not carried[itemID]
-            and (candidate.wearable or Wearable(player.class, itemID)))
-        if wearable ~= false then
+        local entry = not carried[itemID] and not worn[itemID] and self:Kept(judged, itemID) or nil
+        local kept = entry ~= nil
+        -- A kept verdict that is no upgrade has nothing to list: where the
+        -- item comes from is not worked out again. Most items end here.
+        local candidate
+        if entry and not (Counts(entry.result, reach, level) and entry.result.slot) then
+            checked = checked + 1
+        else
+            candidate = self:Candidate(itemID, plan, only)
+            if candidate and pause then pause() end
+        end
+        local wearable = candidate and (kept or (not carried[itemID]
+            and (candidate.wearable or Wearable(player.class, itemID))))
+        if candidate and wearable ~= false then
             if not kept and (wearable == nil or not self:IsCached(itemID)) then
                 -- One the server never answered is not waited on for ever.
                 if not self:GaveUp(itemID) then
@@ -1104,6 +1293,11 @@ function Finder:Build(only, ahead, pause)
         -- made it, so the upgrade quest and the character sheet read this
         -- one and start no second scan of their own.
         if (self.changes or 0) == changes then self.stale = false end
+        -- The slots that waited for a look have had it, unless one changed
+        -- again while the scan ran.
+        for slot, was in pairs(looking) do
+            if ((self.slotLooks or {})[slot] or 0) == was then self.toLook[slot] = nil end
+        end
     end
     -- What this scan left unasked. Set only by a scan that finished, so one
     -- dropped half way keeps the list the last whole scan made.
@@ -1360,11 +1554,6 @@ end
 -- done a slice per frame instead, and is told when it is finished.
 --------------------------------------------------------------------------------
 
--- How long one frame's slice may run, in milliseconds, and how many items a
--- slice takes on a client without a timer to measure with.
-local SLICE_MS = 4
-local SLICE_ITEMS = 40
-
 --- The latest full scan, if nothing has changed since it was started.
 function Finder:Fresh()
     -- While a scan runs, the last one is out of date. The key catches a
@@ -1379,97 +1568,17 @@ function Finder:Scanning()
     return self.background ~= nil
 end
 
--- The scans under way, the one whose turn it is first. They share one
--- frame's slice between them: the upgrade quest's scan and the finder
--- window's own often run at once (new gear with the window open), and each
--- taking a whole slice made every frame twice as long.
-local workers = {}
--- Scans that finished, waiting to be handed over at the start of the next
--- frame: what takes a scan (the finder window drawing its rows, the upgrade
--- quest picking) is work of its own, and no slice is stacked on top of it.
-local finished = {}
-local pumping, queued = false, false
-local sliceStarted, sliceCount
-
-local function SliceSpent(Clock)
-    local now = Clock()
-    if now and sliceStarted then return now - sliceStarted >= SLICE_MS end
-    return sliceCount >= SLICE_ITEMS
-end
-
-local Pump
-
-local function PumpSoon()
-    if queued or pumping or (#workers == 0 and #finished == 0) then return end
-    queued = true
-    _G.C_Timer.After(0, Pump)
-end
-
---- One frame's share of the scans under way.
-Pump = function()
-    queued = false
-    if pumping then return end
-    pumping = true
-    local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
-    local started = Clock()
-    sliceStarted, sliceCount = started, 0
-    local handed = #finished > 0
-    while finished[1] do
-        local job = table.remove(finished, 1)
-        local ok, err = pcall(job.finish, job.found, job.why)
-        if not ok then ns.Debug("finder:", tostring(err)) end
-    end
-    while workers[1] and not handed do
-        local job = table.remove(workers, 1)
-        local ok, found, why = coroutine.resume(job.worker)
-        if not ok then
-            ns.Debug("finder:", tostring(found))
-            job.found, job.why = nil, "error"
-            finished[#finished + 1] = job
-        elseif coroutine.status(job.worker) == "dead" then
-            job.found, job.why = found, why
-            finished[#finished + 1] = job
-        else
-            -- It stopped because the frame's share is used: to the back of
-            -- the line, and the rest wait for the next frame.
-            workers[#workers + 1] = job
-            break
-        end
-        if SliceSpent(Clock) then break end
-    end
-    local ended = Clock()
-    if ns.Perf and started and ended then ns.Perf:Add("Finder:background slice", ended - started) end
-    pumping = false
-    PumpSoon()
-end
-
---- Run `build(pause)` a slice per frame and hand what it returns to
---- `finish(found, why)`. Without timers or coroutines it runs at once.
+--- Run `build(pause)` a slice per frame on the frame worker
+--- (Core/Worker.lua) and hand what it returns to `finish(found, why)`.
+--- Scans still run during a fight: the upgrade quest's panel shows it is
+--- looking until its scan is in, and that must not last a whole fight.
 local function Sliced(build, finish)
-    local Clock = ns.Perf and ns.Perf.Clock or function() return nil end
-    local after = _G.C_Timer and _G.C_Timer.After
-    local canYield = type(after) == "function" and type(coroutine) == "table"
-    if not canYield then
-        finish(build(nil))
-        return
-    end
-
-    local function Pause()
-        sliceCount = (sliceCount or 0) + 1
-        if SliceSpent(Clock) then coroutine.yield() end
-    end
-    workers[#workers + 1] = {
-        worker = coroutine.create(function() return build(Pause) end), finish = finish,
-    }
-    -- Its first slice waits for the next frame: whatever asked for the scan
-    -- (a bag or gear event, the upgrade quest's own look) has its own work
-    -- to do in this one.
-    PumpSoon()
+    ns.Worker:Run(build, finish)
 end
 
 --- How many scans are under way (for the tests).
 function Finder.SlicedNow()
-    return #workers + #finished
+    return ns.Worker.Count()
 end
 
 --- Make a full scan for now, a slice per frame, then call each of the

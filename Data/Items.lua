@@ -110,6 +110,16 @@ function Items:Info(link)
     return info
 end
 
+--- What kind of gear an item is, from the client's own item table alone:
+--- the slot kind ("INVTYPE_HEAD"), class and subclass. Nothing is asked of
+--- the server, so thousands can be read at login (Logic/GearList.lua). Nil
+--- when the client does not know the item.
+function Items:Kind(itemID)
+    local _, _, _, equipLoc, _, classID, subclassID = Call(INSTANT, ("item:%d"):format(itemID))
+    if type(equipLoc) ~= "string" then return nil end
+    return equipLoc, tonumber(classID), tonumber(subclassID)
+end
+
 --- The raw stats table for a link (ITEM_MOD_* keys), or nil.
 function Items:Stats(link)
     link = self.PlainLink(link)
