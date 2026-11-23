@@ -842,7 +842,7 @@ function Tab:PaintLine(row, line, index)
         row.name:SetWidth(columns.name)
         local r, g, b = Theme.QualityColor(line.link)
         if r then row.name:SetTextColor(r, g, b) else row.name:SetTextColor(Theme.Unpack("text")) end
-        row.name:SetText(line.name ~= "" and line.name or "?")
+        row.name:SetText(line.name ~= "" and line.name or ns.Items.ShowLink(line.link) or "?")
         row.gain:SetPoint("TOPRIGHT", -columns.gain, -6)
         row.gain:SetText(line.gain)
         row.gain:SetTextColor(Theme.Unpack(line.gainColor or "good"))
