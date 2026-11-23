@@ -21,16 +21,16 @@
 local _, ns = ...
 local L = ns.L
 
-local Tab = ns.NewModule("TrainingTab")
+local Train = ns.NewModule("TrainingTab")
 
 local Theme = ns.Theme
 local Widgets = ns.Widgets
 
-Tab.KEY = "training"
+Train.KEY = "training"
 -- It stands in for the Training drawer: the old header's Training button
 -- opens this tab. A suite that tests the drawer sets env.OLD_PANELS, which
 -- clears this.
-Tab.standsIn = true
+Train.standsIn = true
 
 local PAD = 18
 local WIDTH = 1040
@@ -76,7 +76,7 @@ local function Training() return ns.ClassTraining end
 
 --- How many spells wait at the trainer for the character playing: the
 --- number the tab's name carries. 0 while class training is off.
-function Tab.Count()
+function Train.Count()
     local training = Training()
     if not (training and training:IsOn()) then return 0 end
     local ok, plan = pcall(training.Plan, training)
@@ -84,14 +84,14 @@ function Tab.Count()
 end
 
 --- The tab's name: "Training", or "Training (4)" with spells waiting.
-function Tab.TabText()
-    local count = Tab.Count()
+function Train.TabText()
+    local count = Train.Count()
     return count > 0 and L.Format("Training (%d)", count) or L["Training"]
 end
 
 --- The characters to pick from: the one playing first, then the others on
 --- this realm and side with spells waiting. { guid, name, other }.
-function Tab:Characters()
+function Train:Characters()
     local training = Training()
     local player = training.Player()
     local list = { { guid = player.guid, name = player.name or "?" } }
@@ -103,7 +103,7 @@ function Tab:Characters()
 end
 
 --- The character picked: nil for the one playing, else the other's note.
-function Tab:Other()
+function Train:Other()
     if not self.who then return nil end
     for _, entry in ipairs(self:Characters()) do
         if entry.guid == self.who and entry.other then return entry.other end
@@ -114,7 +114,7 @@ end
 
 --- What another character has waiting, as spells: its noted spell IDs
 --- looked up in its class's list. { ready = { spells }, cost, unknown }.
-function Tab.OtherPlan(other)
+function Train.OtherPlan(other)
     local training = Training()
     local data = training:Data()
     local note = data.characters[other.guid]
@@ -138,7 +138,7 @@ end
 
 --- The left side's lines, top to bottom: { kind = "head" | "spell" |
 --- "note", text, spell, soon, skipped }.
-function Tab:Lines()
+function Train:Lines()
     local training = Training()
     local lines = {}
     local other = self:Other()
@@ -146,7 +146,7 @@ function Tab:Lines()
         lines[1] = { kind = "note", text = L["Class training is turned off in Settings."] }
         return lines, { ready = {}, next = {}, skipped = {}, cost = 0, unknown = 0 }
     end
-    local plan = other and Tab.OtherPlan(other) or training:Plan()
+    local plan = other and Train.OtherPlan(other) or training:Plan()
     lines[#lines + 1] = { kind = "head", text = L["TRAIN NOW"] }
     if #plan.ready == 0 then
         lines[#lines + 1] = { kind = "note", text = L["Nothing to train at your level."] }
@@ -167,7 +167,7 @@ end
 
 --- The weapon skills an upgrade waits on, by the data's name for each:
 --- from the bags (the gear window's read) and the finder's last scan.
-function Tab.Waited()
+function Train.Waited()
     local waited = {}
     for _, weapon in ipairs(ns.UI and ns.UI.untrained or {}) do
         if weapon.skill then waited[weapon.skill] = true end
@@ -183,12 +183,12 @@ function Tab.Waited()
 end
 
 --- The right side's lines: { name, known, sub, subclassID, way }.
-function Tab:Skills()
+function Train:Skills()
     local skills = ns.WeaponSkills
     local lines = {}
     if not skills then return lines end
     local ok, all = pcall(skills.All, skills)
-    local waited = Tab.Waited()
+    local waited = Train.Waited()
     for _, skill in ipairs(ok and all or {}) do
         local line = { name = skill.name, known = skill.known, subclassID = skill.subclassID }
         if not skill.known then
@@ -212,7 +212,7 @@ function Tab:Skills()
 end
 
 --- The foot's left line: "4 spells to train now. 4 more at level 40."
-function Tab.FootText(plan)
+function Train.FootText(plan)
     local count = #plan.ready
     local now = count == 0 and L["Nothing to train now."] or count == 1 and L["1 spell to train now."]
         or L.Format("%d spells to train now.", count)
@@ -264,14 +264,14 @@ local function Button(parent, text, run, height)
         { width = math.max(60, Theme.TextWidth("small", text) + 24), height = height or 22 })
 end
 
-function Tab:BuildBar(page)
+function Train:BuildBar(page)
     local label = Theme.CreateLabel(page, "small", "muted")
     label:SetPoint("TOPLEFT", PAD, -14)
     label:SetText(L["Character:"])
     local who = Widgets.CreateDropdown(page, { { text = "?", value = "me" } }, function(value)
-        Tab.who = value ~= "me" and value or nil
-        Tab.offset = 0
-        Tab:Refresh()
+        Train.who = value ~= "me" and value or nil
+        Train.offset = 0
+        Train:Refresh()
     end, { width = 220 })
     who:SetPoint("LEFT", label, "RIGHT", 8, 0)
     self.whoChoice = who
@@ -285,7 +285,7 @@ function Tab:BuildBar(page)
     way:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
         GameTooltip:AddLine(L["Show the Way"], Theme.Unpack("accent"))
-        GameTooltip:AddLine(rawget(Tab, "trainerLine") or "", 1, 1, 1, true)
+        GameTooltip:AddLine(rawget(Train, "trainerLine") or "", 1, 1, 1, true)
         GameTooltip:Show()
     end)
     way:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -303,7 +303,7 @@ function Tab:BuildBar(page)
     return 52
 end
 
-function Tab:BuildLeft(body, width)
+function Train:BuildLeft(body, width)
     local left = Theme.CreatePanel(body, "well", "border")
     left:SetPoint("TOPLEFT", 0, 0)
     left:SetPoint("BOTTOMLEFT", 0, FOOT)
@@ -328,7 +328,7 @@ function Tab:BuildLeft(body, width)
     list:SetPoint("TOPLEFT", 1, -1 - HEAD)
     list:SetPoint("BOTTOMRIGHT", -1, NOTE)
     list:EnableMouseWheel(true)
-    list:SetScript("OnMouseWheel", function(_, delta) Tab:Scroll(-delta * WHEEL) end)
+    list:SetScript("OnMouseWheel", function(_, delta) Train:Scroll(-delta * WHEEL) end)
     self.list = list
     self.rows = {}
     local columns = self.columns
@@ -350,7 +350,7 @@ function Tab:BuildLeft(body, width)
         row:SetScript("OnEnter", function(self)
             self.over = true
             Paint(self)
-            Tab:SpellTip(self)
+            Train:SpellTip(self)
         end)
         row:SetScript("OnLeave", function(self)
             self.over = false
@@ -359,7 +359,7 @@ function Tab:BuildLeft(body, width)
         end)
         row:SetScript("OnClick", function(self, mouse)
             local line = rawget(self, "line")
-            if mouse == "RightButton" and line and line.kind == "spell" then Tab:Skip(line) end
+            if mouse == "RightButton" and line and line.kind == "spell" then Train:Skip(line) end
         end)
         row:Hide()
         self.rows[index] = row
@@ -370,8 +370,8 @@ function Tab:BuildLeft(body, width)
     note:SetPoint("BOTTOMLEFT", 12, 9)
     self.skipNote = note
     local show = Button(left, L["Show Skipped"], function()
-        Tab.showSkipped = not Tab.showSkipped
-        Tab:Refresh()
+        Train.showSkipped = not Train.showSkipped
+        Train:Refresh()
     end, 20)
     show:SetPoint("BOTTOMRIGHT", -8, 5)
     self.skippedButton = show
@@ -380,7 +380,7 @@ function Tab:BuildLeft(body, width)
     show:SetWidth(self.skippedWidth)
 end
 
-function Tab:BuildRight(body, left)
+function Train:BuildRight(body, left)
     local right = Theme.CreatePanel(body, "well", "border")
     right:SetPoint("TOPLEFT", left + 8, 0)
     right:SetPoint("BOTTOMRIGHT", 0, FOOT)
@@ -439,7 +439,7 @@ function Tab:BuildRight(body, left)
     self.skillNote = none
 end
 
-function Tab:Build(area)
+function Train:Build(area)
     if self.page then return self.page end
     if not (area and Training()) then return nil end
 
@@ -479,7 +479,7 @@ local function Room(self, taken)
 end
 
 --- The game's own spell tooltip, then what it costs and how to skip it.
-function Tab:SpellTip(row)
+function Train:SpellTip(row)
     local line = rawget(row, "line")
     local spell = line and line.kind == "spell" and line.spell
     if not spell then return end
@@ -503,7 +503,7 @@ function Tab:SpellTip(row)
     GameTooltip:Show()
 end
 
-function Tab:PaintLine(row, line, index)
+function Train:PaintLine(row, line, index)
     local training = Training()
     local columns = self.columns
     row.line = line
@@ -543,7 +543,7 @@ function Tab:PaintLine(row, line, index)
         TextHeight(row.cost, "small", COST_WIDTH)) + 6)
 end
 
-function Tab:PaintLines(lines)
+function Train:PaintLines(lines)
     self.lines = lines
     local room = Room(self, HEAD + 2 + NOTE)
     local offset = math.max(0, math.min(self.offset or 0, math.max(0, #lines - 1)))
@@ -572,7 +572,7 @@ function Tab:PaintLines(lines)
     self.linesShown = shown
 end
 
-function Tab:PaintSkills()
+function Train:PaintSkills()
     local other = self:Other()
     local lines = other and {} or self:Skills()
     self.skills = lines
@@ -620,7 +620,7 @@ function Tab:PaintSkills()
 end
 
 --- The Character: list as it stands, the one picked showing.
-function Tab:SyncWho()
+function Train:SyncWho()
     local options = {}
     for _, entry in ipairs(self:Characters()) do
         options[#options + 1] = { text = entry.name, value = entry.other and entry.guid or "me" }
@@ -630,7 +630,7 @@ function Tab:SyncWho()
     who:SetValue(self:Other() and self.who or "me")
 end
 
-function Tab:Refresh()
+function Train:Refresh()
     if not self:IsShown() then return nil end
     local training = Training()
     self:SyncWho()
@@ -668,7 +668,7 @@ function Tab:Refresh()
     self.skippedButton:SetText(self.showSkipped and L["Hide Skipped"] or L["Show Skipped"])
     self.skippedButton:SetWidth(self.skippedWidth)
 
-    local foot = on and Tab.FootText(plan) or ""
+    local foot = on and Train.FootText(plan) or ""
     if #lines > self.linesShown and self.linesShown > 0 then
         foot = foot .. " " .. L.Format("%d to %d of %d. Scroll for more.", self.offset + 1,
             self.offset + self.linesShown, #lines)
@@ -684,7 +684,7 @@ end
 --- Skip a spell (a right-click on it), or bring a skipped one back. It
 --- leaves the lists and costs here and in Butler; nothing is bought or
 --- forgotten. Only for the character playing.
-function Tab:Skip(line)
+function Train:Skip(line)
     local training = Training()
     if self:Other() or not (training and line.spell and line.spell.id) then return end
     training:SetSkipped(line.spell.id, not line.skipped)
@@ -692,7 +692,7 @@ function Tab:Skip(line)
     self:Refresh()
 end
 
-function Tab:Scroll(steps)
+function Train:Scroll(steps)
     local total = self.lines and #self.lines or 0
     local before = self.offset or 0
     self.offset = math.max(0, math.min(before + steps, math.max(0, total - 1)))
@@ -703,7 +703,7 @@ end
 -- Looking
 --------------------------------------------------------------------------------
 
-function Tab:IsShown()
+function Train:IsShown()
     local page = self.page
     if not Shown(page) then return false end
     local ok, visible = pcall(page.IsVisible, page)
@@ -712,13 +712,13 @@ function Tab:IsShown()
 end
 
 --- The tab's name takes the count, whether or not the page shows.
-function Tab:PaintTab()
+function Train:PaintTab()
     local Gear = ns.GearWindow
-    if Gear and Gear.SetTabText then Gear:SetTabText(Tab.KEY, Tab.TabText()) end
+    if Gear and Gear.SetTabText then Gear:SetTabText(Train.KEY, Train.TabText()) end
 end
 
 --- Once for a burst, and only while the page shows; the tab's name always.
-function Tab:RefreshSoon()
+function Train:RefreshSoon()
     if self.pending then return end
     local after = C_Timer and C_Timer.After
     if type(after) ~= "function" then
@@ -727,41 +727,41 @@ function Tab:RefreshSoon()
     end
     self.pending = true
     after(0.2, function()
-        Tab.pending = false
-        Tab:PaintTab()
-        Tab:Refresh()
+        Train.pending = false
+        Train:PaintTab()
+        Train:Refresh()
     end)
 end
 
-function Tab:OnTrackingChanged() end
-function Tab:OnUpgradeQuestChanged() end
+function Train:OnTrackingChanged() end
+function Train:OnUpgradeQuestChanged() end
 
-function Tab:Show()
+function Train:Show()
     if not self.page then return end
     self.page:Show()
     self:PaintTab()
     self:Refresh()
 end
 
-function Tab:Hide()
+function Train:Hide()
     if self.page then self.page:Hide() end
 end
 
 --- Open the Equipment window on this tab.
-function Tab:Open()
-    if ns.GearWindow then ns.GearWindow:Open(Tab.KEY) end
+function Train:Open()
+    if ns.GearWindow then ns.GearWindow:Open(Train.KEY) end
 end
 
-function Tab:OnEnable()
+function Train:OnEnable()
     ns.RegisterEvent(self, "PLAYER_MONEY", function()
-        if Tab:IsShown() then Tab:RefreshSoon() end
+        if Train:IsShown() then Train:RefreshSoon() end
     end)
     -- A spell learned, a price seen or a skip comes through class
     -- training's own change call (UI/TrainingDrawer.lua passes it on), and
     -- a weapon skill learned through WeaponSkills:Look. Neither is read on
     -- every spell event.
-    ns.RegisterEvent(self, "PLAYER_LEVEL_UP", function() Tab:RefreshSoon() end)
+    ns.RegisterEvent(self, "PLAYER_LEVEL_UP", function() Train:RefreshSoon() end)
     self:PaintTab()
 end
 
-if ns.GearWindow then ns.GearWindow:AddPage(Tab.KEY, Tab) end
+if ns.GearWindow then ns.GearWindow:AddPage(Train.KEY, Train) end

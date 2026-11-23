@@ -258,6 +258,17 @@ Click(DungeonRow("Test Caverns"))
 Click(DungeonRow("Test Monastery Library"))
 suite.check("a second look at a dungeon judges nothing", judges == firstLook, judges - firstLook)
 
+do
+    local reads, realRows = 0, ns.DungeonLoot.Rows
+    ns.DungeonLoot.Rows = function(...) reads = reads + 1 return realRows(...) end
+    Tab:Scroll(3)
+    Tab:Scroll(-3)
+    Tab:ScrollDungeons(1)
+    Tab:ScrollDungeons(-1)
+    suite.check("the wheel reads no drops again", reads == 0, reads)
+    ns.DungeonLoot.Rows = realRows
+end
+
 Click(DungeonRow("Far Farrak"))
 suite.check("a dungeon for later says so in the foot",
     Tab.foot:GetText() == "Far Farrak: its gear is for later.", Tab.foot:GetText())

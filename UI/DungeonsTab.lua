@@ -26,18 +26,18 @@
 local _, ns = ...
 local L = ns.L
 
-local Tab = ns.NewModule("DungeonsTab")
+local Dungeons = ns.NewModule("DungeonsTab")
 
 local Theme = ns.Theme
 local Widgets = ns.Widgets
 
 -- The page's key in the Equipment window. "dungeons" and "loot" still name
 -- the old tabs' windows until step 6 takes them out.
-Tab.KEY = "instances"
+Dungeons.KEY = "instances"
 -- It stands in for the old Dungeon Loot and Dungeon Quests tabs: /beq loot
 -- and /beq dungeons open it. A suite that tests the old tabs sets
 -- env.OLD_PANELS, which clears this.
-Tab.standsIn = true
+Dungeons.standsIn = true
 
 local PAD = 18
 local WIDTH = 1040
@@ -97,12 +97,12 @@ end
 --------------------------------------------------------------------------------
 
 --- A wing's dungeon: "189Library" shares the quests of "189".
-function Tab.BaseKey(key)
+function Dungeons.BaseKey(key)
     return type(key) == "string" and key:match("^(%d+)%a") or nil
 end
 
 --- "25-35", "60", or "" when the data gives no levels.
-function Tab.Levels(dungeon)
+function Dungeons.Levels(dungeon)
     local low, high = dungeon.low, dungeon.high
     if not low then return "" end
     if not high or high == low then return tostring(low) end
@@ -110,14 +110,14 @@ function Tab.Levels(dungeon)
 end
 
 --- Is the dungeon above the character's level for now?
-function Tab.IsLater(dungeon, level)
+function Dungeons.IsLater(dungeon, level)
     return (dungeon.low or 0) > (level or 0)
 end
 
 --- How many upgrades each dungeon holds, by its key, read from a whole
 --- scan of the finder: every upgrade to wear now whose places name a boss
 --- there. Nothing is judged here.
-function Tab.Counts(found)
+function Dungeons.Counts(found)
     local counts = {}
     if type(found) ~= "table" or type(found.all) ~= "table" then return counts end
     local S = ns.Sources
@@ -144,7 +144,7 @@ end
 
 --- The finder's line for an item, when its last scan holds one: what the
 --- row's menu acts on (track it, make it the quest).
-function Tab.PickFor(itemID)
+function Dungeons.PickFor(itemID)
     local found = ns.Finder and ns.Finder.latest
     if not (itemID and type(found) == "table" and type(found.all) == "table") then return nil end
     for _, list in pairs(found.all) do
@@ -158,11 +158,11 @@ end
 --- Every dungeon and raid for this character's side: the ones with drops
 --- and the ones with quests, each { key, name, low, high, door, raid,
 --- forever, later, upgrades, done, all, quests }.
-function Tab:Read(found)
+function Dungeons:Read(found)
     local Finder, DL, DQ = ns.Finder, ns.DungeonLoot, ns.DungeonQuests
     local player = Finder and Finder:Player()
     local level = player and player.level or 0
-    local counts = Tab.Counts(found)
+    local counts = Dungeons.Counts(found)
     local quests = {}
     local okQuests, built = pcall(DQ.Build, DQ, true)
     for _, dungeon in ipairs(okQuests and built.dungeons or {}) do quests[dungeon.key] = dungeon end
@@ -171,7 +171,7 @@ function Tab:Read(found)
     local okLoot, loot = pcall(DL.Dungeons, DL, player)
     for _, dungeon in ipairs(okLoot and loot or {}) do
         have[dungeon.key] = true
-        local base = Tab.BaseKey(dungeon.key)
+        local base = Dungeons.BaseKey(dungeon.key)
         if base then have[base] = true end
         list[#list + 1] = dungeon
     end
@@ -183,12 +183,12 @@ function Tab:Read(found)
         end
     end
     for order, dungeon in ipairs(list) do
-        local own = quests[dungeon.key] or quests[Tab.BaseKey(dungeon.key) or ""]
+        local own = quests[dungeon.key] or quests[Dungeons.BaseKey(dungeon.key) or ""]
         dungeon.order = order
         dungeon.quests = own and own.quests or {}
         dungeon.done, dungeon.all = own and own.done or 0, own and own.all or 0
         if dungeon.forever and not dungeon.low and own then dungeon.low, dungeon.high = own.low, own.high end
-        dungeon.later = Tab.IsLater(dungeon, level)
+        dungeon.later = Dungeons.IsLater(dungeon, level)
         dungeon.upgrades = counts[dungeon.key] or 0
     end
     -- Classic's by their levels, raids after, Forever's own last, as the
@@ -204,7 +204,7 @@ function Tab:Read(found)
 end
 
 --- The list in the order a heading asks for. No key: the order read.
-function Tab.Sorted(list, key, flip)
+function Dungeons.Sorted(list, key, flip)
     local sorted = {}
     for index, dungeon in ipairs(list) do sorted[index] = dungeon end
     if not key then return sorted end
@@ -230,7 +230,7 @@ function Tab.Sorted(list, key, flip)
 end
 
 --- What the gain cell says for a drop: the words and their colour.
-function Tab.GainText(row)
+function Dungeons.GainText(row)
     local result = row.result
     if row.upgrade then
         if row.gain then return ("%+d%%"):format(row.gain), "good" end
@@ -253,7 +253,7 @@ function Tab.GainText(row)
 end
 
 --- "24%", "Under 1%", or "" when nobody has counted.
-function Tab.ChanceText(chance)
+function Dungeons.ChanceText(chance)
     chance = tonumber(chance) or 0
     if chance <= 0 then return "" end
     if chance < 1 then return L["Under 1%"] end
@@ -264,7 +264,7 @@ end
 --- heading then its drops, bosses nobody has seen drop gear, then QUESTS
 --- INSIDE and its quests. Returns the lines, the upgrades among the drops
 --- and how many items the client has yet to send.
-function Tab:Lines(dungeon)
+function Dungeons:Lines(dungeon)
     local lines = {}
     if not dungeon then return lines, 0, 0 end
     local DL, DQ, Finder = ns.DungeonLoot, ns.DungeonQuests, ns.Finder
@@ -297,10 +297,10 @@ function Tab:Lines(dungeon)
             lines[#lines + 1] = { kind = "unseen" }
         end
         for _, row in ipairs(boss.rows) do
-            local gain, color = Tab.GainText(row)
+            local gain, color = Dungeons.GainText(row)
             lines[#lines + 1] = { kind = "drop", itemID = row.itemID, link = row.link,
                 name = row.name ~= "" and row.name or DL.NameOf(row.itemID), slot = row.slot,
-                chance = Tab.ChanceText(row.chance), gain = gain, gainColor = color, upgrade = row.upgrade }
+                chance = Dungeons.ChanceText(row.chance), gain = gain, gainColor = color, upgrade = row.upgrade }
         end
     end
     if #order == 0 then
@@ -356,7 +356,7 @@ end
 
 --- The foot's left line: "Scarlet Monastery: 7 upgrades for you, 3 quests
 --- left."
-function Tab.FootText(dungeon, upgrades)
+function Dungeons.FootText(dungeon, upgrades)
     if not dungeon then return "" end
     local ups
     if dungeon.later then
@@ -414,7 +414,7 @@ local function Arrow(parent, size)
     return arrow
 end
 
-function Tab:BuildBar(page)
+function Dungeons:BuildBar(page)
     local FinderUI = ns.FinderUI
     local judge = Theme.CreateLabel(page, "small", "muted")
     judge:SetPoint("TOPLEFT", PAD, -14)
@@ -437,9 +437,9 @@ function Tab:BuildBar(page)
     self.hideBox = hide
 
     local only = Widgets.CreateCheckbox(page, L["Upgrades Only"], function(checked)
-        Tab.upgradesOnly = checked == true
-        Tab.offset = 0
-        Tab:Draw()
+        Dungeons.upgradesOnly = checked == true
+        Dungeons.offset = 0
+        Dungeons:Draw()
     end, false)
     only:SetPoint("RIGHT", hide, "LEFT", -Theme.TextWidth("small", L["Upgrades Only"]) - 30, 0)
     Tip(only, L["Upgrades Only"], L["Shows only the drops that are better than what you wear."])
@@ -451,7 +451,7 @@ function Tab:BuildBar(page)
     return 52
 end
 
-function Tab:SyncSpec()
+function Dungeons:SyncSpec()
     local FinderUI = ns.FinderUI
     local choice = self.specChoice
     if not (choice and FinderUI) then return end
@@ -512,7 +512,7 @@ local function Heads(parent, heads, onClick)
     return bar, made
 end
 
-function Tab:BuildLeft(body, width)
+function Dungeons:BuildLeft(body, width)
     local left = Theme.CreatePanel(body, "well", "border")
     left:SetPoint("TOPLEFT", 0, 0)
     left:SetPoint("BOTTOMLEFT", 0, FOOT)
@@ -528,14 +528,14 @@ function Tab:BuildLeft(body, width)
         { key = "levels", text = L["LEVELS"], right = levelsRight, width = LEVELS_WIDTH },
         { key = "upgrades", text = L["UPGRADES"], right = upgradesRight, width = UPGRADES_WIDTH, justify = "RIGHT" },
         { key = "quests", text = L["QUESTS"], right = questsRight, width = QUESTS_WIDTH, justify = "RIGHT" },
-    }, function(key) Tab:SortBy(key) end)
+    }, function(key) Dungeons:SortBy(key) end)
     self.leftHeads = heads
 
     local list = CreateFrame("Frame", nil, left)
     list:SetPoint("TOPLEFT", 1, -HEAD)
     list:SetPoint("BOTTOMRIGHT", -1, 1)
     list:EnableMouseWheel(true)
-    list:SetScript("OnMouseWheel", function(_, delta) Tab:ScrollDungeons(-delta * WHEEL) end)
+    list:SetScript("OnMouseWheel", function(_, delta) Dungeons:ScrollDungeons(-delta * WHEEL) end)
     self.dungeonList = list
     self.dungeonRows = {}
     local columns = self.leftColumns
@@ -564,14 +564,14 @@ function Tab:BuildLeft(body, width)
         end)
         row:SetScript("OnClick", function(self)
             local dungeon = rawget(self, "dungeon")
-            if dungeon then Tab:Pick(dungeon.key) end
+            if dungeon then Dungeons:Pick(dungeon.key) end
         end)
         row:Hide()
         self.dungeonRows[index] = row
     end
 end
 
-function Tab:BuildRight(body, left)
+function Dungeons:BuildRight(body, left)
     local right = Theme.CreatePanel(body, "well", "border")
     right:SetPoint("TOPLEFT", left + 8, 0)
     right:SetPoint("BOTTOMRIGHT", 0, FOOT)
@@ -586,7 +586,7 @@ function Tab:BuildRight(body, left)
     top:SetHeight(44)
     Theme.Fill(top, "panel")
     local way = Widgets.CreateButton(top, L["Show the Way"], function()
-        local dungeon = Tab:Picked()
+        local dungeon = Dungeons:Picked()
         if not dungeon then return end
         ns.DungeonLoot:ShowTheWay(dungeon)
         ns.DungeonLoot:Follow(dungeon)
@@ -621,7 +621,7 @@ function Tab:BuildRight(body, left)
     list:SetPoint("TOPLEFT", 1, -45 - HEAD)
     list:SetPoint("BOTTOMRIGHT", -1, 1)
     list:EnableMouseWheel(true)
-    list:SetScript("OnMouseWheel", function(_, delta) Tab:Scroll(-delta * WHEEL) end)
+    list:SetScript("OnMouseWheel", function(_, delta) Dungeons:Scroll(-delta * WHEEL) end)
     self.list = list
     self.rows = {}
     local columns = self.rightColumns
@@ -680,13 +680,13 @@ function Tab:BuildRight(body, left)
             Paint(self)
             GameTooltip:Hide()
         end)
-        row:SetScript("OnClick", function(self) Tab:ClickLine(rawget(self, "line")) end)
+        row:SetScript("OnClick", function(self) Dungeons:ClickLine(rawget(self, "line")) end)
         row:Hide()
         self.rows[index] = row
     end
 end
 
-function Tab:Build(area)
+function Dungeons:Build(area)
     if self.page then return self.page end
     if not (area and ns.DungeonLoot and ns.DungeonQuests and ns.FinderUI) then return nil end
 
@@ -725,7 +725,7 @@ local function Room(self, taken)
     return height - self.bodyTop - 12 - FOOT - taken
 end
 
-function Tab:Picked()
+function Dungeons:Picked()
     local key = ns.db and ns.db.dungeonLootPick
     for _, dungeon in ipairs(self.dungeons or {}) do
         if dungeon.key == key then return dungeon end
@@ -733,7 +733,7 @@ function Tab:Picked()
     return nil
 end
 
-function Tab:PaintHeads()
+function Dungeons:PaintHeads()
     local key, flip = self.sortKey, self.sortFlip == true
     for _, head in ipairs(self.leftHeads) do
         local sorted = head.key == key
@@ -747,8 +747,8 @@ function Tab:PaintHeads()
     end
 end
 
-function Tab:PaintDungeons()
-    local list = Tab.Sorted(self.dungeons or {}, self.sortKey, self.sortFlip)
+function Dungeons:PaintDungeons()
+    local list = Dungeons.Sorted(self.dungeons or {}, self.sortKey, self.sortFlip)
     self.sorted = list
     local picked = self:Picked()
     local room = Room(self, HEAD + 2)
@@ -761,7 +761,7 @@ function Tab:PaintDungeons()
         row.dungeon = nil
         if dungeon and shown == index - 1 then
             row.name:SetText(dungeon.name)
-            row.levels:SetText(Tab.Levels(dungeon))
+            row.levels:SetText(Dungeons.Levels(dungeon))
             if dungeon.later then
                 row.upgrades:SetText(L["Later"])
                 row.upgrades:SetTextColor(Theme.Unpack("dim"))
@@ -796,7 +796,7 @@ function Tab:PaintDungeons()
 end
 
 --- Lay one line into a row and say how tall it stands.
-function Tab:PaintLine(row, line, index)
+function Dungeons:PaintLine(row, line, index)
     local columns = self.rightColumns
     row.line = line
     row.headed = line.kind == "boss"
@@ -872,10 +872,15 @@ function Tab:PaintLine(row, line, index)
     return math.max(ROW, height)
 end
 
-function Tab:PaintLines()
+--- Draw the right side. With `keep` (the wheel) the lines read last are
+--- laid out again from a new place and nothing is read.
+function Dungeons:PaintLines(keep)
     local dungeon = self:Picked()
-    local lines, upgrades, waiting = self:Lines(dungeon)
-    self.lines, self.waiting = lines, waiting
+    local lines, upgrades, waiting = self.lines, self.lineUpgrades, self.waiting
+    if not (keep and lines) then
+        lines, upgrades, waiting = self:Lines(dungeon)
+        self.lines, self.lineUpgrades, self.waiting = lines, upgrades, waiting
+    end
     -- The dungeon looked at shows what its own list counts.
     if dungeon and not dungeon.later and waiting == 0 then
         dungeon.upgrades = upgrades
@@ -915,7 +920,7 @@ function Tab:PaintLines()
         end
     end
     self.linesShown = shown
-    local foot = Tab.FootText(dungeon, dungeon and dungeon.upgrades or 0)
+    local foot = Dungeons.FootText(dungeon, dungeon and dungeon.upgrades or 0)
     if #lines > shown and shown > 0 then
         foot = foot .. " " .. L.Format("%d to %d of %d. Scroll for more.", offset + 1, offset + shown, #lines)
     end
@@ -923,7 +928,7 @@ function Tab:PaintLines()
 end
 
 --- Draw from what was read: a box, a pick or a heading changed, no gear.
-function Tab:Draw()
+function Dungeons:Draw()
     if not self.page then return end
     if self.onlyBox.SetChecked then self.onlyBox:SetChecked(self.upgradesOnly == true) end
     if self.hideBox.SetChecked then self.hideBox:SetChecked(ns.DungeonQuests.HideDone()) end
@@ -932,7 +937,7 @@ function Tab:Draw()
 end
 
 --- Read the dungeons with a scan's counts and draw them.
-function Tab:Present(found)
+function Dungeons:Present(found)
     local ok, list, level = pcall(self.Read, self, found)
     self.dungeons, self.level = ok and list or {}, ok and level or 0
     if not ok and ns.Debug then ns.Debug("dungeons:", tostring(list)) end
@@ -957,7 +962,7 @@ end
 -- Clicks
 --------------------------------------------------------------------------------
 
-function Tab:Pick(key)
+function Dungeons:Pick(key)
     if ns.db then ns.db.dungeonLootPick = key end
     self.offset = 0
     self:Draw()
@@ -965,7 +970,7 @@ end
 
 --- A heading: sort by it, flip on a second click, back to the levels on a
 --- third.
-function Tab:SortBy(key)
+function Dungeons:SortBy(key)
     if self.sortKey ~= key then
         self.sortKey, self.sortFlip = key, false
     elseif not self.sortFlip then
@@ -977,27 +982,27 @@ function Tab:SortBy(key)
     self:PaintDungeons()
 end
 
-function Tab:ScrollDungeons(steps)
+function Dungeons:ScrollDungeons(steps)
     local total = self.sorted and #self.sorted or 0
     local before = self.dungeonOffset or 0
     self.dungeonOffset = math.max(0, math.min(before + steps, math.max(0, total - 1)))
     if self.dungeonOffset ~= before then self:PaintDungeons() end
 end
 
-function Tab:Scroll(steps)
+function Dungeons:Scroll(steps)
     local total = self.lines and #self.lines or 0
     local before = self.offset or 0
     self.offset = math.max(0, math.min(before + steps, math.max(0, total - 1)))
-    if self.offset ~= before then self:PaintLines() end
+    if self.offset ~= before then self:PaintLines(true) end
 end
 
 --- A click on a drop: the game's own Shift and Ctrl clicks first, else
 --- the menu the upgrade lists give it (make it the quest, track it). A
 --- drop the finder holds no line for has nothing to offer.
-function Tab:ClickLine(line)
+function Dungeons:ClickLine(line)
     if not line or line.kind ~= "drop" then return end
     if Widgets.ItemClick(line.itemID, line.link) then return end
-    local pick = Tab.PickFor(line.itemID)
+    local pick = Dungeons.PickFor(line.itemID)
     local FinderUI = ns.FinderUI
     if not (pick and ns.RowMenu and FinderUI and FinderUI.PickMenu) then return end
     local lines = FinderUI.PickMenu(pick)
@@ -1011,7 +1016,7 @@ end
 -- Looking
 --------------------------------------------------------------------------------
 
-function Tab:IsShown()
+function Dungeons:IsShown()
     local page = self.page
     if not Shown(page) then return false end
     local ok, visible = pcall(page.IsVisible, page)
@@ -1021,7 +1026,7 @@ end
 
 --- Take the finder's scan when it is up to date, else ask for the shared
 --- one (it rests in a fight) and draw what there is meanwhile.
-function Tab:Refresh()
+function Dungeons:Refresh()
     if not self:IsShown() then return nil end
     local Finder = ns.Finder
     local found = Finder:Fresh()
@@ -1031,67 +1036,67 @@ function Tab:Refresh()
     end
     self:Present(Finder.latest)
     Finder:ScanInBackground(function(scan)
-        if not Tab:IsShown() then return end
-        Tab:Present(scan)
-        if Finder.stale and not Finder.background then Tab:RefreshSoon() end
+        if not Dungeons:IsShown() then return end
+        Dungeons:Present(scan)
+        if Finder.stale and not Finder.background then Dungeons:RefreshSoon() end
     end)
     return false
 end
 
 --- Once for a burst of events, and only while the page shows.
-function Tab:RefreshSoon()
+function Dungeons:RefreshSoon()
     if not self:IsShown() or self.pending then return end
     local after = C_Timer and C_Timer.After
     if type(after) ~= "function" then return self:Refresh() end
     self.pending = true
     after(0.5, function()
-        Tab.pending = false
-        Tab:Refresh()
+        Dungeons.pending = false
+        Dungeons:Refresh()
     end)
 end
 
 --- Items the client sent, a quest's name, a tracked mark: draw again, with
 --- nothing read anew but the dungeon picked.
-function Tab:RedrawSoon()
+function Dungeons:RedrawSoon()
     if not self:IsShown() or self.redraw or not self.read then return end
     local after = C_Timer and C_Timer.After
     if type(after) ~= "function" then return self:Draw() end
     self.redraw = true
     after(0.3, function()
-        Tab.redraw = false
-        if Tab:IsShown() then Tab:Draw() end
+        Dungeons.redraw = false
+        if Dungeons:IsShown() then Dungeons:Draw() end
     end)
 end
 
 --- Quests done, taken or hidden changed (Logic/DungeonQuests.lua).
-function Tab:OnDungeonQuestsChanged()
+function Dungeons:OnDungeonQuestsChanged()
     if not self:IsShown() then return end
     self:Present(ns.Finder.latest)
 end
 
-function Tab:OnTrackingChanged() self:RedrawSoon() end
-function Tab:OnUpgradeQuestChanged() self:RedrawSoon() end
+function Dungeons:OnTrackingChanged() self:RedrawSoon() end
+function Dungeons:OnUpgradeQuestChanged() self:RedrawSoon() end
 
-function Tab:Show()
+function Dungeons:Show()
     if not self.page then return end
     self.page:Show()
     self:Refresh()
 end
 
-function Tab:Hide()
+function Dungeons:Hide()
     if self.page then self.page:Hide() end
 end
 
 --- Open the Equipment window on this tab.
-function Tab:Open()
-    if ns.GearWindow then ns.GearWindow:Open(Tab.KEY) end
+function Dungeons:Open()
+    if ns.GearWindow then ns.GearWindow:Open(Dungeons.KEY) end
 end
 
-function Tab:OnEnable()
+function Dungeons:OnEnable()
     for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "QUEST_TURNED_IN" }) do
-        ns.RegisterEvent(self, event, function() Tab:RefreshSoon() end)
+        ns.RegisterEvent(self, event, function() Dungeons:RefreshSoon() end)
     end
-    ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", function() Tab:RedrawSoon() end)
+    ns.RegisterEvent(self, "GET_ITEM_INFO_RECEIVED", function() Dungeons:RedrawSoon() end)
 end
 
-if ns.GearWindow then ns.GearWindow:AddPage(Tab.KEY, Tab) end
+if ns.GearWindow then ns.GearWindow:AddPage(Dungeons.KEY, Dungeons) end
