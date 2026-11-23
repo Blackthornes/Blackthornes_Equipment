@@ -301,5 +301,43 @@ do
         ns.SeeThrough.PANELS.panel.key == "questPanelSeeThrough")
 end
 
+--------------------------------------------------------------------------------
+-- 10. New Upgrade Unlocked never covers the panel (the owner's screenshot,
+--     2026-11-23: with the panel at the top of the screen the offer was
+--     pushed down onto its tabs and buttons)
+--------------------------------------------------------------------------------
+
+do
+    UIParent._width = 3840
+    local frame = env.Stub({ _width = 384, _height = 300, _left = 3400, _top = 2150 })
+    local box = Panel:BuildOffer()
+    box._width, box._height = 290, 120
+    local saved = Panel.frame
+    Panel.frame = frame
+
+    Panel:PlaceOffer(box)
+    local point, anchor, relative, _, y = box:GetPoint()
+    suite.check("panel at the top: the offer goes under it", box.side == "below"
+        and point == "TOPRIGHT" and anchor == frame and relative == "BOTTOMRIGHT" and y < 0,
+        tostring(box.side))
+
+    frame._top = 1000
+    Panel:PlaceOffer(box)
+    suite.check("room above: the offer sits above the panel", box.side == "above")
+
+    frame._top, frame._height = 2150, 2100
+    Panel:PlaceOffer(box)
+    suite.check("a tall panel: the offer goes to its left", box.side == "left")
+
+    frame._left = 100
+    suite.check("a tall panel on the left edge: the offer goes to its right",
+        Panel.OfferSide(frame, box) == "right")
+
+    frame._top = nil
+    suite.check("not laid out yet: above, as before", Panel.OfferSide(frame, box) == "above")
+    Panel.frame = saved
+    box:Hide()
+end
+
 Compare.Judge, Finder.Build = realJudge, realBuild
 suite.done()
