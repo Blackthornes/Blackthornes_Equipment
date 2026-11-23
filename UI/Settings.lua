@@ -162,7 +162,7 @@ function SettingsUI:ResetPositions()
     local hosted = ns.FinderUI and ns.FinderUI.oneArea
     local tabs = { [self] = true, [ns.UI or false] = true, [ns.FinderUI or false] = true,
         [ns.DungeonQuestsUI or false] = true, [ns.DungeonLootUI or false] = true }
-    for _, module in ipairs({ self, ns.UI, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI, ns.IgnoredUI, ns.DungeonQuestsUI, ns.DungeonLootUI }) do
+    for _, module in ipairs({ self, ns.UI, ns.GearWindow, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI, ns.IgnoredUI, ns.DungeonQuestsUI, ns.DungeonLootUI }) do
         if module and module.frame and module.RestorePosition and not (hosted and tabs[module]) then
             module:RestorePosition()
         end
@@ -1332,9 +1332,15 @@ function SettingsUI:SetOneWindow(on)
     local inside = Finder:Hosted()
     One.SetOn(on)
     if on and not inside and self.frame and self.frame:IsShown() then
-        Finder.switching = true
-        self.frame:Hide()
-        Finder.switching = false
+        -- The Equipment window closes in its own place and opens again in
+        -- the one window, on Settings.
+        if ns.GearWindow then
+            ns.GearWindow:Close()
+        else
+            Finder.switching = true
+            self.frame:Hide()
+            Finder.switching = false
+        end
         self:Show()
     elseif not on and inside then
         self:Show()

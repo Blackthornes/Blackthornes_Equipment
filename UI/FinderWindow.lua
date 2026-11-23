@@ -399,6 +399,69 @@ local function ShowTooltip(row)
     GameTooltip:Show()
 end
 
+FinderUI.ShowRowTooltip = ShowTooltip
+
+--- A click on a list row, here or on My Gear (UI/MyGear.lua): `self` is
+--- the row, with its `pick`, `owned` or `enchant`.
+function FinderUI.RowClicked(self, button)
+    if rawget(self, "heading") then return end
+    -- A right-click opens the row's menu (UI/RowMenu.lua), the same in
+    -- every Blackthornes list.
+    if button == "RightButton" then
+        FinderUI:OpenRowMenu(self)
+        return
+    end
+    -- Gear you own: Shift-click links it, a click puts on one in your bags.
+    local owned = rawget(self, "owned")
+    if owned then
+        -- Ctrl-click tries it on, as the game's bags do.
+        if Widgets.ItemTryOn(nil, owned.link) then return end
+        if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
+            local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
+            if ok and chatLink then
+                pcall(ChatEdit_InsertLink, owned.link)
+                return
+            end
+        end
+        if button ~= "RightButton" and FinderUI.CanPutOn(owned) and ns.Wear then ns.Wear:PutOn(owned.link) end
+        return
+    end
+    -- An enchant row's buttons do its work; Shift-click links its recipe.
+    local enchant = rawget(self, "enchant")
+    if enchant then
+        if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
+            local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
+            if ok and chatLink then
+                local okLink, link = pcall(function()
+                    local spell = _G.C_Spell and _G.C_Spell.GetSpellLink
+                    return spell and spell(enchant.pick.recipeID) or nil
+                end)
+                if okLink and link then pcall(ChatEdit_InsertLink, link) end
+            end
+        end
+        return
+    end
+    local pick = self.pick
+    if not pick then return end
+    local okAlt, alt = pcall(function() return IsAltKeyDown() == true end)
+    if okAlt and alt then
+        local place = FinderUI.Place(pick)
+        if place and ns.Waypoints then ns.Waypoints:Show(place, place.name, Theme.ItemIcon(pick.link)) end
+        return
+    end
+    if Widgets.ItemTryOn(nil, pick.link) then return end
+    if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
+        local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
+        if ok and chatLink then
+            pcall(ChatEdit_InsertLink, pick.link)
+            return
+        end
+    end
+    -- A plain click follows it on the upgrade quest panel (asked 2026-10-06).
+    FinderUI:Follow(pick)
+    if rawget(self, "over") == true then ShowTooltip(self) end
+end
+
 function FinderUI:BuildRow(index)
     local inner = INNER
     local row = CreateFrame("Button", nil, self.frame)
@@ -556,64 +619,7 @@ function FinderUI:BuildRow(index)
         Motion:Blend(self, "hover", 0, 0.18, Light)
         GameTooltip:Hide()
     end)
-    row:SetScript("OnClick", function(self, button)
-        if rawget(self, "heading") then return end
-        -- A right-click opens the row's menu (UI/RowMenu.lua), the same in
-        -- every Blackthornes list.
-        if button == "RightButton" then
-            FinderUI:OpenRowMenu(self)
-            return
-        end
-        -- Gear you own: Shift-click links it, a click puts on one in your bags.
-        local owned = rawget(self, "owned")
-        if owned then
-            -- Ctrl-click tries it on, as the game's bags do.
-            if Widgets.ItemTryOn(nil, owned.link) then return end
-            if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
-                local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
-                if ok and chatLink then
-                    pcall(ChatEdit_InsertLink, owned.link)
-                    return
-                end
-            end
-            if button ~= "RightButton" and FinderUI.CanPutOn(owned) and ns.Wear then ns.Wear:PutOn(owned.link) end
-            return
-        end
-        -- An enchant row's buttons do its work; Shift-click links its recipe.
-        local enchant = rawget(self, "enchant")
-        if enchant then
-            if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
-                local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
-                if ok and chatLink then
-                    local okLink, link = pcall(function()
-                        local spell = _G.C_Spell and _G.C_Spell.GetSpellLink
-                        return spell and spell(enchant.pick.recipeID) or nil
-                    end)
-                    if okLink and link then pcall(ChatEdit_InsertLink, link) end
-                end
-            end
-            return
-        end
-        local pick = self.pick
-        if not pick then return end
-        local okAlt, alt = pcall(function() return IsAltKeyDown() == true end)
-        if okAlt and alt then
-            local place = FinderUI.Place(pick)
-            if place and ns.Waypoints then ns.Waypoints:Show(place, place.name, Theme.ItemIcon(pick.link)) end
-            return
-        end
-        if Widgets.ItemTryOn(nil, pick.link) then return end
-        if type(IsModifiedClick) == "function" and type(ChatEdit_InsertLink) == "function" then
-            local ok, chatLink = pcall(IsModifiedClick, "CHATLINK")
-            if ok and chatLink then
-                pcall(ChatEdit_InsertLink, pick.link)
-                return
-            end
-        end
-        -- A plain click follows it on the upgrade quest panel (asked 2026-10-06).
-        FinderUI:Follow(pick)
-        if rawget(self, "over") == true then ShowTooltip(self) end
-    end)
+    row:SetScript("OnClick", function(self, button) FinderUI.RowClicked(self, button) end)
     if row.RegisterForClicks then row:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
 
     row:Hide()
@@ -980,6 +986,13 @@ end
 --- Enchants show this window, the others show their own window in its
 --- place, at the same spot, and every other window of the tabs goes.
 function FinderUI:ShowTab(key)
+    -- The Equipment window (UI/GearWindow.lua) holds the tabs now: asked
+    -- from anywhere else, it opens on that tab and comes back here.
+    local Gear = ns.GearWindow
+    if Gear and not Gear.driving then
+        Gear:Open(key)
+        return
+    end
     if not self.oneArea and self:Route(key) then return end
     local was, wasIn = self.switching, self.inShowTab
     self.switching, self.inShowTab = true, true
@@ -2206,6 +2219,7 @@ end
 --- until the list is full. A row that would run past the foot waits for a
 --- scroll.
 function FinderUI:Draw()
+    if not self.rows then return end
     local lines = self.lines or {}
     local offset = self.offset or 0
     local used, shown, full = 0, 0, false
@@ -2640,26 +2654,23 @@ function FinderUI:DrawSoon()
 end
 
 --------------------------------------------------------------------------------
--- The one window
+-- Inside the Equipment window
 --
--- With "One Window:" ticked (UI/SharedWindow.lua, the owner said build it,
--- 2026-10-30), every tab (Upgrades, Enchants, Dungeon Quests, Dungeon Loot,
--- Settings) shows inside the one Blackthornes window: each window is laid
--- into its area, filling it, without its own rim, plate, portrait, gems or
--- size grip, since the one window has its own. The tabs still hang below,
--- under the one window's edge. Unticked, or when another addon is picked on
--- the rail, they go back to their own place, size and scale. The Training
--- drawer still opens against the gear window's right edge.
+-- Every tab here (Upgrades, Enchants, Dungeon Quests, Dungeon Loot,
+-- Settings) shows inside the Equipment window (UI/GearWindow.lua, rework
+-- step 2, 2026-11-23): each old window is laid into its page area, filling
+-- it, without its own rim, plate, portrait, gems, size grip or hanging
+-- tabs, since the Equipment window has its own. It was built for the one
+-- Blackthornes window (2026-10-30), which now holds the Equipment window
+-- instead. The Training drawer still opens against the gear page's right
+-- edge.
 --------------------------------------------------------------------------------
 
--- The one window's area while the tabs are in it, else nil.
+-- The Equipment window's page area once it is built, else nil.
 FinderUI.oneArea = nil
--- The tab to show when the one window lays Equipment in.
-FinderUI.wanted = nil
--- True while a tab steps aside for another, and while the tabs go back,
--- so their OnHide does not close the one window too.
+-- True while a tab steps aside for another, so its OnHide does not close
+-- the Equipment window too.
 FinderUI.switching = false
-FinderUI.leaving = false
 
 --- The copy of the one window that draws it, or nil.
 function FinderUI.One()
@@ -2672,6 +2683,8 @@ end
 
 --- True while the tabs show in the one window.
 function FinderUI:Hosted()
+    local Gear = ns.GearWindow
+    if Gear then return Gear.hostArea ~= nil end
     return self.oneArea ~= nil
 end
 
@@ -2723,6 +2736,11 @@ function FinderUI:LayIn(frame)
     frame:SetScale(1)
     Bare(frame, true)
     local strip = rawget(frame, "blackthornesTabs")
+    -- The Equipment window has its tabs along its top (UI/GearWindow.lua).
+    if strip and rawget(area, "blackthornesGear") then
+        strip:Hide()
+        strip = nil
+    end
     if strip then
         -- Hung from the one window's own bottom edge, not the area's.
         local one = area:GetParent()
@@ -2741,30 +2759,9 @@ function FinderUI:LayIn(frame)
     end
 end
 
---- Give one tab's window back its own place, size and scale.
-function FinderUI:LayOut(frame)
-    if not frame then return end
-    frame:SetParent(UIParent)
-    Bare(frame, false)
-    local strip = rawget(frame, "blackthornesTabs")
-    if strip then
-        strip:ClearAllPoints()
-        strip:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", TAB_INSET, 0)
-    end
-    local module = ModuleOf(frame)
-    if module and module.RestorePosition then
-        pcall(module.RestorePosition, module)
-    else
-        frame:ClearAllPoints()
-        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
-    end
-    -- FitTab keeps the tabs' room unless the width moved, so ask afresh.
-    frame:SetWidth(1)
-    self:FitTab(frame)
-end
-
 --- Grow the one window until its area holds the size every tab shares.
 function FinderUI:Grow()
+    if ns.GearWindow and ns.GearWindow.frame then return ns.GearWindow:Grow() end
     local area = self.oneArea
     local one = area and area:GetParent()
     if not one then return end
@@ -2780,98 +2777,25 @@ function FinderUI:Grow()
     if ns.SharedWindow and ns.SharedWindow.Fit then ns.SharedWindow.Fit(one) end
 end
 
---- The tabs go into the one window: called by it (host.enter).
-function FinderUI:Enter(area)
-    if not area then return end
-    self.oneArea = area
-    for _, frame in ipairs(self:TabFrames()) do self:LayIn(frame) end
-    self:Grow()
-    local key = self.wanted or (ns.db and ns.db.finderShow == "enchant" and "enchant") or "upgrades"
-    self.wanted = nil
-    self:ShowTab(key)
-end
-
---- The tabs go back: called by the one window (host.leave).
-function FinderUI:Leave()
-    if not self.oneArea then return end
-    self.leaving = true
-    for _, frame in ipairs(self:TabFrames()) do
-        if Shown(frame) then
-            local ok, err = pcall(frame.Hide, frame)
-            if not ok and ns.Debug then ns.Debug("one window leave:", tostring(err)) end
-        end
-    end
-    self.oneArea = nil
-    for _, frame in ipairs(self:TabFrames()) do self:LayOut(frame) end
-    self.leaving = false
-end
-
---- What Equipment gives the one window when it joins.
-FinderUI.host = {
-    enter = function(area) FinderUI:Enter(area) end,
-    leave = function() FinderUI:Leave() end,
-    -- For the swap gem (SharedWindow.AddSwap): the tab up now, open on a
-    -- tab wherever Equipment now belongs, and close its own windows.
-    tab = function() return FinderUI:SwapTab() end,
-    show = function(key) FinderUI:SwapShow(key) end,
-    hide = function() FinderUI:SwapHide() end,
-}
-
---- The tab up now (Upgrades, Enchants, Dungeon Quests, Dungeon Loot or
---- Settings), or nil when none shows.
-function FinderUI:SwapTab()
-    if Shown(self.frame) then
-        return ns.db and ns.db.finderShow == "enchant" and "enchant" or "upgrades"
-    end
-    for key, name in pairs(STAND_INS) do
-        if Shown(StandInFrame(name)) then return key end
-    end
-    return nil
-end
-
---- Open on `key` (nil: Upgrades or Enchants, as last seen), in the one
---- window when it is on, else in Equipment's own window.
-function FinderUI:SwapShow(key)
-    key = key or (ns.db and ns.db.finderShow == "enchant" and "enchant") or "upgrades"
-    self:ShowTab(key)
-end
-
---- Close Equipment's own windows.
-function FinderUI:SwapHide()
-    if self.oneArea then return end
-    for _, frame in ipairs(self:TabFrames()) do
-        if Shown(frame) then pcall(frame.Hide, frame) end
-    end
-end
-
---- A tab is asked to open. With "One Window:" ticked and Equipment not in
---- it yet, the one window opens on Equipment instead, on that tab; already
---- in it, a window opened by itself goes through its tab. True when the
---- caller should stop there.
+--- A tab is asked to open by itself (its own Show): the Equipment window
+--- opens on it instead (UI/GearWindow.lua), in the one window when "One
+--- Window:" is ticked. True when the caller should stop there; false while
+--- the Equipment window itself is showing the tab.
 function FinderUI:Route(key)
-    if self.oneArea then
-        if self.inShowTab then return false end
-        self:ShowTab(key)
-        return true
-    end
-    local One = FinderUI.One()
-    if not (One and One.Hosts and One.Hosts("equipment")) then return false end
-    self.wanted = key
-    local ok, opened = pcall(One.Open, "equipment")
-    if ok and opened then return true end
-    self.wanted = nil
-    return false
+    local Gear = ns.GearWindow
+    if not Gear or self.inShowTab then return false end
+    Gear:Open(key)
+    return true
 end
 
---- A tab's window closed by itself (Escape, its close gem): inside the one
---- window, the one window closes with it.
+--- A tab's window closed by itself (Escape): the Equipment window closes
+--- with it, unless a tab change is under way.
 function FinderUI:Closed(frame)
-    if not self.oneArea or self.leaving or self.switching then return end
+    if not self.oneArea or self.switching then return end
     -- A window built for the first time hides itself before it is laid
     -- in, and that is no close: only one inside the area counts.
     if frame and frame.GetParent and frame:GetParent() ~= self.oneArea then return end
-    local One = FinderUI.One()
-    if One and One.Close then pcall(One.Close) end
+    if ns.GearWindow then ns.GearWindow:Close() end
 end
 
 -- Kept folded through a /reload, its round button opens it (UI/FoldWindow.lua).

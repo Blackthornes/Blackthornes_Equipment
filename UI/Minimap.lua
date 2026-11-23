@@ -222,8 +222,8 @@ function MinimapButton:JoinShared()
             -- The settings every Blackthornes addon shares (the rail's gear).
             allAddons = function() if ns.SettingsUI then ns.SettingsUI:ShowAllAddons() end end,
             db = function() return ns.db end,
-            -- Every tab shows in it (UI/FinderWindow.lua).
-            host = ns.FinderUI and ns.FinderUI.host or nil,
+            -- The Equipment window shows in it (UI/GearWindow.lua).
+            host = ns.GearWindow and ns.GearWindow.host or nil,
         })
     end
 end

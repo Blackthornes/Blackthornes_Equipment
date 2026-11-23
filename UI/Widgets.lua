@@ -1330,7 +1330,7 @@ function Widgets.CreateTabStrip(parent, tabs, onSelect, opts)
     local packed = math.max(x, 1)
     local function PlaceRight(width)
         local full = packed
-        if hanging and type(width) == "number" and width > packed then
+        if (hanging or opts.spread) and type(width) == "number" and width > packed then
             local right = width
             for index = #strip.tabs, 1, -1 do
                 local button = strip.tabs[index]
@@ -1345,12 +1345,19 @@ function Widgets.CreateTabStrip(parent, tabs, onSelect, opts)
         strip:SetWidth(full)
     end
     PlaceRight(opts.width)
-    for _, button in ipairs(strip.tabs) do
-        if button.right and hanging then
-            button:ClearAllPoints()
-            button:SetPoint("TOPLEFT", button.left, 0)
+    -- A strip along a window's top (opts.spread) sends them right too.
+    local function SeatRight()
+        for _, button in ipairs(strip.tabs) do
+            if button.right and hanging then
+                button:ClearAllPoints()
+                button:SetPoint("TOPLEFT", button.left, 0)
+            elseif button.right and opts.spread then
+                button:ClearAllPoints()
+                button:SetPoint("BOTTOMLEFT", button.left, 0)
+            end
         end
     end
+    SeatRight()
 
     -- One gold line for the whole strip, gliding to the tab picked, with a
     -- soft glow over it. Both ride on a layer of their own above the tabs:
@@ -1406,6 +1413,7 @@ function Widgets.CreateTabStrip(parent, tabs, onSelect, opts)
     --- move to its new right end.
     function strip:SetRoom(width)
         PlaceRight(width)
+        if opts.spread then SeatRight() end
         local picked = self.selected
         self.selected = false
         self.lineX, self.lineWidth = false, false

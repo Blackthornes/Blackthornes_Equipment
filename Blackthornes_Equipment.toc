@@ -103,6 +103,8 @@ UI\WeightsWindow.lua
 UI\MainWindow.lua
 UI\TrainingDrawer.lua
 UI\FinderWindow.lua
+UI\GearWindow.lua
+UI\MyGear.lua
 UI\Tooltip.lua
 UI\BagIcons.lua
 UI\QuestRewards.lua

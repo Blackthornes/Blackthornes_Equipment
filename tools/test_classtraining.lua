@@ -49,8 +49,8 @@ end
 
 local UI, Drawer, CT = ns.UI, ns.TrainingDrawer, ns.ClassTraining
 
--- 1. The button.
-UI:Show()
+-- 1. The button, on the Upgrades tab.
+ns.FinderUI:Show()
 suite.check("the Training button counts what waits", UI.trainingButton.label:GetText() == "Training (2)",
     UI.trainingButton.label:GetText())
 suite.check("the drawer starts closed", not Drawer:IsShown())
