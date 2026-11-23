@@ -77,7 +77,8 @@ _G.UnitName = function() return "Cara Wells" end
 Alts:Record()
 suite.check("a forgotten character that logs in writes a new note", ns.db.characterGear["Player-3"] ~= nil)
 
--- The Settings row: the first click asks for Confirm, the second forgets.
+-- The Characters page of Settings: Forget is on each row. The first click
+-- asks for Confirm, the second forgets.
 guid = "Player-1"
 _G.UnitName = function() return "Ana Smith" end
 ns.db.characterGear["Player-4"] = { class = "ROGUE", level = 20, realm = "Here", faction = "Horde",
@@ -89,53 +90,110 @@ _G.Settings = {
 local SettingsUI = ns.SettingsUI
 if SettingsUI.OnEnable then SettingsUI:OnEnable() end
 ns.HandleSlash("settings")
-local controls = SettingsUI.controls
+local Page = ns.CharactersPage
+SettingsUI.pages:Show("characters")
 local printed = {}
 local realPrint = ns.Print
 ns.Print = function(text) printed[#printed + 1] = text end
-SettingsUI:RefreshSkip()
-local function Pick(key) controls.skipPicker:SetValue(key); SettingsUI:RefreshSkip() end
+local function Row(key)
+    for _, row in ipairs(Page.rows) do
+        if row:IsShown() and row.key == key then return row end
+    end
+end
 -- Timers wait until run by hand, so Confirm stays up between clicks.
 local timers = {}
 local realAfter = C_Timer.After
 C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
-local function Click() controls.forget:GetScript("OnClick")(controls.forget) end
+local function Click(key)
+    local row = Row(key)
+    row.forget:GetScript("OnClick")(row.forget)
+    return Row(key)
+end
 
-Pick("Player-1")
-suite.check("the one playing: the button is greyed", not controls.forget.canForget)
-suite.check("and the row says why", SettingsUI.forgetRow.hint:GetText():find("you're playing", 1, true))
-Click(); Click()
-suite.check("clicks on it do nothing", ns.db.characterGear["Player-1"] ~= nil and #printed == 0)
+suite.check("Settings opens on the Characters page", SettingsUI:IsShown() and Page:IsShown()
+    and ns.db.settingsPage == "characters")
+suite.check("every character has a row", Row("Player-1") ~= nil and Row("Player-3") ~= nil
+    and Row("Player-4") ~= nil)
+local mine = Row("Player-1")
+suite.check("the one playing is first and tagged Playing", Page.rows[1] == mine and mine.tag:IsShown()
+    and mine.tag:GetText() == "Playing")
+suite.check("and has no Forget", not mine.forget:IsShown())
+suite.check("a row shows the whole name, level and class", Row("Player-4").name:GetText() == "Dan Ford"
+    and Row("Player-4").class:GetText() == "20 Rogue", Row("Player-4").class:GetText())
+suite.check("an alt is not tagged", not Row("Player-4").tag:IsShown())
+Page:ForgetClicked(mine); Page:ForgetClicked(mine)
+suite.check("clicks on the one playing do nothing", ns.db.characterGear["Player-1"] ~= nil and #printed == 0
+    and not mine.armed)
 
-Pick("Player-4")
-suite.check("an alt: the button is lit", controls.forget.canForget == true)
-Click()
-suite.check("one click asks for Confirm", controls.forget.label:GetText() == "Confirm"
+suite.check("an alt has Forget", Row("Player-4").forget:IsShown()
+    and Row("Player-4").forget.label:GetText() == "Forget" and not Row("Player-4").ask:IsShown())
+local row = Click("Player-4")
+suite.check("one click asks for Confirm", row.forget.label:GetText() == "Confirm"
+    and row.ask:IsShown() and row.ask:GetText() == "Forget this one"
     and ns.db.characterGear["Player-4"] ~= nil)
-Pick("Player-3")
-Click()
-suite.check("Confirm for another character starts over", ns.db.characterGear["Player-3"] ~= nil
-    and controls.forget.label:GetText() == "Confirm")
-Pick("Player-4")
-Click()
-suite.check("picking back starts over too", ns.db.characterGear["Player-4"] ~= nil)
-Click()
+local other = Click("Player-3")
+suite.check("each row asks for its own Confirm", ns.db.characterGear["Player-3"] ~= nil
+    and other.forget.label:GetText() == "Confirm")
+row = Click("Player-4")
 suite.check("the second click forgets", ns.db.characterGear["Player-4"] == nil)
-suite.check("the button reads Forget again", controls.forget.label:GetText() == "Forget")
 suite.check("chat says who", printed[1] == "Equipment forgot Dan Ford.", printed[1])
-suite.check("the picker no longer lists it", (function()
-    for _, entry in ipairs(controls.skipPicker.characters) do
-        if entry.key == "Player-4" then return false end
+suite.check("its row is gone", Row("Player-4") == nil)
+suite.check("no row is left on Confirm for someone else", (function()
+    for _, r in ipairs(Page.rows) do
+        if r:IsShown() and r.armed and r.armedKey ~= r.key then return false end
     end
     return true
 end)())
 -- Left alone, Confirm turns back to Forget.
-Pick("Player-3")
-Click()
-suite.check("armed again", controls.forget.label:GetText() == "Confirm")
+other = Row("Player-3")
+if not other.armed then other = Click("Player-3") end
+suite.check("armed", other.forget.label:GetText() == "Confirm")
 for _, fn in ipairs(timers) do fn() end
-suite.check("Confirm times out", controls.forget.label:GetText() == "Forget" and not controls.forget.armed)
+suite.check("Confirm times out", other.forget.label:GetText() == "Forget" and not other.armed
+    and not other.ask:IsShown())
 suite.check("and forgets nothing", ns.db.characterGear["Player-3"] ~= nil)
+
+-- Skip Upgrades is a tick on the row.
+other.skip:GetScript("OnClick")(other.skip)
+suite.check("ticking a row skips that character", Alts:IsSkipped("Player-3") and Row("Player-3").skip:GetChecked())
+Row("Player-3").skip:GetScript("OnClick")(Row("Player-3").skip)
+suite.check("unticking brings it back", not Alts:IsSkipped("Player-3"))
+
+-- The headings sort.
+ns.db.characterGear["Player-5"] = { class = "MAGE", level = 9, realm = "Here", faction = "Horde",
+    worn = {}, name = "Abe Young" }
+Page:Refresh()
+local function Order()
+    local keys = {}
+    for _, r in ipairs(Page.rows) do
+        if r:IsShown() then keys[#keys + 1] = r.key end
+    end
+    return table.concat(keys, ",")
+end
+suite.check("unsorted, the one playing leads, then by name", Order() == "Player-1,Player-5,Player-3", Order())
+Page.heads.name:GetScript("OnClick")(Page.heads.name)
+suite.check("CHARACTER sorts by name", Order() == "Player-5,Player-1,Player-3", Order())
+Page.heads.name:GetScript("OnClick")(Page.heads.name)
+suite.check("a second click turns it round", Order() == "Player-3,Player-1,Player-5", Order())
+Page.heads.class:GetScript("OnClick")(Page.heads.class)
+suite.check("CLASS sorts by class, the mage after the hunters", Order() == "Player-1,Player-3,Player-5", Order())
+Page.heads.class:GetScript("OnClick")(Page.heads.class)
+suite.check("and the other way", Order():find("Player-5", 1, true) == 1, Order())
+Alts:SetSkipped("Player-3", true)
+Page.heads.skip:GetScript("OnClick")(Page.heads.skip)
+suite.check("SKIP UPGRADES puts the skipped first", Order():find("Player-3", 1, true) == 1, Order())
+Alts:SetSkipped("Player-3", false)
+
+-- Not sure who is playing (a dungeon): nobody can be forgotten.
+guid = nil
+Page:Refresh()
+suite.check("with no GUID no row offers Forget", (function()
+    for _, r in ipairs(Page.rows) do
+        if r:IsShown() and r.forget:IsShown() then return false end
+    end
+    return true
+end)())
+guid = "Player-1"
 C_Timer.After = realAfter
 ns.Print = realPrint
 

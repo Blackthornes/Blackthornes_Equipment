@@ -113,6 +113,7 @@ function Characters:Heading(x, text, by, tip)
     label:SetPoint("LEFT", 0, 0)
     label:SetText(text)
     button.label = label
+    button.words = text
     button:SetScript("OnClick", function() Characters:SortBy(by) end)
     button:SetScript("OnEnter", function(self)
         label:SetTextColor(Theme.Unpack("accent"))
@@ -305,11 +306,7 @@ end
 --- The headings: the one sorted by is gold, with which way.
 function Characters:PaintHeads()
     for by, button in pairs(self.heads) do
-        local text = button.text
-        if not text then
-            text = button.label:GetText()
-            button.text = text
-        end
+        local text = rawget(button, "words") or ""
         local sorted = self.sortBy == by
         button.label:SetText(sorted and (text .. (self.sortDown and "  v" or "  ^")) or text)
         button:SetWidth(Theme.TextWidth("tiny", text) + 24)
@@ -373,5 +370,5 @@ end
 
 --- Open Settings on this page.
 function Characters:Show()
-    if ns.SettingsUI then ns.SettingsUI:Show(self.key) end
+    if ns.SettingsUI then ns.SettingsUI:Show(self.KEY) end
 end

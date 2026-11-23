@@ -19,7 +19,7 @@ local suite = env.NewSuite("questsize")
 local ns = env.Load()
 _G.UnitClass = function() return "Hunter", "HUNTER", 3 end
 
-local Panel = ns.QuestPanel
+local Panel = ns.SmallPanel
 
 local SCREEN_W, SCREEN_H = 1280, 720
 local function near(a, b) return type(a) == "number" and math.abs(a - b) < 0.001 end

@@ -6,9 +6,6 @@
 -- unticked, every tab shows as before.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
--- This suite tests the old panels, kept until rework step 6; the small
--- panel (UI/SmallPanel.lua) stands in for them in play.
-env.OLD_PANELS = true
 local suite = env.NewSuite("questtabs")
 
 local ns = env.Load()
@@ -18,7 +15,7 @@ for _, module in ipairs(ns.moduleOrder) do
     if module.OnEnable then module:OnEnable() end
 end
 
-local Quest, Panel, UI = ns.UpgradeQuest, ns.QuestPanel, ns.FinderUI
+local Quest, Panel, UI = ns.UpgradeQuest, ns.SmallPanel, ns.FinderUI
 
 local function Shown()
     local keys = {}

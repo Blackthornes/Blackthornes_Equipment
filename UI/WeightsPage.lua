@@ -359,7 +359,7 @@ function WeightsPage:BuildRow(entry)
     -- The whole name, wrapped in the room left of the buttons.
     row.label = Theme.CreateLabel(row, "small", "text")
     row.label:SetPoint("LEFT", MARK, 0)
-    row.label:SetPoint("RIGHT", row.minus, "LEFT", -8, 0)
+    row.label:SetWidth(self.columnWidth - MARK - (BUTTON * 2 + BOX + 12) - 12)
     row.label:SetJustifyH("LEFT")
     if row.label.SetWordWrap then row.label:SetWordWrap(true) end
     row.label:SetText(LabelText(entry))
@@ -630,7 +630,7 @@ end
 
 --- Open Settings on this page.
 function WeightsPage:Show()
-    if ns.SettingsUI then ns.SettingsUI:Show(self.key) end
+    if ns.SettingsUI then ns.SettingsUI:Show(self.KEY) end
 end
 
 ns.RegisterCommand("weights", L["change how much each stat counts for your class and spec"], function()

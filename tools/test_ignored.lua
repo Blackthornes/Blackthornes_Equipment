@@ -1,12 +1,10 @@
--- Ignoring an upgrade on the quest panel keeps it out of the upgrade quest
--- for good, and Settings > Upgrade quest > Ignored lists what was ignored,
--- to restore one or all (asked 2026-10-08). The list is the one Skip kept,
+-- Ignoring an upgrade keeps it out of the upgrade quest for good, and
+-- Settings > Upgrade Quest > Ignored opens the Upgrade Quest tab's Ignored
+-- list, to restore one or all (asked 2026-10-08; the list's rows are tested
+-- in test_questtab.lua). The list is the one Skip kept,
 -- so upgrades skipped before stay ignored.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
--- This suite tests the old panels, kept until rework step 6; the small
--- panel (UI/SmallPanel.lua) stands in for them in play.
-env.OLD_PANELS = true
 local suite = env.NewSuite("ignored")
 
 local function Agi(n) return { ITEM_MOD_AGILITY_SHORT = n } end
@@ -58,7 +56,7 @@ S.ITEMS = {
     [1002] = { 15, 18, 0, 0, 13000, v = { 1, 0 } },
 }
 
-local Quest, Panel, Ignored, Settings = ns.UpgradeQuest, ns.QuestPanel, ns.IgnoredUI, ns.SettingsUI
+local Quest, Tab, Settings = ns.UpgradeQuest, ns.QuestTab, ns.SettingsUI
 
 -- An upgrade skipped before Ignore existed is still ignored.
 ns.charDB.upgradeQuestSkipped = { [7777] = true }
@@ -66,10 +64,8 @@ ns.charDB.upgradeQuestSkipped = { [7777] = true }
 ns.HandleSlash("quest vendor")
 suite.check("the vendor tab picks the best", Quest:Current() and Quest:Current().itemID == 1002)
 
--- The panel's button says Ignore and does it.
-Panel:Refresh()
-suite.check("the panel's button reads Ignore", Panel.skipButton.label:GetText() == "Ignore")
-Panel.skipButton:GetScript("OnClick")(Panel.skipButton, "LeftButton")
+-- Ignore drops the pick.
+ns.HandleSlash("quest ignore")
 suite.check("ignoring it picks the next best", Quest:Current() and Quest:Current().itemID == 1001)
 suite.check("and keeps it ignored", ns.charDB.upgradeQuestSkipped[1002] == true)
 suite.check("the old skip is kept", ns.charDB.upgradeQuestSkipped[7777] == true)
@@ -92,36 +88,24 @@ Settings:Show()
 local button = Settings.controls.questReset
 suite.check("Settings counts the ignored", button.label:GetText() == "Ignored (2)", button.label:GetText())
 button:GetScript("OnClick")(button, "LeftButton")
-suite.check("and opens the list", Ignored.frame and Ignored.frame:IsShown())
-suite.check("with a row each", Ignored.rows[1]:IsShown() and Ignored.rows[2]:IsShown() and not Ignored.rows[3]:IsShown())
-suite.check("the empty line hidden", not Ignored.empty:IsShown())
+suite.check("and opens the Upgrade Quest tab on Ignored", ns.GearWindow.tab == "quest" and Tab:View() == "ignored")
 
 -- Restore one.
-local row = Ignored.rows[2]
-suite.check("the row is the jerkin", row.entry and row.entry.itemID == 1002)
-row.restore:GetScript("OnClick")(row.restore, "LeftButton")
+Quest:Restore(1002)
 suite.check("restoring forgets it", ns.charDB.upgradeQuestSkipped[1002] == nil)
-suite.check("the list redraws", Ignored.rows[1]:IsShown() and not Ignored.rows[2]:IsShown())
 suite.check("the quest followed now stays", Quest:Current() and Quest:Current().itemID == 1001)
 ns.HandleSlash("quest ignore")
 suite.check("the restored upgrade can be picked again", Quest:Current() and Quest:Current().itemID == 1002,
     Quest:Current() and Quest:Current().itemID)
 Quest:Restore(1001)
 
+Settings:Show()
 suite.check("and Settings counts what is left", button.label:GetText() == "Ignored (1)", button.label:GetText())
 
--- Many ignored scroll.
-for id = 5001, 5015 do ns.charDB.upgradeQuestSkipped[id] = true end
-Ignored:Refresh()
-suite.check("ten rows show", Ignored.rows[10]:IsShown())
-suite.check("the count says there is more", Ignored.count:GetText() == "Scroll for more.", Ignored.count:GetText())
-Ignored:Scroll(100)
-suite.check("the wheel stops at the end", Ignored.offset == 6, Ignored.offset)
-
 -- Restore all.
-Ignored.restoreAll:GetScript("OnClick")(Ignored.restoreAll, "LeftButton")
+Quest:RestoreAll()
+Settings:Refresh()
 suite.check("restore all forgets them all", next(ns.charDB.upgradeQuestSkipped) == nil)
-suite.check("the list says nothing is ignored", Ignored.empty:IsShown() and not Ignored.rows[1]:IsShown())
 suite.check("Settings says Ignored", button.label:GetText() == "Ignored", button.label:GetText())
 
 -- The old words still work.
@@ -130,9 +114,6 @@ suite.check("/beq quest skip still ignores", ns.charDB.upgradeQuestSkipped[1002]
 ns.HandleSlash("quest reset")
 suite.check("/beq quest reset still restores", next(ns.charDB.upgradeQuestSkipped) == nil)
 ns.HandleSlash("quest ignored")
-suite.check("/beq quest ignored opens the list", Ignored.frame:IsShown())
-
--- Every button reads.
-suite.check("Restore all is a gold button", Ignored.restoreAll.label:GetText() == "Restore All")
+suite.check("/beq quest ignored opens the list", ns.GearWindow.tab == "quest" and Tab:View() == "ignored")
 
 suite.done()

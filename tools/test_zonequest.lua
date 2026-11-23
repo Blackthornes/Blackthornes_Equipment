@@ -4,9 +4,6 @@
 -- button to open Settings.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
--- This suite tests the old panels, kept until rework step 6; the small
--- panel (UI/SmallPanel.lua) stands in for them in play.
-env.OLD_PANELS = true
 local suite = env.NewSuite("zonequest")
 
 local function Agi(n) return { ITEM_MOD_AGILITY_SHORT = n } end
@@ -51,7 +48,7 @@ S.ITEMS = {
     [1004] = { 15, 18, 0, 0, 0, q = { 11 } },
 }
 
-local Finder, Quest, Panel = ns.Finder, ns.UpgradeQuest, ns.QuestPanel
+local Finder, Quest, Panel = ns.Finder, ns.UpgradeQuest, ns.SmallPanel
 
 local function On(tab)
     local quest = Quest:QuestOn(tab)
@@ -84,15 +81,11 @@ suite.check("and Quest Level, at the finder's value", Option("Quest Level:") ~= 
     and Option("Quest Level:").text == "Quest Level: Up to +4", Option("Quest Level:") and Option("Quest Level:").text)
 suite.check("in the finder's words", Panel.QuestLevelsText(0) == "Up to my level"
     and Panel.QuestLevelsText(11) == "Any" and Panel.QuestLevelsText(4) == "Up to +4")
-suite.check("the Options button opens the menu", Panel.optionsButton ~= nil)
-Panel.optionsButton:GetScript("OnClick")(Panel.optionsButton)
-suite.check("with every option", ns.RowMenu.frame and ns.RowMenu.frame.lines[1].label:GetText():find("This Zone Only", 1, true) ~= nil)
-ns.RowMenu:Close()
 
 -- Settings opens from the panel.
-suite.check("Settings is shut", not (ns.SettingsUI.frame and ns.SettingsUI.frame:IsShown()))
+suite.check("Settings is shut", not ns.SettingsUI:IsShown())
 Option("Settings").run()
-suite.check("the Settings line opens it", ns.SettingsUI.frame and ns.SettingsUI.frame:IsShown())
+suite.check("the Settings line opens it", ns.SettingsUI:IsShown())
 suite.check("on its Upgrade quest page", ns.SettingsUI.pages.shown == "quest", ns.SettingsUI.pages.shown)
 ns.SettingsUI:Hide()
 
@@ -115,8 +108,6 @@ zone = "Duskwood"
 Quest:OnEvent("ZONE_CHANGED_NEW_AREA")
 suite.check("a zone with nothing leaves the tabs empty", On("vendor") == nil and On("quest") == nil)
 Panel:Refresh()
-suite.check("and the panel says why", Panel.empty:GetText():find("This zone only", 1, true) ~= nil,
-    Panel.empty:GetText())
 
 -- Chosen by hand in Where to get upgrades: stays wherever the player goes.
 local found = Finder:Scan()
@@ -320,26 +311,16 @@ for _, line in ipairs(Panel:LevelLines()) do
 end
 suite.check("the panel's stepper sets the finder's limit", ns.db.questLevelsAbove == 3
     and Finder:QuestLevelsAbove() == 3, ns.db.questLevelsAbove)
-ns.FinderUI:Show()
-suite.check("the finder's stepper follows", ns.FinderUI.questLevels:GetValue() == 3,
-    ns.FinderUI.questLevels:GetValue())
 Finder:SetQuestLevelsAbove(Finder.QUEST_LEVELS_ANY)
 Panel:Refresh()
 suite.check("and the panel follows the finder", Option("Quest Level:").text == "Quest Level: Any",
     Option("Quest Level:").text)
 
 Option("Solo Quests Only").run()
-suite.check("the panel's solo box is the same switch", ns.db.soloQuestsOnly == true
-    and ns.FinderUI.solo:GetChecked())
+suite.check("the panel's solo box is the same switch", ns.db.soloQuestsOnly == true and Finder:SoloOnly())
 Finder:SetSoloOnly(false)
 Panel:Refresh()
 suite.check("and follows it back", not Option("Solo Quests Only").checked)
-
--- Folded, only the plate shows.
-Panel:ToggleFold()
-suite.check("folded, the quest hides", Panel.folded and not Panel.body:IsShown())
-Panel:ToggleFold()
-suite.check("unfolded, it is back", not Panel.folded and Panel.body:IsShown())
 
 --------------------------------------------------------------------------------
 -- The window's filters (a player's report, 2026-11-13: Where to get

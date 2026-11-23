@@ -38,7 +38,7 @@ suite.check("health every 5 sec is a row", listed.hp5)
 for class, specs in pairs(Weights.SPECS) do
     for _, key in ipairs(specs.order) do
         local rows = {}
-        for _, entry in ipairs(ns.WeightsUI:StatsFor(class, key, false)) do rows[entry.key] = true end
+        for _, entry in ipairs(ns.WeightsPage:StatsFor(class, key, false)) do rows[entry.key] = true end
         suite.check(class .. " " .. key .. " lists Spirit and hp5", rows.spirit and rows.hp5)
         suite.check(class .. " " .. key .. " weighs hp5 at 0", (Weights:Value(class, key, "hp5") or 0) == 0)
     end
