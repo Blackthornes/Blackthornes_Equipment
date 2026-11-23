@@ -36,6 +36,9 @@ local function Colored(key, text)
 end
 
 function TrackerPanel:IsEnabled()
+    -- The small panel's Tracking tab (UI/SmallPanel.lua, rework step 4)
+    -- lists these now; this one stays hidden while it stands in.
+    if ns.SmallPanel and ns.SmallPanel.standsIn then return false end
     return not (ns.db and ns.db.showTracker == false)
 end
 

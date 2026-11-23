@@ -3,6 +3,9 @@
 -- next one picked once it is worn.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
+-- This suite tests the old panels, kept until rework step 6; the small
+-- panel (UI/SmallPanel.lua) stands in for them in play.
+env.OLD_PANELS = true
 local suite = env.NewSuite("upgradequest")
 
 local function Agi(n) return { ITEM_MOD_AGILITY_SHORT = n } end

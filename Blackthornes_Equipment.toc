@@ -106,6 +106,7 @@ UI\FinderWindow.lua
 UI\GearWindow.lua
 UI\MyGear.lua
 UI\FindUpgrades.lua
+UI\UpgradeQuestTab.lua
 UI\Tooltip.lua
 UI\BagIcons.lua
 UI\QuestRewards.lua
@@ -121,6 +122,7 @@ UI\QuestPanel.lua
 UI\QuestPanelMore.lua
 UI\UpgradeDone.lua
 UI\QuestLogTab.lua
+UI\SmallPanel.lua
 UI\DungeonQuestsWindow.lua
 UI\DungeonLootWindow.lua
 UI\IgnoredWindow.lua

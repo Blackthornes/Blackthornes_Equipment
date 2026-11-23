@@ -2792,3 +2792,61 @@ the owner approved is the plan's `find-upgrades.html`.
 - Tested in `tools/test_findupgrades.lua` (it counts judging, sources and
   scans for clicks, filters, typing, sorting and opening again). Not yet
   seen in game.
+
+## Upgrade Quest tab and the small panel (rework step 4, 2026-11-23)
+
+Step 4 of the rework. The mockups the owner approved are the plan's
+`upgrade-quest.html` and `mini-panel.html`.
+
+- **The tab** (`UI/UpgradeQuestTab.lua`, `ns.QuestTab`, the page key
+  "quest", third on the tab bar). Four views as chips: Quest, Tracking,
+  Done and Ignored (`Tab.view`, kept for the session). Quest shows each
+  source's own pick down the left (a click runs `UpgradeQuest:SelectTab`)
+  and the one being worked on at the right: gain, what it asks, steps,
+  Also Good with Switch. The boxes along the top write the same saved
+  choices Settings and the old panel wrote. `QuestTab:Open(view)` opens the
+  window on a view; `/beq quest ignored` and Settings' Ignored button open
+  the Ignored view.
+- **The small panel** (`UI/SmallPanel.lua`, `ns.SmallPanel`, the frame
+  `BlackthornesEquipmentPanel`): one thin bar with the tabs Quest,
+  Tracking and Log. Quest shows the upgrade, the step to do now and five
+  marks; a click on the step opens every step. The fold gem makes it one
+  line (right-click: the round button, FoldWindow key "Panel"). The red gem
+  turns the upgrade quest off and keeps its quests. Right-click opens the
+  menu the old panel's buttons and Options held. The New Upgrade Unlocked
+  pop-up (`BlackthornesEquipmentOffer`) sits above it and needs the panel
+  on screen.
+- **It stands in for the old panels.** While `SmallPanel.standsIn` is true,
+  `QuestPanel:IsEnabled` and `TrackerPanel:IsEnabled` answer false, so the
+  old quest panel and Tracking panel never show. Their code, the old
+  Ignored window and their tests stay until step 6. A suite that tests
+  them sets `env.OLD_PANELS = true` before `env.Load()`. Many helpers still
+  live in `UI/QuestPanel.lua` (`ScaleOf`, `PositionFactor`, `OptionLines`,
+  `ShowOnMap`, the size words); step 6 must move them before it removes
+  that file. `QuestPanel:Unfold`, `ShowLog` and `SetPanelScale` pass on to
+  the small panel.
+- **The Log** reads `ns.QuestLog` and uses the quest log tab's secure item
+  buttons: `QuestLogUI:PlaceItems` asks `SmallPanel:ItemSpots` where its
+  rows are, and `WantsTrackerHidden` looks at the small panel's frame.
+- **Saved keys, added only.** Account: `questPanelOff` ("Panel: Show"
+  unticked), `questPanelLine` (one line), `questPanelSteps` (every step
+  open). Character: `panelTab` ("tracking"), `upgradeQuestDoneList` (the
+  newest 30 finished quests, written by `UpgradeQuest:NoteDone`). The panel
+  reuses `questPoint`, `questRelativePoint`, `questX`, `questY`,
+  `questScaleAt`, `questScale`, `questPanelSeeThrough` (SeeThrough id
+  "panel" shares the key), `questLogTab` and `showTracker`. Never rename
+  any of them. `upgradeQuestStepOnly` (Current Step Only) is not read by
+  the new panel.
+- **Scans rest in a fight.** The shared scan (`Finder:ScanInBackground`) is
+  a calm job on the frame worker now: it waits out a fight and goes on when
+  it ends, and the panel says "Your next upgrade comes after the fight."
+  `UpgradeQuest:RetrySoon` puts its look off the same way
+  (`retryAfterFight`). A window's own scan (`Finder:ScanSliced`) still
+  runs, since the player opened that window. Counted in
+  `tools/test_engine.lua`.
+- A click on a source looks at the kept picks again (a judge each, as
+  `SelectTab` always did) and starts no scan. Other clicks judge nothing.
+- Tested in `tools/test_smallpanel.lua` and `tools/test_questtab.lua`.
+- Not yet seen in game: dragging, the round button, the see-through level,
+  the Log's item buttons, the pop-up's place, and how the right side fits
+  a quest with many steps.

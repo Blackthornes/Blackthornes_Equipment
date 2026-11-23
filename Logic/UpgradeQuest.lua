@@ -33,6 +33,8 @@
 --                        offered again until restored in Settings or picked
 --                        by hand in Where to get upgrades
 --   upgradeQuestsDone    how many upgrade quests this character finished
+--   upgradeQuestDoneList the newest of them, for the Upgrade Quest tab's
+--                        Done list: { { itemID, link, done, gain } }
 -- And account wide, in BlackthornesEquipmentDB: `upgradeQuestZoneOnly`, the
 -- quest panel's "This zone only" box (off: upgrades from anywhere), and
 -- `upgradeQuestZoneSwap`, its "Change on a new zone" box (on unless
@@ -427,7 +429,7 @@ end
 function UpgradeQuest:SetStepOnly(on)
     if not ns.db then return end
     ns.db.upgradeQuestStepOnly = on and true or false
-    for _, name in ipairs({ "QuestPanel", "SettingsUI" }) do
+    for _, name in ipairs({ "QuestPanel", "SmallPanel", "QuestTab", "SettingsUI" }) do
         local module = ns[name]
         if module and module.OnUpgradeQuestChanged then pcall(module.OnUpgradeQuestChanged, module) end
     end
@@ -1400,7 +1402,7 @@ end
 --- Tell whatever shows the quest to draw it again.
 function UpgradeQuest:Changed()
     for _, name in ipairs({ "QuestPanel", "MapPins", "SettingsUI", "FinderUI", "QuestArrow", "IgnoredUI", "FindUpgrades",
-        "MyGear" }) do
+        "MyGear", "SmallPanel", "QuestTab" }) do
         local module = ns[name]
         if module and module.OnUpgradeQuestChanged then pcall(module.OnUpgradeQuestChanged, module) end
     end
@@ -1595,6 +1597,20 @@ function UpgradeQuest:Update()
     end
 end
 
+--- Keep a finished quest for the Upgrade Quest tab's Done list
+--- (UI/UpgradeQuestTab.lua), the newest DONE_KEPT of them.
+UpgradeQuest.DONE_KEPT = 30
+function UpgradeQuest:NoteDone(quest)
+    local char = ns.charDB
+    if not (char and type(quest) == "table" and quest.itemID) then return end
+    if type(char.upgradeQuestDoneList) ~= "table" then char.upgradeQuestDoneList = {} end
+    local list = char.upgradeQuestDoneList
+    local ok, at = pcall(function() return time() end)
+    at = ok and tonumber(at) or 0
+    table.insert(list, 1, { itemID = quest.itemID, link = quest.link, done = at, gain = quest.howMuch })
+    while #list > UpgradeQuest.DONE_KEPT do list[#list] = nil end
+end
+
 function UpgradeQuest:RetrySoon()
     local after = _G.C_Timer and _G.C_Timer.After
     if self.retryPending or type(after) ~= "function" then return end
@@ -1605,6 +1621,12 @@ function UpgradeQuest:RetrySoon()
         -- Run at once, by a client without real timers: looking again now
         -- would only go round in circles.
         if scheduling then return end
+        -- The shared scan rests during a fight (Logic/Finder.lua), so
+        -- looking again would find nothing new: wait for the fight's end.
+        if ns.Worker and ns.Worker.InCombat() then
+            UpgradeQuest.retryAfterFight = true
+            return
+        end
         local ok, err = pcall(UpgradeQuest.Update, UpgradeQuest)
         if not ok then ns.Debug("upgrade quest:", tostring(err)) end
     end)
@@ -1634,6 +1656,7 @@ function UpgradeQuest:Check()
             if not completed[quest.itemID] then
                 completed[quest.itemID] = true
                 ns.charDB.upgradeQuestsDone = self:DoneCount() + 1
+                self:NoteDone(quest)
                 local cheered = ns.UpgradeDone
                     and select(2, pcall(ns.UpgradeDone.Show, ns.UpgradeDone, quest, self:DoneCount())) == true
                 if not cheered and ns.Toast then
@@ -2253,6 +2276,12 @@ function UpgradeQuest:OnGiverWindow(event)
 end
 
 function UpgradeQuest:OnEnable()
+    -- A look put off by a fight (RetrySoon) is made when it ends.
+    ns.RegisterEvent(self, "PLAYER_REGEN_ENABLED", function()
+        if not UpgradeQuest.retryAfterFight then return end
+        UpgradeQuest.retryAfterFight = nil
+        if UpgradeQuest:IsEnabled() then UpgradeQuest:UpdateSoon(0) end
+    end)
     for _, event in ipairs({ "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP",
         "ZONE_CHANGED_NEW_AREA", "QUEST_ACCEPTED", "QUEST_LOG_UPDATE", "QUEST_TURNED_IN", "QUEST_WATCH_LIST_CHANGED",
         "GET_ITEM_INFO_RECEIVED", "SKILL_LINES_CHANGED", "NEW_RECIPE_LEARNED", "TRAIT_CONFIG_UPDATED",
@@ -2310,7 +2339,7 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
                 panel.ScaleText(panel:GetScale())))
             return
         end
-        panel:Build()
+        if not (ns.SmallPanel and ns.SmallPanel.standsIn) then panel:Build() end
         ns.Print(L.Format("quest panel size: %s.", panel.ScaleText(panel:SetPanelScale(scale))))
         return
     end
@@ -2318,7 +2347,10 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
     -- shows them (UI/QuestLogTab.lua).
     if word == "log" then
         if not UpgradeQuest:IsEnabled() then UpgradeQuest:SetEnabled(true) end
-        if ns.QuestPanel then
+        if ns.SmallPanel and ns.SmallPanel.standsIn then
+            ns.SmallPanel:SetView("log")
+            ns.SmallPanel:Unfold()
+        elseif ns.QuestPanel then
             ns.QuestPanel.folded = false
             ns.QuestPanel:ShowLog(true)
         end
@@ -2349,7 +2381,12 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
         return
     end
     if word == "ignored" then
-        if ns.IgnoredUI then ns.IgnoredUI:Show() end
+        -- The Upgrade Quest tab lists them now (UI/UpgradeQuestTab.lua).
+        if ns.SmallPanel and ns.SmallPanel.standsIn and ns.QuestTab then
+            ns.QuestTab:Open("ignored")
+        elseif ns.IgnoredUI then
+            ns.IgnoredUI:Show()
+        end
         return
     end
     if word == "switch" then

@@ -371,6 +371,7 @@ function DQ:TitleLoaded(questID, success)
         -- The upgrade quest's steps and the finder's rows name quests the
         -- game's way too, so they redraw if they are up.
         if ns.QuestPanel and ns.QuestPanel.RefreshSoon then pcall(ns.QuestPanel.RefreshSoon, ns.QuestPanel) end
+        if ns.SmallPanel then pcall(ns.SmallPanel.RefreshSoon, ns.SmallPanel) end
         if ns.FinderUI and ns.FinderUI.Redraw then pcall(ns.FinderUI.Redraw, ns.FinderUI) end
     end)
 end

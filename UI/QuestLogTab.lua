@@ -50,6 +50,7 @@ local FOOTER = 34
 local MAX_LIST = 380
 local SCROLL_BAR = 6
 local ITEM = 30
+QuestLogUI.ITEM = ITEM
 local MARK = 16
 local HEAD = 22
 local WHEEL = 40
@@ -141,6 +142,7 @@ end
 --- Settings, the panel's tick boxes and the menu all go through here.
 function QuestLogUI:Changed()
     if ns.QuestPanel and ns.QuestPanel.frame then ns.QuestPanel:Refresh() end
+    if ns.SmallPanel and ns.SmallPanel.frame then ns.SmallPanel:Refresh() end
     if ns.SettingsUI and ns.SettingsUI.Refresh then ns.SettingsUI:Refresh() end
 end
 
@@ -957,11 +959,19 @@ end
 function QuestLogUI:PlaceItems()
     self.items = self.items or {}
     local wanted = {}
-    for _, row in ipairs(self.shown or {}) do
-        local spot = self:SpotOf(row)
-        if spot then wanted[#wanted + 1] = { row = row, spot = spot } end
-        if #wanted >= MOST_ITEMS then break end
+    -- The small panel's Log (UI/SmallPanel.lua) says where its own rows are
+    -- while it stands in for the old panel.
+    local small = ns.SmallPanel and ns.SmallPanel.standsIn and ns.SmallPanel or nil
+    if small then
+        wanted = self.dragging and {} or small:ItemSpots(MOST_ITEMS)
+    else
+        for _, row in ipairs(self.shown or {}) do
+            local spot = self:SpotOf(row)
+            if spot then wanted[#wanted + 1] = { row = row, spot = spot } end
+            if #wanted >= MOST_ITEMS then break end
+        end
     end
+    local over = small and small.frame or ns.QuestPanel.frame
 
     if InCombat() then
         for index, button in ipairs(self.items) do
@@ -992,7 +1002,7 @@ function QuestLogUI:PlaceItems()
         button:SetScale(want.spot.scale)
         button:ClearAllPoints()
         button:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", want.spot.left, want.spot.top)
-        pcall(button.SetFrameLevel, button, (ns.QuestPanel.frame:GetFrameLevel() or 1) + 40)
+        pcall(button.SetFrameLevel, button, (over:GetFrameLevel() or 1) + 40)
         button.at = want.spot
         button:SetAlpha(1)
         button:Show()
@@ -1048,6 +1058,7 @@ QuestLogUI.TRACKERS = { "ObjectiveTrackerFrame", "QuestWatchFrame" }
 --- panel up?
 function QuestLogUI:WantsTrackerHidden()
     local panel = ns.QuestPanel
+    if ns.SmallPanel and ns.SmallPanel.standsIn then panel = ns.SmallPanel end
     return self:HidesTracker() and panel and panel.frame ~= nil and panel.frame:IsShown() == true
 end
 

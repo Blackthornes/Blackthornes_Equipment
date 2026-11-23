@@ -4,6 +4,9 @@
 -- Shift-click close it or bring it back, and its quests are kept closed.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
+-- This suite tests the old panels, kept until rework step 6; the small
+-- panel (UI/SmallPanel.lua) stands in for them in play.
+env.OLD_PANELS = true
 local suite = env.NewSuite("questtoggle")
 
 local ns = env.Load()

@@ -270,7 +270,7 @@ suite.check("and judges everything again", judges == 10, judges)
 suite.check("the weapon is still set aside without the skill", GearList:Out(1305) == true)
 
 --------------------------------------------------------------------------------
--- Scans still run in a fight (the upgrade quest's panel waits on them)
+-- In a fight the shared scan rests; a window's own scan still runs
 --------------------------------------------------------------------------------
 
 do
@@ -283,8 +283,11 @@ do
     Finder:ScanSliced(nil, 0, function(result) own = result end)
     RunFrames()
     suite.check("in a fight the window's own scan finishes", own ~= nil)
-    suite.check("and so does the shared scan", shared ~= nil and not Finder:Scanning())
+    suite.check("the shared scan rests until the fight ends", shared == nil and Finder:Scanning())
     fighting = false
+    ns.Worker.FightOver()
+    RunFrames()
+    suite.check("and finishes once it does", shared ~= nil and not Finder:Scanning())
     _G.C_Timer.After = realAfter
 end
 

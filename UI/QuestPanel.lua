@@ -101,6 +101,9 @@ local function Colored(key, text)
 end
 
 function QuestPanel:IsEnabled()
+    -- The small panel (UI/SmallPanel.lua, rework step 4) shows the quest
+    -- now; this one stays hidden while it stands in.
+    if ns.SmallPanel and ns.SmallPanel.standsIn then return false end
     return ns.UpgradeQuest ~= nil and ns.UpgradeQuest:IsEnabled()
 end
 
@@ -150,6 +153,7 @@ function QuestPanel:ShowLog(on)
     ns.charDB.questLogTab = on and true or nil
     if ns.QuestLogUI then ns.QuestLogUI:CloseMenu() end
     self:Refresh()
+    if ns.SmallPanel then ns.SmallPanel:Refresh() end
     if ns.SettingsUI and ns.SettingsUI.Refresh then ns.SettingsUI:Refresh() end
 end
 
@@ -1324,6 +1328,7 @@ function QuestPanel:ToggleFold()
 end
 
 function QuestPanel:Unfold()
+    if ns.SmallPanel and ns.SmallPanel.standsIn then return ns.SmallPanel:Unfold() end
     if self.frame and ns.FoldWindow and self.folded then
         ns.FoldWindow:Unfold(self.frame)
     end
@@ -1488,6 +1493,7 @@ function QuestPanel:SetPanelScale(value)
     local scale = QuestPanel.ClampScale(value)
     if ns.db then ns.db.questScale = scale end
     self:ApplyScale(scale)
+    if ns.SmallPanel then ns.SmallPanel:ApplyScale() end
     if ns.SettingsUI and ns.SettingsUI.Refresh then ns.SettingsUI:Refresh() end
     return math.min(scale, self:FitScale())
 end
