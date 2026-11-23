@@ -895,7 +895,7 @@ end
 function Find.PlaceText(pick, source, zone)
     local FinderUI = ns.FinderUI
     local text = FinderUI.SourceLine(source, zone)
-    if source.after then text = text .. "\n" .. Colored("muted", L.Format("after %s", source.after)) end
+    if source.after then text = text .. "\n" .. Colored("muted", (L.Format("    after %s", source.after):gsub("^%s+", ""))) end
     if source.kind == "craft" and ns.Crafting then
         local materials = ns.Crafting:MaterialsText(pick.itemID)
         if type(materials) == "string" and materials ~= "" then
@@ -946,10 +946,11 @@ function Find:Actions(line)
 end
 
 function Find:BuildSheet(left, width)
+    -- It takes what room is left: more when the window is wider than a
+    -- page needs (inside the one window, or when another tab asks for it).
     local sheet = Theme.CreatePanel(self.body, "panel", "border")
     sheet:SetPoint("TOPLEFT", left, 0)
-    sheet:SetPoint("BOTTOMLEFT", left, 0)
-    sheet:SetWidth(width)
+    sheet:SetPoint("BOTTOMRIGHT", 0, 0)
     Theme.Recess(sheet)
     self.sheet = sheet
     self.sheetWidth = width
@@ -1031,6 +1032,21 @@ function Find:BuildSheet(left, width)
     end
 end
 
+--- The sheet's words wrap at its width as it stands now.
+function Find:FitSheet()
+    local ok, width = pcall(self.sheet.GetWidth, self.sheet)
+    if not (ok and type(width) == "number" and width >= SHEET) then width = SHEET end
+    width = math.floor(width)
+    if width == self.sheetFit then return end
+    self.sheetFit, self.sheetWidth = width, width
+    local inner = width - 24
+    self.sheetName:SetWidth(inner - 46)
+    self.sheetKind:SetWidth(inner - 46)
+    self.sheetNotes:SetWidth(inner)
+    self.sheetWhy:SetWidth(inner)
+    for _, label in ipairs(self.sheetPlaces) do label:SetWidth(inner) end
+end
+
 --- Lay the sheet's buttons from its foot up: the gold one across the
 --- top, the rest two to a line, each as wide as the longest label.
 -- @return how much of the sheet's foot they take
@@ -1089,6 +1105,7 @@ function Find:PaintSheet()
     local FinderUI, quest, Items = ns.FinderUI, ns.UpgradeQuest, ns.Items
     local pick = line.pick
     local hold = self.sheetHold
+    self:FitSheet()
     local inner = self.sheetWidth - 24
     local zone = quest and quest.Zone() or nil
 

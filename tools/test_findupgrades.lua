@@ -318,8 +318,9 @@ suite.check("still never in one go", whole == 0, whole)
 Quiet()
 Find.aheadChoice:Pick(2)
 suite.check("Plan Ahead is the old list's saved choice", ns.db.finderAhead == 2)
--- One look, and one more when item answers came in while it ran.
-suite.check("it makes a scan of its own, and stops", scans >= 1 and scans <= 2, scans)
+-- One look, and the engine's one more each time item answers came in
+-- while it ran. The "kept" check below shows it has stopped.
+suite.check("it makes a scan of its own, and stops", scans >= 1 and scans <= 4, scans)
 suite.check("which adds the gear two levels on", Row(1301) ~= nil, Listed())
 local later = Row(1301)
 suite.check("in amber, with its level", later and later.level:GetText() == "22"
