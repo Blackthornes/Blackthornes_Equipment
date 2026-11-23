@@ -50,6 +50,30 @@ local REST_STEP = 0.5
 local RESTING = { nowhere = true, blind = true }
 ArrowUI.REST_STEP = REST_STEP
 
+-- Standing still and facing the same way, nothing on the dial can move, so
+-- it is read again only every REST_STEP too: 33 reads a second made new
+-- tables and words for the collector while you stood in town.
+local function ReadStill()
+    if IsPlayerMoving() then return nil end
+    return GetPlayerFacing() + 0
+end
+
+--- Where you face while you stand still; nil while you move, or when the
+--- client won't say (the dial then keeps up every step, as before).
+function ArrowUI.StillFacing()
+    if type(_G.IsPlayerMoving) ~= "function" or type(_G.GetPlayerFacing) ~= "function" then return nil end
+    local ok, facing = pcall(ReadStill)
+    if ok and type(facing) == "number" then return facing end
+    return nil
+end
+
+--- Nothing the dial shows can change: you stand still, facing as at the
+--- last read, and that read changed nothing on the dial.
+function ArrowUI:Quiet()
+    if not self.settled or self.drawnFacing == nil then return false end
+    return ArrowUI.StillFacing() == self.drawnFacing
+end
+
 local function Clock()
     if type(GetTime) ~= "function" then return 0 end
     local ok, now = pcall(GetTime)
@@ -378,6 +402,8 @@ end
 --- it swings rather than snaps; straight there otherwise. Only a new frame
 --- touches the textures.
 function ArrowUI:Turn(turn)
+    -- Where the swing ends: the dial is not settled until it is there.
+    self.aimFrame = ArrowUI.FrameFor(turn)
     local shown = self.shownTurn
     if shown and ns.Motion.Level() == "full" then
         local gap = turn - shown
@@ -414,12 +440,17 @@ function ArrowUI:Step(elapsed)
     if self.since < STEP then return end
     self.since = 0
 
-    local resting = self.state and RESTING[self.state.mode]
+    local resting = (self.state and RESTING[self.state.mode]) or self:Quiet()
     self.restFor = (self.restFor or 0) + STEP
     if not resting or self.restFor >= REST_STEP then
         self.restFor = 0
+        local key, shown = self.drawnKey, self.shownFrame
+        self.drawnFacing = ArrowUI.StillFacing()
+        self.aimFrame = nil
         local ok, err = pcall(self.Draw, self)
         if not ok then ns.Debug("quest arrow:", tostring(err)) end
+        self.settled = ok and self.drawnKey == key and self.shownFrame == shown
+            and (self.aimFrame == nil or self.aimFrame == self.shownFrame)
     end
     if self.frame:IsShown() then pcall(self.Breathe, self, Clock()) end
 end
@@ -438,6 +469,8 @@ function ArrowUI:Refresh()
     end
     if self.driver then self.driver:Show() end
     self:Build()
+    -- Something changed: keep up every step until the dial settles again.
+    self.settled = false
     local ok, err = pcall(self.Draw, self, true)
     if not ok then ns.Debug("quest arrow:", tostring(err)) end
 end

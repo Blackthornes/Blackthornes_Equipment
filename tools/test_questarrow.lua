@@ -181,6 +181,20 @@ suite.check("the arrow is up", ArrowUI.arrow:IsShown() and not ArrowUI.check:IsS
 suite.check("no tooltip on the dial", ArrowUI.frame:GetScript("OnEnter") == nil and ArrowUI.ShowTooltip == nil)
 suite.check("no click on the dial", ArrowUI.frame:GetScript("OnMouseUp") == nil and ArrowUI.OnClick == nil)
 
+-- Standing still, the real dial settles and is read about twice a second.
+do
+    local reads, realState = 0, Arrow.State
+    Arrow.State = function(...) reads = reads + 1; return realState(...) end
+    _G.IsPlayerMoving = function() return false end
+    ArrowUI.since, ArrowUI.restFor = 0, 0
+    for _ = 1, 100 do ArrowUI:Step(0.03) end
+    suite.check("standing still the dial reads about twice a second", reads >= 4 and reads <= 10, reads)
+    suite.check("and still shows the way", ArrowUI.arrow:IsShown()
+        and ArrowUI.distance:GetText() == Arrow.Yards(yards), ArrowUI.distance:GetText())
+    Arrow.State, _G.IsPlayerMoving = realState, nil
+    ArrowUI.settled = false
+end
+
 -- Standing at the vendor.
 zone = "Westfall"
 where = { map = 52, x = 0.5632, y = 0.3101 }

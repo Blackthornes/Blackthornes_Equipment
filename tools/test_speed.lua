@@ -628,6 +628,37 @@ do
     ArrowUI.state = { mode = "arrow" }
     for _ = 1, 10 do ArrowUI:Step(0.03) end
     suite.check("pointing somewhere it keeps up every step", draws == 10, draws)
+
+    -- Standing still, facing the same way: nothing on the dial can move, so
+    -- it is read about twice a second (each read made new tables).
+    local moving, facing = false, 1.25
+    local realMoving, realFacing = rawget(_G, "IsPlayerMoving"), rawget(_G, "GetPlayerFacing")
+    _G.IsPlayerMoving = function() return moving end
+    _G.GetPlayerFacing = function() return facing end
+    ArrowUI.settled, ArrowUI.restFor = false, 0
+    draws = 0
+    for _ = 1, 100 do ArrowUI:Step(0.03) end
+    suite.check("standing still it looks about twice a second", draws >= 4 and draws <= 9, draws)
+    draws = 0
+    facing = 2.5
+    ArrowUI:Step(0.03)
+    suite.check("turning shows at once", draws == 1, draws)
+    draws = 0
+    moving = true
+    for _ = 1, 10 do ArrowUI:Step(0.03) end
+    suite.check("walking keeps up every step", draws == 10, draws)
+    draws = 0
+    moving = false
+    ArrowUI.Draw = function(self) draws = draws + 1; self.drawnKey = tostring(draws) end
+    for _ = 1, 10 do ArrowUI:Step(0.03) end
+    suite.check("words still changing keep up every step", draws == 10, draws)
+    draws = 0
+    _G.IsPlayerMoving = function() error("secret") end
+    ArrowUI.Draw = function(self) draws = draws + 1 end
+    for _ = 1, 10 do ArrowUI:Step(0.03) end
+    suite.check("a client that won't say keeps up every step", draws == 10, draws)
+    _G.IsPlayerMoving, _G.GetPlayerFacing = realMoving, realFacing
+    ArrowUI.settled, ArrowUI.drawnKey = nil, nil
     ArrowUI.Draw, ArrowUI.frame, ArrowUI.state = realDraw, frame, nil
 end
 
