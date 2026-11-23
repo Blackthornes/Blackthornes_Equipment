@@ -659,30 +659,30 @@ do
 end
 
 --------------------------------------------------------------------------------
--- Money moving many times in a row draws the finder window once
+-- Money moving many times in a row draws the Find Upgrades list once
 --------------------------------------------------------------------------------
 
 do
-    local FinderUI = ns.FinderUI
-    FinderUI:Show()
-    -- What the window does when the game says the money moved.
-    local function fire() FinderUI:DrawSoon() end
+    local Find = ns.FindUpgrades
+    ns.GearWindow:Open("find")
+    -- What the tab does when the game says the money moved.
+    local function fire() Find:RedrawSoon() end
     local held, realAfter = {}, _G.C_Timer.After
     _G.C_Timer.After = function(_, fn) held[#held + 1] = fn end
-    local realDraw, draws = FinderUI.Draw, 0
-    FinderUI.Draw = function(...) draws = draws + 1 return realDraw(...) end
-    for _ = 1, 12 do fire(ns.eventFrame, "PLAYER_MONEY") end
+    local realDraw, draws = Find.Draw, 0
+    Find.Draw = function(...) draws = draws + 1 return realDraw(...) end
+    for _ = 1, 12 do fire() end
     suite.check("twelve coins looted draw nothing yet", draws == 0 and #held == 1, #held)
     while #held > 0 do table.remove(held, 1)() end
-    suite.check("and then the window is drawn once", draws == 1, draws)
-    fire(ns.eventFrame, "PLAYER_MONEY")
+    suite.check("and then the list is drawn once", draws == 1, draws)
+    fire()
     while #held > 0 do table.remove(held, 1)() end
     suite.check("money moving later draws it again", draws == 2, draws)
-    FinderUI:Hide()
-    fire(ns.eventFrame, "PLAYER_MONEY")
+    ns.GearWindow:Close()
+    fire()
     while #held > 0 do table.remove(held, 1)() end
-    suite.check("a closed window is not drawn", draws == 2 and not FinderUI.drawPending, draws)
-    FinderUI.Draw = realDraw
+    suite.check("a closed window is not drawn", draws == 2 and not Find.redrawPending, draws)
+    Find.Draw = realDraw
     _G.C_Timer.After = realAfter
 end
 

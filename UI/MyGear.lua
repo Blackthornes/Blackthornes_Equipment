@@ -1297,6 +1297,7 @@ function MyGear:Build(area)
     local version = Theme.CreateLabel(page, "tiny", "dim", "RIGHT")
     version:SetPoint("BOTTOMRIGHT", -PAD, 10)
     version:SetText(ns.VersionLabel and ns.VersionLabel() or "")
+    self.versionLabel = version
 
     self:PaintView()
     return page

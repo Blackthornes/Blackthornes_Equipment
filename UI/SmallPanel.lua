@@ -239,12 +239,28 @@ local function HereZone()
     return nil
 end
 
+--- An arrow aimed at a quest that has left the log lets it go. An aim with
+--- no quest (the weapon master) never came from the log, so it stays.
+function Panel:ForgetGone()
+    local arrow = ns.QuestArrow
+    local free = arrow and arrow:FreeQuest()
+    local data = self.logData
+    if not (free and free.questID ~= nil and data and data.how) then return end
+    for _, zone in ipairs(data.zones or {}) do
+        for _, quest in ipairs(zone.quests or {}) do
+            if quest.questID == free.questID and quest.title == free.title then return end
+        end
+    end
+    arrow:ForgetQuest(free.questID)
+end
+
 --- The quests the Log lists: the ones in the zone you are in first, then
 --- the rest in the log's order. Only tracked ones with Tracked Only on.
 function Panel:LogLines()
     if self.logDirty ~= false or not self.logData then
         self.logData = ns.QuestLog and ns.QuestLog:Read() or { zones = {} }
         self.logDirty = false
+        self:ForgetGone()
     end
     local trackedOnly = ns.QuestLogUI and ns.QuestLogUI:TrackedOnly()
     local here = HereZone()

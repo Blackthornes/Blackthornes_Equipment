@@ -213,7 +213,8 @@ function SettingsUI:Rail(pages)
     for _, part in ipairs(pages.switch) do
         local button = part.button
         button:SetParent(rail)
-        button:SetSize(RAIL - 1, RAIL_ROW)
+        button:SetWidth(RAIL - 1)
+        button:SetHeight(RAIL_ROW)
         part.back = Theme.Fill(button, "glass")
         local under = button:CreateTexture(nil, "BACKGROUND", nil, 1)
         under:SetPoint("BOTTOMLEFT")

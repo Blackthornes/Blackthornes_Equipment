@@ -128,7 +128,7 @@ suite.check("the upgrade in chat box starts ticked", controls.upgradeChat:GetChe
 controls.upgradeChat:GetScript("OnClick")(controls.upgradeChat)
 suite.check("unticking it switches the chat line off", ns.db.upgradeChat == false, ns.db.upgradeChat)
 
--- The pages along the top, as Tradeskills' Settings tab has them.
+-- The pages, listed down the left of the Settings tab.
 local pages = SettingsUI.pages
 suite.check("it opens on the first page", pages.shown == "gear", pages.shown)
 suite.check("with the gear rows showing", pages.pages.gear.content:IsShown()
@@ -138,7 +138,7 @@ suite.check("with the gear rows showing", pages.pages.gear.content:IsShown()
 suite.check("no Upgrade Hunts page", pages.pages.hunts == nil)
 suite.check("the grid heads the Gear page", pages.pages.gear.items[1][1] ~= nil
     and SettingsUI.showGrid[1] == pages.pages.gear.items[1][2].frame)
-suite.check("five lines of two", #SettingsUI.showGrid == 5)
+suite.check("six lines of two", #SettingsUI.showGrid == 6, #SettingsUI.showGrid)
 local gridKeys = { arrows = "bagArrows", sellCoins = "bagSellCoins", rewardButton = "rewardButton",
     upgradeChat = "upgradeChat", slotUpgrades = "slotUpgrades", upgradeToast = "upgradeToast",
     showTracker = "showTracker", mapPins = "mapPins" }
@@ -177,13 +177,17 @@ suite.check("it opens again on the page left", pages.shown == "general")
 local pageWords = {}
 for _, def in ipairs(pages.defs) do pageWords[#pageWords + 1] = def.text end
 suite.check("the pages run own first, then the shared ones",
-    table.concat(pageWords, ", ") == "GEAR, UPGRADE QUEST, WINDOWS, ALL ADDONS, ABOUT", table.concat(pageWords, ", "))
+    table.concat(pageWords, ", ")
+        == "GEAR, STAT WEIGHTS, UPGRADE QUEST, CHARACTERS, TOOLTIPS, WINDOWS, ALL ADDONS, ABOUT",
+    table.concat(pageWords, ", "))
 
 -- Every page has rows, and the window is at least two columns wide.
 -- About (UI/About.lua) has its note and its facts instead.
 for _, page in pairs(pages.pages) do
     if page.key == "about" then
         suite.check("about has the note and the facts", #page.items[1] == 2 and #page.items[2] == 2)
+    elseif page.key == "weights" or page.key == "characters" then
+        suite.check(page.key .. " is one wide list", #page.items[1] == 1 and #page.rows == 0)
     else
         suite.check(page.key .. " has rows", #page.rows > 0)
     end
@@ -193,7 +197,7 @@ suite.check("the window is two columns wide or more",
 
 -- What a setting does is a tooltip until Show descriptions is ticked.
 local tooltipRow
-for _, row in ipairs(pages.pages.gear.rows) do
+for _, row in ipairs(pages.pages.tooltips.rows) do
     if row.labelText == "Tooltip Line:" then tooltipRow = row end
 end
 suite.check("descriptions start hidden", ns.db.settingsDescriptions == false
@@ -203,13 +207,15 @@ tooltipRow:GetScript("OnEnter")(tooltipRow)
 suite.check("a row lights under the mouse", tooltipRow.hover:IsShown())
 suite.check("and says what it does in a tooltip", GameTooltip._lines[1] and
     GameTooltip._lines[1]:find("beats what you wear") ~= nil)
-local before = SettingsUI.frame:GetHeight()
+local tall = function() return pages:PageHeight(pages.pages.tooltips) end
+local before, window = tall(), ns.GearWindow.frame:GetHeight()
 pages.describe:GetScript("OnClick")(pages.describe)
 suite.check("Show descriptions is saved", ns.db.settingsDescriptions == true)
 suite.check("and puts the words under the rows", tooltipRow.hint:IsShown())
-suite.check("and the window grows to fit them", SettingsUI.frame:GetHeight() > before)
+suite.check("the page grows to hold them and scrolls", tall() > before)
+suite.check("the window keeps its height", ns.GearWindow.frame:GetHeight() == window)
 pages.describe:GetScript("OnClick")(pages.describe)
-suite.check("unticked, the window goes back", SettingsUI.frame:GetHeight() == before)
+suite.check("unticked, the page goes back", tall() == before)
 
 -- The spec row's words change with the spec, in its tooltip too.
 controls.spec:SetValue(3)
@@ -246,27 +252,13 @@ suite.check("the Window style's Reload sits the same way", controls.windowStyle.
 controls.textSize:Pick(controls.textSize:GetValue() - 1)
 suite.check("back to Normal needs no reload", ns.db.textSize == "normal"
     and not controls.textSize.reload:IsShown())
--- Word choices are drop-downs (the owner, 2026-10-23), the character
--- picker too.
+-- Word choices are drop-downs (the owner, 2026-10-23).
 controls.textSize:GetScript("OnMouseDown")(controls.textSize)
 suite.check("Text size opens a menu of its words", controls.textSize.menu:IsShown()
     and #controls.textSize.options == 3)
 controls.textSize.entries[1]:GetScript("OnClick")()
 suite.check("picking the one shown changes nothing", ns.db.textSize == "normal"
     and not controls.textSize.menu:IsShown())
-do
-    local picked = 0
-    local picker = SettingsUI.CharacterPicker(CreateFrame("Frame"), 0, function() picked = picked + 1 end)
-    suite.check("an empty picker says so", picker.text:GetText() == "No characters yet" and picker:GetEntry() == nil)
-    picker:SetEntries({ { key = "Player-1", name = "Ana Stormwind" }, { key = "Player-2", name = "Bob Wither" } })
-    suite.check("then shows the first whole name", picker:GetEntry().key == "Player-1"
-        and picker.text:GetText() == "Ana Stormwind")
-    picker:GetScript("OnMouseDown")(picker)
-    picker.entries[2]:GetScript("OnClick")()
-    suite.check("a line of its menu picks that character", picker:GetEntry().key == "Player-2" and picked == 1)
-    picker:SetEntries({ { key = "Player-3", name = "Cid Hale" }, { key = "Player-2", name = "Bob Wither" } })
-    suite.check("and the pick stays through a new list", picker:GetEntry().key == "Player-2")
-end
 suite.check("sizes read through the step", ns.Theme.sizes.small == ns.Theme.BASE_SIZES.small)
 
 -- Mute All Sounds: the box, the command and every sister agree.
@@ -285,16 +277,17 @@ suite.check("and back off", ns.Muted() == false)
 local ran = {}
 local realSlash = ns.HandleSlash
 ns.HandleSlash = function(text) ran[#ran + 1] = text end
-for _, key in ipairs({ "openWindow", "find", "questLogOpen", "dungeonQuests", "dungeonLoot", "questArrowNext", "whatsnew" }) do
+for _, key in ipairs({ "questLogOpen", "questArrowNext", "whatsnew" }) do
     controls[key]:GetScript("OnClick")(controls[key])
 end
 ns.HandleSlash = realSlash
 suite.check("the command buttons run their commands",
-    table.concat(ran, ",") == "window,find,quest log,dungeons,loot,arrow next,whatsnew", table.concat(ran, ","))
+    table.concat(ran, ",") == "quest log,arrow next,whatsnew", table.concat(ran, ","))
 
 -- Every command registered has a control here, but for the ones that are
 -- typed only (the owner, 2026-10-15): commands that only list things in
--- chat, or only do what a panel already has a button for.
+-- chat, or only do what a panel already has a button for. The window's
+-- own tabs stand for window, find, dungeons, loot and training.
 local covered = { sisters = true, whatsnew = true,
     window = true, find = true, quest = true, arrow = true,
     spec = true, weights = true,
@@ -303,7 +296,7 @@ local covered = { sisters = true, whatsnew = true,
 }
 local typedOnly = { bags = true, tracked = true, help = true }
 for _, name in ipairs(ns.commandOrder) do
-    suite.check("/beq " .. name .. " has a button in Settings, or is typed only",
+    suite.check("/beq " .. name .. " has a button or a tab, or is typed only",
         covered[name] == true or typedOnly[name] == true)
 end
 suite.check("the chat-only commands still work", ns.commands.bags and ns.commands.tracked
@@ -339,13 +332,13 @@ ns.db.windowStyle = "titanforged"
 SettingsUI:Refresh()
 
 -- Position.
-ns.db.settingsX = 400
+ns.db.finderX = 400
 controls.resetPositions:GetScript("OnClick")(controls.resetPositions)
-suite.check("Set Default forgets where it was dragged", ns.db.settingsX == nil)
+suite.check("Set Default forgets where it was dragged", ns.db.finderX == nil)
 suite.check("and says so", env.chat[#env.chat]:find("Every window is back in its first spot.", 1, true) ~= nil, env.chat[#env.chat])
-ns.db.settingsX = 400
+ns.db.finderX = 400
 ns.commands.windows.fn("reset")
-suite.check("/beq windows reset does the same", ns.db.settingsX == nil)
+suite.check("/beq windows reset does the same", ns.db.finderX == nil)
 
 -- A client with neither options API still loads.
 local ns2 = env.Load()
@@ -365,34 +358,71 @@ if share then share:GetScript("OnClick")(share) end
 suite.check("ticking it turns sharing on", ns3.db.shareData == true)
 _G.GetCurrentRegion = nil
 
--- The switch never runs under the search box (2026-11-17)
+-- The page list down the left (rework step 6, 2026-11-23)
 --------------------------------------------------------------------------------
 
--- Seen in game in Tradeskills: the last page name was drawn on the search
--- box. Laid into a window narrower than the bar asked for, the switch lays
--- itself out again at the bar's real width.
+-- The page names are a dark glass list under the search bar, one under the
+-- other, so a name can never run under the search box.
 do
-    local pages = SettingsUI.pages
-    local bar = pages.bar
-    local before = pages.lines or 1
-    local wide = pages.need[1]
-    bar:SetWidth(420)
-    bar:GetScript("OnSizeChanged")(bar)
-    local room = 420 - pages.opts.padding * 2 - pages:ToolsWidth()
-    local right, line, clear = 0, 0, true
+    local pages, rail = SettingsUI.pages, SettingsUI.rail
+    SettingsUI:Show("gear")
+    local place, stacked, inRail = 0, true, true
     for _, part in ipairs(pages.switch) do
         if part.button:IsShown() then
-            local _, relativeTo, _, x = part.button:GetPoint()
-            if relativeTo == bar then line, right = line + 1, 0 else right = right + x end
-            right = right + part.button:GetWidth()
-            if line == 1 and right > room then clear = false end
+            local point, relativeTo, _, x, y = part.button:GetPoint()
+            if point ~= "TOPLEFT" or relativeTo ~= rail or x ~= 0 or y ~= -place * part.button:GetHeight() then
+                stacked = false
+            end
+            if part.button:GetParent() ~= rail or part.button:GetWidth() >= SettingsUI.RAIL then inRail = false end
+            place = place + 1
         end
     end
-    suite.check("a narrow bar keeps the switch clear of the search box", clear)
-    suite.check("by putting the rest on more lines", (pages.lines or 1) > before, pages.lines)
-    bar:SetWidth(wide)
-    bar:GetScript("OnSizeChanged")(bar)
-    suite.check("and back to as many lines as before at the full width", (pages.lines or 1) == before, pages.lines)
+    suite.check("every page name shows in the list", place == #SettingsUI.PAGES, place)
+    suite.check("one under the other", stacked)
+    suite.check("each inside the list", inRail)
+    suite.check("the bar stays one line", (pages.lines or 1) == 1, pages.lines)
+    suite.check("the list keeps its width", rail:GetWidth() == SettingsUI.RAIL, rail:GetWidth())
+
+    -- The picked page is the active glass; the rest take glass and glassAlt
+    -- in turn. The fake textures keep no colour, so each back records its own.
+    local Theme = ns.Theme
+    for _, part in ipairs(pages.switch) do
+        rawset(part.back, "SetColorTexture", function(self, r, g, b) self._color = { r, g, b } end)
+    end
+    pages:Show("weights")
+    pages:Paint()
+    local function Is(part, key)
+        local r, g, b = Theme.Unpack(key)
+        local c = rawget(part.back, "_color")
+        return c and c[1] == r and c[2] == g and c[3] == b
+    end
+    local byKey = {}
+    for _, part in ipairs(pages.switch) do byKey[part.key] = part end
+    suite.check("the picked page is the active glass", Is(byKey.weights, "glassActive"))
+    suite.check("the rest take glass", Is(byKey.gear, "glass"))
+    suite.check("and glassAlt in turn", Is(byKey.characters, "glassAlt"))
+    byKey.quest.hovered = true
+    pages:Paint()
+    suite.check("under the mouse, glassHover with a gold edge", Is(byKey.quest, "glassHover")
+        and byKey.quest.edge:IsShown() and not byKey.gear.edge:IsShown())
+    byKey.quest.hovered = nil
+    pages:Paint()
+
+    -- A page saved before the list keeps its key.
+    for _, key in ipairs({ "gear", "quest", "general", "all", "about" }) do
+        suite.check("the saved page " .. key .. " still opens", pages.pages[key] ~= nil)
+    end
+
+    -- The commands open their pages in the window.
+    ns.GearWindow:Close()
+    ns.HandleSlash("weights")
+    suite.check("/beq weights opens Stat Weights", ns.GearWindow.tab == "settings" and pages.shown == "weights",
+        pages.shown)
+    SettingsUI:Show("characters")
+    suite.check("Characters opens the same way", pages.shown == "characters" and ns.CharactersPage:IsShown())
+    suite.check("with Stat Weights out of the way", not ns.WeightsPage:IsShown())
+    SettingsUI:Toggle()
+    suite.check("the command closes the window when Settings shows", not ns.GearWindow:IsShown())
 end
 
 suite.done()

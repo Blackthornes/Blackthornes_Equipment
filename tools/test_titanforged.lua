@@ -357,42 +357,30 @@ end
 
 local function Titan(frame) return rawget(frame, "titan") end
 
-addon.UI:Show()
-addon.FinderUI:Show()
-addon.SettingsUI:Show()
-addon.WeightsUI:Show()
-addon.QuestPanel:Build()
-addon.TrackerPanel:Build()
+local Gear = addon.GearWindow
+Gear:Open("gear")
+Gear:Open("find")
+Gear:Open("settings")
+addon.SmallPanel:Build()
 addon.Toast:Build()
 addon.SlotUpgrades:Build()
 
-local gear = Titan(addon.UI.frame)
-check("the gear window wears the frame", gear ~= nil, true)
+local gear = Titan(Gear.frame)
+check("the Equipment window wears the frame", gear ~= nil, true)
 check("with the portrait", rawget(gear, "portrait") ~= nil, true)
 check("its name on the plate", gear.plate.label._text, "Blackthornes Equipment")
 check("and the close gem", rawget(gear, "closeButton") ~= nil, true)
-gear.closeButton:GetScript("OnClick")(gear.closeButton)
-check("which closes it", addon.UI.frame:IsShown(), false)
 
-local finder = Titan(addon.FinderUI.frame)
-check("the finder wears it too", finder ~= nil and rawget(finder, "portrait") ~= nil, true)
-check("named on its plate", finder.plate.label._text, "Blackthornes Equipment")
-
-for _, entry in ipairs({ { "settings", addon.SettingsUI }, { "the stat weights", addon.WeightsUI } }) do
-    local dressed = Titan(entry[2].frame)
-    check(entry[1] .. " get the plate and close gem",
-        dressed ~= nil and rawget(dressed, "plate") ~= nil and rawget(dressed, "closeButton") ~= nil, true)
-    check("but no portrait", rawget(dressed, "portrait"), nil)
+-- Its tabs are pages inside it: one rim, never a second.
+for _, entry in ipairs({ { "My Gear", addon.MyGear.page }, { "Find Upgrades", addon.FindUpgrades.page },
+        { "Settings", addon.SettingsUI.frame } }) do
+    check(entry[1] .. " wears no rim of its own", entry[2] ~= nil and Titan(entry[2]), nil)
 end
 
--- The upgrade quest panel was asked to match too (2026-10-04).
-local quest = Titan(addon.QuestPanel.frame)
-check("the upgrade quest gets the plate and close gem",
-    quest ~= nil and rawget(quest, "plate") ~= nil and rawget(quest, "closeButton") ~= nil, true)
-check("named on its plate", quest.plate.label._text, "Upgrade quest")
-check("with no portrait, to stay small", rawget(quest, "portrait"), nil)
+gear.closeButton:GetScript("OnClick")(gear.closeButton)
+check("which closes it", Gear.frame:IsShown(), false)
 
-check("the tracker keeps its own look", Titan(addon.TrackerPanel.frame), nil)
+check("the small panel keeps its own look", Titan(addon.SmallPanel.frame), nil)
 
 -- The upgrade banner wears the rim and the close gem, no plate or portrait.
 local banner = Titan(addon.Toast.frame)
