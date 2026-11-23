@@ -1539,8 +1539,52 @@ function Panel:HideOffer()
     if self.offer then self.offer:Hide() end
 end
 
---- The upgrade a level opened, in a small window over the panel, with
---- Switch and Keep Current.
+local OFFER_GAP = 8
+
+--- Where the offer goes beside `frame`: "above" when it fits under the
+--- top of the screen, else "below", else "left" or "right". It never
+--- sits on the panel, whose tabs and buttons it would hide.
+function Panel.OfferSide(frame, box)
+    local ok, side = pcall(function()
+        local screenScale = UIParent:GetEffectiveScale()
+        local screenTop = UIParent:GetHeight() * screenScale
+        local screenRight = UIParent:GetWidth() * screenScale
+        local scale = frame:GetEffectiveScale()
+        local top, left = frame:GetTop(), frame:GetLeft()
+        if not top then return "above" end
+        local height = frame:GetHeight()
+        local boxScale = box:GetEffectiveScale()
+        local tall = (box:GetHeight() + OFFER_GAP) * boxScale
+        local wide = (box:GetWidth() + OFFER_GAP) * boxScale
+        top = top * scale
+        local bottom = top - height * scale
+        if top + tall <= screenTop then return "above" end
+        if bottom - tall >= 0 then return "below" end
+        if left and left * scale - wide >= 0 then return "left" end
+        if left and (left + frame:GetWidth()) * scale + wide <= screenRight then return "right" end
+        return "below"
+    end)
+    return ok and side or "above"
+end
+
+function Panel:PlaceOffer(box)
+    local frame = self.frame
+    local side = Panel.OfferSide(frame, box)
+    box:ClearAllPoints()
+    if side == "below" then
+        box:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0, -OFFER_GAP)
+    elseif side == "left" then
+        box:SetPoint("TOPRIGHT", frame, "TOPLEFT", -OFFER_GAP, 0)
+    elseif side == "right" then
+        box:SetPoint("TOPLEFT", frame, "TOPRIGHT", OFFER_GAP, 0)
+    else
+        box:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, OFFER_GAP)
+    end
+    box.side = side
+end
+
+--- The upgrade a level opened, in a small window beside the panel (never
+--- on it), with Switch and Keep Current.
 function Panel:FillOffer()
     local logic = ns.UpgradeQuest
     local offer = QuestOn() and logic:Offer() or nil
@@ -1561,9 +1605,8 @@ function Panel:FillOffer()
     box.text:SetPoint("TOPLEFT", 12, -(32 + itemHeight + 6))
     local textHeight = TextHeight(box.text, "small", OFFER_WIDTH - 24)
     box:SetHeight(32 + itemHeight + 6 + textHeight + 12 + 22 + 12)
-    box:ClearAllPoints()
-    box:SetPoint("BOTTOMRIGHT", self.frame, "TOPRIGHT", 0, 8)
     pcall(box.SetScale, box, Panel.ScaleOf(self.frame))
+    self:PlaceOffer(box)
     if not Shown(box) then
         box:Show()
         Motion:Run(box, "offer", 0.9, function(p)
