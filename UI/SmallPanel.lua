@@ -1304,7 +1304,7 @@ function Panel:FillOffer()
     box.name:SetText(ns.Items.ShowLink(link))
     local itemHeight = math.max(ICON, TextHeight(box.name, "normal", nameWidth) + 6)
     box.text:SetText(offer.level
-        and L.Format("Level %d opened an upgrade worth more of a trip than the one you are on.", offer.level)
+        and L.Format("New upgrade on offer at level %d", offer.level)
         or L["New upgrade on offer"])
     box.text:ClearAllPoints()
     box.text:SetPoint("TOPLEFT", 12, -(32 + itemHeight + 6))

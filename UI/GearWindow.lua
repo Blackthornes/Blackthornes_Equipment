@@ -3,7 +3,8 @@
 -- 2026-11-22): one frame with a tab bar along its top and one page under
 -- it. My Gear (UI/MyGear.lua) is the page it opens on.
 --
--- Find Upgrades (UI/FindUpgrades.lua, step 3) is the second page.
+-- Find Upgrades (UI/FindUpgrades.lua, step 3) is the second page. Upgrade
+-- Quest (UI/UpgradeQuestTab.lua, step 4) is the third.
 --
 -- The tabs not rebuilt yet (Enchants, Dungeon Quests, Dungeon
 -- Loot, Settings) still show their old windows, laid into this window's
