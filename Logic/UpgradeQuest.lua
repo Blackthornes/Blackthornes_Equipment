@@ -485,11 +485,49 @@ end
 --- How much a pick is worth going after: how much better it is, times how
 --- easy its source is.
 local function Worth(result, gain, ease)
+    -- Biggest Upgrade First: the % gain the player sees decides, an empty
+    -- slot above all; ease only breaks a tie in the whole percent shown.
+    if UpgradeQuest:BiggestFirst() then
+        return UpgradeQuest.PercentWorth(result, gain) + (ease or 0) / 10
+    end
     -- Filling an empty slot counts as a big step up.
     if result and result.empty then gain = math.max(gain, 1) * 1.5 end
     -- "Easy picks first" (How You Gear Up: Quick and Close) leans harder on ease.
     if UpgradeQuest:Sets("easy") then return gain * ease * ease end
     return gain * ease
+end
+
+--- Biggest Upgrade First (the owner asked 2026-11-23): saved account wide
+--- as `upgradeQuestBiggest`, off unless ticked. Only the order changes;
+--- what can be picked stays the same.
+function UpgradeQuest:BiggestFirst()
+    return ns.db ~= nil and ns.db.upgradeQuestBiggest == true
+end
+
+--- Tick or untick it. Each tab's quest that was not followed by hand is
+--- let go so the tab picks again in the new order.
+function UpgradeQuest:SetBiggestFirst(on)
+    if not ns.db then return end
+    on = on and true or false
+    if (ns.db.upgradeQuestBiggest == true) == on then return end
+    ns.db.upgradeQuestBiggest = on or nil
+    local quests = self:Quests()
+    for _, tab in ipairs(TABS) do
+        local quest = quests[tab.key]
+        if type(quest) == "table" and not quest.followed then quests[tab.key] = nil end
+    end
+    self:WindowFiltersChanged()
+end
+
+--- A pick's gain as the whole percent the player sees: an empty slot
+--- beats every percent, and gain over a worn piece worth nothing beats
+--- any ordinary one.
+function UpgradeQuest.PercentWorth(result, gain)
+    if type(result) == "table" and result.empty then return 1000000 end
+    local percent = type(result) == "table" and tonumber(result.percent) or nil
+    if percent then return math.floor(percent + 0.5) end
+    if (gain or 0) > 0 then return 100000 end
+    return 0
 end
 
 --- From a finder scan, the pick most worth going after: { pick, source },
@@ -549,7 +587,10 @@ function UpgradeQuest:Choose(found, except, tab)
     end
     local chosen, top = best, most
     if not chosen then chosen, top = bestRep, mostRep end
-    if chosen then chosen.why = UpgradeQuest.Why(chosen.pick.gain or 0, chosen.ease or 0, top) end
+    if chosen then
+        chosen.why = self:BiggestFirst() and "biggest"
+            or UpgradeQuest.Why(chosen.pick.gain or 0, chosen.ease or 0, top)
+    end
     return chosen
 end
 

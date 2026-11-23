@@ -3045,3 +3045,20 @@ plan's `in-the-world.html`.
 - Tested in `tools/test_sheet.lua` (counts scans and judging) and
   `tools/test_hunts.lua`. `tools/test_listlight.lua` went with the last
   window it checked. Not yet seen in game.
+
+## Biggest Upgrade First (2026-11-23)
+
+The owner asked for a setting that makes the Upgrade Quest pick the
+biggest % gain first. "Biggest Upgrade First:" on the Upgrade Quest page
+of Settings, under How You Gear Up, off unless ticked; saved account wide
+as `upgradeQuestBiggest` (never rename it). While ticked, `Worth` in
+`Logic/UpgradeQuest.lua` scores a pick by `UpgradeQuest.PercentWorth`
+(the whole percent the player sees; an empty slot above all, gain over a
+worn piece worth nothing next) plus ease / 10, so ease only breaks a tie.
+Each tab still picks on its own, and every filter and gear rule stays
+(This Zone Only, Solo, How You Gear Up, levels, reputation, Ignored). The
+level-up offer (`LookForBetter`) uses the same score. Ticking or unticking
+(`UpgradeQuest:SetBiggestFirst`) lets go of each tab's quest the player
+did not follow by hand, so the tabs pick again in the new order; the
+pick's why line reads "Biggest gain on this tab". Tested in
+`tools/test_biggestfirst.lua`.
