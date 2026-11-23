@@ -755,7 +755,8 @@ function Tab:PaintSources()
             else
                 row.icon:Hide()
                 local state = on and logic.states[tab.key] or nil
-                row.item:SetText(state == "waiting" and L["Looking for your next upgrade..."]
+                -- Off, a source has nothing to say yet.
+                row.item:SetText(not on and "" or state == "waiting" and L["Looking for your next upgrade..."]
                     or logic.NONE[tab.key] or L["No upgrade to chase right now."])
                 row.item:SetTextColor(Theme.Unpack("muted"))
             end
