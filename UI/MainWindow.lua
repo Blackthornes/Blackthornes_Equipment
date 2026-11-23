@@ -1,12 +1,8 @@
 -- Blackthornes Equipment -- UI/MainWindow.lua
--- The gear window. Since 2026-11-23 the window itself is UI/GearWindow.lua
--- (the tab bar and My Gear); this module opens it and keeps the old names.
--- Since 2026-10-22 (a player asked for fewer windows, the
--- owner approved the mockup) it is one window with Where to get upgrades
--- (UI/FinderWindow.lua): what you wear down the left, the upgrades for the
--- slot picked on the right, with what you own first. This module keeps the
--- names the rest of the addon calls (UI:Show, UI:Refresh, the header's
--- buttons) and reads the upgrades you own for that window.
+-- The names the rest of the addon has always called the gear window by
+-- (UI:Show, UI:Refresh, UI:Toggle) and the read of the upgrades you own.
+-- The window itself is UI/GearWindow.lua (the tab bar and its pages); the
+-- old gear list and its windows went in rework step 6 (2026-11-23).
 
 local _, ns = ...
 local L = ns.L
@@ -27,51 +23,11 @@ local SLOTS = {
 
 UI.SLOTS = SLOTS
 
---------------------------------------------------------------------------------
--- Construction
---------------------------------------------------------------------------------
-
---- The one window is the finder's; its parts are kept here by their old
---- names too.
-function UI:Build()
-    local FinderUI = ns.FinderUI
-    if not FinderUI then return nil end
-    local frame = FinderUI:Build()
-    self.frame = frame
-    self.specLabel, self.footer = FinderUI.specLabel, FinderUI.footer
-    self.versionLabel, self.hint = FinderUI.versionLabel, FinderUI.hint
-    self.tabStrip = FinderUI.tabStrip
-    return frame
-end
-
---- The Upgrade quest button's label: green while the quest is up.
-function UI:OnUpgradeQuestToggled()
-    local button = self.questButton
-    if not (button and button.SetLabelColor) then return end
-    local on = ns.UpgradeQuest ~= nil and ns.UpgradeQuest:IsEnabled()
-    button:SetLabelColor(on and "good" or "gilt")
-end
-
---- The Training button: how many spells wait, gold while there are some,
---- green while the drawer is open. Hidden while class training is off.
-function UI:OnTrainingToggled()
-    local button = self.trainingButton
-    if not (button and button.SetText) then return end
-    local training = ns.ClassTraining
-    local on = training ~= nil and training:IsOn()
-    button:SetShown(on)
-    if not on then return end
-    local count = #training:Plan().ready
-    button:SetText(count > 0 and L.Format("Training (%d)", count) or L["Training"])
-    local open = ns.TrainingDrawer ~= nil and ns.TrainingDrawer:IsShown()
-    button:SetLabelColor(open and "good" or (count > 0 and "accentHi" or "gilt"))
-end
-
 --- The upgrades you own already, by slot: the best in your bags
 --- (Compare.BestInBags), else better gear in your bank or on another of
 --- your characters (Alts:BetterElsewhere). Each `{ link, where, result }`,
 --- `where` "bags", "bank" or a character's GUID. Keeps what the Training
---- drawer reads (untrained weapons in the bags).
+--- tab reads (untrained weapons in the bags).
 function UI:ReadBags()
     local owned = {}
     local spec = Weights:CurrentSpec()
@@ -105,8 +61,10 @@ function UI:ReadBags()
     self.upgrades = upgrades
     self.untrained = untrained
     self.untrainedKey = table.concat(keys, ",")
-    self:OnTrainingToggled()
-    if ns.TrainingDrawer then ns.TrainingDrawer:Refresh() end
+    if ns.TrainingTab and ns.TrainingTab.RefreshSoon and self.lastUntrained ~= self.untrainedKey then
+        self.lastUntrained = self.untrainedKey
+        ns.TrainingTab:RefreshSoon()
+    end
     return owned
 end
 
@@ -114,8 +72,6 @@ end
 -- @return how many slots have an upgrade waiting in the bags
 function UI:Refresh()
     if ns.GearWindow then ns.GearWindow:Refresh() end
-    if not (self.frame and self.frame:IsShown()) then return 0 end
-    if ns.FinderUI then ns.FinderUI:Refresh() end
     return self.upgrades or 0
 end
 
@@ -136,7 +92,6 @@ end
 
 --- Refresh once a burst of events settles.
 function UI:RefreshSoon()
-    if ns.FinderUI then ns.FinderUI:RefreshSoon() end
     if ns.MyGear then ns.MyGear:RefreshSoon() end
     if ns.DungeonsTab then ns.DungeonsTab:RefreshSoon() end
 end
@@ -147,25 +102,15 @@ end
 
 --- Open the Equipment window (UI/GearWindow.lua) on My Gear.
 function UI:Show()
-    if ns.GearWindow then
-        ns.GearWindow:Open()
-        return
-    end
-    if not self:Build() then return end
-    ns.FinderUI:Show()
+    if ns.GearWindow then ns.GearWindow:Open() end
 end
 
 function UI:Hide()
-    if ns.GearWindow then
-        ns.GearWindow:Close()
-        return
-    end
-    if ns.FinderUI then ns.FinderUI:Hide() end
+    if ns.GearWindow then ns.GearWindow:Close() end
 end
 
 function UI:IsShown()
-    if ns.GearWindow then return ns.GearWindow:IsShown() end
-    return self.frame ~= nil and self.frame:IsShown()
+    return ns.GearWindow ~= nil and ns.GearWindow:IsShown()
 end
 
 -- The window's key, under Options, Keybindings, AddOns (Bindings.xml).

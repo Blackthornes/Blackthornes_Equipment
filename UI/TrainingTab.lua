@@ -27,10 +27,6 @@ local Theme = ns.Theme
 local Widgets = ns.Widgets
 
 Train.KEY = "training"
--- It stands in for the Training drawer: the old header's Training button
--- opens this tab. A suite that tests the drawer sets env.OLD_PANELS, which
--- clears this.
-Train.standsIn = true
 
 local PAD = 18
 local WIDTH = 1040
@@ -752,14 +748,37 @@ function Train:Open()
     if ns.GearWindow then ns.GearWindow:Open(Train.KEY) end
 end
 
+--- The quest arrow points at the class trainer, as it does at a weapon
+--- master (WeaponSkills:ShowMaster). The arrow keeps zones in the data's
+--- English and spots in percent. Class training calls it
+--- (ClassTraining.Guide, set in OnEnable); Butler's copy of class training
+--- reads it from here too.
+function Train.Guide(spot, title)
+    local arrow = ns.QuestArrow
+    if not (arrow and arrow.AimAtQuest and spot.zone) then return false end
+    local zone = spot.zone
+    if ns.Waypoints and ns.Waypoints.DataZone then
+        local ok, english = pcall(ns.Waypoints.DataZone, ns.Waypoints, zone)
+        if ok and english then zone = english end
+    end
+    local ok, done = pcall(arrow.AimAtQuest, arrow, nil, title, {
+        zone = zone, x = spot.x and spot.x * 100, y = spot.y and spot.y * 100, name = spot.name,
+    })
+    return ok and done
+end
+
 function Train:OnEnable()
     ns.RegisterEvent(self, "PLAYER_MONEY", function()
         if Train:IsShown() then Train:RefreshSoon() end
     end)
     -- A spell learned, a price seen or a skip comes through class
-    -- training's own change call (UI/TrainingDrawer.lua passes it on), and
-    -- a weapon skill learned through WeaponSkills:Look. Neither is read on
-    -- every spell event.
+    -- training's own change call, and a weapon skill learned through
+    -- WeaponSkills:Look. Neither is read on every spell event.
+    local training = ns.ClassTraining
+    if training then
+        training.Guide = Train.Guide
+        training.OnChanged = function() Train:RefreshSoon() end
+    end
     ns.RegisterEvent(self, "PLAYER_LEVEL_UP", function() Train:RefreshSoon() end)
     self:PaintTab()
 end

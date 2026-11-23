@@ -131,23 +131,20 @@ Data tables (generated, grep only): `Data/Sources.lua` 6265 lines, 479 KB; `Data
 Locale (grep one key, never read): `Locale/ruRU` 1206 lines, 99 KB; `frFR`, `deDE`, `esES`, `zhCN` are each about 1207 lines, 73 to 79 KB.
 
 Code:
-- `UI/FinderWindow.lua` 2817 lines, 111 KB: the old Upgrades list and tabs, laid into the new window.
 - `UI/FindUpgrades.lua` 1570 lines, 60 KB: the Find Upgrades tab and its side sheet (see "Find Upgrades" in Docs/claude-notes.md).
-- `UI/SmallPanel.lua` 1371 lines, 52 KB and `UI/UpgradeQuestTab.lua` 1169 lines, 45 KB: the small panel and the Upgrade Quest tab (see "Upgrade Quest tab and the small panel" in Docs/claude-notes.md; the old quest panel and Tracking panel stay hidden while `SmallPanel.standsIn`, and their suites set `env.OLD_PANELS`).
-- `UI/DungeonsTab.lua` 1102 lines, 45 KB and `UI/TrainingTab.lua` 767 lines, 30 KB: the Dungeons and Training tabs (see "Dungeons and Training tabs" in Docs/claude-notes.md; the old Dungeon Quests and Dungeon Loot windows and the Training drawer stay for code and tests while the tabs' `standsIn`, and their suites set `env.OLD_PANELS`).
+- `UI/SmallPanel.lua` 1580 lines, 60 KB and `UI/UpgradeQuestTab.lua` 1169 lines, 45 KB: the small panel and the Upgrade Quest tab (see "Upgrade Quest tab and the small panel" in Docs/claude-notes.md).
+- `UI/DungeonsTab.lua` 1102 lines, 45 KB and `UI/TrainingTab.lua` 786 lines, 30 KB: the Dungeons and Training tabs (see "Dungeons and Training tabs" in Docs/claude-notes.md).
 - `UI/MyGear.lua` 1453 lines, 54 KB: the My Gear tab (`UI/GearWindow.lua` is the window and tab bar; see "The Equipment window and My Gear" in Docs/claude-notes.md).
 - `Logic/UpgradeQuest.lua` 2532 lines, 108 KB: the upgrade quest.
 - `Logic/Weights.lua` 1667 lines, 69 KB: stat weights.
 - `UI/Widgets.lua` 1683 lines, 62 KB: shared widgets.
-- `UI/QuestPanel.lua` 1616 lines, 63 KB: quest panel.
 - `Logic/Finder.lua` 1572 lines, 64 KB: upgrade finder.
-- `UI/Settings.lua` 1357 lines, 57 KB: Settings pages.
+- `UI/Settings.lua` 1329 lines, 58 KB: the Settings tab and its page list; `UI/WeightsPage.lua` and `UI/CharactersPage.lua` are its Stat Weights and Characters pages (see "Settings pages and the old windows removed" in Docs/claude-notes.md).
 - `UI/WhatsNew.lua` 1245 lines, 46 KB: the What's New window.
-- `UI/QuestLogTab.lua` 1166 lines, 45 KB: quest log tab.
 - `Logic/ClassTraining.lua` 1085 lines, 43 KB: class training.
 - `UI/SharedWindow.lua` 1082 lines, 41 KB: the one window.
 
-Over 800 lines or 30 KB, same rule: `UI/SettingsPages.lua`, `Logic/QuestArrow.lua`, `Logic/Travel.lua`, `Logic/Compare.lua`, `Docs/claude-notes.md` (120 KB), `CHANGELOG.md` (1069 lines), `README.md`, `docs/FOREVER_API_FINDINGS.md`.
+Over 800 lines or 30 KB, same rule: `UI/SettingsPages.lua`, `Logic/QuestArrow.lua`, `Logic/Travel.lua`, `Logic/Compare.lua`, `UI/FinderShared.lua` (what the tabs share from the old Upgrades list), `Docs/claude-notes.md` (120 KB), `CHANGELOG.md` (1069 lines), `README.md`, `docs/FOREVER_API_FINDINGS.md`.
 
 The same file lives in several addons: `UI/SharedWindow.lua`, `UI/WhatsNew.lua`, `UI/SettingsPages.lua`, `Logic/Travel.lua`, `Logic/ClassTraining.lua`, `UI/TooltipBlock.lua` (not Pets). A fix to one belongs in all.
 

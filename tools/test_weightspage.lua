@@ -1,17 +1,19 @@
--- The stat weights window: opens on the spec gear is judged by, steps and
--- typed values land in the saved weights, reset puts them back, and nothing
--- is cut off.
+-- The Stat Weights page of Settings (UI/WeightsPage.lua): opens on the spec
+-- gear is judged by, steps and typed values land in the saved weights,
+-- reset puts them back, and nothing is cut off.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
-local suite = env.NewSuite("weightswindow")
+local suite = env.NewSuite("weightspage")
 
 local ns = env.Load()
 _G.UnitClass = function() return "Hunter", "HUNTER" end
 
-local WeightsUI, Weights = ns.WeightsUI, ns.Weights
+local WeightsUI, Weights = ns.WeightsPage, ns.Weights
 
 ns.HandleSlash("weights")
-suite.check("/beq weights opens it", WeightsUI.frame:IsShown())
+suite.check("/beq weights opens Settings on Stat Weights", WeightsUI:IsShown() and ns.SettingsUI:IsShown()
+    and ns.GearWindow.tab == "settings" and ns.db.settingsPage == "weights")
+suite.check("there is no window of its own", ns.WeightsUI == nil and _G.BlackthornesEquipmentWeights == nil)
 suite.check("on the player's class", WeightsUI.class == "HUNTER", WeightsUI.class)
 suite.check("and the spec gear is judged by", WeightsUI.spec == "beast", WeightsUI.spec)
 suite.check("the class picker reads Hunter",
@@ -112,14 +114,26 @@ WeightsUI.reset:GetScript("OnClick")(WeightsUI.reset)
 suite.check("reset puts every weight back",
     not Weights:IsCustom("HUNTER", "beast") and Row("crit").box:GetText() == "12")
 
--- The settings window has a way in.
-ns.HandleSlash("weights")
-suite.check("/beq weights closes it", not WeightsUI.frame:IsShown())
-ns.SettingsUI:Show()
-ns.SettingsUI.controls.weights:GetScript("OnClick")(ns.SettingsUI.controls.weights)
-suite.check("the settings button opens it", WeightsUI.frame:IsShown())
+-- Another page and back: the page keeps the class and spec picked.
+ns.SettingsUI.pages:Show("gear")
+suite.check("on another page it is not showing", not WeightsUI:IsShown())
+ns.SettingsUI.pages:Show("weights")
+suite.check("picked from the list it shows again", WeightsUI:IsShown() and WeightsUI.class == "HUNTER")
 
--- Fit: no label narrower than its text, and the columns inside the window.
+-- Dark glass rows, the stats down the left and the weapon kinds down the
+-- right, each with room for its whole name.
+local stats, kinds = 0, 0
+for _, row in ipairs(WeightsUI.rows) do
+    if row:IsShown() then
+        stats = stats + 1
+        suite.check(row.entry.name .. " is a glass row", row.restKey == (stats % 2 == 0 and "glassAlt" or "glass"))
+    end
+end
+for _, row in ipairs(WeightsUI.typeRows) do
+    if row:IsShown() then kinds = kinds + 1 end
+end
+suite.check("stats and weapon kinds both list", stats > 0 and kinds > 0, stats .. " " .. kinds)
+suite.check("the page is as tall as its longer list", WeightsUI.frame.fixedHeight >= math.max(stats, kinds) * 26)
 for _, row in ipairs(WeightsUI.rows) do
     local text = row.label:GetText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
     suite.check(row.entry.name .. " fits its label", row.label:GetWidth() >= #text * 6,
@@ -127,7 +141,7 @@ for _, row in ipairs(WeightsUI.rows) do
 end
 suite.check("the spec dropdown lists only this class's specs", #WeightsUI.specPicker.options == 3,
     #WeightsUI.specPicker.options)
-suite.check("both columns fit the window",
-    WeightsUI.columnWidth * 2 + 22 + 36 <= WeightsUI.width, WeightsUI.width)
+suite.check("both columns fit the page",
+    WeightsUI.columnWidth * 2 <= WeightsUI.width, WeightsUI.width)
 
 suite.done()

@@ -43,12 +43,12 @@ suite.check("which looks like one",
 ns = LoadWith(nil)
 suite.check("no version at all is the released one", ns.VERSION == ns.RELEASED_VERSION, ns.VERSION)
 
--- Shown in the gear window and at the top of Settings (2026-10-09: a
--- player asked to see at a glance which version he runs).
+-- Shown at the foot of My Gear (2026-10-09: a player asked to see at a
+-- glance which version he runs).
 ns = LoadWith("v0.15.0")
-ns.UI:Build()
-suite.check("the gear window shows the version",
-    ns.UI.versionLabel:GetText() == "v0.15.0", ns.UI.versionLabel:GetText())
+ns.GearWindow:Open("gear")
+suite.check("My Gear shows the version",
+    ns.MyGear.versionLabel:GetText() == "v0.15.0", ns.MyGear.versionLabel:GetText())
 
 -- The client refusing the call is no version, never an error.
 _G.C_AddOns = { GetAddOnMetadata = function() error("no") end }

@@ -429,7 +429,7 @@ end
 function UpgradeQuest:SetStepOnly(on)
     if not ns.db then return end
     ns.db.upgradeQuestStepOnly = on and true or false
-    for _, name in ipairs({ "QuestPanel", "SmallPanel", "QuestTab", "SettingsUI" }) do
+    for _, name in ipairs({ "SmallPanel", "QuestTab", "SettingsUI" }) do
         local module = ns[name]
         if module and module.OnUpgradeQuestChanged then pcall(module.OnUpgradeQuestChanged, module) end
     end
@@ -632,9 +632,7 @@ function UpgradeQuest:Follow(pick)
     self:Mirror()
     ns.db.upgradeQuest = true
     self:Update()
-    -- The gear window's Upgrade quest button shows it is up.
-    if ns.UI and ns.UI.OnUpgradeQuestToggled then pcall(ns.UI.OnUpgradeQuestToggled, ns.UI) end
-    if ns.QuestPanel and ns.QuestPanel.Unfold then pcall(ns.QuestPanel.Unfold, ns.QuestPanel) end
+    if ns.SmallPanel and ns.SmallPanel.Unfold then pcall(ns.SmallPanel.Unfold, ns.SmallPanel) end
     return quest
 end
 
@@ -1401,7 +1399,7 @@ end
 
 --- Tell whatever shows the quest to draw it again.
 function UpgradeQuest:Changed()
-    for _, name in ipairs({ "QuestPanel", "MapPins", "SettingsUI", "FinderUI", "QuestArrow", "IgnoredUI", "FindUpgrades",
+    for _, name in ipairs({ "MapPins", "SettingsUI", "QuestArrow", "FindUpgrades",
         "MyGear", "SmallPanel", "QuestTab", "DungeonsTab", "TrainingTab" }) do
         local module = ns[name]
         if module and module.OnUpgradeQuestChanged then pcall(module.OnUpgradeQuestChanged, module) end
@@ -1850,7 +1848,6 @@ function UpgradeQuest:SetEnabled(on)
         self.state = nil
         self:Changed()
     end
-    if ns.UI and ns.UI.OnUpgradeQuestToggled then pcall(ns.UI.OnUpgradeQuestToggled, ns.UI) end
 end
 
 --- Bring the upgrade quest back: on, and its panel shown unfolded. Its
@@ -1865,7 +1862,7 @@ function UpgradeQuest:TurnOn()
         self.rescan = true
         self:Update()
     end
-    if ns.QuestPanel then ns.QuestPanel:Unfold() end
+    if ns.SmallPanel then ns.SmallPanel:Unfold() end
 end
 
 --- Close the upgrade quest: its panel goes, its quests are kept, and chat
@@ -2329,9 +2326,9 @@ local TAB_WORDS = {
 ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ignore, ignored, restore, switch, size, or a tab: vendor, quest, dungeon, crafted, log)"], function(rest)
     local word = (rest or ""):lower():match("^%s*(%a*)") or ""
     -- How big the panel is drawn: small, normal, large or a percent, as its
-    -- gold corner grip and the Settings row do (UI/QuestPanel.lua).
+    -- gold corner grip and the Settings row do (UI/SmallPanel.lua).
     if word == "size" then
-        local panel = ns.QuestPanel
+        local panel = ns.SmallPanel
         if not panel then return end
         local scale = panel.ParseSize((rest or ""):lower():match("^%s*size%s*(.-)%s*$"))
         if not scale then
@@ -2339,7 +2336,6 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
                 panel.ScaleText(panel:GetScale())))
             return
         end
-        if not (ns.SmallPanel and ns.SmallPanel.standsIn) then panel:Build() end
         ns.Print(L.Format("quest panel size: %s.", panel.ScaleText(panel:SetPanelScale(scale))))
         return
     end
@@ -2347,12 +2343,9 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
     -- shows them (UI/QuestLogTab.lua).
     if word == "log" then
         if not UpgradeQuest:IsEnabled() then UpgradeQuest:SetEnabled(true) end
-        if ns.SmallPanel and ns.SmallPanel.standsIn then
+        if ns.SmallPanel then
             ns.SmallPanel:SetView("log")
             ns.SmallPanel:Unfold()
-        elseif ns.QuestPanel then
-            ns.QuestPanel.folded = false
-            ns.QuestPanel:ShowLog(true)
         end
         ns.Print(L["upgrade quest: showing the Quest log tab."])
         return
@@ -2362,7 +2355,7 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
         if not UpgradeQuest:IsEnabled() then UpgradeQuest:SetEnabled(true) end
         UpgradeQuest:SelectTab(tab)
         ns.Print(L.Format("upgrade quest: showing the %s tab.", IS_TAB[tab].name))
-        if ns.QuestPanel then ns.QuestPanel:Unfold() end
+        if ns.SmallPanel then ns.SmallPanel:Unfold() end
         return
     end
     if word == "off" then
@@ -2382,11 +2375,7 @@ ns.RegisterCommand("quest", L["a quest for your next upgrade (/beq quest off, ig
     end
     if word == "ignored" then
         -- The Upgrade Quest tab lists them now (UI/UpgradeQuestTab.lua).
-        if ns.SmallPanel and ns.SmallPanel.standsIn and ns.QuestTab then
-            ns.QuestTab:Open("ignored")
-        elseif ns.IgnoredUI then
-            ns.IgnoredUI:Show()
-        end
+        if ns.QuestTab then ns.QuestTab:Open("ignored") end
         return
     end
     if word == "switch" then

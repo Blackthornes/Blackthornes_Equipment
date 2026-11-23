@@ -1,6 +1,6 @@
--- The gear window: since 2026-10-22 one window with Where to get upgrades.
--- What is worn shows down the left, and the upgrades you own come first in
--- a slot's list, under IN YOUR BAGS.
+-- The Equipment window by its old names (UI:Show, UI:Hide, /beq window),
+-- its tabs and the keys the old tabs had, and UI:ReadBags, the read of the
+-- upgrades you own.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("mainwindow")
@@ -34,29 +34,30 @@ local function Owned(slot)
     return table.concat(links, ",")
 end
 
--- The window opens on My Gear (UI/GearWindow.lua); the Upgrades tab is the
--- old gear window, laid into it.
+-- The window opens on My Gear (UI/GearWindow.lua). Every tab is a page of
+-- it; a key an old tab had opens the page that took its place.
 local Gear = ns.GearWindow
 UI:Show()
 suite.check("it opens", UI:IsShown() and Gear.frame:IsShown())
 suite.check("on My Gear", Gear.tab == "gear" and ns.MyGear:IsShown())
-Gear:ShowTab("upgrades")
-suite.check("asked for by its old key, the old gear list still shows", UI.frame:IsShown() and not ns.MyGear:IsShown())
-suite.check("one window: the gear window is the finder's", UI.frame == Finder.frame)
-suite.check("laid into the Equipment window", Finder.frame:GetParent() == Gear.area)
-suite.check("named on its plate", Finder.frame ~= nil)
-suite.check("a line for every slot down the left", #Finder.slotButtons == #Finder.SLOT_GROUPS,
-    #Finder.slotButtons)
-suite.check("the tabs run along the window's top", Gear.strip ~= nil
-    and Gear.strip.selected == "upgrades", Gear.strip and Gear.strip.selected)
-suite.check("and no tabs hang under the old window", not Finder.tabStrip:IsShown())
-suite.check("the header has Training and Upgrade quest",
-    UI.trainingButton ~= nil and UI.questButton ~= nil)
-suite.check("Dungeon Loot is a tab now, not a header button", UI.lootButton == nil)
 local tabKeys = {}
 for _, tab in ipairs(Gear.strip.tabs) do tabKeys[#tabKeys + 1] = tab.key end
-suite.check("the tabs are My Gear, Find Upgrades, Upgrade Quest, Dungeons, Training, Enchants and Settings",
-    table.concat(tabKeys, ",") == "gear,find,quest,instances,training,enchant,settings", table.concat(tabKeys, ","))
+suite.check("the tabs are My Gear, Find Upgrades, Upgrade Quest, Dungeons, Training and Settings",
+    table.concat(tabKeys, ",") == "gear,find,quest,instances,training,settings", table.concat(tabKeys, ","))
+Gear:ShowTab("upgrades")
+suite.check("the old gear list's key opens Find Upgrades", Gear.tab == "find" and ns.FindUpgrades:IsShown()
+    and not ns.MyGear:IsShown() and Gear.strip.selected == "find", Gear.tab)
+Gear:ShowTab("enchant")
+suite.check("the old Enchants tab's key opens My Gear", Gear.tab == "gear" and ns.MyGear:IsShown())
+Gear:ShowTab("dungeons")
+suite.check("the old Dungeon Quests key opens Dungeons", Gear.tab == "instances" and ns.DungeonsTab:IsShown())
+Gear:ShowTab("loot")
+suite.check("and so does Dungeon Loot's", Gear.tab == "instances" and ns.DungeonsTab:IsShown())
+Gear:ShowTab("nothing-by-this-name")
+suite.check("a key nobody knows opens My Gear", Gear.tab == "gear")
+suite.check("the old windows are gone", ns.DungeonQuestsUI == nil and ns.DungeonLootUI == nil
+    and ns.IgnoredUI == nil and ns.TrainingDrawer == nil and ns.QuestPanel == nil and ns.TrackerPanel == nil
+    and ns.WeightsUI == nil)
 
 suite.check("the bigger of two chest upgrades", Owned(5) == "item:2", Owned(5))
 suite.check("an item above your level is not offered", not Owned(5):find("item:8", 1, true))
@@ -65,91 +66,40 @@ suite.check("a new ring goes against the weaker ring", Owned(12) == "item:7", Ow
 suite.check("not the stronger one", Owned(11) == "", Owned(11))
 suite.check("three upgrades in the bags", UI.upgrades == 3, UI.upgrades)
 
--- The chest's line on the left says what is worn there.
-local chestButton
-for _, button in ipairs(Finder.slotButtons) do
-    if button.group == 5 then chestButton = button end
-end
-Finder:PaintWorn(chestButton)
-suite.check("the slot's line names what you wear", chestButton.worn:GetText():find("item:1", 1, true) ~= nil,
-    chestButton.worn:GetText())
-
--- The list for a slot: IN YOUR BAGS, the piece, then what to go and get.
-local groups = Finder:Groups({ all = {} })
-suite.check("the chest's group holds the bag upgrade", #groups[5].owned == 1
-    and groups[5].owned[1].where == "bags")
-suite.check("both rings are one group", #groups[11].owned == 1 and groups[11].owned[1].link == "item:7")
-local row = Finder.rows[1]
-Finder:FillRow(row, { heading = "IN YOUR BAGS" })
-suite.check("a heading row says so", row.headingLabel:GetText() == "IN YOUR BAGS" and row.heading == true)
-Finder:FillRow(row, { owned = groups[5].owned[1] })
-suite.check("an owned row shows the item", row.item:GetText() ~= "" and row.owned ~= false)
-suite.check("in your bags", row.where:GetText() == "Your bags", row.where:GetText())
-suite.check("with how much better", row.gain:GetText() == "+50%", row.gain:GetText())
-suite.check("and Put it on", row.putOn:IsShown())
-Finder:FillRow(row, { owned = { link = "item:2", where = "bank", result = { percent = 50 } } })
-suite.check("one in the bank says so", row.where:GetText() == "Your bank", row.where:GetText())
-suite.check("and can't be put on from there", not row.putOn:IsShown())
-Finder:FillRow(row, nil)
-suite.check("an empty row hides", not row:IsShown())
-
 -- Putting the upgrade on moves it across.
 env.worn[5] = "item:2"
 env.bags[0][1] = "item:1"
 suite.check("wearing the upgrade empties the chest", Owned(5) == "", Owned(5))
 suite.check("and drops the count", UI.upgrades == 2, UI.upgrades)
 
--- The Settings tab shows Settings in its place, and Upgrades brings it back.
-Finder:ShowTab("settings")
-suite.check("Settings shows from its tab", ns.SettingsUI.frame:IsShown() and not Finder.frame:IsShown())
+-- Settings is a page of the window, last on the bar.
+Gear:ShowTab("settings")
+suite.check("Settings shows from its tab", ns.SettingsUI:IsShown() and not ns.MyGear:IsShown())
+suite.check("as a page laid into the window, with no frame of its own",
+    ns.SettingsUI.frame:GetParent() == Gear.area and Gear.pages.settings == ns.SettingsUI)
 suite.check("with the Settings tab lit", Gear.strip.selected == "settings")
 suite.check("and counts as the window being open", UI:IsShown())
-Finder:ShowTab("upgrades")
-suite.check("Upgrades brings the window back", Finder.frame:IsShown() and not ns.SettingsUI.frame:IsShown())
-Finder:ShowTab("enchant")
-suite.check("Enchants shows the enchants", Finder:ShowingEnchants() and Gear.strip.selected == "enchant")
-Finder:ShowTab("upgrades")
-suite.check("and Upgrades the gear", not Finder:ShowingEnchants())
-
--- Dungeon Quests and Dungeon Loot show in its place the same way.
-Finder:ShowTab("dungeons")
-local dq, dl = ns.DungeonQuestsUI, ns.DungeonLootUI
-suite.check("Dungeon Quests shows from its tab", dq.frame:IsShown() and not Finder.frame:IsShown())
-suite.check("with the Dungeon Quests tab lit", Gear.strip.selected == "dungeons")
-suite.check("and counts as the window being open", UI:IsShown())
-Finder:ShowTab("loot")
-suite.check("Dungeon Loot takes its place", dl.frame:IsShown() and not dq.frame:IsShown())
-suite.check("with the Dungeon Loot tab lit", Gear.strip.selected == "loot")
-Finder:ShowTab("settings")
-suite.check("Settings takes Dungeon Loot's place", ns.SettingsUI.frame:IsShown() and not dl.frame:IsShown())
-Finder:ShowTab("upgrades")
-suite.check("and Upgrades brings the gear back", Finder.frame:IsShown() and not ns.SettingsUI.frame:IsShown())
+Gear:ShowTab("gear")
+suite.check("My Gear takes its place", ns.MyGear:IsShown() and not ns.SettingsUI:IsShown())
+ns.HandleSlash("settings")
+suite.check("/beq settings opens the window on Settings", Gear.tab == "settings" and ns.SettingsUI:IsShown())
+ns.HandleSlash("settings")
+suite.check("and again closes the window", not UI:IsShown() and not ns.SettingsUI:IsShown())
 ns.HandleSlash("dungeons")
-suite.check("/beq dungeons opens the Dungeons tab",
-    ns.DungeonsTab:IsShown() and not dq.frame:IsShown() and Gear.strip.selected == "instances")
+suite.check("/beq dungeons opens the Dungeons tab", ns.DungeonsTab:IsShown() and Gear.strip.selected == "instances")
 ns.HandleSlash("loot")
-suite.check("and so does /beq loot",
-    ns.DungeonsTab:IsShown() and not dl.frame:IsShown() and Gear.strip.selected == "instances")
+suite.check("and so does /beq loot", ns.DungeonsTab:IsShown() and Gear.strip.selected == "instances")
 Gear:ShowTab("training")
 suite.check("Training has a tab of its own", ns.TrainingTab:IsShown() and not ns.DungeonsTab:IsShown())
-Gear:ShowTab("dungeons")
-suite.check("the old Dungeon Quests window still shows when code asks",
-    dq.frame:IsShown() and not ns.TrainingTab:IsShown())
-Gear:ShowTab("gear")
-suite.check("My Gear takes an old tab's place", ns.MyGear:IsShown() and not dq.frame:IsShown() and UI:IsShown())
-Gear:ShowTab("dungeons")
-suite.check("and gives it back", dq.frame:IsShown() and not ns.MyGear:IsShown())
 UI:Hide()
-suite.check("closing the window closes the tab", not dq.frame:IsShown() and not UI:IsShown())
-Finder:ShowTab("upgrades")
+suite.check("closing the window closes the page", not ns.TrainingTab:IsShown() and not UI:IsShown())
 
 -- /beq window.
 UI:Hide()
-suite.check("closing hides it", not UI:IsShown() and not UI.frame:IsShown())
+suite.check("closing hides it", not UI:IsShown())
 ns.HandleSlash("window")
-suite.check("/beq window opens it, on My Gear", UI:IsShown() and Gear.tab == "gear" and not UI.frame:IsShown())
+suite.check("/beq window opens it, on My Gear", UI:IsShown() and Gear.tab == "gear")
 UI:Hide()
-suite.check("a closed window does not refresh", UI:Refresh() == 0)
 
 -- A second copy of the ring already worn goes against the other ring.
 env.worn[11], env.worn[12] = "item:5", "item:6"
@@ -178,28 +128,29 @@ suite.check("no answer: a ring is not taken to be unique", not ns.Compare:IsUniq
 
 -- Every tab shares the one Equipment window, so it never jumps as the
 -- tabs are clicked: it holds the size the tabs share, under its tab bar.
-local wantWidth = Finder.WIDTH + Gear.CHROME_WIDTH
-local wantHeight = Finder.HEIGHT + Gear.CHROME_HEIGHT
+UI:Show()
+local pageWidth, pageHeight = Gear:PageSize()
+local wantWidth = pageWidth + Gear.CHROME_WIDTH
+local wantHeight = pageHeight + Gear.CHROME_HEIGHT
+suite.check("the pages share the old window's room, or more", pageWidth >= Gear.WIDTH and pageHeight == Gear.HEIGHT,
+    pageWidth .. "x" .. pageHeight)
 local sizes, same = {}, true
-for _, key in ipairs({ "dungeons", "loot", "settings", "enchant", "upgrades", "gear" }) do
+for _, key in ipairs({ "find", "quest", "instances", "training", "settings", "gear" }) do
     Gear:ShowTab(key)
     local size = Gear.frame:GetWidth() .. "x" .. Gear.frame:GetHeight()
     sizes[#sizes + 1] = size
     same = same and size == wantWidth .. "x" .. wantHeight
 end
 suite.check("every tab shows in a window of one size", same, table.concat(sizes, ", "))
-suite.check("the dungeon lists fill the taller window",
-    ns.DungeonQuestsUI.DUNGEON_ROWS >= 10 and ns.DungeonLootUI.LIST_ROWS >= 8,
-    ns.DungeonQuestsUI.DUNGEON_ROWS .. " " .. ns.DungeonLootUI.LIST_ROWS)
 suite.check("the window has the one size grip", Gear.sizeGrip ~= nil)
-for _, module in ipairs({ Finder, ns.SettingsUI, ns.DungeonLootUI, ns.DungeonQuestsUI }) do
-    suite.check("an old tab's own grip is put away", module.sizeGrip == nil or not module.sizeGrip:IsShown())
-end
-Finder:Need("settings", Finder.WIDTH, Finder.HEIGHT + 40)
-suite.check("a tab that needs more room makes the window taller",
+suite.check("Settings has no grip, rim or spot of its own", ns.SettingsUI.sizeGrip == nil
+    and ns.SettingsUI.RestorePosition == nil)
+Gear:Need("test", nil, pageHeight + 40)
+suite.check("a page that needs more room makes the window taller",
     Gear.frame:GetHeight() == wantHeight + 40, Gear.frame:GetHeight())
-Finder:Need("settings", nil, nil)
+Gear:Need("test", nil, nil)
 suite.check("and it goes back when the need does", Gear.frame:GetHeight() == wantHeight, Gear.frame:GetHeight())
+UI:Hide()
 
 -- A class with no weights is offered nothing.
 _G.UnitClass = function() return "DEATHKNIGHT", "DEATHKNIGHT" end

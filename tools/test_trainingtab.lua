@@ -13,7 +13,8 @@
 --   5. WEAPON SKILLS lists every skill the class can learn, known or not,
 --      with this side's cities and Show the Way. One an upgrade waits on
 --      says so.
---   6. The old header's Training button opens the tab, not the drawer.
+--   6. Class training asks the tab for the way to a trainer; the old
+--      drawer is gone.
 --   7. Nothing here judges gear or starts a scan, and a hidden page draws
 --      nothing.
 
@@ -220,14 +221,12 @@ Tab:Refresh()
 suite.check("a skill learned reads Known", SkillRow("Polearms").known:IsShown())
 
 --------------------------------------------------------------------------------
--- 6. The old Training button
+-- 6. Class training asks the tab (the drawer is gone)
 --------------------------------------------------------------------------------
 
-Window:ShowTab("enchant")
-suite.check("on the Enchants tab the page is hidden", not Tab:IsShown())
-Click(ns.UI.trainingButton)
-suite.check("the old Training button opens the tab", Window.tab == "training" and Tab:IsShown())
-suite.check("and no drawer", not ns.TrainingDrawer:IsShown())
+suite.check("there is no Training drawer", ns.TrainingDrawer == nil)
+suite.check("Show the way is the tab's", CT.Guide == Tab.Guide)
+suite.check("a change to the spells redraws the tab", type(CT.OnChanged) == "function")
 
 --------------------------------------------------------------------------------
 -- 7. No judging, and nothing while hidden

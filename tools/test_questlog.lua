@@ -1,13 +1,9 @@
--- The Quest log tab on the upgrade quest panel: the character's quests read
--- from the log either way the client offers, listed by zone with their
--- objectives, tracked from a tick box, with a right-click menu, quest item
--- buttons that never move in combat, and the game's tracker hidden only
--- while asked and never in combat.
+-- The small panel's Log: the character's quests read from the log either
+-- way the client offers, tracked or not, with a right-click menu, quest
+-- item buttons that never move in combat, and the game's tracker hidden
+-- only while asked and never in combat.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
--- This suite tests the old panels, kept until rework step 6; the small
--- panel (UI/SmallPanel.lua) stands in for them in play.
-env.OLD_PANELS = true
 local suite = env.NewSuite("questlog")
 
 local ns = env.Load()
@@ -81,7 +77,7 @@ local function Fire(event, ...)
     ns.eventFrame._scripts.OnEvent(ns.eventFrame, event, ...)
 end
 
-local Log, Tab, Panel = ns.QuestLog, ns.QuestLogUI, ns.QuestPanel
+local Log, Tab, Panel = ns.QuestLog, ns.QuestLogUI, ns.SmallPanel
 
 --------------------------------------------------------------------------------
 -- Reading the log
@@ -107,13 +103,16 @@ suite.check("who to hand it to", Log.HandIn(kabobs) == "Chef Grual")
 do
     local arrow = ns.QuestArrow
     local forgot = false
-    local free, forget, savedData = arrow.free, arrow.ForgetQuest, Tab.data
+    local free, forget, savedData = arrow.free, arrow.ForgetQuest, Panel.logData
     arrow.free = { free = true, title = "Learn Staves", place = { zone = "Orgrimmar" } }
     arrow.ForgetQuest = function() forgot = true end
-    Tab.data = data
-    Tab:ForgetGone()
+    Panel.logData = data
+    Panel:ForgetGone()
     suite.check("an aim with no quest stays when the log is read", not forgot)
-    arrow.free, arrow.ForgetQuest, Tab.data = free, forget, savedData
+    arrow.free = { free = true, questID = 999, title = "Long Gone", place = { zone = "Orgrimmar" } }
+    Panel:ForgetGone()
+    suite.check("an aim at a quest that left the log is let go", forgot)
+    arrow.free, arrow.ForgetQuest, Panel.logData = free, forget, savedData
 end
 suite.check("quests 5 levels up are red, a level under is yellow",
     Log.Difficulty(29) == "red" and Log.Difficulty(23) == "yellow" and Log.Difficulty(14) == "grey"
@@ -155,121 +154,75 @@ do
 end
 
 --------------------------------------------------------------------------------
--- The tab
+-- The Log tab
 --------------------------------------------------------------------------------
 
 ns.db.upgradeQuest = true
 Tab:OnEnable()
 Panel:Build()
-suite.check("the panel is wider for five tabs", Panel.WIDTH == 384 and #Panel.tabs == 5)
-local logButton = Panel.tabs[5]
-logButton:GetScript("OnClick")(logButton)
-suite.check("clicking Quest log shows it", Panel:ShowsLog() and ns.charDB.questLogTab == true)
-suite.check("the header names it", Panel.title:GetText() == "Quest log")
-suite.check("and counts the quests", Panel.progress:GetText() == "3 quests, 2 tracked", Panel.progress:GetText())
-suite.check("its tab is lit, the source tabs are not", logButton.shown and not Panel.tabs[1].shown)
-suite.check("the upgrade quest's own list is hidden", not Panel.body:IsShown())
-suite.check("the tab's view shows", Tab.view:IsShown())
+ns.HandleSlash("quest log")
+suite.check("/beq quest log shows the Log", Panel:View() == "log" and ns.charDB.questLogTab == true
+    and Panel.frame:IsShown())
 
-local rows = Tab.shown
-suite.check("three rows", #rows == 3, #rows)
-suite.check("the level and title", rows[1].title:GetText():find("[24] The Night Watch", 1, true), rows[1].title:GetText())
-suite.check("a done objective is ticked green",
-    rows[1].objectives[1]:GetText():find("Skeletal Fiend slain: 15/15", 1, true)
-    and rows[1].objectives[1]._color[1] < 0.5)
-suite.check("a finished quest says who to hand it to",
-    rows[2].objectives[1]:GetText() == "- Ready to hand in to Chef Grual", rows[2].objectives[1]:GetText())
-suite.check("tracked quests are ticked", rows[2].track:GetChecked() and not rows[1].track:GetChecked())
-suite.check("the zone you're in is green", Tab.heads[1].here == true and not Tab.heads[2].here)
-
--- Rows are filled again only when their quest changed.
-local titleSets = 0
-local realSet = rows[1].title.SetText
-rows[1].title.SetText = function(self, text)
-    titleSets = titleSets + 1
-    return realSet(self, text)
+local function Rows()
+    local list = {}
+    for _, row in ipairs(Panel.rows) do
+        if row:IsShown() and rawget(row, "kind") == "quest" then list[#list + 1] = row end
+    end
+    return list
 end
-Panel:Refresh()
-suite.check("an unchanged quest's row is left as drawn", titleSets == 0, titleSets)
-
--- Tracking from the tick box.
-rows[1].track:GetScript("OnClick")(rows[1].track)
-suite.check("ticking a quest tracks it", watched[102] == true)
-suite.check("and the row shows it", Tab.shown[1].track:GetChecked() == true)
+local rows = Rows()
+suite.check("three quests", #rows == 3, #rows)
+suite.check("the zone you are in comes first", rows[1].line.questID == 102 and rows[2].line.questID == 101
+    and rows[3].line.questID == 103, rows[1].line.questID)
 
 -- Tracked only.
-Tab.trackedBox:GetScript("OnClick")(Tab.trackedBox)
-suite.check("Tracked only is saved", ns.db.questLogTrackedOnly == true)
-rows[2].track:GetScript("OnClick")(rows[2].track)
-suite.check("untracked quests drop out", #Tab.shown == 2, #Tab.shown)
-Tab.trackedBox:GetScript("OnClick")(Tab.trackedBox)
-suite.check("and come back when unticked", #Tab.shown == 3)
+Tab:SetTrackedOnly(true)
+Panel:Refresh()
+suite.check("Tracked Only is saved", ns.db.questLogTrackedOnly == true)
+suite.check("untracked quests drop out", #Rows() == 2, #Rows())
+Tab:SetTrackedOnly(false)
+Panel:Refresh()
+suite.check("and come back when unticked", #Rows() == 3, #Rows())
 
--- Folding a zone.
-Tab.heads[1]:GetScript("OnClick")(Tab.heads[1])
-suite.check("a heading folds its zone", ns.charDB.questLogFolded.Duskwood == true and #Tab.shown == 1)
-Tab:FoldAll()
-suite.check("Fold all folds the rest", #Tab.shown == 0 and Tab.foldButton.label:GetText() == "Open all", #Tab.shown .. Tab.foldButton.label:GetText())
-Tab:FoldAll()
-suite.check("and opens them all again", #Tab.shown == 3 and Tab.foldButton.label:GetText() == "Fold all")
-
--- With Tracked only, Fold all acts on the zones listed: when every listed
--- zone is folded it reads "Open all", and a click opens them.
-do
-    Tab.trackedBox:GetScript("OnClick")(Tab.trackedBox)
-    rows = Tab.shown
-    local listed = {}
-    for _, title in ipairs(Tab.listedZones) do listed[title] = true end
-    for _, zone in ipairs(Tab.data.zones) do
-        ns.charDB.questLogFolded[zone.title] = listed[zone.title] or nil
-    end
-    Tab:Changed()
-    local word = Tab.foldButton.label:GetText()
-    Tab:FoldAll()
-    suite.check("Tracked only: Fold all opens the listed zones", word == "Open all" and #Tab.shown > 0,
-        word .. " " .. #Tab.shown)
-    for title in pairs(ns.charDB.questLogFolded) do ns.charDB.questLogFolded[title] = nil end
-    Tab.trackedBox:GetScript("OnClick")(Tab.trackedBox)
-    Tab:Changed()
-    suite.check("and unticked, all three show again", #Tab.shown == 3, #Tab.shown)
-end
-
--- Events while the tab is hidden read nothing.
-Panel.tabs[1]:GetScript("OnClick")(Panel.tabs[1])
-suite.check("a source tab takes over from the log", not Panel:ShowsLog() and not Tab.view:IsShown())
+-- Events while another tab shows read nothing.
+Panel:SetView("quest")
+Panel:Refresh()
 reads = 0
 Fire("QUEST_LOG_UPDATE")
 Fire("QUEST_LOG_UPDATE")
-suite.check("quest events while the tab is hidden read nothing", reads == 0, reads)
+suite.check("quest events while the Log is hidden read nothing", reads == 0, reads)
 ns.HandleSlash("quest log")
-suite.check("/beq quest log brings it back", Panel:ShowsLog() and reads == 1, reads)
+Panel:Refresh()
+suite.check("/beq quest log brings it back and reads once", Panel:View() == "log" and reads == 1, reads)
 Fire("UNIT_QUEST_LOG_CHANGED", "party1")
 suite.check("another unit's quest log is not ours", reads == 1, reads)
+rows = Rows()
 
 --------------------------------------------------------------------------------
 -- The menu
 --------------------------------------------------------------------------------
 
-local night = Tab.shown[1].quest
+local night = rows[1].line
 local function Labels(quest)
     local list = {}
     for _, item in ipairs(Tab:MenuFor(quest)) do list[#list + 1] = item[1] end
     return table.concat(list, ", ")
 end
-suite.check("the menu, alone", Labels(night) == "Show on Map, Point the arrow here, Untrack, Open in quest log, Abandon quest",
+suite.check("the menu, alone", Labels(night) == "Show on Map, Point the arrow here, Track, Open in quest log, Abandon quest",
     Labels(night))
 _G.GetNumGroupMembers = function() return 2 end
 suite.check("Share shows in a group", Labels(night):find("Share with party", 1, true))
-Tab.shown[1]:GetScript("OnClick")(Tab.shown[1], "RightButton")
+Panel:ListClicked(rows[1], "RightButton")
 suite.check("right-click opens it", Tab.menu:IsShown() and Tab.menu.title:GetText() == "The Night Watch")
 do
     local oneLine = Tab.menu:GetHeight()
     Tab.menu.title.GetStringHeight = function() return 36 end
-    Tab.shown[1]:GetScript("OnClick")(Tab.shown[1], "RightButton")
+    Panel:ListClicked(rows[1], "RightButton")
     suite.check("a long quest title wraps and the menu grows under it",
         Tab.menu:GetHeight() > oneLine + 20, Tab.menu:GetHeight())
     Tab.menu.title.GetStringHeight = nil
-    Tab.shown[1]:GetScript("OnClick")(Tab.shown[1], "RightButton")
+    Panel:ListClicked(rows[1], "RightButton")
 end
 local share
 for _, entry in ipairs(Tab.menu.entries) do
@@ -336,24 +289,27 @@ end
 
 Tab:CloseMenu()
 Panel.frame:Show()
-Tab.viewHeight = 400
-local itemRow = Tab.shown[1]
-itemRow.spot._left, itemRow.spot._top = 600, 500
+local itemRow = rows[1]
+itemRow.icon._left, itemRow.icon._top = 600, 500
 Tab:PlaceItems()
 local button = secure[1]
 suite.check("a secure button for the quest's item", button ~= nil and button._template == "SecureActionButtonTemplate")
 suite.check("set to use that item", button._attributes.type == "item" and button._attributes.item == "item:7297")
-suite.check("placed over its row, not inside the panel", button._parent == UIParent and button._point[4] == 600
-    and button._point[5] == 500 and button:IsShown())
+-- Drawn at the row icon's size: its own size times a smaller scale.
+local shrink = 17 / Tab.ITEM
+local function Near(a, b) return math.abs(a - b) < 0.01 end
+suite.check("placed over its row's icon, not inside the panel", button._parent == UIParent
+    and Near(button._point[4], 600 / shrink) and Near(button._point[5], 500 / shrink) and button:IsShown(),
+    button._point[4])
 
 combat = true
-itemRow.spot._left = 620
+itemRow.icon._left = 620
 Tab:PlaceItems()
-suite.check("in combat it is not moved", button._point[4] == 600 and button:IsShown())
+suite.check("in combat it is not moved", Near(button._point[4], 600 / shrink) and button:IsShown())
 suite.check("but fades while out of place", button._alpha == 0)
 combat = false
 Fire("PLAYER_REGEN_ENABLED")
-suite.check("and is put back after the fight", button._point[4] == 620 and button._alpha == 1)
+suite.check("and is put back after the fight", Near(button._point[4], 620 / shrink) and button._alpha == 1)
 
 Panel.frame:Hide()
 Tab:PlaceItems()
@@ -440,53 +396,5 @@ suite.check("Settings ticks the same setting", ns.db.hideQuestTracker == true an
 controls.hideQuestTracker:GetScript("OnClick")(controls.hideQuestTracker)
 suite.check("and unticks it", ns.db.hideQuestTracker == false and Back())
 suite.check("the probe describes the log", Log:Describe():find("3 quests in 2 headings", 1, true), Log:Describe())
-
---------------------------------------------------------------------------------
--- The Blizzard window style
---------------------------------------------------------------------------------
-
--- A fresh load with the style picked: the tab builds, fills and wears the
--- game's colours, tick boxes and scroll knob.
-do
-    local questLog, itemInfo = _G.C_QuestLog, _G.GetQuestLogSpecialItemInfo
-    local blizz = env.Load()
-    _G.BlackthornesEquipmentDB.windowStyle = "blizzard"
-    blizz.LoadSavedVariables()
-    local Look = blizz.BlizzardLook
-    -- The pretend client has all of the game's art (test_blizzardlook covers
-    -- a client without it).
-    Look.HasArt = function() return true end
-    Look.Style()
-    _G.C_QuestLog, _G.GetQuestLogSpecialItemInfo = questLog, itemInfo
-    _G.UnitClass = function() return "Hunter", "HUNTER", 3 end
-    _G.UnitLevel = function() return 24 end
-    _G.GetRealZoneText = function() return "Duskwood" end
-    for id in pairs(watched) do watched[id] = nil end
-    watched[101], watched[103] = true, true
-
-    suite.check("Blizzard style: picked", Look.On())
-    -- Count the tick boxes dressed: Tracked only, Hide the tracker, a row each.
-    local dressedBoxes, checkbox = 0, Look.Checkbox
-    Look.Checkbox = function(...)
-        local dressed = checkbox(...)
-        if dressed then dressedBoxes = dressedBoxes + 1 end
-        return dressed
-    end
-    blizz.db.upgradeQuest = true
-    blizz.QuestLogUI:OnEnable()
-    blizz.QuestPanel:Build()
-    blizz.HandleSlash("quest log")
-    local BTab = blizz.QuestLogUI
-    suite.check("Blizzard style: the tab shows", blizz.QuestPanel:ShowsLog() and BTab.view:IsShown())
-    suite.check("Blizzard style: three rows", #BTab.shown == 3, #BTab.shown)
-    local glass = Look.PALETTE.glass
-    local band = { blizz.Theme.Unpack("glass") }
-    suite.check("Blizzard style: plain rows in the game's colours",
-        math.abs(band[1] - glass[1]) < 0.001, band[1])
-    suite.check("Blizzard style: tick boxes wear the game's art", dressedBoxes >= 5, dressedBoxes)
-    suite.check("Blizzard style: the scroll thumb is the game's knob", BTab.bar.thumb.blizzard == true)
-    suite.check("Blizzard style: the footer's main button wears the game's red",
-        rawget(BTab.mapButton or {}, "blizzardFace") ~= nil, tostring(BTab.mapButton))
-end
 
 suite.done()

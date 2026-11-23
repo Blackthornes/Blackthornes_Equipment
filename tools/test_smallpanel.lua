@@ -4,7 +4,7 @@
 --
 -- What must hold:
 --   1. It shows while the upgrade quest is on, or while something is
---      tracked, and the old quest panel and Tracking panel stay hidden.
+--      tracked.
 --   2. The Quest tab shows the upgrade, its gain, the step to do now and
 --      five marks. A click on the step opens every step; another closes it.
 --   3. The fold gem makes it one line and back.
@@ -59,7 +59,7 @@ S.ITEMS = {
     [1101] = { 15, 18, 0, 0, 100, v = { 1, 0 } },
 }
 
-local Quest, Panel, Old, Hunts = ns.UpgradeQuest, ns.SmallPanel, ns.QuestPanel, ns.TrackerPanel
+local Quest, Panel = ns.UpgradeQuest, ns.SmallPanel
 local Finder, Compare, Tracking = ns.Finder, ns.Compare, ns.Tracking
 
 local judges, scans = 0, 0
@@ -76,7 +76,6 @@ local function Click(frame, ...) frame:GetScript("OnClick")(frame, ...) end
 -- 1. When it shows
 --------------------------------------------------------------------------------
 
-suite.check("it stands in for the old panels", Panel.standsIn == true)
 Panel:Refresh()
 suite.check("off and nothing tracked: no panel", not Up(Panel.frame))
 
@@ -84,7 +83,6 @@ ns.HandleSlash("quest")
 local quest = Quest:Current()
 suite.check("the quest is on with a pick", Quest:IsEnabled() and quest and quest.itemID == 1002, quest and quest.itemID)
 suite.check("the panel shows", Up(Panel.frame))
-suite.check("the old quest panel stays hidden", not Up(Old.frame))
 suite.check("it has the frame's own name", _G.BlackthornesEquipmentPanel == Panel.frame)
 
 --------------------------------------------------------------------------------
@@ -157,7 +155,6 @@ Tracking:Track({ itemID = 1101, link = "item:1101", slot = 1,
     source = { kind = "vendor", name = "Corina Steele", zone = "Elwynn Forest", x = 41.5, y = 65.9 } })
 suite.check("a tracked upgrade counts on the tab", Panel.tabs.tracking.label:GetText() == "Tracking 1",
     Panel.tabs.tracking.label:GetText())
-suite.check("the old Tracking panel stays hidden", not Up(Hunts.frame))
 suite.check("the view stays on Quest", Panel:View() == "quest")
 
 Quiet()
@@ -220,7 +217,6 @@ ns.HandleSlash("quest size large")
 suite.check("/beq quest size sizes this panel", math.abs(Panel:SizePercent() - 120) < 0.5, Panel:SizePercent())
 ns.HandleSlash("quest size normal")
 suite.check("and back", math.abs(Panel:SizePercent() - 100) < 0.5, Panel:SizePercent())
-suite.check("the old panel was not built for it", not Up(Old.frame))
 
 --------------------------------------------------------------------------------
 -- 7. Panel: Show, and the red gem

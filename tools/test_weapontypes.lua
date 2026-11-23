@@ -101,7 +101,7 @@ suite.check("and leaves junk where it was", saved.weaponTypeWeights.ROGUE.combat
 suite.check("the sword is an upgrade again", ns.Compare:Judge("item:2").verdict == "upgrade")
 
 -- The weights window lists the rogue's kinds and steps them by a tenth.
-local WeightsUI = ns.WeightsUI
+local WeightsUI = ns.WeightsPage
 WeightsUI:Show()
 local function TypeRow(key)
     for _, row in ipairs(WeightsUI.typeRows) do

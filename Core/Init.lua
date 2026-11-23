@@ -335,8 +335,8 @@ Perf.WATCH = {
     { "Finder", "Scan" }, { "UpgradeQuest", "Update" }, { "UpgradeQuest", "LookForBetter" },
     { "Tracking", "Check" }, { "BagIcons", "Refresh" }, { "BagIcons", "RefreshFrame" },
     { "UpgradeChat", "Scan" }, { "Tooltip", "OnTooltip" }, { "Compare", "BestInBags" },
-    { "UI", "Refresh" }, { "FinderUI", "Refresh" }, { "QuestPanel", "Refresh" }, { "SmallPanel", "Refresh" },
-    { "TrackerPanel", "Refresh" }, { "MapPins", "Draw" }, { "SlotUpgrades", "Fill" },
+    { "UI", "Refresh" }, { "SmallPanel", "Refresh" },
+    { "MapPins", "Draw" }, { "SlotUpgrades", "Fill" },
     { "QuestRewards", "Refresh" }, { "LootRolls", "Refresh" },
     { "MoreMarks", "RefreshMerchant" }, { "MoreMarks", "RefreshLoot" },
     { "Crafting", "Known" }, { "Butler", "Advise" }, { "Compare", "IsUpgrade" },
@@ -725,8 +725,8 @@ function ns.HandleSlash(input)
     if ns.UI then
         pcall(ns.UI.Refresh, ns.UI)
     end
-    if ns.WeightsUI then
-        pcall(ns.WeightsUI.Refresh, ns.WeightsUI)
+    if ns.WeightsPage then
+        pcall(ns.WeightsPage.Refresh, ns.WeightsPage)
     end
 
     if not ok then

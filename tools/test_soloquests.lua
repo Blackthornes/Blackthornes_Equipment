@@ -76,30 +76,19 @@ suite.check("a vendor always is", Finder.Solo(Finder:SourcesFor(1001, player)[1]
 suite.check("an unknown mark counts as alone", Finder.Need("") == nil and Finder.Need("nonsense") == nil)
 
 --------------------------------------------------------------------------------
--- The tick box in Where to get upgrades
+-- The setting, ticked from anywhere
 --------------------------------------------------------------------------------
 
 local UI = ns.FinderUI
-UI:Show()
-suite.check("the window has the tick box", UI.solo ~= nil and not UI.solo:GetChecked())
-suite.check("named plainly", UI.solo.label:GetText() == "Solo Quests Only")
-UI.solo:GetScript("OnEnter")(UI.solo)
-local tip = table.concat(GameTooltip._lines, "\n")
-suite.check("hovering says what it hides", tip:find("need a group", 1, true) ~= nil, tip)
-UI.solo:GetScript("OnLeave")(UI.solo)
-
-UI.solo:GetScript("OnClick")(UI.solo)
+Finder:SetSoloOnly(true)
 suite.check("ticking it saves it", ns.db.soloQuestsOnly == true and Finder:SoloOnly())
 suite.check("group and dungeon quests are gone", Offered() == "1002,1001", Offered())
-local lines = {}
-for _, line in ipairs(UI.lines) do lines[#lines + 1] = line.pick.itemID end
-suite.check("the window shows only the rest", table.concat(lines, ",") == "1002,1001", table.concat(lines, ","))
 
 ns.SettingsUI:Show()
 suite.check("Settings shows it ticked", ns.SettingsUI.controls.soloQuests:GetChecked())
 ns.SettingsUI.controls.soloQuests:GetScript("OnClick")(ns.SettingsUI.controls.soloQuests)
 suite.check("unticked in Settings", ns.db.soloQuestsOnly == false)
-suite.check("the window follows", not UI.solo:GetChecked() and Offered() == "1003,1004,1002")
+suite.check("the list follows", Offered() == "1003,1004,1002", Offered())
 ns.SettingsUI:Hide()
 
 --------------------------------------------------------------------------------
@@ -120,7 +109,6 @@ quest = Quest:QuestOn("quest")
 suite.check("ticked, the quest tab lets it go and picks a solo one", quest and quest.itemID == 1002,
     quest and quest.itemID)
 suite.check("the dungeon quest is not counted as skipped", not Quest:Skipped()[1003])
-suite.check("the window's box follows", UI.solo:GetChecked())
 
 Finder:SetSoloOnly(false)
 quest = Quest:QuestOn("quest")
@@ -132,7 +120,6 @@ suite.check("unticked, the solo quest is kept", quest and quest.itemID == 1002, 
 
 suite.check("quests up to 4 levels up by default", Finder:QuestLevelsAbove() == 4 and ns.db.questLevelsAbove == 4)
 suite.check("so the level 27 quest is left out at 20", not Offered():find("1005"), Offered())
-suite.check("the window's stepper shows it", UI.questLevels:GetValue() == 4, UI.questLevels:GetValue())
 suite.check("its words", UI.QuestLevelsText(0) == "Up to my level" and UI.QuestLevelsText(11) == "Any"
     and UI.QuestLevelsText(7) == "Up to +7")
 
@@ -153,6 +140,5 @@ Finder:SetQuestLevelsAbove(4)
 quest = Quest:QuestOn("quest")
 suite.check("brought back to +4, it lets it go and picks again", quest and quest.itemID == 1003,
     quest and quest.itemID)
-suite.check("the window's stepper follows", UI.questLevels:GetValue() == 4, UI.questLevels:GetValue())
 
 suite.done()

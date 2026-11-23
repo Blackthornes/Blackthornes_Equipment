@@ -2,7 +2,7 @@
 -- Upgrades the player has picked to go after.
 --
 -- Track one from the upgrade finder or a character-sheet slot, and it goes
--- on the tracker (UI/TrackerPanel.lua) with where to get it, gets a pin on
+-- on the small panel's Tracking tab (UI/SmallPanel.lua) with where to get it, gets a pin on
 -- the world map (UI/MapPins.lua), and a banner says so the moment it lands
 -- in the bags (UI/Toast.lua). Once it is worn the hunt is done: it moves to
 -- the list of finished ones.
@@ -217,7 +217,7 @@ end
 
 --- Tell whatever shows hunts to draw them again.
 function Tracking:Changed()
-    for _, name in ipairs({ "TrackerPanel", "MapPins", "FinderUI", "SlotUpgrades", "FindUpgrades", "MyGear", "SmallPanel", "QuestTab", "DungeonsTab", "TrainingTab" }) do
+    for _, name in ipairs({ "MapPins", "SlotUpgrades", "FindUpgrades", "MyGear", "SmallPanel", "QuestTab", "DungeonsTab", "TrainingTab" }) do
         local module = ns[name]
         if module and module.OnTrackingChanged then pcall(module.OnTrackingChanged, module) end
     end

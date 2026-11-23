@@ -31,13 +31,10 @@ local Dungeons = ns.NewModule("DungeonsTab")
 local Theme = ns.Theme
 local Widgets = ns.Widgets
 
--- The page's key in the Equipment window. "dungeons" and "loot" still name
--- the old tabs' windows until step 6 takes them out.
+-- The page's key in the Equipment window. The old tabs' keys, "dungeons"
+-- and "loot", open it too (GearWindow.FORMER). /beq loot and /beq dungeons
+-- open it.
 Dungeons.KEY = "instances"
--- It stands in for the old Dungeon Loot and Dungeon Quests tabs: /beq loot
--- and /beq dungeons open it. A suite that tests the old tabs sets
--- env.OLD_PANELS, which clears this.
-Dungeons.standsIn = true
 
 local PAD = 18
 local WIDTH = 1040

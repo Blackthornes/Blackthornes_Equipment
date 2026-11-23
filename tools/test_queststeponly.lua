@@ -1,12 +1,9 @@
--- "Current step only" on the upgrade quest panel (the owner asked
--- 2026-10-13): ticked, the panel shows only the step to do now and grows
--- shorter; unticked, every step as before. Ticking it looks for nothing
--- again.
+-- "Current step only" (the owner asked 2026-10-13): a saved choice of the
+-- old quest panel. The small panel opens and closes its steps with a click
+-- (rework step 4), so nothing draws by it now; the choice stays saved and
+-- setting it looks for nothing again.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
--- This suite tests the old panels, kept until rework step 6; the small
--- panel (UI/SmallPanel.lua) stands in for them in play.
-env.OLD_PANELS = true
 local suite = env.NewSuite("queststeponly")
 
 local function Agi(n) return { ITEM_MOD_AGILITY_SHORT = n } end
@@ -66,15 +63,7 @@ S.ENDS = {
         o = { "mob", "Supervisor Fizsprocket", "Mulgore", 64.9, 43.3, "Fizsprocket's Clipboard" } },
 }
 
-local Quest, Panel = ns.UpgradeQuest, ns.QuestPanel
-
-local function ShownSteps()
-    local count = 0
-    for _, row in ipairs(Panel.steps or {}) do
-        if row:IsShown() then count = count + 1 end
-    end
-    return count
-end
+local Quest = ns.UpgradeQuest
 
 suite.check("off by default", ns.db.upgradeQuestStepOnly == false and not Quest:StepOnly())
 
@@ -83,10 +72,6 @@ suite.check("the quest reward is picked", Quest:Current() and Quest:Current().it
 local steps = Quest:Steps()
 suite.check("the quest has several steps", #steps > 1, #steps)
 
-Panel:Refresh()
-local fullHeight = Panel.frame:GetHeight()
-suite.check("unticked, every step shows", ShownSteps() == #steps, ShownSteps())
-
 local scans = 0
 local scan = ns.Finder.Scan
 ns.Finder.Scan = function(...) scans = scans + 1 return scan(...) end
@@ -94,30 +79,21 @@ local refresh = Quest.Refresh
 local refreshes = 0
 if refresh then Quest.Refresh = function(...) refreshes = refreshes + 1 return refresh(...) end end
 
-local function Option(text)
-    for _, line in ipairs(Panel:OptionLines()) do
-        if line.text == text then return line end
-    end
-end
-suite.check("Options has the line", Option("Current Step Only") ~= nil and not Option("Current Step Only").checked)
-Option("Current Step Only").run()
+Quest:SetStepOnly(true)
 suite.check("ticking saves it", ns.db.upgradeQuestStepOnly == true and Quest:StepOnly())
 suite.check("and looks for nothing again", scans == 0 and refreshes == 0, scans .. " " .. refreshes)
+suite.check("the steps are all still there to open", #(Quest:Steps()) == #steps)
 
-Panel:Refresh()
-suite.check("ticked, one step shows", ShownSteps() == 1, ShownSteps())
-local only
-for _, row in ipairs(Panel.steps) do if row:IsShown() then only = row end end
-suite.check("and it is the step to do now", only and rawget(only, "now") == true)
-suite.check("the panel is shorter", Panel.frame:GetHeight() < fullHeight,
-    Panel.frame:GetHeight() .. " < " .. fullHeight)
-suite.check("the item and buttons stay", Panel.item:IsShown() and Panel.skipButton:IsShown())
-suite.check("the line shows ticked", Option("Current Step Only").checked == true)
+-- The small panel opens and closes its steps with a click, so its menu
+-- leaves the line out; the saved choice stays.
+local hasLine = false
+for _, line in ipairs(ns.SmallPanel:OptionLines()) do
+    if line.text == "Current Step Only" then hasLine = line.checked == true end
+end
+suite.check("the saved choice still reads ticked", hasLine)
 
 Quest:SetStepOnly(false)
-Panel:Refresh()
-suite.check("unticked again, every step is back", ShownSteps() == #steps, ShownSteps())
-suite.check("and the panel its height", Panel.frame:GetHeight() == fullHeight)
+suite.check("unticked again", ns.db.upgradeQuestStepOnly == false and not Quest:StepOnly())
 
 ns.Finder.Scan = scan
 if refresh then Quest.Refresh = refresh end

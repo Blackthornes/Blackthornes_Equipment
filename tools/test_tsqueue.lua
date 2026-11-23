@@ -138,20 +138,6 @@ ns.Crafting:Forget()
 TSQ:Queue(learn)
 suite.check("a kept source is read again: learned since, so it is queued", crafts[9002] == 1 and #buys == 0)
 
--- The finder's crafted rows wear the button; the rest do not.
-buys, crafts = {}, {}
-ns.FinderUI:Show()
-ns.FinderUI:SetFilter("craft")
-local shown, label = 0, nil
-for _, row in ipairs(ns.FinderUI.rows) do
-    if rawget(row, "pick") and row.queueIt:IsShown() then
-        shown = shown + 1
-        label = label or row.queueIt.label:GetText()
-    end
-end
-suite.check("crafted rows in the finder show Queue it", shown > 0 and label == "Queue It", tostring(shown) .. " " .. tostring(label))
-ns.FinderUI:Hide()
-
 queue.Ensure = function() error("boom") end
 queue.ForUpgrade = function() return nil end
 suite.check("an error in Tradeskills never reaches the player", pcall(TSQ.Queue, TSQ, Source(3002)))

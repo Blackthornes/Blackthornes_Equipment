@@ -1,6 +1,6 @@
 -- A weapon whose skill the character has not learned says "Train" in red
--- wherever an upgrade's gain shows: the finder, the character sheet's list
--- and the upgrade quest panel (a player asked, the owner agreed 2026-10-10).
+-- wherever an upgrade's gain shows: the Find Upgrades tab and the character
+-- sheet's list (a player asked, the owner agreed 2026-10-10).
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("trainlabel")
@@ -55,40 +55,14 @@ suite.check("in red", SU.GainKey(dagger) == "loss", SU.GainKey(dagger))
 suite.check("a known weapon keeps its gain", SU.Gain(axe) == "+12%", SU.Gain(axe))
 suite.check("in green", SU.GainKey(axe) == "good", SU.GainKey(axe))
 
--- The finder row.
-ns.FinderUI:Build()
-ns.FinderUI.SourceLine = function() return "a vendor" end   -- where it comes from is not under test
-local function Row()
-    local row = ns.FinderUI:BuildRow(1)
-    local gain = row.gain
-    gain.SetText = function(self, t) self.text = t end
-    gain.SetTextColor = function(self, r, g, b) self.color = { r, g, b } end
-    return row
-end
-local function Line(link, at)
-    return { pick = { link = link, itemID = 1, result = { percent = 12 }, at = at },
-        sources = { { kind = "vendor", npc = 0, cost = 0 } }, slotName = "Main Hand", first = true }
-end
-local red = { ns.Theme.Unpack("loss") }
-local function IsRed(row) return row.gain.color[1] == red[1] and row.gain.color[2] == red[2] end
-
-local row = Row()
-ns.FinderUI:FillRow(row, Line("item:1"))
-suite.check("finder says Train", row.gain.text == "Train: +12%", row.gain.text)
-suite.check("finder Train is red", IsRed(row))
-row = Row()
-ns.FinderUI:FillRow(row, Line("item:1", 12))
-suite.check("with a level too", row.gain.text == "at 12, Train: +12%", row.gain.text)
-suite.check("still red", IsRed(row))
-row = Row()
-ns.FinderUI:FillRow(row, Line("item:3", 12))
-suite.check("a known weapon keeps at 12", row.gain.text == "at 12: +12%", row.gain.text)
-suite.check("not red", not IsRed(row))
-
--- The upgrade quest panel.
-local text = ns.QuestPanel.GainText({ link = "item:1", howMuch = "+12%" })
-suite.check("quest panel says Train", text:find("Train", 1, true) ~= nil, text)
-text = ns.QuestPanel.GainText({ link = "item:3", howMuch = "+12%" })
-suite.check("not for a known weapon", text:find("Train", 1, true) == nil, text)
+-- The Find Upgrades row.
+local Find = ns.FindUpgrades
+local function Pick(link) return { link = link, itemID = 1, result = { percent = 12 } } end
+local text, key = Find.GainText(Pick("item:1"))
+suite.check("Find Upgrades says Train", text == "Train: +12%", text)
+suite.check("in red", key == "loss", key)
+text, key = Find.GainText(Pick("item:3"))
+suite.check("a known weapon keeps its gain", text == "+12%", text)
+suite.check("in green", key == "good", key)
 
 suite.done()

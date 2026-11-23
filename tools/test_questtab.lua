@@ -229,7 +229,7 @@ suite.check("Restore All brings every one back", #Quest:IgnoredList() == 0 and L
 
 ns.HandleSlash("quest ignored")
 suite.check("/beq quest ignored opens this list", Window.tab == "quest" and Tab:View() == "ignored")
-suite.check("not the old window", not (ns.IgnoredUI.frame and ns.IgnoredUI.frame:IsShown()))
+suite.check("there is no window for it", ns.IgnoredUI == nil)
 
 --------------------------------------------------------------------------------
 -- 8. Done

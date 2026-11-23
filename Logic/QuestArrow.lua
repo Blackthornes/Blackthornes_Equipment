@@ -90,7 +90,7 @@ function QuestArrow:SetOn(on)
     -- Turned on, it goes over any other Blackthornes arrow (UI/QuestArrow.lua).
     if on and ns.QuestArrowUI and ns.QuestArrowUI.Claim then ns.QuestArrowUI:Claim() end
     self:Changed(true)
-    for _, name in ipairs({ "QuestPanel", "SmallPanel", "QuestTab", "SettingsUI" }) do
+    for _, name in ipairs({ "SmallPanel", "QuestTab", "SettingsUI" }) do
         local module = ns[name]
         if module and module.OnQuestArrowChanged then pcall(module.OnQuestArrowChanged, module) end
     end
@@ -264,7 +264,7 @@ function QuestArrow:AimAtQuest(questID, title, place)
     if not QuestArrow.IsOn() then
         ns.db.questArrow = true
         ns.Print(L["quest arrow on. To hide it, click its red gem, type /beq arrow off or use Settings."])
-        for _, name in ipairs({ "QuestPanel", "SmallPanel", "QuestTab", "SettingsUI" }) do
+        for _, name in ipairs({ "SmallPanel", "QuestTab", "SettingsUI" }) do
             local module = ns[name]
             if module and module.OnQuestArrowChanged then pcall(module.OnQuestArrowChanged, module) end
         end

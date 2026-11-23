@@ -215,7 +215,7 @@ function NPCSpots:LearnPrices()
             end
         end
     end
-    if changed > 0 and ns.QuestPanel and ns.QuestPanel.RefreshSoon then ns.QuestPanel:RefreshSoon() end
+    if changed > 0 and ns.SmallPanel and ns.SmallPanel.RefreshSoon then ns.SmallPanel:RefreshSoon() end
     if changed > 0 and ns.SmallPanel then ns.SmallPanel:RefreshSoon() end
     return changed
 end

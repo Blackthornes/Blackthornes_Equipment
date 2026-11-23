@@ -3,9 +3,7 @@
 -- vendor's wares and in the loot window.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
--- This suite tests the old panels, kept until rework step 6; the small
--- panel (UI/SmallPanel.lua) stands in for them in play.
-env.OLD_PANELS = true
+-- The list of hunts is the small panel's Tracking tab (test_smallpanel.lua).
 local suite = env.NewSuite("hunts")
 
 local function Agi(n) return { ITEM_MOD_AGILITY_SHORT = n } end
@@ -71,12 +69,6 @@ suite.check("and the slot", hunt.slot == 5)
 Tracking:Track(questPick)
 suite.check("two hunts", Tracking:Count() == 2 and #Tracking:List() == 2)
 
-suite.check("the tracker shows them", ns.TrackerPanel.frame and ns.TrackerPanel.frame:IsShown())
-suite.check("with a count", ns.TrackerPanel.title:GetText() == "Upgrade Hunts"
-    and ns.TrackerPanel.countChip.label:GetText() == "2", ns.TrackerPanel.countChip.label:GetText())
-suite.check("and where to go", ns.TrackerPanel.rows[1].where:GetText():find("Corina Steele", 1, true) ~= nil,
-    ns.TrackerPanel.rows[1].where:GetText())
-
 -- It lands in the bags.
 env.bags[0][1] = "item:1001"
 Tracking:Check()
@@ -84,8 +76,6 @@ suite.check("a banner says it arrived", #toasts == 1 and toasts[1].title == "Tra
     toasts[1] and toasts[1].title)
 suite.check("the banner shows", ns.Toast.frame:IsShown() and ns.Toast.title:GetText() == "Tracked upgrade in your bags")
 suite.check("the hunt is marked got", ns.charDB.tracked[1001].got ~= nil)
-suite.check("the tracker says put it on",
-    ns.TrackerPanel.rows[1].where:GetText():find("In your bags: put it on", 1, true) ~= nil)
 Tracking:Check()
 suite.check("only once", #toasts == 1)
 
@@ -111,56 +101,6 @@ suite.check("then the banner closes", not ns.Toast.frame:IsShown())
 ns.db.upgradeToast = false
 suite.check("no banner with the setting off", ns.Toast:Show({ title = "x" }) == false)
 ns.db.upgradeToast = true
-
-ns.TrackerPanel:ToggleDone()
-suite.check("the tracker lists finished hunts", ns.TrackerPanel.tabs.selected == "done"
-    and ns.TrackerPanel.countChip.label:GetText() == "1")
-ns.TrackerPanel:ToggleDone()
-local huntsFrame = ns.TrackerPanel.frame
-huntsFrame._left, huntsFrame._top = 100, 600
-ns.TrackerPanel.gems.fold:GetScript("OnClick")(ns.TrackerPanel.gems.fold)
-local huntsRound = ns.FoldWindow.rounds["Blackthornes_Equipment:Hunts"]
-suite.check("the fold gem folds it into a round button", ns.FoldWindow:IsFolded(huntsFrame)
-    and huntsRound and huntsRound.button:IsShown())
-huntsRound.button:GetScript("OnClick")(huntsRound.button)
-suite.check("a click on the button opens it", not ns.FoldWindow:IsFolded(huntsFrame) and not huntsRound.button:IsShown())
--- More hunts than the panel has rows: the wheel reaches the rest.
-do
-    local panel = ns.TrackerPanel
-    local realLines = panel.Lines
-    local many = {}
-    for index = 1, 11 do many[index] = { itemID = 9000 + index, link = "item:" .. (9000 + index) } end
-    panel.Lines = function() return many end
-    panel:Refresh()
-    suite.check("eight of eleven hunts show", panel.rows[8]:IsShown() and panel.rows[1].hunt == many[1])
-    suite.check("with a thumb to say there are more", panel.thumb:IsShown())
-    local wheel = panel.frame:GetScript("OnMouseWheel")
-    wheel(panel.frame, -1)
-    suite.check("the wheel moves the list down one", panel.rows[1].hunt == many[2], panel.offset)
-    for _ = 1, 10 do wheel(panel.frame, -1) end
-    suite.check("and stops at the last hunt", panel.rows[8].hunt == many[11] and panel.offset == 3, panel.offset)
-    for _ = 1, 10 do wheel(panel.frame, 1) end
-    suite.check("and back at the first", panel.rows[1].hunt == many[1] and panel.offset == 0, panel.offset)
-    wheel(panel.frame, -1)
-    panel.Lines = realLines
-    panel:Refresh()
-    suite.check("a list that fits starts at its top", panel.offset == 0 and not panel.thumb:IsShown(), panel.offset)
-end
-local menuRow = ns.TrackerPanel.rows[1]
-menuRow:GetScript("OnClick")(menuRow, "RightButton")
-local stopLine
-for _, line in ipairs(ns.RowMenu.frame and ns.RowMenu.frame.lines or {}) do
-    if line:IsShown() and line.label:GetText() == "Stop Tracking" then stopLine = line end
-end
-suite.check("right-click opens the hunt's menu", stopLine ~= nil)
-ns.TrackerPanel.gems.close:GetScript("OnClick")(ns.TrackerPanel.gems.close)
-suite.check("the close gem puts it away", not ns.TrackerPanel.frame:IsShown())
-ns.TrackerPanel:OnTrackingChanged()
-suite.check("a change to the hunts brings it back", ns.TrackerPanel.frame:IsShown())
-ns.db.showTracker = false
-ns.TrackerPanel:Refresh()
-suite.check("the tracker hides with its setting off", not ns.TrackerPanel.frame:IsShown())
-ns.db.showTracker = true
 
 ns.HandleSlash("tracked")
 suite.check("/beq tracked lists them", env.ChatText():find("tracking 1 upgrade", 1, true) ~= nil, env.ChatText())

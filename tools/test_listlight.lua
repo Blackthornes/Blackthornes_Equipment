@@ -28,8 +28,5 @@ local function Check(name, row, other)
 end
 
 Check("slot upgrades", ns.SlotUpgrades:BuildRow(1), ns.SlotUpgrades:BuildRow(2))
-Check("hunts panel", ns.TrackerPanel:BuildRow(1), ns.TrackerPanel:BuildRow(2))
-ns.IgnoredUI:Build()
-Check("ignored window", ns.IgnoredUI.rows[1], ns.IgnoredUI.rows[2])
 
 suite.done()

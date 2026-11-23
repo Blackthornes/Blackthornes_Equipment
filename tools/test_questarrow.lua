@@ -12,9 +12,6 @@
 -- unreadable position breaks nothing; and inside a dungeon it hides.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
--- This suite tests the old panels, kept until rework step 6; the small
--- panel (UI/SmallPanel.lua) stands in for them in play.
-env.OLD_PANELS = true
 local suite = env.NewSuite("questarrow")
 
 local function Agi(n) return { ITEM_MOD_AGILITY_SHORT = n } end
@@ -53,7 +50,7 @@ S.ITEMS = {
     [1003] = { 15, 18, 0, 0, 0, q = { 10 } },
 }
 
-local Arrow, ArrowUI, Quest, Panel = ns.QuestArrow, ns.QuestArrowUI, ns.UpgradeQuest, ns.QuestPanel
+local Arrow, ArrowUI, Quest = ns.QuestArrow, ns.QuestArrowUI, ns.UpgradeQuest
 
 --------------------------------------------------------------------------------
 -- The maps: two zones side by side, Durotar across the sea
@@ -265,42 +262,8 @@ where = { map = 37, x = 0.45, y = 0.50 }
 Arrow:Changed()
 
 --------------------------------------------------------------------------------
--- The panel: the Arrow button, and steps that aim it
+-- Steps aim it (the small panel's own clicks are in test_smallpanel.lua)
 --------------------------------------------------------------------------------
-
-Panel:Refresh()
-suite.check("the panel has an Arrow button", Panel.arrowButton and Panel.arrowButton:IsShown())
-Panel.arrowButton:GetScript("OnClick")(Panel.arrowButton)
-suite.check("which turns it off", not Arrow.IsOn())
-Panel.arrowButton:GetScript("OnClick")(Panel.arrowButton)
-suite.check("and on", Arrow.IsOn())
-Panel.arrowButton:GetScript("OnEnter")(Panel.arrowButton)
-tip = table.concat(GameTooltip._lines, "\n")
-suite.check("and says what it does", tip:find("Points the way", 1, true) ~= nil, tip)
-Panel.arrowButton:GetScript("OnLeave")(Panel.arrowButton)
-
--- The footer still fits: Show on map and Arrow on the left, Change and
--- Ignore on the right.
-local left = 10 + Panel.mapButton:GetWidth() + 6 + Panel.arrowButton:GetWidth()
-local right = 340 - 10 - Panel.skipButton:GetWidth() - 6 - Panel.otherButton:GetWidth()
-suite.check("the buttons along the bottom do not touch", left + 6 <= right, left .. " " .. right)
-
--- Off, a click on a step turns it on and aims it.
-ns.HandleSlash("arrow off")
-local row
-for _, candidate in ipairs(Panel.steps) do
-    if candidate:IsShown() and candidate.place and candidate.place.x then row = candidate break end
-end
-suite.check("a step with a spot can be clicked", row ~= nil)
-row:GetScript("OnEnter")(row)
-tip = table.concat(GameTooltip._lines, "\n")
-suite.check("hovering it says so", tip:find("Point the quest arrow here", 1, true) ~= nil, tip)
-row:GetScript("OnLeave")(row)
-row:GetScript("OnMouseUp")(row, "LeftButton")
-suite.check("clicking it turns the arrow on", Arrow.IsOn())
-suite.check("aimed at that step", Arrow.pinned and Arrow.pinned.place.step == row.index)
-clock = clock + 5
-suite.check("and pointing there", Arrow:State(clock).target.name == "Kirsta Deepshadow")
 
 -- A step with a zone only: the Travel step.
 suite.check("a Travel step aims at the zone", Arrow:Aim(1) and (function()

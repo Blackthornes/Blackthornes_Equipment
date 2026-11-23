@@ -3,9 +3,6 @@
 -- next one picked once it is worn.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
--- This suite tests the old panels, kept until rework step 6; the small
--- panel (UI/SmallPanel.lua) stands in for them in play.
-env.OLD_PANELS = true
 local suite = env.NewSuite("upgradequest")
 
 local function Agi(n) return { ITEM_MOD_AGILITY_SHORT = n } end
@@ -51,7 +48,7 @@ S.ITEMS = {
     [1003] = { 15, 18, 0, 0, 40, v = { 1, 0 } },
 }
 
-local Quest, Panel = ns.UpgradeQuest, ns.QuestPanel
+local Quest, Panel = ns.UpgradeQuest, ns.SmallPanel
 
 local toasts = {}
 local realShow = ns.Toast.Show
@@ -98,9 +95,6 @@ suite.check("kept per character", ns.charDB.upgradeQuest == quest)
 suite.check("with how much better", quest.howMuch == "+200%", quest.howMuch)
 suite.check("a banner says so", toasts[#toasts] and toasts[#toasts].title == "New upgrade quest")
 suite.check("the panel shows", Panel.frame and Panel.frame:IsShown())
-suite.check("with the item", Panel.name:GetText() == "item:1002", Panel.name:GetText())
-suite.check("how much better and from where", Panel.gain:GetText():find("+200% over what you wear", 1, true)
-    and Panel.gain:GetText():find("Quest", 1, true), Panel.gain:GetText())
 
 local steps, current = Quest:Steps()
 suite.check("the quest's steps", StepTexts() == "Travel to Elwynn Forest"
@@ -116,16 +110,11 @@ S.ITEMS[1002].g = { 10 }
 suite.check("a given reward is got, not chosen", StepTexts():find("Hand it in to get item:1002", 1, true), StepTexts())
 S.ITEMS[1002].g = nil
 suite.check("without it, a reward is one of a choice", ns.Finder.Given(1002, 10) == false)
-suite.check("the panel counts the steps", Panel.progress:GetText() == "4 steps left", Panel.progress:GetText())
-suite.check("the step to do now is lit", Panel.steps[2].now and not Panel.steps[1].now)
-suite.check("steps to come are numbered", Panel.steps[3].number:GetText() == "3.")
-suite.check("Show on map is offered", Panel.mapButton:IsShown())
 
 -- Picked up, done, handed in, worn.
 onQuest = true
 Quest:Update()
 suite.check("taking the quest ticks off picking it up", select(2, Quest:Steps()) == 3)
-suite.check("the panel follows", Panel.progress:GetText() == "3 steps left", Panel.progress:GetText())
 ready = true
 suite.check("its objectives done", select(2, Quest:Steps()) == 4)
 onQuest, ready, turnedIn = false, false, true
@@ -133,10 +122,6 @@ env.bags[0][1] = "item:1002"
 steps, current = Quest:Steps()
 suite.check("handed in, the reward in the bags: put it on", current == 5 and steps[4].done and steps[2].done,
     current)
-suite.check("the progress bar fills", (function()
-    Panel:Refresh()
-    return Panel.fill:GetWidth() > 200
-end)(), Panel.fill:GetWidth())
 
 env.bags[0][1] = nil
 env.worn[5] = "item:1002"
@@ -156,10 +141,6 @@ suite.check("and no second banner", (function()
 end)())
 -- Nothing on offer beats what is worn now.
 suite.check("and nothing left to chase", Quest:Current() == nil and Quest.state == "none", Quest.state)
-suite.check("the panel says so", Panel.empty:IsShown()
-    and Panel.empty:GetText():find("No quest reward is an upgrade", 1, true) ~= nil, Panel.empty:GetText())
-suite.check("with Pick one still there", Panel.otherButton:IsShown() and not Panel.skipButton:IsShown()
-    and Panel.otherButton.label:GetText() == "Pick one", Panel.otherButton.label:GetText())
 
 --------------------------------------------------------------------------------
 -- Skipping, and the vendor's steps
@@ -171,7 +152,6 @@ ns.Finder:MarkStale()
 -- A tab that found nothing looks again when the gear changes.
 Quest:OnEvent("PLAYER_EQUIPMENT_CHANGED")
 suite.check("a new quest once there is an upgrade again", Quest:Current() and Quest:Current().itemID == 1002)
-suite.check("its Change button names what it does", Panel.otherButton.label:GetText() == "Change", Panel.otherButton.label:GetText())
 ns.HandleSlash("quest skip")
 suite.check("skip leaves the tab with the next best: no other quest reward here", Quest:Current() == nil)
 suite.check("and remembers it", ns.charDB.upgradeQuestSkipped[1002] == true)
@@ -296,7 +276,6 @@ ns.Finder:MarkStale()
 Quest:Update()
 suite.check("waits for the server's answers before picking", Quest:Current() == nil and Quest.state == "waiting",
     Quest.state)
-suite.check("and says it is looking", Panel.empty:GetText():find("Looking for your next upgrade", 1, true) ~= nil)
 cached = true
 -- GET_ITEM_INFO_RECEIVED marks the finder's scan out of date.
 ns.Finder:MarkStale()
@@ -499,16 +478,11 @@ suite.check("a far better one is offered", offer and offer.pick.itemID == 3001, 
 suite.check("but not swapped in", Quest:Current().itemID == 1001)
 suite.check("with the level it opened at", offer and offer.level == 23, offer and offer.level)
 suite.check("and a banner", #toasts > shown and toasts[#toasts].title == "New upgrade on offer")
-suite.check("the panel shows the offer", Panel.offerBox:IsShown()
-    and Panel.offerTitle:GetText() == "New upgrade on offer at level 23", Panel.offerTitle:GetText())
-suite.check("naming it", Panel.offerName:GetText() == "item:3001", Panel.offerName:GetText())
-suite.check("with Switch and Keep current", Panel.switchButton:IsShown() and Panel.keepButton:IsShown())
 Quest:Update()
 suite.check("offered once, not again on every update", #toasts == shown + 1, #toasts - shown)
 
-Panel.keepButton:GetScript("OnClick")(Panel.keepButton)
+Quest:KeepCurrent()
 suite.check("Keep current leaves the quest", Quest:Current().itemID == 1001 and Quest:Offer() == nil)
-suite.check("and the box goes", not Panel.offerBox:IsShown())
 _G.UnitLevel = function() return 24 end
 ns.Finder:MarkStale()
 Quest:OnEvent("PLAYER_LEVEL_UP", 24)
@@ -519,10 +493,9 @@ _G.UnitLevel = function() return 25 end
 ns.Finder:MarkStale()
 Quest:OnEvent("PLAYER_LEVEL_UP", 25)
 suite.check("offered again after a log in", Quest:Offer() ~= nil)
-Panel.switchButton:GetScript("OnClick")(Panel.switchButton)
+Quest:SwitchToOffer()
 suite.check("Switch follows it", Quest:Current().itemID == 3001 and Quest:Offer() == nil)
 suite.check("with its own steps", StepTexts():find("Buy item:3001", 1, true) ~= nil, StepTexts())
-suite.check("the box goes", not Panel.offerBox:IsShown())
 
 Quest:OnEvent("BAG_UPDATE_DELAYED")
 suite.check("nothing is offered without a level up", Quest:Offer() == nil)
@@ -551,39 +524,13 @@ suite.check("each tab keeps its own", Quest:QuestOn("vendor").itemID == 1001 and
 suite.check("the copy older versions read follows the tab shown", ns.charDB.upgradeQuest == Quest:Current())
 
 Panel:Refresh()
-suite.check("four source tabs and the Quest log tab on the panel", #Panel.tabs == 5
-    and Panel.tabs[1].label:GetText() == "Vendor" and Panel.tabs[3].label:GetText() == "Dungeons and Raids"
-    and Panel.tabs[4].label:GetText() == "Crafted" and Panel.tabs[5].label:GetText() == "Quest log")
-suite.check("the tabs hang from the panel, not the screen's corner", (function()
-    for _, tab in ipairs(Panel.tabs) do
-        if rawget(tab, "_parent") ~= Panel.frame then return false end
-        local point = rawget(tab, "_point")
-        if not (point and point[2] == Panel.frame) then return false end
-    end
-    return true
-end)())
-suite.check("the one shown is lit", Panel.tabs[2].shown and not Panel.tabs[1].shown)
-suite.check("a tab with nothing on it is dimmed", Panel.tabs[3].empty and not Panel.tabs[1].empty)
-suite.check("the header names the tab", Panel.title:GetText() == "Quest", Panel.title:GetText())
-suite.check("tabs fit across the panel", (function()
-    local total = 0
-    for _, tab in ipairs(Panel.tabs) do total = total + tab:GetWidth() end
-    return total + (#Panel.tabs - 1) * 4 <= Panel.WIDTH - 20 + 0.01
-end)())
-suite.check("hovering a tab says what is on it", pcall(Panel.tabs[1]:GetScript("OnEnter"), Panel.tabs[1]))
 
-Panel.tabs[1]:GetScript("OnClick")(Panel.tabs[1])
-suite.check("clicking a tab shows its upgrade", Quest:Tab() == "vendor" and Quest:Current().itemID == 1001
-    and Panel.name:GetText() == "item:1001", Panel.name:GetText())
 suite.check("and the other tab's is kept", Quest:QuestOn("quest").itemID == 1002)
-Panel.tabs[2]:GetScript("OnClick")(Panel.tabs[2])
 suite.check("flipping back finds it as it was", Quest:Current().itemID == 1002)
 
 ns.HandleSlash("quest crafted")
 suite.check("/beq quest crafted shows the Crafted tab", Quest:Tab() == "craft"
     and env.ChatText():find("showing the Crafted tab", 1, true) ~= nil)
-suite.check("which says when it has nothing", Panel.empty:IsShown()
-    and Panel.empty:GetText():find("No crafted upgrade right now", 1, true) ~= nil, Panel.empty:GetText())
 ns.HandleSlash("quest dungeons")
 suite.check("/beq quest dungeons", Quest:Tab() == "dungeon")
 
@@ -609,26 +556,18 @@ ns.charDB.upgradeQuest = { itemID = 1002, link = "item:1002", source = { kind = 
 suite.check("an older quest is kept, on its tab", Quest:QuestOn("quest") and Quest:QuestOn("quest").itemID == 1002
     and Quest:Tab() == "quest")
 
--- The close gem turns the quest off, its quests kept.
-Panel:Refresh()
-Panel.trim.closeButton:GetScript("OnClick")(Panel.trim.closeButton)
-suite.check("the close gem turns it off", ns.db.upgradeQuest == false and not Panel.frame:IsShown())
-suite.check("and says how to bring it back", env.ChatText():find("Bring it back", 1, true) ~= nil)
+-- Turned off, its quests are kept.
+Quest:SetEnabled(false)
+suite.check("turned off", ns.db.upgradeQuest == false and not Panel.frame:IsShown())
 suite.check("keeping its quests", Quest:QuestOn("quest") ~= nil)
 ns.HandleSlash("quest")
 
 --------------------------------------------------------------------------------
--- Text that wraps, and turning it off
+-- Settings, and turning it off
 --------------------------------------------------------------------------------
 
-suite.check("long steps wrap rather than cut", Panel.Lines("small",
-    "Pick up Wolves of the Forest from Marshal Dughan in Elwynn Forest (42.1, 65.9)", 200) > 1)
-suite.check("short ones take one line", Panel.Lines("small", "Put It On", 200) == 1)
-suite.check("a link's hidden part takes no room",
-    Panel.Lines("small", "|cff1eff00|Hitem:1001::::::::20:::::|h[Vest]|h|r", 60) == 1)
-
--- Ignore and Switch are on the panel and typed; Settings keeps Open and
--- Ignored (the owner, 2026-10-15).
+-- Ignore and Switch are on the panel and typed; Settings keeps Ignored
+-- (the owner, 2026-10-15), which opens the Upgrade Quest tab's list.
 ns.SettingsUI:Show()
 local controls = ns.SettingsUI.controls
 local function Click(button) button:GetScript("OnClick")(button) end
@@ -642,14 +581,15 @@ ns.HandleSlash("quest switch")
 suite.check("/beq quest switch with nothing on offer says so",
     env.ChatText():find("no new upgrade is on offer", 1, true) ~= nil)
 Click(controls.questReset)
-suite.check("the Ignored button lists them", ns.IgnoredUI.frame and ns.IgnoredUI.frame:IsShown())
-Click(ns.IgnoredUI.restoreAll)
+suite.check("the Ignored button opens the Upgrade Quest tab's list", ns.GearWindow.tab == "quest"
+    and ns.QuestTab:View() == "ignored")
+Quest:RestoreAll()
 suite.check("and Restore all brings them back", next(ns.charDB.upgradeQuestSkipped) == nil)
-ns.IgnoredUI:Hide()
-ns.HandleSlash("quest off")
-Click(controls.questOpen)
-suite.check("the Open button turns it on and shows the panel", ns.db.upgradeQuest == true
-    and Panel.frame:IsShown() and controls.upgradeQuest:GetChecked())
+suite.check("Settings has no Open button for a window that is a tab", controls.questOpen == nil
+    and controls.openWindow == nil and controls.find == nil and controls.dungeonQuests == nil
+    and controls.dungeonLoot == nil and controls.weights == nil)
+ns.HandleSlash("quest")
+ns.SettingsUI:Show()
 
 local box = ns.SettingsUI.controls.upgradeQuest
 suite.check("the settings box is ticked while it is on", box:GetChecked())
@@ -761,8 +701,6 @@ do
         local now = ok and result and ns.Compare:HowMuch(result)
         suite.check("other gear on, the panel's percent is the tooltip's",
             quest.howMuch == now, tostring(before) .. " -> " .. tostring(quest.howMuch) .. " vs " .. tostring(now))
-        suite.check("and the words under the item say it too",
-            Panel.GainText(quest):find(now, 1, true) ~= nil, Panel.GainText(quest))
     end
     env.worn[5] = "item:900"
 end
