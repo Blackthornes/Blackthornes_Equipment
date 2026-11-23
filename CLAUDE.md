@@ -102,7 +102,10 @@ that touches one.
   redraws a whole list when one thing moved. Coalesce bag, loot and cast
   events, skip hidden windows, spread big work over frames. Scans run only
   when gear, bags, level, talents or skills really changed
-  (`ns.NothingChanged`); `/beq perf` times the big pieces.
+  (`ns.NothingChanged`); `/beq perf` times the big pieces. Big jobs run
+  on the frame worker (`ns.Worker:Run`), a gear swap judges only its slot
+  again, and `tools/test_engine.lua` counts the work: see "The speed
+  engine" in Docs/claude-notes.md before touching a scan.
 - **The client is WoW: Forever** (`## Interface: 16001`, a retail engine,
   classic classes: one trait tree per class, judged by
   `Weights:TraitPoints`). Read client values inside a pcall; register

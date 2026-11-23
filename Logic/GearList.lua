@@ -54,19 +54,22 @@ local function Allows(mask, bit)
 end
 
 --- Start again when the character or the data tables are not the ones the
---- answers were made for.
+--- answers were made for. Asked for every item, so nothing is built here.
 local function Check(player)
     local S = ns.Sources or {}
-    local key = table.concat({
-        tostring(player.class), tostring(player.classBit), tostring(player.raceBit),
-        tostring(S.ITEMS), tostring(S.FOREVER), tostring(ns.Crafts and ns.Crafts.ITEMS),
-        tostring(ns.ForeverItems),
-    }, "|")
-    if key ~= madeFor then
-        madeFor = key
-        state, bySlot, waitingOnSkill = {}, nil, {}
-        GearList.ready = nil
+    local crafts = ns.Crafts and ns.Crafts.ITEMS
+    local made = madeFor
+    if made and made.class == player.class and made.classBit == player.classBit
+        and made.raceBit == player.raceBit and made.items == S.ITEMS and made.forever == S.FOREVER
+        and made.crafts == crafts and made.client == ns.ForeverItems then
+        return
     end
+    madeFor = {
+        class = player.class, classBit = player.classBit, raceBit = player.raceBit,
+        items = S.ITEMS, forever = S.FOREVER, crafts = crafts, client = ns.ForeverItems,
+    }
+    state, bySlot, waitingOnSkill = {}, nil, {}
+    GearList.ready = nil
 end
 
 --- Sort one item for `player` (Finder:Player()). Nil when the client does

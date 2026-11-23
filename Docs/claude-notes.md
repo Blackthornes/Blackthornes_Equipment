@@ -2608,3 +2608,67 @@ where rows had neither (the Finder's slot buttons for the worn piece,
 dungeon loot rows, the upgrade quest's offer, its other picks and the slot
 upgrades list). Quest rows still link the quest. Tested in
 `tools/test_itemclicks.lua`.
+
+## The speed engine (rework step 1, 2026-11-23)
+
+The owner approved a full rework of this addon (2026-11-22) in seven
+steps, engine first. This is the engine. Nothing a player sees changed;
+the old windows read it through the same finder calls as before.
+
+- **The frame worker** (`Core/Worker.lua`, `ns.Worker:Run(build, finish,
+  calm)`): `build(pause)` runs a few milliseconds a frame
+  (`Worker.SLICE_MS`, 4) and rests at `pause()` once the frame's share is
+  used. Every job shares the one share. A `calm` job rests while the
+  character fights and goes on at PLAYER_REGEN_ENABLED. It is the
+  finder's old slicing moved out. Only the gear list's login job is calm.
+  The finder's scans still run in a fight: the upgrade quest's panel says
+  "Looking for your next upgrade..." and looks again every few seconds
+  until its scan is in, and that must not last a whole fight. Making
+  scans calm belongs with the new panel (step 4). `/beq perf` still
+  times the worker as "Finder:background slice".
+- **The gear list** (`Logic/GearList.lua`): each item is sorted once a
+  session as never for this character (`false`: the data's class or race
+  limit, armor the class can't wear, not gear), `"skill"` (a weapon or
+  off-hand piece with no skill for it; sorted again on
+  `Finder:ForgetVerdicts`) or its slot kind (`"INVTYPE_HEAD"`). Only the
+  data and the client's instant item table are read (`Items:Kind`), so
+  nothing is asked of the server. At login `GearList:Make` sorts every
+  row on the worker; a row met earlier or learned in play is sorted when a
+  scan reaches it. `GearList:ForSlot(slot)` lists the usable gear for a
+  slot, for the new screens. Level, sources, quests done and a tooltip's
+  "Classes:" line stay the finder's to check, so the list never hides
+  gear the finder would show. Not saved.
+- **Verdicts kept by slot** (`Logic/Finder.lua`): a kept verdict records
+  the slots it leans on (its own; both hands for anything held; both
+  rings; both trinkets) and whether it leans on hit or on a set.
+  `Finder:LookAtWorn` compares the worn gear with the last look, slot by
+  slot, read from the gear and not from an event. A changed slot bumps
+  `slotLooks[slot]` and sets `toLook[slot]` (`Finder:NeedsLook(slot)`,
+  cleared when a whole scan finishes). A piece with hit taken off or put
+  on, or any change to a hand, bumps `hitLooks`; a set piece bumps
+  `setLooks`. `Finder:Kept` drops a verdict whose stamp (the sum of what
+  it leans on) moved. So a helm swap judges the heads again and nothing
+  else. Level, weights, talents, weapon skills, the skip setting and
+  dual wield (`Finder:VerdictKey`) still start every verdict afresh.
+  `Finder:JudgeKey` is unchanged: it still says when a scan is out of
+  date.
+- **Sources only for upgrades**: `Finder:Build` passes by an item whose
+  kept verdict is no upgrade without working out where it comes from
+  (`Finder:Candidate` does that for the rest). `found.checked` may count
+  such an item whose sources have since closed; nothing reads it.
+- **Clocks**: the minimap button hooks the minimap's OnSizeChanged in
+  place of a look every 5 seconds (the ticker stays as the fallback when
+  the hook fails). Two tickers were left on purpose: the upgrade quest's
+  landing watch runs only during a flight that crossed a zone and covers
+  a client that sends no PLAYER_CONTROL_GAINED (a player was sent to the
+  wrong zone, 2026-10-09), and the dungeon door note every 2 seconds is
+  what learns a door's spot on Forever (a zone event is too far from the
+  door, and the loading screen noted nothing, 2026-10-23). Both are a
+  read or two, not a scan. Replacing them needs an event seen in game
+  first (`/beq probe`).
+- **Not done yet**: a level still judges everything again (in slices);
+  the plan's "only the gear that level opens" waits for a later step.
+  Tooltips and bag arrows still judge through `Compare:JudgeCarried`.
+- Tested in `tools/test_engine.lua`, which counts items sorted, items
+  judged, sources worked out and timers made for a set of events. A
+  change that brings the old cost back fails there.
