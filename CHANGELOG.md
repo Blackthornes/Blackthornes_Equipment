@@ -10,6 +10,7 @@ For WoW: Forever (interface 16001). `/reload` is enough after updating.
 
 - **Biggest Upgrade First.** A new box on the Upgrade Quest page of Settings. Tick it and each tab picks the upgrade with the biggest percent gain first. How easy it is to get only breaks a tie. It starts off.
 - **New Upgrade Unlocked.** The pop-up no longer covers the tabs and buttons of the small Upgrade Quest panel.
+- **Solo Quests Only.** It no longer suggests dungeon quests.
 
 ## 1.17.0
 

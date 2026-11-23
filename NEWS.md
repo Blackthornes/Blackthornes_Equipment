@@ -29,6 +29,7 @@ tool prints a note for a shipped line that reads like an advert.
 
 Fixes and changes:
 - The New Upgrade pop-up no longer covers the small Upgrade Quest panel.
+- Solo Quests Only no longer suggests dungeon quests.
 
 ## 1.17.0
 
