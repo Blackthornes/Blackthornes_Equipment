@@ -141,4 +141,50 @@ quest = Quest:QuestOn("quest")
 suite.check("brought back to +4, it lets it go and picks again", quest and quest.itemID == 1003,
     quest and quest.itemID)
 
+--------------------------------------------------------------------------------
+-- Dungeon quests the quest data does not mark (the owner, 2026-11-23: a
+-- dungeon quest line's reward was offered with Solo Quests Only ticked).
+-- Quests learned in game, and some Classic ones, carry no mark of their
+-- own; the dungeon quest lists still say where they are done.
+--------------------------------------------------------------------------------
+
+ITEMS["item:1006"] = Chest(70)
+ITEMS["item:1007"] = Chest(80)
+ITEMS["item:1008"] = Chest(90)
+env.InstallItems(ITEMS, { [5] = "item:900" }, { [0] = {} }, 20)
+S.DUNGEONS = { ["36"] = { "The Deadmines", 17, 26, "Elwynn Forest", "" },
+    ["99"] = { "Molten Core", 60, 60, "Elwynn Forest", "", true } }
+-- Learned on Forever: no mark, but on Forever's dungeon quest list.
+S.QUESTS[20] = { "Into the Mine", 15, 18, 0, 0, "Someone", 12, 40, 40, "", learned = true }
+-- Classic, no mark, but on the Classic dungeon quest list; its reward
+-- comes from the next quest in the line.
+S.QUESTS[21] = { "Down Below", 15, 18, 0, 0, "Someone", 12, 40, 40, "" }
+S.QUESTS[22] = { "Back to Town", 15, 18, 0, 0, "Someone", 12, 40, 40, "Down Below", p = 21 }
+S.QUESTS[23] = { "The Core", 15, 18, 0, 0, "Someone", 12, 40, 40, "" }
+S.ITEMS[1006] = { 15, 18, 0, 0, 0, q = { 20 } }
+S.ITEMS[1007] = { 15, 18, 0, 0, 0, q = { 22 } }
+S.ITEMS[1008] = { 15, 18, 0, 0, 0, q = { 23 } }
+ns.FOREVER_DUNGEON_QUESTS = { [20] = { "36", "Into the Mine", 15, 18, "", 0, "Someone", "Elwynn Forest", 40, 40, 0, 0 } }
+ns.DUNGEON_QUESTS = { [21] = { "36", "Down Below", 15, 18, "", 0, "Someone", "Elwynn Forest", 40, 40, 0, 0 },
+    [23] = { "99", "The Core", 15, 18, "", 0, "Someone", "Elwynn Forest", 40, 40, 0, 0 } }
+Finder:MarkStale()
+
+local learned = Finder:SourcesFor(1006, player)[1]
+suite.check("a learned dungeon quest is marked", learned and learned.group == "dungeon" and not Finder.Solo(learned),
+    learned and tostring(learned.group))
+local line = Finder:SourcesFor(1007, player)[1]
+suite.check("a quest after an unmarked dungeon quest is not solo",
+    line and line.chainGroup == "dungeon" and not Finder.Solo(line), line and tostring(line.chainGroup))
+local raid = Finder:SourcesFor(1008, player)[1]
+suite.check("an unmarked raid quest says raid", raid and raid.group == "raid", raid and tostring(raid.group))
+
+Finder:SetSoloOnly(true)
+suite.check("ticked, none of them are offered", not Offered():find("1006") and not Offered():find("1007")
+    and not Offered():find("1008"), Offered())
+quest = Quest:QuestOn("quest")
+-- 1002 was skipped above, so nothing solo may be left to pick.
+suite.check("and the quest tab does not pick them", not quest or quest.itemID ~= 1006 and quest.itemID ~= 1007
+    and quest.itemID ~= 1008, quest and quest.itemID)
+Finder:SetSoloOnly(false)
+
 suite.done()

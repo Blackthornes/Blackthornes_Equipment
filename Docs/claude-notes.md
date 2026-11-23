@@ -475,7 +475,12 @@ Solo quests (a player asked, the owner agreed 2026-10-06): a quest's
 11th field in `Sources.QUESTS` says what it needs besides the player
 ("group", "dungeon", "raid", "battleground", or nothing), worked out by
 `make_sources.py` from Classic's quest type, suggested players, and
-objectives inside an instance or on an elite. "Solo quests only"
+objectives inside an instance or on an elite. A quest with no mark there
+that is on `DUNGEON_QUESTS` or `FOREVER_DUNGEON_QUESTS` needs a dungeon
+(a raid when its place is one): `Finder.QuestNeed` (2026-11-23, after the
+owner saw a dungeon quest line's reward with Solo Quests Only ticked; most
+of Forever's own dungeon quests are learned in game with no mark).
+"Solo quests only"
 (`soloQuestsOnly`, account wide, off by default; `Finder:SetSoloOnly`) is a
 tick box in the finder and a Settings row; `Finder:SourcesFor` leaves out
 quests that need others or come after one, and the upgrade quest lets such

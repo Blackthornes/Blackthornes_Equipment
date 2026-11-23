@@ -280,7 +280,7 @@ local function QuestPlace(questID)
         questID = questID, title = quest[1], questLevel = quest[3], name = quest[6],
         zone = ns.Sources.ZONES[quest[7]],
         x = quest[8] ~= 0 and quest[8] or nil, y = quest[9] ~= 0 and quest[9] or nil,
-        group = Finder.Need(quest[11]),
+        group = Finder.QuestNeed(questID, quest),
     }
 end
 
@@ -350,6 +350,23 @@ Finder.NEEDS = { group = true, dungeon = true, raid = true, battleground = true 
 --- "battleground"), or nil when it can be done alone.
 function Finder.Need(group)
     return Finder.NEEDS[group] and group or nil
+end
+
+--- What a quest needs besides the player. The quest data's own mark wins;
+--- a quest it leaves unmarked (learned on Forever, or some Classic ones)
+--- that is on a dungeon quest list needs a dungeon, or a raid when that
+--- list's place is one.
+function Finder.QuestNeed(questID, quest)
+    local need = Finder.Need(quest and quest[11])
+    if need or not questID then return need end
+    for _, list in ipairs({ ns.DUNGEON_QUESTS, ns.FOREVER_DUNGEON_QUESTS }) do
+        local row = type(list) == "table" and list[questID]
+        if type(row) == "table" then
+            local place = ns.Sources and ns.Sources.DUNGEONS and ns.Sources.DUNGEONS[row[1]]
+            return (type(place) == "table" and place[6]) and "raid" or "dungeon"
+        end
+    end
+    return nil
 end
 
 --- Can a source be got alone? Everything but a quest that needs a group,
@@ -528,7 +545,7 @@ function Finder:SourcesFor(itemID, player)
                 kind = "quest", questID = questID, title = quest[1], questLevel = quest[3],
                 name = quest[6], zone = ZoneName(quest[7]),
                 x = quest[8] ~= 0 and quest[8] or nil, y = quest[9] ~= 0 and quest[9] or nil,
-                after = quest[10] ~= "" and quest[10] or nil, group = Finder.Need(quest[11]),
+                after = quest[10] ~= "" and quest[10] or nil, group = Finder.QuestNeed(questID, quest),
                 chainGroup = chainGroup,
                 -- Handed over with the quest, not picked from its choices.
                 given = Finder.Given(itemID, questID) or nil,
