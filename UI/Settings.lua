@@ -241,10 +241,10 @@ function SettingsUI:Rail(pages)
 
     -- One under the other, the hidden ones skipped. Never more than one
     -- line of bar, so the pages never move.
-    function pages:LayoutSwitch()
+    pages.LayoutSwitch = function(list)
         local place = 0
-        for _, part in ipairs(self.switch) do
-            local hidden = self:Hidden(part.key)
+        for _, part in ipairs(list.switch) do
+            local hidden = list:Hidden(part.key)
             part.button:SetShown(not hidden)
             if not hidden then
                 part.button:ClearAllPoints()
@@ -253,22 +253,22 @@ function SettingsUI:Rail(pages)
                 part.place = place
             end
         end
-        self.lines = 1
+        list.lines = 1
         return false
     end
 
     -- The window is as wide as the list, the two columns and the bar's
     -- search box and tick box need.
-    function pages:BarWidth()
+    pages.BarWidth = function(list)
         return math.max(RAIL + opts.padding * 2 + opts.columnWidth * 2 + opts.columnGap,
-            opts.padding * 2 + self:ToolsWidth())
+            opts.padding * 2 + list:ToolsWidth())
     end
 
     local paint = pages.Paint
-    function pages:Paint()
-        paint(self)
-        local current = self:Current()
-        for _, part in ipairs(self.switch) do
+    pages.Paint = function(list)
+        paint(list)
+        local current = list:Current()
+        for _, part in ipairs(list.switch) do
             local active = part.key == current
             local over = part.hovered == true and not active
             part.glow:Hide()
