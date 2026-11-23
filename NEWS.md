@@ -23,6 +23,16 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.17.0
+
+- I was not happy with the overall quality of Equipment and did a full rework of the Addon. Feedback is appreciated.
+- Equipment opens in one new window. My Gear shows your character with a green mark on every slot that has an upgrade. Find Upgrades lists every upgrade in one place. Upgrade Quest, Dungeons and Training have their own tabs.
+- Your character sheet shows green arrows on slots with an upgrade. Alt-click a slot to see it in My Gear.
+- Arrows on bags, bank, vendor and loot say how much better the item is, like +14%.
+- Four dungeons were missing and are in now: Krol'dok Stronghold, Alcaz Prison, Blackmaw Hold and The Shaper's Terrace.
+- This Zone Only keeps dungeon and raid drops in the list when you are not in that zone.
+
+
 ## 1.16.2
 
 Fixes and changes:

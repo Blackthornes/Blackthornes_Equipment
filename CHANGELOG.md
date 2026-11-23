@@ -4,6 +4,26 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.17.0
+
+For WoW: Forever (interface 16001). A full restart is needed after updating.
+
+I was not happy with the overall quality of Equipment and did a full rework of the Addon. Feedback is appreciated.
+
+- **One window, five tabs.** My Gear, Find Upgrades, Upgrade Quest, Dungeons and Training, then Settings last. It opens on My Gear.
+- **My Gear.** Three cards say what to do next. A figure of your character shows every slot, with a green mark on each slot that has an upgrade. Pick a slot to see the gear in your bags, the best enchant and the best places to get more. The List view sorts by any column.
+- **Find Upgrades.** One list for every slot. Filters on the left: sources, slot, This Zone Only, Solo Quests Only, Quest Level and Plan Ahead. Pick an item to see every place to get it.
+- **Upgrade Quest.** The tab has the views Quest, Tracking, Done and Ignored. The small panel on screen has the tabs Quest, Tracking and Log, and a button that opens the Upgrade Quest tab. Its options are on the Upgrade Quest page in Settings.
+- **Dungeons.** Pick a dungeon once to see its boss drops with your gain, and the quests inside.
+- **Training.** Class spells you can learn now and soon, with their cost, and your weapon skills.
+- **Settings.** The pages are Gear, Stat Weights, Upgrade Quest and Characters, then Tooltips, Sounds, Windows, Sharing, All Addons and About. The Stat Weights window and the Your Characters list moved onto pages. The old windows are gone.
+- **Character sheet.** Slots with an upgrade show a green arrow. Alt-click a slot to see it in My Gear beside the sheet.
+- **Percent.** Arrows on bags, bank, vendor and loot show how much better the item is, like +14%.
+- **Less lag.** Equipment checks your gear only when gear, bags, level, talents or skills change, and only for the slot that changed.
+- **More dungeons.** Krol'dok Stronghold, Alcaz Prison, Blackmaw Hold and The Shaper's Terrace were missing. They are in now, with the zones their doors stand in.
+- **This Zone Only.** Dungeon and raid drops stay in the list in every zone. The Dungeons and Raids boxes still hide them.
+
+
 ## 1.16.2
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.

@@ -437,7 +437,7 @@ end
 
 --- Is a source in the zone `here`? Dungeon and raid drops are in every
 --- zone: you are never standing in a dungeon's zone while you look for one,
---- so "This zone only" hid them all (Trent, 2026-11-22). The Dungeons and
+--- so "This zone only" hid them all (2026-11-22). The Dungeons and
 --- Raids boxes still hide them. Gear made from what you know has no place,
 --- so it is in every zone, and so is anything when the zone is not known.
 function UpgradeQuest.InZone(source, here)
