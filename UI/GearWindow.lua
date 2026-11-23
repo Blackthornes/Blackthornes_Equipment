@@ -49,6 +49,7 @@ Gear.CHROME_HEIGHT = TOP + BAR + BAR_GAP + SIDE
 local TABS = {
     { key = "gear", text = L["My Gear"] },
     { key = "find", text = L["Find Upgrades"] },
+    { key = "quest", text = L["Upgrade Quest"] },
     { key = "enchant", text = L["Enchants"], old = true },
     { key = "dungeons", text = L["Dungeon Quests"], old = true },
     { key = "loot", text = L["Dungeon Loot"], old = true },

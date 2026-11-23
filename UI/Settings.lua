@@ -162,7 +162,7 @@ function SettingsUI:ResetPositions()
     local hosted = ns.FinderUI and ns.FinderUI.oneArea
     local tabs = { [self] = true, [ns.UI or false] = true, [ns.FinderUI or false] = true,
         [ns.DungeonQuestsUI or false] = true, [ns.DungeonLootUI or false] = true }
-    for _, module in ipairs({ self, ns.UI, ns.GearWindow, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.QuestArrowUI, ns.IgnoredUI, ns.DungeonQuestsUI, ns.DungeonLootUI }) do
+    for _, module in ipairs({ self, ns.UI, ns.GearWindow, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.SmallPanel, ns.QuestArrowUI, ns.IgnoredUI, ns.DungeonQuestsUI, ns.DungeonLootUI }) do
         if module and module.frame and module.RestorePosition and not (hosted and tabs[module]) then
             module:RestorePosition()
         end
@@ -714,6 +714,10 @@ function SettingsUI:BuildShowGrid()
         return { entry[1], entry[3], entry[4], Plain(entry[1], true, function()
             local module = redraw and ns[redraw]
             if module and module.OnTrackingChanged then pcall(module.OnTrackingChanged, module) end
+            -- The small panel's Tracking tab follows "Upgrade Tracker:" too.
+            if redraw == "TrackerPanel" and ns.SmallPanel then
+                pcall(ns.SmallPanel.OnTrackingChanged, ns.SmallPanel)
+            end
         end) }
     end
 

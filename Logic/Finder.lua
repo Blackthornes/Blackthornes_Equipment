@@ -369,7 +369,7 @@ end
 --- filters changed.
 function Finder:QuestFilterChanged()
     self:MarkStale()
-    for _, name in ipairs({ "FinderUI", "UpgradeQuest", "SettingsUI", "FindUpgrades" }) do
+    for _, name in ipairs({ "FinderUI", "UpgradeQuest", "SettingsUI", "FindUpgrades", "QuestTab" }) do
         local module = ns[name]
         if module and module.OnQuestFilterChanged then pcall(module.OnQuestFilterChanged, module) end
     end
@@ -1570,10 +1570,13 @@ end
 
 --- Run `build(pause)` a slice per frame on the frame worker
 --- (Core/Worker.lua) and hand what it returns to `finish(found, why)`.
---- Scans still run during a fight: the upgrade quest's panel shows it is
---- looking until its scan is in, and that must not last a whole fight.
-local function Sliced(build, finish)
-    ns.Worker:Run(build, finish)
+--- With `calm` the scan rests while the character fights and goes on when
+--- the fight ends. The shared scan is calm (rework step 4): it judges every
+--- item, and the small panel says "Your next upgrade comes after the
+--- fight." meanwhile. A window's own scan still runs, since the player
+--- opened that window and waits on it.
+local function Sliced(build, finish, calm)
+    ns.Worker:Run(build, finish, calm)
 end
 
 --- How many scans are under way (for the tests).
@@ -1600,7 +1603,7 @@ function Finder:ScanInBackground(done)
             local ok, err = pcall(fn, found, why)
             if not ok then ns.Debug("finder:", tostring(err)) end
         end
-    end)
+    end, true)
 end
 
 --- The finder window's own scan (its filter and how far ahead it looks), a

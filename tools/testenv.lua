@@ -332,6 +332,10 @@ function env.Load(locale)
     -- "One Window:" is on unless unticked; suites test Equipment's own windows
     -- unless they tick it (test_onewindow.lua checks the default).
     if ns.db then ns.db.oneWindow = false end
+    -- The small panel (UI/SmallPanel.lua) stands in for the old quest panel
+    -- and Tracking panel. Their code stays until rework step 6, and a suite
+    -- that tests them sets env.OLD_PANELS before loading.
+    if env.OLD_PANELS and ns.SmallPanel then ns.SmallPanel.standsIn = false end
 
     env.ns = ns
     return ns

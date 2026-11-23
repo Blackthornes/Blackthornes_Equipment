@@ -335,7 +335,7 @@ Perf.WATCH = {
     { "Finder", "Scan" }, { "UpgradeQuest", "Update" }, { "UpgradeQuest", "LookForBetter" },
     { "Tracking", "Check" }, { "BagIcons", "Refresh" }, { "BagIcons", "RefreshFrame" },
     { "UpgradeChat", "Scan" }, { "Tooltip", "OnTooltip" }, { "Compare", "BestInBags" },
-    { "UI", "Refresh" }, { "FinderUI", "Refresh" }, { "QuestPanel", "Refresh" },
+    { "UI", "Refresh" }, { "FinderUI", "Refresh" }, { "QuestPanel", "Refresh" }, { "SmallPanel", "Refresh" },
     { "TrackerPanel", "Refresh" }, { "MapPins", "Draw" }, { "SlotUpgrades", "Fill" },
     { "QuestRewards", "Refresh" }, { "LootRolls", "Refresh" },
     { "MoreMarks", "RefreshMerchant" }, { "MoreMarks", "RefreshLoot" },

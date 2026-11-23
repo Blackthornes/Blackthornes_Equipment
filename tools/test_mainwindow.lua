@@ -55,8 +55,8 @@ suite.check("the header has Training and Upgrade quest",
 suite.check("Dungeon Loot is a tab now, not a header button", UI.lootButton == nil)
 local tabKeys = {}
 for _, tab in ipairs(Gear.strip.tabs) do tabKeys[#tabKeys + 1] = tab.key end
-suite.check("the tabs are My Gear, Find Upgrades, Enchants, Dungeon Quests, Dungeon Loot and Settings",
-    table.concat(tabKeys, ",") == "gear,find,enchant,dungeons,loot,settings", table.concat(tabKeys, ","))
+suite.check("the tabs are My Gear, Find Upgrades, Upgrade Quest, Enchants, Dungeon Quests, Dungeon Loot and Settings",
+    table.concat(tabKeys, ",") == "gear,find,quest,enchant,dungeons,loot,settings", table.concat(tabKeys, ","))
 
 suite.check("the bigger of two chest upgrades", Owned(5) == "item:2", Owned(5))
 suite.check("an item above your level is not offered", not Owned(5):find("item:8", 1, true))

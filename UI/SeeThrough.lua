@@ -26,6 +26,8 @@ SeeThrough.FADE = 0.2
 SeeThrough.PANELS = {
     hunts = { key = "huntsSeeThrough" },
     quest = { key = "questPanelSeeThrough" },
+    -- The small panel (UI/SmallPanel.lua) shares the quest panel's level.
+    panel = { key = "questPanelSeeThrough" },
 }
 SeeThrough.ORDER = { "hunts", "quest" }
 
@@ -191,7 +193,10 @@ function SeeThrough:Set(id, level)
     level = tonumber(level)
     if not panel or not level or (level ~= 0 and not SeeThrough.LEVELS[level]) then return false end
     ns.db[panel.key] = level
-    self:Apply(id)
+    -- Every panel that shares the saved level follows it.
+    for other, entry in pairs(SeeThrough.PANELS) do
+        if entry.key == panel.key then self:Apply(other) end
+    end
     return true
 end
 
