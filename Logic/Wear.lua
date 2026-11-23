@@ -195,6 +195,28 @@ function Wear:Auto(link, fallback)
     return true
 end
 
+--- Put on each of `links` because the player asked (My Gear's Put Them
+--- On): one at a time, each judged again against what is worn by then, as
+--- the pieces put on by themselves are. In a fight they wait for its end.
+-- @return how many were taken in hand
+function Wear:PutOnAll(links)
+    self.queue = self.queue or {}
+    local taken = 0
+    for _, link in ipairs(links or {}) do
+        local waiting = false
+        for _, entry in ipairs(self.queue) do
+            if entry.link == link then waiting = true end
+        end
+        if not waiting then
+            self.queue[#self.queue + 1] = { link = link, asked = true }
+            taken = taken + 1
+        end
+    end
+    if taken > 0 and InCombat() then ns.Print(L["They go on after the fight."]) end
+    self:Next()
+    return taken
+end
+
 --- Put the next waiting piece on, if nothing else is under way.
 function Wear:Next()
     if self.busy or InCombat() then return end
@@ -203,8 +225,14 @@ function Wear:Next()
     local link = entry.link
 
     -- Judged again: the bags, what is worn and the fight may have moved.
-    local can, _, result = self:Can(link)
-    if not can or not self:CanAuto(link) then
+    local can, why, result = self:Can(link)
+    -- A piece the player asked for (PutOnAll) goes on whatever the
+    -- "Put on upgrades" setting says; one that can't says why.
+    if entry.asked and not can then
+        ns.Print(L.Format("can't put that on: %s.", why or L["unknown"]))
+        return self:Next()
+    end
+    if not can or (not entry.asked and not self:CanAuto(link)) then
         local ok, judged = pcall(ns.Compare.JudgeCarried, ns.Compare, link)
         if Wear.Find(link) and ok and ns.Compare.WearableUpgrade(judged) and entry.fallback then
             pcall(entry.fallback, link, judged)

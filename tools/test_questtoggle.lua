@@ -24,8 +24,8 @@ end
 
 suite.check("off to begin with", not Quest:IsEnabled())
 
--- The gear window's button brings it back.
-ns.UI:Show()
+-- The Upgrades tab's button brings it back.
+ns.FinderUI:Show()
 local button = ns.UI.questButton
 suite.check("the gear window has an Upgrade quest button", button ~= nil and ns.UI.frame:IsShown())
 GameTooltip._lines = nil

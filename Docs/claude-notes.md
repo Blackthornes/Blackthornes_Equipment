@@ -2672,3 +2672,58 @@ the old windows read it through the same finder calls as before.
 - Tested in `tools/test_engine.lua`, which counts items sorted, items
   judged, sources worked out and timers made for a set of events. A
   change that brings the old cost back fails there.
+
+## The Equipment window and My Gear (rework step 2, 2026-11-23)
+
+Step 2 of the rework: the new window, its tab bar and the My Gear tab.
+The mockup the owner approved is the plan's `my-gear.html`.
+
+- **The window** (`UI/GearWindow.lua`, `ns.GearWindow`, the frame
+  "BlackthornesEquipmentWindow"): one frame with a tab bar along its top
+  and a page area under it. `Gear.TABS` is gear (My Gear), upgrades,
+  enchant, dungeons, loot and settings (on the right, through the tab
+  strip's new `spread` choice in `UI/Widgets.lua`). A tab is either a new
+  page (`Gear:AddPage(key, module)`: the module has `Build(area)`, `Show`,
+  `Hide`, and may have `Refresh`) or an old window. The old windows are
+  laid into the page area the way they were laid into the one window
+  (`FinderUI.oneArea`, `LayIn`), so every old tab works as before until
+  its step replaces it. The old keys keep their names; steps 3 to 6 swap
+  each for a page.
+- **Who opens what**: `ns.UI:Show/Hide/IsShown` (`UI/MainWindow.lua`),
+  `FinderUI:ShowTab`, `FinderUI:Route` and the minimap button all go
+  through `Gear:Open(key)` and `Gear:Close()`. `Gear:Open()` with no key
+  opens My Gear. `Gear.driving` is set while the window itself asks the
+  old finder for a tab, so the two never call each other in a ring.
+- **The one window**: Equipment's host is now `ns.GearWindow.host`
+  (`enter`, `leave`, `tab`, `show`, `hide`), joined in `UI/Minimap.lua`.
+  Inside the one window the frame is laid bare over the area and keeps
+  its tab bar. `UI/SharedWindow.lua` did not change.
+- **Saved keys**: the window reuses `finderPoint`, `finderRelativePoint`,
+  `finderX`, `finderY`, `finderScale` and `finderMoved`, so it opens
+  where the old window stood. New: `myGearView` ("figure" or "list") and
+  the fold key "Gear" in `foldedWindows`. Nothing was renamed or removed.
+- **My Gear** (`UI/MyGear.lua`, `ns.MyGear`): `MyGear:Read(found)` turns
+  one whole scan into what the page shows: per slot the worn piece, the
+  bag pieces that beat it, the best enchant (`Enchants:Line`) and up to
+  three pieces to go and get (those to wear now before those for later:
+  `MyGear.Later` is a level, a reputation or a far crafter), then the
+  three cards (ready in the bags, next to go and get, at the trainer).
+  Every draw reads that state. A click on a slot, a sort or a view change
+  judges nothing. The bag pieces are judged once for each scan
+  (`bagsFor`), so opening the page again judges nothing either.
+- **When it looks**: `MyGear:Refresh` takes `Finder:Fresh()`, else asks
+  `Finder:ScanInBackground` and draws when it is in. If the scan went out
+  of date while it ran (gear changed, or the item answers settled), it
+  looks once more; each scan clears the mark, so that stops. Events go
+  through `RefreshSoon` (once per half second), and nothing runs while
+  the page is hidden or the window is folded.
+- **Buttons**: Put Them On hands every ready bag piece to
+  `Wear:PutOnAll(links)` (new, `Logic/Wear.lua`): pieces the player asked
+  for go on whatever "Put on upgrades" says, one at a time, after the
+  fight when in one. Show Me How follows the next piece as the upgrade
+  quest. See All opens the Upgrades tab on the slot.
+- The "next to go and get" card takes the piece the finder shows first
+  among those wearable now; an empty slot's piece comes first.
+- Tested in `tools/test_mygear.lua`, `tools/test_mainwindow.lua`,
+  `tools/test_onewindow.lua` and `tools/test_swapwindows.lua`. Not yet
+  seen in game.

@@ -34,21 +34,29 @@ local function Owned(slot)
     return table.concat(links, ",")
 end
 
+-- The window opens on My Gear (UI/GearWindow.lua); the Upgrades tab is the
+-- old gear window, laid into it.
+local Gear = ns.GearWindow
 UI:Show()
-suite.check("it opens", UI.frame:IsShown())
+suite.check("it opens", UI:IsShown() and Gear.frame:IsShown())
+suite.check("on My Gear", Gear.tab == "gear" and ns.MyGear:IsShown())
+Gear:ShowTab("upgrades")
+suite.check("the Upgrades tab shows the old gear window", UI.frame:IsShown() and not ns.MyGear:IsShown())
 suite.check("one window: the gear window is the finder's", UI.frame == Finder.frame)
+suite.check("laid into the Equipment window", Finder.frame:GetParent() == Gear.area)
 suite.check("named on its plate", Finder.frame ~= nil)
 suite.check("a line for every slot down the left", #Finder.slotButtons == #Finder.SLOT_GROUPS,
     #Finder.slotButtons)
-suite.check("its tabs hang under it", Finder.tabStrip ~= nil
-    and Finder.tabStrip.selected == "upgrades", Finder.tabStrip and Finder.tabStrip.selected)
+suite.check("the tabs run along the window's top", Gear.strip ~= nil
+    and Gear.strip.selected == "upgrades", Gear.strip and Gear.strip.selected)
+suite.check("and no tabs hang under the old window", not Finder.tabStrip:IsShown())
 suite.check("the header has Training and Upgrade quest",
     UI.trainingButton ~= nil and UI.questButton ~= nil)
 suite.check("Dungeon Loot is a tab now, not a header button", UI.lootButton == nil)
 local tabKeys = {}
-for _, tab in ipairs(Finder.tabStrip.tabs) do tabKeys[#tabKeys + 1] = tab.key end
-suite.check("the tabs are Upgrades, Enchants, Dungeon Quests, Dungeon Loot and Settings",
-    table.concat(tabKeys, ",") == "upgrades,enchant,dungeons,loot,settings", table.concat(tabKeys, ","))
+for _, tab in ipairs(Gear.strip.tabs) do tabKeys[#tabKeys + 1] = tab.key end
+suite.check("the tabs are My Gear, Upgrades, Enchants, Dungeon Quests, Dungeon Loot and Settings",
+    table.concat(tabKeys, ",") == "gear,upgrades,enchant,dungeons,loot,settings", table.concat(tabKeys, ","))
 
 suite.check("the bigger of two chest upgrades", Owned(5) == "item:2", Owned(5))
 suite.check("an item above your level is not offered", not Owned(5):find("item:8", 1, true))
@@ -94,12 +102,12 @@ suite.check("and drops the count", UI.upgrades == 2, UI.upgrades)
 -- The Settings tab shows Settings in its place, and Upgrades brings it back.
 Finder:ShowTab("settings")
 suite.check("Settings shows from its tab", ns.SettingsUI.frame:IsShown() and not Finder.frame:IsShown())
-suite.check("with the Settings tab lit", ns.SettingsUI.tabStrip.selected == "settings")
+suite.check("with the Settings tab lit", Gear.strip.selected == "settings")
 suite.check("and counts as the window being open", UI:IsShown())
 Finder:ShowTab("upgrades")
 suite.check("Upgrades brings the window back", Finder.frame:IsShown() and not ns.SettingsUI.frame:IsShown())
 Finder:ShowTab("enchant")
-suite.check("Enchants shows the enchants", Finder:ShowingEnchants() and Finder.tabStrip.selected == "enchant")
+suite.check("Enchants shows the enchants", Finder:ShowingEnchants() and Gear.strip.selected == "enchant")
 Finder:ShowTab("upgrades")
 suite.check("and Upgrades the gear", not Finder:ShowingEnchants())
 
@@ -107,27 +115,31 @@ suite.check("and Upgrades the gear", not Finder:ShowingEnchants())
 Finder:ShowTab("dungeons")
 local dq, dl = ns.DungeonQuestsUI, ns.DungeonLootUI
 suite.check("Dungeon Quests shows from its tab", dq.frame:IsShown() and not Finder.frame:IsShown())
-suite.check("with the Dungeon Quests tab lit", dq.tabStrip ~= nil and dq.tabStrip.selected == "dungeons")
+suite.check("with the Dungeon Quests tab lit", Gear.strip.selected == "dungeons")
 suite.check("and counts as the window being open", UI:IsShown())
 Finder:ShowTab("loot")
 suite.check("Dungeon Loot takes its place", dl.frame:IsShown() and not dq.frame:IsShown())
-suite.check("with the Dungeon Loot tab lit", dl.tabStrip ~= nil and dl.tabStrip.selected == "loot")
+suite.check("with the Dungeon Loot tab lit", Gear.strip.selected == "loot")
 Finder:ShowTab("settings")
 suite.check("Settings takes Dungeon Loot's place", ns.SettingsUI.frame:IsShown() and not dl.frame:IsShown())
 Finder:ShowTab("upgrades")
 suite.check("and Upgrades brings the gear back", Finder.frame:IsShown() and not ns.SettingsUI.frame:IsShown())
 ns.HandleSlash("dungeons")
 suite.check("/beq dungeons opens the tab in the gear window's place",
-    dq.frame:IsShown() and not Finder.frame:IsShown() and dq.tabStrip.selected == "dungeons")
+    dq.frame:IsShown() and not Finder.frame:IsShown() and Gear.strip.selected == "dungeons")
+Gear:ShowTab("gear")
+suite.check("My Gear takes an old tab's place", ns.MyGear:IsShown() and not dq.frame:IsShown() and UI:IsShown())
+Gear:ShowTab("dungeons")
+suite.check("and gives it back", dq.frame:IsShown() and not ns.MyGear:IsShown())
 UI:Hide()
-suite.check("closing the window closes the tab", not dq.frame:IsShown())
+suite.check("closing the window closes the tab", not dq.frame:IsShown() and not UI:IsShown())
 Finder:ShowTab("upgrades")
 
 -- /beq window.
 UI:Hide()
-suite.check("closing hides it", not UI.frame:IsShown())
+suite.check("closing hides it", not UI:IsShown() and not UI.frame:IsShown())
 ns.HandleSlash("window")
-suite.check("/beq window opens it", UI.frame:IsShown())
+suite.check("/beq window opens it, on My Gear", UI:IsShown() and Gear.tab == "gear" and not UI.frame:IsShown())
 UI:Hide()
 suite.check("a closed window does not refresh", UI:Refresh() == 0)
 
@@ -156,35 +168,30 @@ suite.check("and nothing there means not", not ns.Compare:IsUnique("item:10"))
 _G.GetItemUniqueness = nil
 suite.check("no answer: a ring is not taken to be unique", not ns.Compare:IsUnique("item:5"))
 
--- Every tab is one size, so the window never jumps as the tabs are clicked.
-local function SizeOf(frame) return frame:GetWidth() .. "x" .. frame:GetHeight() end
-local tabSizes = {}
-for _, key in ipairs({ "dungeons", "loot", "settings", "enchant", "upgrades" }) do
-    Finder:ShowTab(key)
-    local frame = Finder:ShownTabWindow()
-    tabSizes[#tabSizes + 1] = frame and SizeOf(frame) or "none"
+-- Every tab shares the one Equipment window, so it never jumps as the
+-- tabs are clicked: it holds the size the tabs share, under its tab bar.
+local wantWidth = Finder.WIDTH + Gear.CHROME_WIDTH
+local wantHeight = Finder.HEIGHT + Gear.CHROME_HEIGHT
+local sizes, same = {}, true
+for _, key in ipairs({ "dungeons", "loot", "settings", "enchant", "upgrades", "gear" }) do
+    Gear:ShowTab(key)
+    local size = Gear.frame:GetWidth() .. "x" .. Gear.frame:GetHeight()
+    sizes[#sizes + 1] = size
+    same = same and size == wantWidth .. "x" .. wantHeight
 end
-local want = Finder.WIDTH .. "x" .. Finder.HEIGHT
-local same = true
-for _, size in ipairs(tabSizes) do same = same and size == want end
-suite.check("every tab is the gear window's size", same, table.concat(tabSizes, ", "))
+suite.check("every tab shows in a window of one size", same, table.concat(sizes, ", "))
 suite.check("the dungeon lists fill the taller window",
     ns.DungeonQuestsUI.DUNGEON_ROWS >= 10 and ns.DungeonLootUI.LIST_ROWS >= 8,
     ns.DungeonQuestsUI.DUNGEON_ROWS .. " " .. ns.DungeonLootUI.LIST_ROWS)
-for _, frame in ipairs({ ns.SettingsUI.frame, ns.DungeonLootUI.frame }) do
-    frame.SetScale = function(self, scale) self.scaleSet = scale end
+suite.check("the window has the one size grip", Gear.sizeGrip ~= nil)
+for _, module in ipairs({ Finder, ns.SettingsUI, ns.DungeonLootUI, ns.DungeonQuestsUI }) do
+    suite.check("an old tab's own grip is put away", module.sizeGrip == nil or not module.sizeGrip:IsShown())
 end
-ns.db.finderScale = 80
-Finder:ScaleChanged()
-suite.check("one size grip scales every tab", ns.SettingsUI.frame.scaleSet == 0.8
-    and ns.DungeonLootUI.frame.scaleSet == 0.8, ns.SettingsUI.frame.scaleSet)
-ns.db.finderScale = nil
-Finder:ScaleChanged()
 Finder:Need("settings", Finder.WIDTH, Finder.HEIGHT + 40)
-suite.check("a tab that needs more room makes them all taller",
-    Finder.frame:GetHeight() == Finder.HEIGHT + 40 and ns.DungeonQuestsUI.frame:GetHeight() == Finder.HEIGHT + 40,
-    Finder.frame:GetHeight())
+suite.check("a tab that needs more room makes the window taller",
+    Gear.frame:GetHeight() == wantHeight + 40, Gear.frame:GetHeight())
 Finder:Need("settings", nil, nil)
+suite.check("and it goes back when the need does", Gear.frame:GetHeight() == wantHeight, Gear.frame:GetHeight())
 
 -- A class with no weights is offered nothing.
 _G.UnitClass = function() return "DEATHKNIGHT", "DEATHKNIGHT" end

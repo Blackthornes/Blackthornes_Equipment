@@ -1,5 +1,7 @@
 -- Blackthornes Equipment -- UI/MainWindow.lua
--- The gear window. Since 2026-10-22 (a player asked for fewer windows, the
+-- The gear window. Since 2026-11-23 the window itself is UI/GearWindow.lua
+-- (the tab bar and My Gear); this module opens it and keeps the old names.
+-- Since 2026-10-22 (a player asked for fewer windows, the
 -- owner approved the mockup) it is one window with Where to get upgrades
 -- (UI/FinderWindow.lua): what you wear down the left, the upgrades for the
 -- slot picked on the right, with what you own first. This module keeps the
@@ -111,6 +113,7 @@ end
 --- Redraw the window.
 -- @return how many slots have an upgrade waiting in the bags
 function UI:Refresh()
+    if ns.GearWindow then ns.GearWindow:Refresh() end
     if not (self.frame and self.frame:IsShown()) then return 0 end
     if ns.FinderUI then ns.FinderUI:Refresh() end
     return self.upgrades or 0
@@ -134,40 +137,34 @@ end
 --- Refresh once a burst of events settles.
 function UI:RefreshSoon()
     if ns.FinderUI then ns.FinderUI:RefreshSoon() end
+    if ns.MyGear then ns.MyGear:RefreshSoon() end
 end
 
 --------------------------------------------------------------------------------
 -- Visibility
 --------------------------------------------------------------------------------
 
+--- Open the Equipment window (UI/GearWindow.lua) on My Gear.
 function UI:Show()
+    if ns.GearWindow then
+        ns.GearWindow:Open()
+        return
+    end
     if not self:Build() then return end
     ns.FinderUI:Show()
 end
 
---- Settings, Dungeon Quests or Dungeon Loot shown in the window's place,
---- from its tab.
-local function StandInAsTab()
-    local names = ns.FinderUI and ns.FinderUI.STAND_INS or { settings = "SettingsUI" }
-    for _, name in pairs(names) do
-        local module = ns[name]
-        local frame = module and rawget(module, "frame")
-        if frame and rawget(module, "asTab") then
-            local ok, shown = pcall(frame.IsShown, frame)
-            if ok and shown then return module end
-        end
-    end
-    return nil
-end
-
 function UI:Hide()
+    if ns.GearWindow then
+        ns.GearWindow:Close()
+        return
+    end
     if ns.FinderUI then ns.FinderUI:Hide() end
-    local standIn = StandInAsTab()
-    if standIn then standIn:Hide() end
 end
 
 function UI:IsShown()
-    return (self.frame ~= nil and self.frame:IsShown()) or StandInAsTab() ~= nil
+    if ns.GearWindow then return ns.GearWindow:IsShown() end
+    return self.frame ~= nil and self.frame:IsShown()
 end
 
 -- The window's key, under Options, Keybindings, AddOns (Bindings.xml).

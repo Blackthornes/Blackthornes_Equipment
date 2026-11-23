@@ -131,7 +131,8 @@ Data tables (generated, grep only): `Data/Sources.lua` 6265 lines, 479 KB; `Data
 Locale (grep one key, never read): `Locale/ruRU` 1206 lines, 99 KB; `frFR`, `deDE`, `esES`, `zhCN` are each about 1207 lines, 73 to 79 KB.
 
 Code:
-- `UI/FinderWindow.lua` 2817 lines, 111 KB: the gear window and its tabs.
+- `UI/FinderWindow.lua` 2817 lines, 111 KB: the old Upgrades list and tabs, laid into the new window.
+- `UI/MyGear.lua` 1453 lines, 54 KB: the My Gear tab (`UI/GearWindow.lua` is the window and tab bar; see "The Equipment window and My Gear" in Docs/claude-notes.md).
 - `Logic/UpgradeQuest.lua` 2532 lines, 108 KB: the upgrade quest.
 - `Logic/Weights.lua` 1667 lines, 69 KB: stat weights.
 - `UI/Widgets.lua` 1683 lines, 62 KB: shared widgets.
