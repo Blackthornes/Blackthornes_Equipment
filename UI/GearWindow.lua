@@ -205,13 +205,13 @@ function Gear:Build()
     frame:SetScript("OnDragStop", function(self)
         if Gear.hostArea then return end
         self:StopMovingOrSizing()
-        if ns.db then ns.db.finderMoved = true end
+        if ns.db and not Gear.beside then ns.db.finderMoved = true end
         Gear:SavePosition()
     end)
 
     -- The house size grip, saved as `finderScale` as the old window's was.
     self.sizeGrip = Widgets.WindowGrip(frame, "finderScale", function()
-        if ns.db then ns.db.finderMoved = true end
+        if ns.db and not Gear.beside then ns.db.finderMoved = true end
         Gear:SavePosition()
     end)
 
@@ -287,6 +287,9 @@ end
 
 function Gear:SavePosition()
     if not (ns.db and self.frame) or self.hostArea then return end
+    -- Beside the character sheet it keeps a spot of its own, so the spot
+    -- it opens at by itself stays where the player left it.
+    if self.beside then return self:SaveBeside() end
     local point, _, relativePoint, x, y = self.frame:GetPoint()
     ns.db.finderPoint, ns.db.finderRelativePoint = point, relativePoint
     ns.db.finderX, ns.db.finderY = x, y
@@ -305,6 +308,98 @@ function Gear:RestorePosition()
     else
         self.frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
     end
+end
+
+--------------------------------------------------------------------------------
+-- Beside the character sheet
+--------------------------------------------------------------------------------
+
+-- The gap between the sheet and the window's rim.
+Gear.BESIDE_GAP = 6
+
+local function ParentScale()
+    local ok, scale = pcall(UIParent.GetEffectiveScale, UIParent)
+    return ok and type(scale) == "number" and scale > 0 and scale or 1
+end
+
+--- A frame's edges in UIParent units: left, right, top. Nil when the
+--- client won't say.
+local function Edges(frame)
+    if type(frame) ~= "table" then return nil end
+    local ok, left, right, top, scale = pcall(function()
+        return frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetEffectiveScale()
+    end)
+    if not (ok and type(left) == "number" and type(top) == "number") then return nil end
+    if type(right) ~= "number" then
+        local okWide, wide = pcall(frame.GetWidth, frame)
+        right = left + (okWide and tonumber(wide) or 0)
+    end
+    if type(scale) ~= "number" or scale <= 0 then scale = ParentScale() end
+    local by = scale / ParentScale()
+    return left * by, right * by, top * by
+end
+
+--- Stand at a top left given in UIParent units.
+function Gear:StandAt(x, y)
+    local frame = self.frame
+    local ok, scale = pcall(frame.GetEffectiveScale, frame)
+    if not (ok and type(scale) == "number" and scale > 0) then scale = ParentScale() end
+    local by = scale / ParentScale()
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x / by, y / by)
+end
+
+--- Where the window stands beside the sheet: the spot the player dragged
+--- it to there (`gearSheetSpot`), else right of the sheet, else left of it
+--- when the right has no room. The sheet is only read, never moved.
+function Gear:PlaceBeside(sheet)
+    if not self.frame or self.hostArea then return false end
+    local spot = ns.db and ns.db.gearSheetSpot
+    if type(spot) == "table" and type(spot[1]) == "number" and type(spot[2]) == "number" then
+        self:StandAt(spot[1], spot[2])
+        return true
+    end
+    local left, right, top = Edges(sheet)
+    if not left then return false end
+    local okSize, width, own = pcall(function()
+        return self.frame:GetWidth(), self.frame:GetEffectiveScale()
+    end)
+    if not (okSize and type(width) == "number") then return false end
+    local scale = type(own) == "number" and own > 0 and own / ParentScale() or 1
+    width = width * scale
+    -- The gold rim reaches past the frame on each side.
+    local rimLeft, rimRight, rimTop = 0, 0, 0
+    local trim = rawget(self.frame, "titan")
+    if trim and ns.Titanforged and ns.Titanforged.Reach then
+        local ok, l, r, t = pcall(ns.Titanforged.Reach, trim)
+        if ok then rimLeft, rimRight, rimTop = (tonumber(l) or 0) * scale, (tonumber(r) or 0) * scale, (tonumber(t) or 0) * scale end
+    end
+    local okWide, screen = pcall(UIParent.GetWidth, UIParent)
+    screen = okWide and tonumber(screen) or 0
+    local gap = Gear.BESIDE_GAP
+    local x = right + gap + rimLeft
+    if screen > 0 and x + width + rimRight > screen and left - gap - rimRight - width - rimLeft >= 0 then
+        x = left - gap - rimRight - width
+    end
+    self:StandAt(x, top - rimTop)
+    return true
+end
+
+--- Dragged while beside the sheet: that is its spot there from now on.
+function Gear:SaveBeside()
+    local left, _, top = Edges(self.frame)
+    if left and ns.db then ns.db.gearSheetSpot = { left, top } end
+end
+
+--- Open My Gear on a slot beside the character sheet (an Alt-click on one
+--- of its slots). A window already open stays where it is and only turns
+--- to the slot. In the one window, that window stands by the sheet itself.
+function Gear:OpenBeside(slot, sheet)
+    local was = Shown(self.frame)
+    if ns.MyGear and ns.MyGear.Ask then ns.MyGear:Ask(slot) end
+    self:Open("gear")
+    if was or self.hostArea or not Shown(self.frame) then return end
+    if self:PlaceBeside(sheet or rawget(_G, "CharacterFrame")) then self.beside = true end
 end
 
 --------------------------------------------------------------------------------
@@ -392,6 +487,8 @@ end
 
 --- The frame is hidden: its pages go too, so nothing of theirs runs.
 function Gear:Closed()
+    -- Opened again by itself, it stands where it was left, not by the sheet.
+    self.beside = nil
     if self.closing then return end
     self.closing = true
     self:HidePages()

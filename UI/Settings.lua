@@ -146,6 +146,7 @@ local POSITION_KEYS = {
     { "settingsPoint", "settingsRelativePoint", "settingsX", "settingsY" },
     { "weightsPoint", "weightsRelativePoint", "weightsX", "weightsY" },
     { "finderPoint", "finderRelativePoint", "finderX", "finderY", "finderMoved" },
+    { "gearSheetSpot" },
     { "trackerPoint", "trackerRelativePoint", "trackerX", "trackerY" },
     { "questPoint", "questRelativePoint", "questX", "questY" },
     { "questArrowX", "questArrowY" },
@@ -541,7 +542,7 @@ end
 -- the tick box's words, and the module to tell when it changes.
 local HUNTING = {
     { "slotUpgrades", 1, L["Character Sheet:"],
-        L["Hover a gear slot to see its upgrades."], L["Show"] },
+        L["Hover a gear slot to see its upgrades."], L["Show"], "SlotUpgrades" },
     { "upgradeToast", 1, L["Upgrade Banner:"], "", L["Show"] },
     { "showTracker", 2, L["Upgrade Tracker:"],
         L["The panel of upgrades you're tracking."], L["Show"], "SmallPanel" },

@@ -204,6 +204,26 @@ function BagIcons:Arrow(button)
     return texture
 end
 
+--- The percent under an arrow ("+14%"), the same words and look as on a
+--- loot roll (LootRolls:FitLabel): written when `result` has one, taken
+--- off when not. Bags, the bank, a vendor's wares and the loot window
+--- use it, so one mark says the same thing everywhere.
+function BagIcons:Percent(button, result)
+    local rolls = ns.LootRolls
+    if not (rolls and rolls.Label and rolls.FitLabel) then return false end
+    local words = type(result) == "table" and not result.empty and tonumber(result.percent)
+        and ("%+d%%"):format(math.floor(result.percent + 0.5)) or nil
+    if not words then
+        local label = rolls:ExistingLabel(button)
+        if label then label:Hide() end
+        return false
+    end
+    local label = rolls:Label(button)
+    if not label then return false end
+    local ok, shown = pcall(rolls.FitLabel, rolls, label, button, words)
+    return ok and shown == true
+end
+
 --- The coin already made for a button, or nil; never makes one.
 function BagIcons:ExistingCoin(button)
     return coins[button]
@@ -414,7 +434,7 @@ end
 
 --- Show or hide the arrow and the coin on one button.
 function BagIcons:UpdateButton(button, frame)
-    local show, sell = false, false
+    local show, sell, percentOf = false, false, nil
     if self:IsEnabled() or self:CoinsEnabled() then
         local bag, slot = self:Location(button, frame)
         local link = bag and Items:InBag(bag, slot)
@@ -423,6 +443,7 @@ function BagIcons:UpdateButton(button, frame)
             local ok, result = pcall(Compare.JudgeCarried, Compare, link)
             if not ok then result = nil end
             show = self:IsEnabled() and Compare.WearableUpgrade(result)
+            if show then percentOf = result end
             if not show then sell = self:Sells(bag, slot, link, result) end
         end
     end
@@ -430,8 +451,10 @@ function BagIcons:UpdateButton(button, frame)
     if show then
         local arrow = self:Arrow(button)
         if arrow then arrow:Show() end
+        self:Percent(button, percentOf)
     elseif arrows[button] then
         arrows[button]:Hide()
+        self:Percent(button, nil)
     end
     if sell then
         local coin = self:Coin(button)

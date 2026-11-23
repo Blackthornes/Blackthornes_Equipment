@@ -696,7 +696,7 @@ and `.trackedDone` (never rename them): `Logic/Tracking.lua`,
 client in another language, Classic's map IDs in `Waypoints.ZONE_MAPS`,
 and `Waypoints:DataZone` turns the client's zone name into the data's for
 every "zone you are in" check),
-`UI/SlotUpgrades.lua` (character sheet; its Alt-click list wears the gold rim, the slot on the plate and the red close gem, 2026-10-27) and `UI/MoreMarks.lua` (vendor and
+`UI/SlotUpgrades.lua` (character sheet; Alt-click opens My Gear on the slot since rework step 7) and `UI/MoreMarks.lua` (vendor and
 loot arrows). None of it has been seen in game yet; `/beq probe` reports the
 calls they need.
 
@@ -2979,3 +2979,51 @@ Step 6 of the rework. The mockup the owner approved is the plan's
 - Translations no code reads any more were taken out of the five
   language files (`tools/check_locale.py` lists them).
 - **Left for step 7:** the sheet's arrows, docking, the banner stack.
+
+## Out in the world (rework step 7, 2026-11-23)
+
+Step 7, the last of the rework. The mockup the owner approved is the
+plan's `in-the-world.html`.
+
+- **Arrows on the character sheet** (`UI/SlotUpgrades.lua`): with the
+  sheet open, a slot wears the bags' green arrow (`BagIcons:Arrow`) when
+  My Gear's figure marks it green: a better piece you own, or one to get
+  and wear now (`MyGear:GreenSlots(found)`, built on `MyGear:Owned`,
+  `MyGear.Picks` and `MyGear.Mark`, which `MyGear:Read` uses too, so the
+  two cannot differ). `SlotUpgrades:Mark` reads `Finder:Fresh()`, else
+  shows the last scan and asks for one in the background.
+  `MarkSoon` folds a burst into one look half a second later. Nothing
+  runs while the sheet is shut (`SlotUpgrades.SheetShown`, read only).
+  "Character Sheet:" (`slotUpgrades`) switches the arrows and the
+  tooltip lines together.
+- **Alt-click a slot** opens My Gear on that slot beside the sheet
+  (`Gear:OpenBeside(slot, sheet)`, `MyGear:Ask(slot)`). The small
+  floating slot panel is gone (its frame, rows, Track and Map buttons;
+  My Gear's side has them). The window stands right of the sheet, or
+  left when the right has no room (`Gear:PlaceBeside`), clear of its
+  gold rim. A window already open stays put and only turns to the slot.
+  In the one window, that window stands by the sheet itself (its
+  `character` dock place). While `Gear.beside`, a drag or a resize saves
+  the new key `gearSheetSpot = { left, top }` (UIParent units) and
+  leaves `finderPoint` and `finderMoved` alone, so the window opened by
+  itself stands where it always did. `Gear:Closed` ends `beside`.
+  Window Spots' Set Default clears `gearSheetSpot`.
+- **The percent under an arrow**: `BagIcons:Percent(button, result)`
+  writes "+14%" under the arrow on bags, the bank, a vendor's wares and
+  the loot window, with the loot roll's label (`LootRolls:Label`,
+  `FitLabel`, `ExistingLabel`). An empty slot or a piece with no percent
+  shows the arrow alone. Quest rewards keep the arrow alone: their
+  button is the whole row, not an icon.
+- **One stack at the top**: the banner, Upgrade Done! and note cards
+  already took places on the shared top shelf (`UI/SharedWindow.lua`,
+  2026-11-16). The gap found: Upgrade Done! joined the shelf after its
+  first `Show`, so the shelf never heard the first plaque come and it
+  stood on the banner. `Done.Join` now runs before the frame shows. A
+  dragged banner keeps its spot (`toastSpot`) and takes no room. No
+  shared file changed.
+- Words: "Alt-click to see this slot in My Gear" replaces "Alt-click for
+  upgrades you can track". Gone with the panel: "All upgrades", "Map",
+  "Upgrades: %s", "this slot".
+- Tested in `tools/test_sheet.lua` (counts scans and judging) and
+  `tools/test_hunts.lua`. `tools/test_listlight.lua` went with the last
+  window it checked. Not yet seen in game.

@@ -1,16 +1,17 @@
 -- Blackthornes Equipment -- UI/SlotUpgrades.lua
--- Upgrades on the character sheet: hover a gear slot and its tooltip lists
--- the best upgrades on offer for it and where they come from; Alt-click the
--- slot for a panel of them with Track and Map buttons. The panel wears the
--- house frame: gold rim, the slot's name on the plate, the red close gem.
+-- Upgrades on the character sheet: a green arrow on every gear slot with
+-- something better (the same arrow as the bags); hover a slot and its
+-- tooltip lists the best upgrades on offer for it and where they come
+-- from; Alt-click a slot and My Gear opens on it, beside the sheet
+-- (rework step 7; the small floating panel is gone).
 --
 -- The picks are the upgrade finder's (Finder:Latest, scanned again only
--- when the gear, level or bags change), so the sheet, the finder window and
--- the bag arrows always agree. A ring or trinket slot shows the picks for
--- both of the pair. Only the slot buttons' scripts are hooked, after the
--- game's own, so nothing the game does with a slot (equipping, using a
--- trinket) changes. Switched off with the "Character sheet" setting
--- (`slotUpgrades`).
+-- when the gear, level or bags change), so the sheet, My Gear and the bag
+-- arrows always agree. A ring or trinket slot's tooltip shows the picks
+-- for both of the pair. Only the slot buttons' scripts are hooked, after
+-- the game's own, so nothing the game does with a slot (equipping, using a
+-- trinket) changes. Nothing here runs while the sheet is shut. Switched
+-- off with the "Character Sheet:" setting (`slotUpgrades`).
 
 local _, ns = ...
 local L = ns.L
@@ -18,8 +19,6 @@ local L = ns.L
 local SlotUpgrades = ns.NewModule("SlotUpgrades")
 
 local Theme = ns.Theme
-local Widgets = ns.Widgets
-local Motion = ns.Motion
 
 local SLOT_BUTTONS = {
     "CharacterHeadSlot", "CharacterNeckSlot", "CharacterShoulderSlot", "CharacterBackSlot",
@@ -39,9 +38,6 @@ local SLOT_NAMES = {
 }
 
 local SHOWN = 3
-local WIDTH = 380
-local ROW_HEIGHT = 54
-local PAD = 12
 
 function SlotUpgrades:IsEnabled()
     return not (ns.db and ns.db.slotUpgrades == false)
@@ -160,7 +156,7 @@ function SlotUpgrades:AddLines(tooltip, slot, picks, hidden)
             end
         end
     end
-    tooltip:AddLine(L["Alt-click for upgrades you can track"], Theme.Unpack("dim"))
+    tooltip:AddLine(L["Alt-click to see this slot in My Gear"], Theme.Unpack("dim"))
     pcall(tooltip.Show, tooltip)
 end
 
@@ -198,218 +194,80 @@ function SlotUpgrades:Keep(tooltip)
 end
 
 --------------------------------------------------------------------------------
--- The Alt-click panel
+-- The arrows on the slots
 --------------------------------------------------------------------------------
 
---- The width both of a row's buttons take: the longest label, measured.
-function SlotUpgrades.ButtonWidth()
-    local wide = 58
-    for _, text in ipairs({ L["Track"], L["Untrack"], L["Map"] }) do
-        wide = math.max(wide, math.ceil((Theme.TextWidth("small", text) or 0) + 12))
-    end
-    return wide
+--- Is the character sheet on screen? Only read, never shown or hidden.
+function SlotUpgrades.SheetShown()
+    local frame = rawget(_G, "CharacterFrame")
+    if type(frame) ~= "table" or type(frame.IsVisible) ~= "function" then return false end
+    local ok, shown = pcall(frame.IsVisible, frame)
+    return ok and shown == true
 end
 
---- A button's SetText that keeps the width it was given.
-function SlotUpgrades.FixedText(button, wide)
-    local set = button.SetText
-    return function(self, value)
-        set(self, value)
-        self:SetWidth(wide)
+--- Put the green arrow on every slot the scan has something better for,
+--- and take it off the rest. The slots are the ones My Gear's figure marks
+--- green (MyGear:GreenSlots), so the two always agree. Judges nothing new:
+--- the scan and the bag pieces are the ones already kept.
+function SlotUpgrades:Paint(found)
+    local icons = ns.BagIcons
+    if not icons then return 0 end
+    local green = {}
+    if self:IsEnabled() and found and ns.MyGear and ns.MyGear.GreenSlots then
+        local ok, slots = pcall(ns.MyGear.GreenSlots, ns.MyGear, found)
+        if ok and type(slots) == "table" then green = slots end
     end
-end
-
-function SlotUpgrades:BuildRow(index)
-    local row = CreateFrame("Frame", nil, self.frame)
-    row:SetSize(WIDTH - PAD * 2, ROW_HEIGHT)
-    row:SetPoint("TOPLEFT", PAD, -(40 + (index - 1) * ROW_HEIGHT))
-    -- Dark glass, a shade apart row by row, with a fine line under each.
-    row.background = Theme.Fill(row, index % 2 == 0 and "glassAlt" or "glass")
-    row.rule = row:CreateTexture(nil, "BACKGROUND", nil, 1)
-    row.rule:SetPoint("BOTTOMLEFT")
-    row.rule:SetPoint("BOTTOMRIGHT")
-    row.rule:SetHeight(1)
-    row.rule:SetColorTexture(Theme.Unpack("border", 0.6))
-    -- Under the mouse: the house row light (gold edge and wash).
-    Widgets.RowLight(row)
-    row:EnableMouse(true)
-
-    local icon = Theme.CreateItemIcon(row, 30)
-    icon:SetPoint("LEFT", 6, 0)
-    row.icon = icon
-
-    local track = Widgets.CreateButton(row, L["Track"], function()
-        local pick = row.pick
-        if pick and ns.Tracking then ns.Tracking:Toggle(pick) end
-        SlotUpgrades:Fill()
-    end, { width = 58, height = 18 })
-    track:SetPoint("TOPRIGHT", -6, -5)
-    row.track = track
-
-    local map = Widgets.CreateButton(row, L["Map"], function()
-        local source = row.pick and row.pick.sources and row.pick.sources[1]
-        if source and ns.Waypoints then ns.Waypoints:Show(source, source.name) end
-    end, { width = 58, height = 18 })
-    map:SetPoint("TOPRIGHT", track, "BOTTOMRIGHT", 0, -2)
-    row.map = map
-
-    -- Both buttons are as wide as the longest label either will wear
-    -- ("Untrack" too, which runs long in German), so neither changes size
-    -- when its words change, and the text keeps clear of them.
-    local wide = SlotUpgrades.ButtonWidth()
-    track.SetText = SlotUpgrades.FixedText(track, wide)
-    map.SetText = SlotUpgrades.FixedText(map, wide)
-    track:SetWidth(wide)
-    map:SetWidth(wide)
-    local buttons = math.max(70, wide + 12)
-    local textWidth = WIDTH - PAD * 2 - 6 - 30 - 8 - buttons
-    local item = Theme.CreateLabel(row, "normal", "text")
-    item:SetPoint("TOPLEFT", 44, -6)
-    item:SetWidth(textWidth - 60)
-    row.item = item
-
-    -- The gain sits at the right of the item's line and grows leftward to
-    -- fit ("Train: empty slot"), the item's name giving it the room.
-    local gain = Theme.CreateLabel(row, "normal", "good", "RIGHT")
-    gain:SetPoint("TOPRIGHT", row, "TOPLEFT", 44 + textWidth - 2, -6)
-    gain:SetWidth(54)
-    row.gain = gain
-    row.textWidth = textWidth
-
-    local source = Theme.CreateLabel(row, "tiny", "muted")
-    source:SetPoint("TOPLEFT", 44, -26)
-    source:SetWidth(textWidth)
-    -- Two lines rather than a cut.
-    source:SetWordWrap(true)
-    pcall(source.SetMaxLines, source, 2)
-    row.source = source
-    row.sourceWidth = textWidth
-
-    local function Lit(p) Widgets.SetRowLight(row, p) end
-    row:SetScript("OnEnter", function(self)
-        Motion:Blend(self, "hover", 1, 0.12, Lit)
-        if not self.pick then return end
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        pcall(GameTooltip.SetHyperlink, GameTooltip, self.pick.link)
-        GameTooltip:Show()
-    end)
-    row:SetScript("OnLeave", function(self)
-        Motion:Blend(self, "hover", 0, 0.18, Lit)
-        GameTooltip:Hide()
-    end)
-    -- Shift-click links it in chat, Ctrl-click tries it on.
-    row:SetScript("OnMouseUp", function(self, button)
-        if button == "LeftButton" and self.pick and self.pick.link then Widgets.ItemClick(nil, self.pick.link) end
-    end)
-    -- Hidden under the mouse, no leave comes: start dark next time.
-    row:SetScript("OnHide", function(self)
-        Motion:Stop(self, "hover")
-        Motion:SetValue(self, "hover", 0)
-        Lit(0)
-    end)
-    row:Hide()
-    return row
-end
-
-function SlotUpgrades:Build()
-    if self.frame then return self.frame end
-    local frame = CreateFrame("Frame", "BlackthornesEquipmentSlotUpgrades", UIParent)
-    frame:SetSize(WIDTH, 40 + SHOWN * ROW_HEIGHT + 40)
-    frame:SetFrameStrata("HIGH")
-    frame:SetToplevel(true)
-    frame:SetClampedToScreen(true)
-    frame:EnableMouse(true)
-    Theme.Fill(frame, "window")
-    if type(UISpecialFrames) == "table" then
-        table.insert(UISpecialFrames, "BlackthornesEquipmentSlotUpgrades")
-    end
-
-    -- The house frame: the gold rim, the slot's name on the plate and the
-    -- red close gem, as the other windows wear it.
-    if ns.Titanforged then
-        self.trim = ns.Titanforged:Dress(frame, {
-            title = L.Format("Upgrades: %s", L["this slot"]),
-            close = function() frame:Hide() end,
-        })
-        local left, right, top, bottom = ns.Titanforged.Reach(self.trim)
-        if frame.SetClampRectInsets then frame:SetClampRectInsets(-left, right, top, -bottom) end
-    else
-        Theme.Border(frame, "borderLit")
-        local title = Theme.CreateLabel(frame, "title", "accent")
-        title:SetPoint("TOPLEFT", PAD, -10)
-        title:SetPoint("TOPRIGHT", -PAD, -10)
-        self.title = title
-    end
-    Theme.Halo(frame, 12, 0.14)
-
-    local empty = Theme.CreateLabel(frame, "normal", "muted", "CENTER")
-    empty:SetPoint("TOP", 0, -70)
-    empty:SetWidth(WIDTH - PAD * 2)
-    self.empty = empty
-
-    local all = Widgets.CreateButton(frame, L["All upgrades"], function()
-        frame:Hide()
-        if ns.FinderUI then ns.FinderUI.OpenFind() end
-    end, { width = 110, height = 22, primary = true })
-    all:SetPoint("BOTTOMRIGHT", -PAD, 10)
-
-    self.frame = frame
-    self.rows = {}
-    for index = 1, SHOWN do self.rows[index] = self:BuildRow(index) end
-    frame:Hide()
-    return frame
-end
-
-function SlotUpgrades:Fill()
-    if not (self.frame and self.slot) then return end
-    local heading = L.Format("Upgrades: %s", SLOT_NAMES[self.slot] or L["this slot"])
-    local plate = self.trim and rawget(self.trim, "plate")
-    if plate then plate:SetTitle(heading) elseif self.title then self.title:SetText(heading) end
-    local picks = self:PicksFor(self.slot)
-    for index, row in ipairs(self.rows) do
-        local pick = picks[index]
-        row.pick = pick
-        if pick then
-            Theme.SetItemIcon(row.icon, pick.link)
-            row.item:SetText(ns.Items.ShowLink(pick.link))
-            local gainText = SlotUpgrades.Gain(pick)
-            row.gain:SetText(gainText)
-            local gainWidth = math.max(54, math.ceil(Theme.TextWidth("normal", gainText or "")) + 4)
-            row.gain:SetWidth(gainWidth)
-            row.item:SetWidth(row.textWidth - gainWidth - 6)
-            row.gain:SetTextColor(Theme.Unpack(SlotUpgrades.GainKey(pick)))
-            local source = pick.sources and pick.sources[1]
-            local text = source and ns.FinderUI and ns.FinderUI.SourceLine(source) or ""
-            row.source:SetText(ns.FinderUI and ns.FinderUI.Fit("tiny", text, row.sourceWidth * 2 - 60) or text)
-            local tracked = ns.Tracking and ns.Tracking:IsTracked(pick.itemID)
-            row.track:SetText(tracked and L["Untrack"] or L["Track"])
-            row.track:SetLabelColor(tracked and "accent" or "text")
-            row.map:SetShown(source ~= nil and source.x ~= nil)
-            row:Show()
-        else
-            row:Hide()
+    local count = 0
+    for _, name in ipairs(SLOT_BUTTONS) do
+        local button = rawget(_G, name)
+        if type(button) == "table" then
+            local ok, id = pcall(button.GetID, button)
+            local show = ok and green[tonumber(id)] == true
+            local arrow = show and icons:Arrow(button) or icons:ExistingArrow(button)
+            if arrow then arrow:SetShown(show) end
+            if show then count = count + 1 end
         end
     end
-    self.empty:SetShown(#picks == 0)
-    self.empty:SetText(L["Nothing on offer beats what you wear here."])
+    return count
 end
 
-function SlotUpgrades:Open(slot, anchor)
-    self:Build()
-    self.slot = slot
-    self.frame:ClearAllPoints()
-    if anchor then
-        self.frame:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 8, 0)
-    else
-        self.frame:SetPoint("CENTER", UIParent, "CENTER")
-    end
-    self:Fill()
-    self.frame:Show()
-    Motion:Open(self.frame)
+--- Look and mark, while the sheet shows: the finder's scan when it is up
+--- to date, else the last one stays on show while a new one is made a
+--- slice per frame.
+function SlotUpgrades:Mark()
+    if not SlotUpgrades.SheetShown() then return end
+    local Finder = ns.Finder
+    if not Finder then return end
+    if not self:IsEnabled() then return self:Paint(nil) end
+    local found = Finder:Fresh()
+    if found then return self:Paint(found) end
+    if Finder.latest then self:Paint(Finder.latest) end
+    Finder:ScanInBackground(function(scan)
+        if SlotUpgrades.SheetShown() then SlotUpgrades:Paint(scan) end
+    end)
 end
 
+--- Once for a burst of events, and only while the sheet shows.
+function SlotUpgrades:MarkSoon()
+    if self.pending or not SlotUpgrades.SheetShown() then return end
+    local after = _G.C_Timer and _G.C_Timer.After
+    if type(after) ~= "function" then return self:Mark() end
+    self.pending = true
+    after(0.5, function()
+        SlotUpgrades.pending = false
+        pcall(SlotUpgrades.Mark, SlotUpgrades)
+    end)
+end
+
+--- The "Character Sheet:" box was ticked or cleared.
 function SlotUpgrades:OnTrackingChanged()
-    if self.frame and self.frame:IsShown() then self:Fill() end
+    self:Mark()
+end
+
+--- Alt-click a slot: My Gear opens on it, beside the sheet.
+function SlotUpgrades:Open(slot, sheet)
+    local window = ns.GearWindow
+    if window and window.OpenBeside then window:OpenBeside(slot, sheet) end
 end
 
 --------------------------------------------------------------------------------
@@ -441,7 +299,7 @@ function SlotUpgrades:Hook()
             button:HookScript("OnClick", function(slotButton)
                 if not (SlotUpgrades:IsEnabled() and AltDown()) then return end
                 local slot = SlotOf(slotButton)
-                if slot then pcall(SlotUpgrades.Open, SlotUpgrades, slot, slotButton) end
+                if slot then pcall(SlotUpgrades.Open, SlotUpgrades, slot) end
             end)
         end
     end
@@ -456,6 +314,22 @@ function SlotUpgrades:OnEnable()
     -- The character sheet may be made later on some clients.
     local frame = _G.CharacterFrame
     if type(frame) == "table" and type(frame.HookScript) == "function" then
-        frame:HookScript("OnShow", function() SlotUpgrades:Hook() end)
+        frame:HookScript("OnShow", function()
+            SlotUpgrades:Hook()
+            pcall(SlotUpgrades.Mark, SlotUpgrades)
+        end)
     end
+    -- Gear worn, gear in the bags or a level changes what is better. A
+    -- stack growing or shrinking changes no upgrade. Nothing runs while
+    -- the sheet is shut.
+    for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "TRAIT_CONFIG_UPDATED" }) do
+        ns.RegisterEvent(self, event, function() SlotUpgrades:MarkSoon() end)
+    end
+    ns.RegisterEvent(self, "BAG_UPDATE_DELAYED", function()
+        if not SlotUpgrades.SheetShown() then return end
+        local Finder = ns.Finder
+        if not Finder or type(Finder.CarriedMoved) ~= "function" or Finder:CarriedMoved("sheet") then
+            SlotUpgrades:MarkSoon()
+        end
+    end)
 end

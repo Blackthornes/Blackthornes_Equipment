@@ -336,7 +336,7 @@ Perf.WATCH = {
     { "Tracking", "Check" }, { "BagIcons", "Refresh" }, { "BagIcons", "RefreshFrame" },
     { "UpgradeChat", "Scan" }, { "Tooltip", "OnTooltip" }, { "Compare", "BestInBags" },
     { "UI", "Refresh" }, { "SmallPanel", "Refresh" },
-    { "MapPins", "Draw" }, { "SlotUpgrades", "Fill" },
+    { "MapPins", "Draw" }, { "SlotUpgrades", "Mark" },
     { "QuestRewards", "Refresh" }, { "LootRolls", "Refresh" },
     { "MoreMarks", "RefreshMerchant" }, { "MoreMarks", "RefreshLoot" },
     { "Crafting", "Known" }, { "Butler", "Advise" }, { "Compare", "IsUpgrade" },

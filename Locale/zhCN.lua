@@ -510,11 +510,7 @@ L["Looking for upgrades. Hover again in a moment"] = "正在找升级。等一�
 L["Still loading gear. Hover again in a moment"] = "还在加载装备。等一下再把鼠标移上来"
 L["Nothing on offer beats this yet"] = "还没有能拿到的比这个好"
 L["Upgrades on offer"] = "能拿到的升级"
-L["Alt-click for upgrades you can track"] = "按住 Alt 点击查看可以追踪的升级"
-L["Map"] = "地图"
-L["All upgrades"] = "所有升级"
-L["Upgrades: %s"] = "升级：%s"
-L["this slot"] = "这个栏位"
+L["Alt-click to see this slot in My Gear"] = "按住 Alt 点击，在“我的装备”中查看这个栏位"
 L["Nothing on offer beats what you wear here."] = "这个栏位能拿到的都不比你穿的好。"
 
 -- UI/MainWindow.lua
