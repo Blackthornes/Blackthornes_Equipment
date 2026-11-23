@@ -2851,6 +2851,13 @@ Step 4 of the rework. The mockups the owner approved are the plan's
   the Log's item buttons, the pop-up's place, and how the right side fits
   a quest with many steps.
 
+The small gold button after the tabs (the owner said build it, 2026-11-23,
+from a mockup): `Panel.openTab`, 18 by 18, a scroll icon on a gold rim,
+placed right after the last tab in `Panel:FillBar`, so it moves with
+"Tracking N" and longer words. A click runs `Panel:OpenTab()` (the
+Upgrade Quest tab). Tooltip: "Upgrade Quest" and "Opens the Upgrade Quest
+tab." Hidden with the bar when folded. Tested in `tools/test_smallpanel.lua`.
+
 ## Dungeons and Training tabs (rework step 5, 2026-11-23)
 
 Step 5 of the rework. The mockups the owner approved are the plan's

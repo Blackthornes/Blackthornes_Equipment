@@ -192,6 +192,24 @@ suite.check("a failed one shows nothing", Panel.LogMark({ title = "x", failed = 
 suite.check("several goals show how many are done", Panel.LogMark({ title = "x",
     objectives = { { text = "a", done = true }, { text = "b" }, { text = "c" } } }) == "1/3")
 
+do
+    local open, log = Panel.openTab, Panel.tabs.log
+    suite.check("a small button sits after the tabs", Up(open))
+    local _, anchor, _, x = open:GetPoint()
+    local _, _, _, logX = log:GetPoint()
+    suite.check("right after Log, clear of the gems", anchor == Panel.bar and x >= logX + log:GetWidth()
+        and x + 18 <= Panel.WIDTH - (15 * 2 + 14), tostring(x))
+    open:GetScript("OnEnter")(open)
+    suite.check("its tooltip says what it does", _G.GameTooltip:IsShown())
+    open:GetScript("OnLeave")(open)
+    Click(open, "LeftButton")
+    local gear = ns.GearWindow
+    suite.check("a click opens the Upgrade Quest tab", gear:IsShown() and rawget(gear, "tab") == "quest",
+        tostring(rawget(gear, "tab")))
+    gear.frame:Hide()
+    suite.check("the panel keeps its tab", Panel:View() == "log")
+end
+
 Click(Panel.tabs.quest, "LeftButton")
 suite.check("and back to Quest", Panel:View() == "quest" and ns.charDB.questLogTab == nil and Up(Panel.item))
 suite.check("changing tabs judges nothing", Worked() == 0, Worked())
