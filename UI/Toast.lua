@@ -130,7 +130,7 @@ function Toast:Build()
         -- A drag ends with the mouse going up on it; that is no click.
         local dropped = rawget(Toast, "droppedAt")
         if type(dropped) == "number" and GetTime() - dropped < 0.3 then return end
-        if ns.FinderUI then ns.FinderUI:Show() end
+        if ns.FinderUI then ns.FinderUI.OpenFind() end
         Toast:Dismiss()
     end)
     frame:SetScript("OnEnter", function(self)

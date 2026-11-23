@@ -876,7 +876,7 @@ function QuestPanel:Build()
     -- Was "Other ways" (renamed 2026-10-08, the owner asked): it opens Where to
     -- get upgrades to pick a different one. Reads "Pick one" on an empty tab.
     local other = Widgets.CreateButton(body, L["Change"], function()
-        if ns.FinderUI then ns.FinderUI:Show() end
+        if ns.FinderUI then ns.FinderUI.OpenFind() end
     end, { width = 80, height = 22 })
     Explain(other, L["Pick a different upgrade"], L["Opens Where to get upgrades. Click one there to follow it."])
     self.otherButton = other

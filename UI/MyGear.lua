@@ -1218,14 +1218,12 @@ function MyGear:PaintSide(state)
     end
 end
 
---- See All: the Upgrades tab, on the slot picked here.
+--- See All: Find Upgrades, narrowed to the slot picked here.
 function MyGear:SeeAll()
-    local FinderUI, Gear = ns.FinderUI, ns.GearWindow
-    if not (FinderUI and Gear and self.slot) then return end
-    local group = FinderUI.GROUP_OF[self.slot]
-    if group and ns.db then ns.db.finderSlot = group end
-    Gear:ShowTab("upgrades")
-    if group and FinderUI.frame then FinderUI:PickSlot(group) end
+    local Find, Gear = ns.FindUpgrades, ns.GearWindow
+    if not (Find and Gear and self.slot) then return end
+    Gear:ShowTab("find")
+    Find:SetSlot(self.slot)
 end
 
 --- A slot clicked: light it and show it on the right. Nothing is read

@@ -7,7 +7,7 @@
 --   2. The figure marks each slot that has something better: green to wear
 --      now, amber for later.
 --   3. The slot's side lists what you own, then the top pieces to go and
---      get, those you can wear now first; See All opens the Upgrades tab on
+--      get, those you can wear now first; See All opens Find Upgrades on
 --      that slot.
 --   4. Clicking slots, sorting the list and opening the window again with
 --      nothing changed judge no gear: the page reads the finder's scan.
@@ -174,12 +174,13 @@ suite.check("shown again after a change, it looks again and then stops", scans >
     and Finder:Fresh() ~= nil, scans .. " " .. tostring(Finder.stale) .. " " .. tostring(Finder.background))
 Finder.ScanInBackground = realScan
 
--- See All: the Upgrades tab, on the slot picked here.
+-- See All: Find Upgrades, narrowed to the slot picked here.
 MyGear:PickSlot(5)
 MyGear:SeeAll()
-suite.check("See All opens the Upgrades tab", Gear.tab == "upgrades" and ns.FinderUI.frame:IsShown()
+suite.check("See All opens Find Upgrades", Gear.tab == "find" and ns.FindUpgrades:IsShown()
     and not MyGear:IsShown())
-suite.check("on that slot", ns.FinderUI.slot == 5 and ns.db.finderSlot == 5, ns.FinderUI.slot)
+suite.check("on that slot", ns.FindUpgrades:Slot() == 5 and ns.db.findSlot == 5, ns.db.findSlot)
+ns.FindUpgrades:SetSlot(nil)
 Gear:ShowTab("gear")
 
 -- Show Me How follows the piece as the upgrade quest.

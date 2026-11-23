@@ -3,7 +3,9 @@
 -- 2026-11-22): one frame with a tab bar along its top and one page under
 -- it. My Gear (UI/MyGear.lua) is the page it opens on.
 --
--- The tabs not rebuilt yet (Upgrades, Enchants, Dungeon Quests, Dungeon
+-- Find Upgrades (UI/FindUpgrades.lua, step 3) is the second page.
+--
+-- The tabs not rebuilt yet (Enchants, Dungeon Quests, Dungeon
 -- Loot, Settings) still show their old windows, laid into this window's
 -- page area bare of their own rim, gems, grip and hanging tabs: the same
 -- way they sat in the one Blackthornes window before
@@ -46,7 +48,7 @@ Gear.CHROME_HEIGHT = TOP + BAR + BAR_GAP + SIDE
 -- `old` names a tab whose page is still its old window.
 local TABS = {
     { key = "gear", text = L["My Gear"] },
-    { key = "upgrades", text = L["Upgrades"], old = true },
+    { key = "find", text = L["Find Upgrades"] },
     { key = "enchant", text = L["Enchants"], old = true },
     { key = "dungeons", text = L["Dungeon Quests"], old = true },
     { key = "loot", text = L["Dungeon Loot"], old = true },
@@ -56,6 +58,10 @@ Gear.TABS = TABS
 
 local OLD = {}
 for _, tab in ipairs(TABS) do OLD[tab.key] = tab.old or false end
+-- The old gear list has no tab since Find Upgrades (UI/FindUpgrades.lua,
+-- step 3) took its place. Its window still holds the Enchants tab, so the
+-- key still shows it when code asks; nothing a player clicks does.
+OLD.upgrades = true
 
 -- The page a tab built here shows: { key = module }, each with Build(area),
 -- Show(), Hide() and IsShown(). Later steps add theirs.

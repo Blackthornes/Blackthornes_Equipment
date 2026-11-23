@@ -1399,7 +1399,8 @@ end
 
 --- Tell whatever shows the quest to draw it again.
 function UpgradeQuest:Changed()
-    for _, name in ipairs({ "QuestPanel", "MapPins", "SettingsUI", "FinderUI", "QuestArrow", "IgnoredUI" }) do
+    for _, name in ipairs({ "QuestPanel", "MapPins", "SettingsUI", "FinderUI", "QuestArrow", "IgnoredUI", "FindUpgrades",
+        "MyGear" }) do
         local module = ns[name]
         if module and module.OnUpgradeQuestChanged then pcall(module.OnUpgradeQuestChanged, module) end
     end
@@ -1788,6 +1789,30 @@ function UpgradeQuest:Skip()
     self.lastStep = nil
     self.rescan = true
     self:Update()
+    return true
+end
+
+--- Ignore an upgrade picked in Find Upgrades (UI/FindUpgrades.lua): the
+--- same list Ignore on the quest panel fills, for any item. A tab whose
+--- quest it was picks another.
+-- @return true when it was taken
+function UpgradeQuest:Ignore(itemID)
+    itemID = tonumber(itemID)
+    if not (itemID and ns.charDB) then return false end
+    self:Skipped()[itemID] = true
+    local quests, had = self:Quests(), false
+    for key, quest in pairs(quests) do
+        if type(quest) == "table" and quest.itemID == itemID then
+            quests[key] = nil
+            had = true
+        end
+    end
+    if had then
+        self.lastStep = nil
+        self.rescan = true
+        if self:IsEnabled() then pcall(self.Update, self) end
+    end
+    self:Changed()
     return true
 end
 

@@ -365,11 +365,16 @@ suite.check("the wheel scrolls", UI.offset == 1 and UI.rows[1].pick.itemID ~= be
 UI.frame:GetScript("OnMouseWheel")(UI.frame, 50)
 suite.check("never past the top", UI.offset == 0)
 
--- /beq find toggles it.
+-- /beq find opens Find Upgrades (UI/FindUpgrades.lua), the tab that took
+-- this list's place, and closes it again.
 ns.HandleSlash("find")
-suite.check("/beq find closes it", not UI.frame:IsShown())
+suite.check("/beq find opens Find Upgrades", ns.GearWindow.tab == "find" and ns.FindUpgrades:IsShown()
+    and not UI.frame:IsShown())
 ns.HandleSlash("find")
-suite.check("and opens it", UI.frame:IsShown())
+suite.check("and closes it", not ns.GearWindow:IsShown())
+-- The old list again, for the checks below.
+UI:Show()
+suite.check("the old list still opens when asked for", UI.frame:IsShown())
 
 -- While the window is open, events rescan a slice at a time, and an item
 -- the client loaded for someone else rescans nothing.
