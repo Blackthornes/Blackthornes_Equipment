@@ -2,6 +2,9 @@
 -- each dungeon's bosses drop, upgrades marked, with armor and stat chips.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
+-- This suite tests the old Dungeon Loot tab, kept until rework step 6; the Dungeons tab
+-- (UI/DungeonsTab.lua) stands in for it in play.
+env.OLD_PANELS = true
 local suite = env.NewSuite("dungeonloot")
 
 local ns = env.Load()

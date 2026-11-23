@@ -355,7 +355,9 @@ end
 
 --- The gear window opened: the drawer comes back if it was left open.
 function Drawer:WindowShown()
-    if ns.db and ns.db.trainingDrawer == true and ns.ClassTraining:IsOn() then
+    -- The Training tab stands in for the drawer: it is not brought back.
+    local stoodIn = ns.TrainingTab and ns.TrainingTab.standsIn
+    if not stoodIn and ns.db and ns.db.trainingDrawer == true and ns.ClassTraining:IsOn() then
         self:Show()
     else
         self:Refresh()
@@ -386,5 +388,7 @@ function Drawer:OnEnable()
     training.OnChanged = function()
         if Drawer:IsShown() then Drawer:Refresh() end
         if ns.UI and ns.UI.OnTrainingToggled then ns.UI:OnTrainingToggled() end
+        -- The Training tab (UI/TrainingTab.lua) and the count in its name.
+        if ns.TrainingTab then ns.TrainingTab:RefreshSoon() end
     end
 end

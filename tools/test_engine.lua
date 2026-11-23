@@ -292,6 +292,35 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- The Dungeons and Training tabs (rework step 5) lean on the scan made
+--------------------------------------------------------------------------------
+
+do
+    local builds, realBuild = 0, Finder.Build
+    local tickers, realTicker = 0, _G.C_Timer.NewTicker
+    _G.C_Timer.NewTicker = function(...) tickers = tickers + 1 return realTicker(...) end
+    if not Finder:Fresh() then Finder:Scan() end
+    suite.check("a whole scan is in hand", Finder:Fresh() ~= nil)
+    Finder.Build = function(...) builds = builds + 1 return realBuild(...) end
+    local Gear = ns.GearWindow
+    Gear:Open("instances")
+    suite.check("the Dungeons tab shows", ns.DungeonsTab:IsShown())
+    suite.check("and starts no scan of its own", builds == 0, builds)
+    judges = 0
+    Gear:ShowTab("training")
+    suite.check("the Training tab shows", ns.TrainingTab:IsShown())
+    suite.check("and judges no gear", judges == 0 and builds == 0, judges .. " " .. builds)
+    Gear:ShowTab("instances")
+    ns.DungeonsTab:Draw()
+    ns.DungeonsTab:SortBy("upgrades")
+    suite.check("a second look at Dungeons judges nothing", judges == 0 and builds == 0, judges .. " " .. builds)
+    suite.check("neither tab runs on a clock", tickers == 0, tickers)
+    Gear:Close()
+    Finder.Build = realBuild
+    _G.C_Timer.NewTicker = realTicker
+end
+
+--------------------------------------------------------------------------------
 -- No clock for the minimap button
 --------------------------------------------------------------------------------
 

@@ -51,9 +51,11 @@ local TABS = {
     { key = "gear", text = L["My Gear"] },
     { key = "find", text = L["Find Upgrades"] },
     { key = "quest", text = L["Upgrade Quest"] },
+    { key = "instances", text = L["Dungeons"] },
+    -- Wide enough for the count its name carries ("Training (12)").
+    { key = "training", text = L["Training"],
+        width = math.max(92, Theme.TextWidth("normal", L.Format("Training (%d)", 88)) + 28) },
     { key = "enchant", text = L["Enchants"], old = true },
-    { key = "dungeons", text = L["Dungeon Quests"], old = true },
-    { key = "loot", text = L["Dungeon Loot"], old = true },
     { key = "settings", text = L["Settings"], old = true, right = true },
 }
 Gear.TABS = TABS
@@ -64,6 +66,10 @@ for _, tab in ipairs(TABS) do OLD[tab.key] = tab.old or false end
 -- step 3) took its place. Its window still holds the Enchants tab, so the
 -- key still shows it when code asks; nothing a player clicks does.
 OLD.upgrades = true
+-- Dungeon Quests and Dungeon Loot gave their tabs to Dungeons
+-- (UI/DungeonsTab.lua, step 5) the same way: the keys still show the old
+-- windows for code and the old tests until step 6 takes them out.
+OLD.dungeons, OLD.loot = true, true
 
 -- The page a tab built here shows: { key = module }, each with Build(area),
 -- Show(), Hide() and IsShown(). Later steps add theirs.
@@ -338,6 +344,13 @@ function Gear:ShowTab(key)
     self:HidePages(key)
     local module = self.pages[key]
     if module and module.Show then module:Show() end
+end
+
+--- A tab's name, changed after the strip was built (Training's count).
+function Gear:SetTabText(key, text)
+    for _, button in ipairs(self.strip and self.strip.tabs or {}) do
+        if button.key == key and button.label then button.label:SetText(text) end
+    end
 end
 
 --- Open the window on a tab (My Gear when none is named), in the one

@@ -2850,3 +2850,76 @@ Step 4 of the rework. The mockups the owner approved are the plan's
 - Not yet seen in game: dragging, the round button, the see-through level,
   the Log's item buttons, the pop-up's place, and how the right side fits
   a quest with many steps.
+
+## Dungeons and Training tabs (rework step 5, 2026-11-23)
+
+Step 5 of the rework. The mockups the owner approved are the plan's
+`dungeons.html` and `training.html`. The tab bar is now My Gear, Find
+Upgrades, Upgrade Quest, Dungeons, Training, Enchants, then Settings.
+
+- **Dungeons** (`UI/DungeonsTab.lua`, `ns.DungeonsTab`, the page key
+  "instances"). It took the bar's place of Dungeon Quests and Dungeon
+  Loot. The left lists every dungeon and raid for this side (those with
+  drops from `DungeonLoot:Dungeons`, those with only quests from
+  `DungeonQuests:Build(true)`), with levels, upgrades and quests done; a
+  heading sorts, a second click flips, a third goes back to levels. The
+  right shows the one picked: each boss with its drops, the drop chance
+  and the gain, then QUESTS INSIDE with where each starts, its reward and
+  Show the Way. A wing ("189Library") shows the quests of its dungeon
+  ("189").
+- **Its counts cost nothing.** UPGRADES beside each dungeon is read from
+  the finder's last whole scan (`Dungeons.Counts`: every upgrade to wear
+  now whose places name a boss there). Only the dungeon picked has its
+  drops judged (`DungeonLoot:Rows`, through the kept verdicts), and once
+  they are all in its count is the list's own. A dungeon whose lowest
+  level is above the character's reads Later. The wheel lays the same
+  lines out again and reads nothing. Nothing runs while the page is
+  hidden.
+- **This Zone Only does not touch it.** The page reads the shared scan,
+  which no zone box narrows, so dungeon and raid gear from any zone shows.
+- **The old keys stay.** "dungeons" and "loot" still show the old windows
+  when code asks (`Gear:ShowTab("loot")`), as "upgrades" does; nothing a
+  player clicks opens them. `/beq loot`, `/beq dungeons` and Settings' two
+  Open buttons open the new tab while `DungeonsTab.standsIn`. A suite
+  that tests the old tabs sets `env.OLD_PANELS`, which clears it.
+- **Saved keys.** None new. The dungeon picked is the old tab's
+  `dungeonLootPick`, Hide Finished Quests is `dungeonQuestsHideDone`.
+  Upgrades Only is for the session. The old tab's My Level Only
+  (`dungeonQuestsMyLevel`) is passed by: `DungeonQuests:Build(true)`
+  counts every quest the character can ever take. The old tab's armor and
+  stat chips have no place on the new page.
+- A click on a drop the finder holds a line for opens the upgrade lists'
+  menu (`FinderUI.PickMenu`: Follow, Track, Show on Map, Queue It). Shift
+  and Ctrl clicks are the game's own.
+- **Training** (`UI/TrainingTab.lua`, `ns.TrainingTab`, the page key
+  "training"). TRAIN NOW and COMING SOON are class training's plan
+  (`ClassTraining:Plan`: the next level with spells, as the drawer showed
+  it; `Logic/ClassTraining.lua` is shared with Butler and did not change).
+  A right-click skips a spell; Show Skipped lists the skipped ones.
+  Character: shows what another character has waiting, from its noted
+  spell IDs (`TrainingTab.OtherPlan`); nothing there can be skipped or
+  shown the way. The tab's name carries the count ("Training (4)",
+  `Gear:SetTabText`; the tab is built wide enough for it).
+- **Weapon skills.** `WeaponSkills:All()` (new) lists every skill the
+  class can learn, known ones first, each with this side's cities;
+  `WeaponSkills:MasterOf(subclassID)` and `ShowMasterOf` point the arrow
+  at a weapon master without an item in hand. A skill an upgrade waits on
+  (the bags' `ns.UI.untrained`, or a pick in the last scan with
+  `result.skill`) says so. Skill names are the client's own spell names,
+  else the data's English.
+- **It stands in for the drawer.** While `TrainingTab.standsIn` the old
+  header's Training button (it shows only on the Enchants tab) opens the
+  tab and `TrainingDrawer:WindowShown` no longer brings the drawer back.
+  The drawer's code and `tools/test_classtraining.lua` stay until step 6.
+  `TrainingDrawer.Guide` and its `ClassTraining.OnChanged` hook still
+  live in `UI/TrainingDrawer.lua` (the hook now also tells the tab): step
+  6 must move both before it removes that file.
+- The tab hears of a spell learned, a price or a skip through class
+  training's own change call, and of a weapon skill through
+  `WeaponSkills:Look`; it listens to no spell event itself. Nothing on it
+  judges gear or starts a scan.
+- Tested in `tools/test_dungeonstab.lua`, `tools/test_trainingtab.lua`
+  and `tools/test_engine.lua` (the tabs start no scan and no ticker).
+- Not yet seen in game: how the columns fit long names in other
+  languages, the weapon masters' spots on Forever, the spell icons, and
+  the Training tab's width with a two-digit count.

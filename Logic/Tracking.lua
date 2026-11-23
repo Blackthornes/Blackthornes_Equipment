@@ -217,7 +217,7 @@ end
 
 --- Tell whatever shows hunts to draw them again.
 function Tracking:Changed()
-    for _, name in ipairs({ "TrackerPanel", "MapPins", "FinderUI", "SlotUpgrades", "FindUpgrades", "MyGear", "SmallPanel", "QuestTab" }) do
+    for _, name in ipairs({ "TrackerPanel", "MapPins", "FinderUI", "SlotUpgrades", "FindUpgrades", "MyGear", "SmallPanel", "QuestTab", "DungeonsTab", "TrainingTab" }) do
         local module = ns[name]
         if module and module.OnTrackingChanged then pcall(module.OnTrackingChanged, module) end
     end

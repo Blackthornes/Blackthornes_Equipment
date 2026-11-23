@@ -1402,7 +1402,7 @@ end
 --- Tell whatever shows the quest to draw it again.
 function UpgradeQuest:Changed()
     for _, name in ipairs({ "QuestPanel", "MapPins", "SettingsUI", "FinderUI", "QuestArrow", "IgnoredUI", "FindUpgrades",
-        "MyGear", "SmallPanel", "QuestTab" }) do
+        "MyGear", "SmallPanel", "QuestTab", "DungeonsTab", "TrainingTab" }) do
         local module = ns[name]
         if module and module.OnUpgradeQuestChanged then pcall(module.OnUpgradeQuestChanged, module) end
     end

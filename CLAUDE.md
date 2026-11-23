@@ -134,6 +134,7 @@ Code:
 - `UI/FinderWindow.lua` 2817 lines, 111 KB: the old Upgrades list and tabs, laid into the new window.
 - `UI/FindUpgrades.lua` 1570 lines, 60 KB: the Find Upgrades tab and its side sheet (see "Find Upgrades" in Docs/claude-notes.md).
 - `UI/SmallPanel.lua` 1371 lines, 52 KB and `UI/UpgradeQuestTab.lua` 1169 lines, 45 KB: the small panel and the Upgrade Quest tab (see "Upgrade Quest tab and the small panel" in Docs/claude-notes.md; the old quest panel and Tracking panel stay hidden while `SmallPanel.standsIn`, and their suites set `env.OLD_PANELS`).
+- `UI/DungeonsTab.lua` 1102 lines, 45 KB and `UI/TrainingTab.lua` 767 lines, 30 KB: the Dungeons and Training tabs (see "Dungeons and Training tabs" in Docs/claude-notes.md; the old Dungeon Quests and Dungeon Loot windows and the Training drawer stay for code and tests while the tabs' `standsIn`, and their suites set `env.OLD_PANELS`).
 - `UI/MyGear.lua` 1453 lines, 54 KB: the My Gear tab (`UI/GearWindow.lua` is the window and tab bar; see "The Equipment window and My Gear" in Docs/claude-notes.md).
 - `Logic/UpgradeQuest.lua` 2532 lines, 108 KB: the upgrade quest.
 - `Logic/Weights.lua` 1667 lines, 69 KB: stat weights.
