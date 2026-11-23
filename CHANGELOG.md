@@ -19,11 +19,9 @@ I was not happy with the overall quality of Equipment and did a full rework of t
 - **Settings.** The pages are Gear, Stat Weights, Upgrade Quest and Characters, then Tooltips, Sounds, Windows, Sharing, All Addons and About. The Stat Weights window and the Your Characters list moved onto pages. The old windows are gone.
 - **Character sheet.** Slots with an upgrade show a green arrow. Alt-click a slot to see it in My Gear beside the sheet.
 - **Percent.** Arrows on bags, bank, vendor and loot show how much better the item is, like +14%.
-- **Speed.** Equipment looks at your gear only when gear, bags, level, talents or skills change, and it judges only the slot that changed.
-- **More dungeons.** Krol'dok Stronghold, Alcaz Prison, Blackmaw Hold and The Shaper's Terrace are in, with the zones their doors stand in.
-- **This Zone Only.** Dungeon and raid drops show in every zone. The Dungeons and Raids boxes still hide them.
-- **Quest Arrow.** It reads your position less often while you stand still and face the same way.
-- **Gold plaque.** The red round gems on its left and right are gone.
+- **Less lag.** Equipment checks your gear only when gear, bags, level, talents or skills change, and only for the slot that changed.
+- **More dungeons.** Krol'dok Stronghold, Alcaz Prison, Blackmaw Hold and The Shaper's Terrace were missing. They are in now, with the zones their doors stand in.
+- **This Zone Only.** Dungeon and raid drops stay in the list in every zone. The Dungeons and Raids boxes still hide them.
 
 
 ## 1.16.2
