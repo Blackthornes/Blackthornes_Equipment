@@ -2923,3 +2923,59 @@ Upgrades, Upgrade Quest, Dungeons, Training, Enchants, then Settings.
 - Not yet seen in game: how the columns fit long names in other
   languages, the weapon masters' spots on Forever, the spell icons, and
   the Training tab's width with a two-digit count.
+
+## Settings pages and the old windows removed (rework step 6, 2026-11-23)
+
+Step 6 of the rework. The mockup the owner approved is the plan's
+`settings.html`.
+
+- **Settings is a tab of the Equipment window** (`UI/Settings.lua`,
+  `ns.SettingsUI`, the page key "settings"). It has no window, rim or
+  saved spot of its own. `SettingsUI:Show(page)` opens the window on the
+  tab and then the page; `Toggle` closes the window when Settings shows.
+  `/beq settings` and the game's Options panel go through them.
+- **The page list** runs down the left, 150 px of dark glass under the
+  Find a Setting bar: GEAR, STAT WEIGHTS, UPGRADE QUEST, CHARACTERS,
+  TOOLTIPS, WINDOWS, ALL ADDONS, ABOUT. Keys: `gear`, `weights`, `quest`,
+  `characters`, `tooltips`, `general`, `all`, `about` (`settingsPage`
+  keeps its old values). `UI/SettingsPages.lua` is shared and was not
+  changed: `SettingsUI:Rail(pages)` overrides `LayoutSwitch`, `BarWidth`,
+  `Paint` and `Show` on Equipment's own pages object. Change the shared
+  file in all addons together, or keep changes in `Rail`.
+- Settings asks the window for width only. A tall page scrolls.
+- **Stat Weights** (`UI/WeightsPage.lua`, `ns.WeightsPage`, `/beq
+  weights`) is the old weights window as a page: Class and Spec
+  drop-downs, the Every stat box, Use the Built-in Weights, stats and
+  weapon types as dark glass rows. It saves what the window saved
+  (`customWeights`, `weaponTypeWeights`). Tested in
+  `tools/test_weightspage.lua` and `tools/test_weapontypes.lua`.
+- **Characters** (`UI/CharactersPage.lua`, `ns.CharactersPage`): every
+  character with its whole name, level and class, a Skip tick
+  (`Alts:SetSkipped`) and Forget. Forget turns into "Forget this one" with
+  Confirm for 4 seconds. The character playing has no Forget. Headings
+  sort. Tested in `tools/test_forgetalt.lua`.
+- **Tooltips** holds the five Off, Shift or Always rows that were on Gear.
+  Gear keeps Show on Screen (12 boxes, Class Training and Auto Equip
+  joined it) and Judging Gear.
+- **Left out on purpose:** the OPEN buttons (the tabs do that), the Stat
+  Weights row, Your Characters, and Current Step Only (its saved value
+  stays; the small panel opens steps by a click).
+- **Removed files:** `UI/FinderWindow.lua`, `QuestPanel.lua`,
+  `QuestPanelMore.lua`, `TrackerPanel.lua`, `WeightsWindow.lua`,
+  `IgnoredWindow.lua`, `TrainingDrawer.lua`, `DungeonQuestsWindow.lua`,
+  `DungeonLootWindow.lua`. What the tabs still use from the old Upgrades
+  list lives in `UI/FinderShared.lua` (still `ns.FinderUI`: source lines,
+  row menus, the source and zone choices, `Follow`). `UI/MainWindow.lua`
+  is a small `ns.UI` kept for callers (`Show`, `Toggle`, `RefreshSoon`,
+  `ReadBags`, `/beq window`). `UI/QuestLogTab.lua` keeps only what the
+  small panel's Log needs (menu, item buttons, the game's tracker). The
+  Enchants tab is gone; its old key opens My Gear (`Gear.FORMER`).
+- `Panel:ForgetGone` in `UI/SmallPanel.lua` lets the arrow go when its
+  quest has left the log, as the old Quest log tab did.
+- No saved key was renamed or dropped. Old spots (`settingsX`, the
+  weights window's) are no longer read; Window Spots' Set Default still
+  clears them, as before.
+- `env.OLD_PANELS` and `standsIn` are gone from the tests and the code.
+- Translations no code reads any more were taken out of the five
+  language files (`tools/check_locale.py` lists them).
+- **Left for step 7:** the sheet's arrows, docking, the banner stack.

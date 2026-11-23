@@ -114,6 +114,14 @@ function Characters:Heading(x, text, by, tip)
     label:SetText(text)
     button.label = label
     button.words = text
+    -- The house's small triangle says which way the list is sorted.
+    local arrow = button:CreateTexture(nil, "OVERLAY")
+    if ns.Titanforged then arrow:SetTexture(ns.Titanforged.MEDIA .. "SortArrow") end
+    arrow:SetSize(8, 8)
+    arrow:SetPoint("LEFT", label, "RIGHT", 4, 0)
+    arrow:SetVertexColor(Theme.Unpack("accent"))
+    arrow:Hide()
+    button.arrow = arrow
     button:SetScript("OnClick", function() Characters:SortBy(by) end)
     button:SetScript("OnEnter", function(self)
         label:SetTextColor(Theme.Unpack("accent"))
@@ -303,12 +311,14 @@ function Characters:IsShown()
         and self.pages.shown == self.key
 end
 
---- The headings: the one sorted by is gold, with which way.
+--- The headings: the one sorted by shows the gold triangle, up or down.
 function Characters:PaintHeads()
     for by, button in pairs(self.heads) do
         local text = rawget(button, "words") or ""
         local sorted = self.sortBy == by
-        button.label:SetText(sorted and (text .. (self.sortDown and "  v" or "  ^")) or text)
+        local down = self.sortDown == true
+        button.arrow:SetShown(sorted)
+        pcall(button.arrow.SetTexCoord, button.arrow, 0, 1, down and 0 or 1, down and 1 or 0)
         button:SetWidth(Theme.TextWidth("tiny", text) + 24)
     end
 end
