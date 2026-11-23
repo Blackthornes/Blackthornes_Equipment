@@ -23,6 +23,13 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.18.0
+
+- A new Biggest Upgrade First box on the Upgrade Quest page of Settings makes each tab pick the biggest gain first. It starts off.
+
+Fixes and changes:
+- The New Upgrade pop-up no longer covers the small Upgrade Quest panel.
+
 ## 1.17.0
 
 - I was not happy with the overall quality of Equipment and did a full rework of the Addon. Feedback is appreciated.

@@ -5,6 +5,9 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.18.0", lines = {
+        "A new Biggest Upgrade First box on the Upgrade Quest page of Settings makes each tab pick the biggest gain first. It starts off.",
+    } },
     { version = "1.17.0", lines = {
         "I was not happy with the overall quality of Equipment and did a full rework of the Addon. Feedback is appreciated.",
         "Equipment opens in one new window. My Gear shows your character with a green mark on every slot that has an upgrade. Find Upgrades lists every upgrade in one place. Upgrade Quest, Dungeons and Training have their own tabs.",
@@ -15,8 +18,5 @@ ns.WHATS_NEW = {
     } },
     { version = "1.16.0", lines = {
         "Settings has a Forget button for characters you deleted.",
-    } },
-    { version = "1.15.0", lines = {
-        "Windows fold into a round button with the Equipment badge.",
     } },
 }

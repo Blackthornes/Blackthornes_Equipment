@@ -4,6 +4,13 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.18.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Biggest Upgrade First.** A new box on the Upgrade Quest page of Settings. Tick it and each tab picks the upgrade with the biggest percent gain first. How easy it is to get only breaks a tie. It starts off.
+- **New Upgrade Unlocked.** The pop-up no longer covers the tabs and buttons of the small Upgrade Quest panel.
+
 ## 1.17.0
 
 For WoW: Forever (interface 16001). A full restart is needed after updating.
