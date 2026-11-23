@@ -4,14 +4,13 @@
 -- it. My Gear (UI/MyGear.lua) is the page it opens on.
 --
 -- Find Upgrades (UI/FindUpgrades.lua, step 3) is the second page. Upgrade
--- Quest (UI/UpgradeQuestTab.lua, step 4) is the third.
+-- Quest (UI/UpgradeQuestTab.lua, step 4) is the third, Dungeons
+-- (UI/DungeonsTab.lua) and Training (UI/TrainingTab.lua, step 5) come
+-- next, and Settings (UI/Settings.lua) is last, at the right end.
 --
--- The tabs not rebuilt yet (Enchants, Dungeon Quests, Dungeon
--- Loot, Settings) still show their old windows, laid into this window's
--- page area bare of their own rim, gems, grip and hanging tabs: the same
--- way they sat in the one Blackthornes window before
--- (UI/FinderWindow.lua, FinderUI:LayIn). Each later step of the rework
--- swaps one of them for a page built here, and its old window goes.
+-- Every tab is a page built here since step 6 (2026-11-23): the old
+-- windows that were laid into the page area are gone. A key an old tab had
+-- still opens the page that took its place (Gear.FORMER).
 --
 -- With "One Window:" ticked (UI/SharedWindow.lua) this frame is what
 -- Equipment lays into the one window, without its own rim: the tab bar
@@ -46,7 +45,6 @@ Gear.CHROME_WIDTH = SIDE * 2
 Gear.CHROME_HEIGHT = TOP + BAR + BAR_GAP + SIDE
 
 -- The tabs, left to right; Settings is always last, at the right end.
--- `old` names a tab whose page is still its old window.
 local TABS = {
     { key = "gear", text = L["My Gear"] },
     { key = "find", text = L["Find Upgrades"] },
@@ -55,21 +53,24 @@ local TABS = {
     -- Wide enough for the count its name carries ("Training (12)").
     { key = "training", text = L["Training"],
         width = math.max(92, Theme.TextWidth("normal", L.Format("Training (%d)", 88)) + 28) },
-    { key = "enchant", text = L["Enchants"], old = true },
-    { key = "settings", text = L["Settings"], old = true, right = true },
+    { key = "settings", text = L["Settings"], right = true },
 }
 Gear.TABS = TABS
 
-local OLD = {}
-for _, tab in ipairs(TABS) do OLD[tab.key] = tab.old or false end
--- The old gear list has no tab since Find Upgrades (UI/FindUpgrades.lua,
--- step 3) took its place. Its window still holds the Enchants tab, so the
--- key still shows it when code asks; nothing a player clicks does.
-OLD.upgrades = true
--- Dungeon Quests and Dungeon Loot gave their tabs to Dungeons
--- (UI/DungeonsTab.lua, step 5) the same way: the keys still show the old
--- windows for code and the old tests until step 6 takes them out.
-OLD.dungeons, OLD.loot = true, true
+local IS_TAB = {}
+for _, tab in ipairs(TABS) do IS_TAB[tab.key] = true end
+
+-- The keys the old tabs had, and the page that shows what each showed: the
+-- old gear list is Find Upgrades, the Enchants tab is My Gear (the best
+-- enchant is on each slot), Dungeon Quests and Dungeon Loot are Dungeons.
+-- The one window and the swap gem may still ask by an old key.
+Gear.FORMER = { upgrades = "find", enchant = "gear", dungeons = "instances", loot = "instances" }
+
+-- The room a page has, the same on every tab, so the window never jumps as
+-- the tabs are clicked: what the old gear list took, or more when a page
+-- says it needs it (Gear:Need).
+Gear.WIDTH, Gear.HEIGHT = 1040, 668
+Gear.needs = {}
 
 -- The page a tab built here shows: { key = module }, each with Build(area),
 -- Show(), Hide() and IsShown(). Later steps add theirs.
@@ -96,7 +97,11 @@ end
 
 --- The copy of the one window that draws it, or nil.
 function Gear.One()
-    return ns.FinderUI and ns.FinderUI.One() or nil
+    local SharedWindow = ns.SharedWindow
+    if not (SharedWindow and SharedWindow.Drawer) then return nil end
+    local ok, drawer = pcall(SharedWindow.Drawer)
+    local api = ok and type(drawer) == "table" and drawer.api or nil
+    return type(api) == "table" and api or nil
 end
 
 --- A page built here joins under its tab's key.
@@ -109,12 +114,24 @@ end
 -- Building
 --------------------------------------------------------------------------------
 
---- The room a page needs: what the old tabs share, so the window never
---- jumps as the tabs are clicked.
+--- The room a page has: the usual, or the most any page asked for.
 function Gear:PageSize()
-    local FinderUI = ns.FinderUI
-    if FinderUI and FinderUI.TabSize then return FinderUI:TabSize() end
-    return 1040, 668
+    local width, height = Gear.WIDTH, Gear.HEIGHT
+    for _, need in pairs(self.needs) do
+        if type(need[1]) == "number" and need[1] > width then width = need[1] end
+        if type(need[2]) == "number" and need[2] > height then height = need[2] end
+    end
+    return math.ceil(width), math.ceil(height)
+end
+
+--- A page says how much room it needs; nil for either keeps the usual.
+--- The window grows when that moves the size the pages share.
+function Gear:Need(key, width, height)
+    local beforeWidth, beforeHeight = self:PageSize()
+    self.needs[key] = { width, height }
+    local afterWidth, afterHeight = self:PageSize()
+    if beforeWidth == afterWidth and beforeHeight == afterHeight then return end
+    if self.frame then self:Grow() end
 end
 
 --- Where the bar and the page sit: under the plate and inside the rim in
@@ -227,12 +244,6 @@ function Gear:Build()
     end, { width = width - PORTRAIT_CLEAR - 12, spread = true })
     self:Lay()
 
-    -- The old tabs' windows live in the page area from here on.
-    local FinderUI = ns.FinderUI
-    if FinderUI then
-        FinderUI.oneArea = area
-        for _, each in ipairs(FinderUI:TabFrames()) do FinderUI:LayIn(each) end
-    end
     for _, module in pairs(self.pages) do
         if module.Build then module:Build(area) end
     end
@@ -305,45 +316,34 @@ function Gear:IsShown()
     return Shown(self.frame)
 end
 
---- The old windows of the tabs, each hidden; their hiding closes nothing.
-function Gear:HideOld()
-    local FinderUI = ns.FinderUI
-    if not FinderUI then return end
-    local was = FinderUI.switching
-    FinderUI.switching = true
-    for _, each in ipairs(FinderUI:TabFrames()) do
-        if Shown(each) then pcall(each.Hide, each) end
-    end
-    FinderUI.switching = was
-end
-
 function Gear:HidePages(except)
     for key, module in pairs(self.pages) do
         if key ~= except and module.Hide then module:Hide() end
     end
 end
 
---- Show a tab's page. An old tab shows its old window in the page area.
+--- The tab a key names: itself, the page an old tab's key became, or My
+--- Gear for a key nobody knows.
+function Gear.TabFor(key)
+    key = Gear.FORMER[key] or key
+    return IS_TAB[key] and key or "gear"
+end
+
+--- Show a tab's page. `driving` is set meanwhile, so a page whose own Show
+--- opens this window knows the window asked.
 function Gear:ShowTab(key)
     if not self.frame then return end
-    if OLD[key] == nil then key = "gear" end
+    key = Gear.TabFor(key)
     self.tab = key
     if self.strip then self.strip:Select(key) end
-    if OLD[key] then
-        self:HidePages()
-        local FinderUI = ns.FinderUI
-        if not FinderUI then return end
-        local was = self.driving
-        self.driving = true
-        local ok, err = pcall(FinderUI.ShowTab, FinderUI, key)
-        self.driving = was
-        if not ok then error(err, 0) end
-        return
-    end
-    self:HideOld()
     self:HidePages(key)
     local module = self.pages[key]
-    if module and module.Show then module:Show() end
+    if not (module and module.Show) then return end
+    local was = self.driving
+    self.driving = true
+    local ok, err = pcall(module.Show, module)
+    self.driving = was
+    if not ok then error(err, 0) end
 end
 
 --- A tab's name, changed after the strip was built (Training's count).
@@ -356,7 +356,7 @@ end
 --- Open the window on a tab (My Gear when none is named), in the one
 --- window when "One Window:" is ticked, else in its own frame.
 function Gear:Open(key)
-    key = key or "gear"
+    key = Gear.TabFor(key or "gear")
     self:Build()
     if not Shown(self.frame) then
         local One = Gear.One()
@@ -394,7 +394,6 @@ end
 function Gear:Closed()
     if self.closing then return end
     self.closing = true
-    self:HideOld()
     self:HidePages()
     self.closing = false
 end

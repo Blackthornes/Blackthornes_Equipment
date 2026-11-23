@@ -433,7 +433,7 @@ function Tab:BuildStepRow(index)
     row.note = Theme.CreateLabel(row, "small", "muted")
     row.note:SetWordWrap(true)
     row.map = Button(row, L["Show on Map"], function()
-        if ns.QuestPanel then ns.QuestPanel:ShowOnMap() end
+        if ns.SmallPanel then ns.SmallPanel:ShowOnMap() end
     end)
     row.map:SetPoint("TOPRIGHT", -8, -4)
     row.map:Hide()

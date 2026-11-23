@@ -3,9 +3,6 @@
 -- learned from the quest log, with Done, In Log or To Do for each.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
--- This suite tests the old Dungeon Quests tab, kept until rework step 6; the Dungeons tab
--- (UI/DungeonsTab.lua) stands in for it in play.
-env.OLD_PANELS = true
 local suite = env.NewSuite("dungeonquests")
 
 local ns = env.Load()
@@ -13,7 +10,7 @@ for _, module in ipairs(ns.moduleOrder) do
     if module.OnEnable then module:OnEnable() end
 end
 
-local DQ, UI = ns.DungeonQuests, ns.DungeonQuestsUI
+local DQ = ns.DungeonQuests
 
 local count = 0
 for _ in pairs(ns.DUNGEON_QUESTS) do count = count + 1 end
@@ -127,39 +124,7 @@ ns.FOREVER_DUNGEON_QUESTS = realForever
 ns.db.learnedDungeonQuests[900010] = nil
 DQ.version = DQ.version + 1
 
--- The window.
 player.level = 14
-UI:Show()
-suite.check("the window opens", UI.frame and UI.frame:IsShown())
-suite.check("it picks a dungeon with something to do", ns.db.dungeonQuestsPick ~= nil)
-UI:Pick("389")
-suite.check("the total reads as a count", UI.total:GetText() ~= nil and UI.total:GetText():find("still to do", 1, true) ~= nil,
-    UI.total:GetText())
-local shown = 0
-for _, row in ipairs(UI.questRows) do if row:IsShown() then shown = shown + 1 end end
-suite.check("its quests show", shown == 3, shown)
--- A long name wraps onto two lines and its row grows to fit, never "...".
-local first = UI.questRows[1]
-first.name.GetStringHeight = function() return 34 end
-UI:FillQuests()
-suite.check("a long quest name wraps and its row grows", first:GetHeight() > 38, first:GetHeight())
-suite.check("the next row sits below it", UI.questRows[2]._point and UI.questRows[2]._point[3] == -(UI.questTop + first:GetHeight()),
-    UI.questRows[2]._point and UI.questRows[2]._point[3])
-shown = 0
-for _, row in ipairs(UI.questRows) do if row:IsShown() then shown = shown + 1 end end
-suite.check("and every quest still shows", shown == 3, shown)
-first.name.GetStringHeight = nil
-UI:FillQuests()
-UI.questRows[2]:GetScript("OnClick")(UI.questRows[2])
-suite.check("a picked quest says where it starts", UI.foot:GetText():find("Orgrimmar", 1, true) ~= nil
-    or UI.foot:GetText():find("Thunder Bluff", 1, true) ~= nil, UI.foot:GetText())
-UI:Hide()
-suite.check("the window closes", not UI.frame:IsShown())
-
-ns.HandleSlash("dungeons")
-suite.check("/beq dungeons opens it", UI.frame:IsShown())
-UI:Hide()
-suite.check("the gear window has a Dungeon Quests button", ns.UI.dungeonButton ~= nil or ns.UI.frame == nil)
 
 -- A Forever dungeon whose place has no door takes the levels and door of
 -- the row Data/ForeverDrops.lua laid in Sources.DUNGEONS.

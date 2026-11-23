@@ -2,9 +2,6 @@
 -- each dungeon's bosses drop, upgrades marked, with armor and stat chips.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
--- This suite tests the old Dungeon Loot tab, kept until rework step 6; the Dungeons tab
--- (UI/DungeonsTab.lua) stands in for it in play.
-env.OLD_PANELS = true
 local suite = env.NewSuite("dungeonloot")
 
 local ns = env.Load()
@@ -12,7 +9,7 @@ for _, module in ipairs(ns.moduleOrder) do
     if module.OnEnable then module:OnEnable() end
 end
 
-local DL, UI = ns.DungeonLoot, ns.DungeonLootUI
+local DL = ns.DungeonLoot
 
 -- The real data lays out.
 local index = DL:Index()
@@ -113,39 +110,6 @@ local door = DL.Door(found)
 suite.check("the door is the dungeon's zone", door and door.zone == "The Barrens")
 suite.check("no door, no place", DL.Door({ name = "Nowhere" }) == nil)
 
-suite.check("the footer counts", UI.FootText(5, 2) == "5 shown. 2 are upgrades for you."
-    and UI.FootText(3, 1) == "3 shown. 1 is an upgrade for you.", UI.FootText(5, 2))
-suite.check("the header says where and what levels",
-    UI.Where(found) == "Door in The Barrens. Levels 17 to 24.", UI.Where(found))
-
--- The window.
-ns.db.dungeonLootPick = "test_wc"
-UI:Show()
-suite.check("the window opens", UI.frame and UI.frame:IsShown())
-suite.check("the picked dungeon shows", UI.dungeonName:GetText() == "Test Caverns", UI.dungeonName:GetText())
-local shown = 0
-for _, row in ipairs(UI.rows) do if row:IsShown() then shown = shown + 1 end end
-suite.check("its loot shows", shown == 5, shown)
-suite.check("the best upgrade is on top with its gain", UI.rows[1].gain:GetText() == "+12%", UI.rows[1].gain:GetText())
-UI:SetChip("stat", "strength")
-UI:SetChip("armor", "cloth")
-suite.check("picks nothing matches says so", UI.empty:GetText() == "Nothing here matches. Try fewer picks.",
-    UI.empty:GetText())
-UI:SetChip("stat", "all")
-UI:SetChip("armor", "all")
-UI:SortBy("boss")
-suite.check("a column head sorts", UI.rows[1].boss:GetText() == "Lady Test")
-UI:SortBy("boss")
-UI:SortBy("boss")
-suite.check("a third click goes back to best first", UI.rows[1].gain:GetText() == "+12%")
-UI:Hide()
-suite.check("the window closes", not UI.frame:IsShown())
-
-ns.HandleSlash("loot")
-suite.check("/beq loot opens it", UI.frame:IsShown())
-UI:Hide()
-suite.check("it wears the gear window's tabs, Dungeon Loot lit", UI.tabStrip == nil
-    or UI.tabStrip.selected == "loot", UI.tabStrip and UI.tabStrip.selected)
 
 -- Forever's bosses from the game's tables: one nobody has seen drop gear
 -- still gets a row, after the loot, in the game's order.
@@ -171,17 +135,6 @@ suite.check("sorting by boss puts them among the rest", sortedByBoss[1].boss == 
     and sortedByBoss[#sortedByBoss].boss == "The Hidden Test")
 local sortedByGain = DL.SortRows(data.rows, "gain")
 suite.check("sorting by gain leaves them last", not sortedByGain[1].bossOnly)
-UI:Show()
-UI:Scroll(10)
-local bossRow
-for _, row in ipairs(UI.rows) do
-    if row:IsShown() and row.line and row.line.bossOnly then bossRow = row end
-end
-suite.check("the window shows a boss's own row", bossRow ~= nil
-    and bossRow.name:GetText() == "Loot not seen yet" and bossRow.gain:GetText() == "")
-suite.check("the window's foot counts the loot", UI.foot:GetText() == "5 shown. 2 are upgrades for you.",
-    UI.foot:GetText())
-UI:Hide()
 ns.FOREVER_BOSSES = realBosses
 
 ns.Items.Info, ns.Items.Stats, DL.NameOf = realInfo, realStats, realName

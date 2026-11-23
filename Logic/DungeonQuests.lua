@@ -368,14 +368,12 @@ function DQ:TitleLoaded(questID, success)
     self.titleRedraw = true
     after(DQ.SETTLE, function()
         DQ.titleRedraw = false
-        local ui = ns.DungeonQuestsUI
         local tab = ns.DungeonsTab
-        if (ui and ui.Showing and ui:Showing()) or (tab and tab.IsShown and tab:IsShown()) then DQ:Changed() end
-        -- The upgrade quest's steps and the finder's rows name quests the
+        if tab and tab.IsShown and tab:IsShown() then DQ:Changed() end
+        -- The upgrade quest's steps and the upgrade lists name quests the
         -- game's way too, so they redraw if they are up.
-        if ns.QuestPanel and ns.QuestPanel.RefreshSoon then pcall(ns.QuestPanel.RefreshSoon, ns.QuestPanel) end
         if ns.SmallPanel then pcall(ns.SmallPanel.RefreshSoon, ns.SmallPanel) end
-        if ns.FinderUI and ns.FinderUI.Redraw then pcall(ns.FinderUI.Redraw, ns.FinderUI) end
+        if ns.UI and ns.UI.RefreshSoon then pcall(ns.UI.RefreshSoon, ns.UI) end
     end)
 end
 
@@ -449,8 +447,6 @@ end
 --------------------------------------------------------------------------------
 
 function DQ:Changed()
-    local ui = ns.DungeonQuestsUI
-    if ui and ui.Refresh then pcall(ui.Refresh, ui) end
     local tab = ns.DungeonsTab
     if tab and tab.OnDungeonQuestsChanged then pcall(tab.OnDungeonQuestsChanged, tab) end
 end
@@ -466,9 +462,8 @@ function DQ:LogMoved()
     self.pending = true
     after(DQ.SETTLE, function()
         DQ.pending = false
-        local ui = ns.DungeonQuestsUI
         local tab = ns.DungeonsTab
-        if (ui and ui.Showing and ui:Showing()) or (tab and tab.IsShown and tab:IsShown()) then DQ:Changed() end
+        if tab and tab.IsShown and tab:IsShown() then DQ:Changed() end
     end)
 end
 
@@ -504,9 +499,7 @@ function DQ:OnEnable()
     if _G.C_Timer then _G.C_Timer.After(8, function() DQ:LearnLog() end) end
 end
 
--- The Dungeons tab (UI/DungeonsTab.lua) took the old tab's place.
+-- The Dungeons tab (UI/DungeonsTab.lua) lists them.
 ns.RegisterCommand("dungeons", L["your dungeon quests and which ones you've done"], function()
-    local tab = ns.DungeonsTab
-    if tab and tab.standsIn and ns.GearWindow and ns.GearWindow.pages[tab.KEY] then return tab:Open() end
-    if ns.DungeonQuestsUI then ns.DungeonQuestsUI:Toggle() end
+    if ns.DungeonsTab then ns.DungeonsTab:Open() end
 end)

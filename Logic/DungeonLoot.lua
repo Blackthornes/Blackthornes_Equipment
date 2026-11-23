@@ -295,9 +295,7 @@ function DL:ShowTheWay(dungeon)
     return ok and shown == true
 end
 
--- The Dungeons tab (UI/DungeonsTab.lua) took the old tab's place.
+-- The Dungeons tab (UI/DungeonsTab.lua) lists them.
 ns.RegisterCommand("loot", L["what each dungeon drops, with your upgrades"], function()
-    local tab = ns.DungeonsTab
-    if tab and tab.standsIn and ns.GearWindow and ns.GearWindow.pages[tab.KEY] then return tab:Open() end
-    if ns.DungeonLootUI then ns.DungeonLootUI:Toggle() end
+    if ns.DungeonsTab then ns.DungeonsTab:Open() end
 end)

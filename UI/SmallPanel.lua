@@ -2,10 +2,9 @@
 -- The small panel (rework step 4, the owner approved the mockup
 -- 2026-11-22, asking that it "not take up much space and be easily
 -- readable"): the one panel that stays on screen while you play. It takes
--- the place of the upgrade quest's panel (UI/QuestPanel.lua) and the
--- Upgrade Hunts panel (UI/TrackerPanel.lua). Their code stays until step 6
--- for the old suites; nothing shows them while this panel stands in
--- (`SmallPanel.standsIn`).
+-- the place of the old upgrade quest panel and the Upgrade Hunts panel,
+-- which rework step 6 took out; the menu choices, the map pin and the size
+-- words they kept live here now.
 --
 -- 250 wide. One thin bar holds the tabs (Quest, Tracking, Log), the fold
 -- gem and the red close gem. There is no title bar, footer or button row.
@@ -42,9 +41,6 @@ local Panel = ns.NewModule("SmallPanel")
 local Theme = ns.Theme
 local Widgets = ns.Widgets
 local Motion = ns.Motion
-
--- While true, this panel shows in place of the old two.
-Panel.standsIn = true
 
 local WIDTH = 250
 local BAR = 24
@@ -111,7 +107,7 @@ end
 --- anything is tracked and "Upgrade Tracker:" is ticked. Never with
 --- "Panel: Show" unticked, and not once its red gem put it away.
 function Panel:Wanted()
-    if not self.standsIn or not ns.db then return false end
+    if not ns.db then return false end
     if ns.db.questPanelOff == true then return false end
     if QuestOn() then return true end
     if self.closed then return false end
@@ -598,6 +594,206 @@ function Panel:Build()
 end
 
 --------------------------------------------------------------------------------
+-- What the old panel kept: the menu's choices, the map pin and the size
+-- words. Moved here when rework step 6 took the old panel out.
+--------------------------------------------------------------------------------
+
+-- The sizes Settings' Panel Size and /beq quest size name.
+Panel.SIZES = {
+    { key = "small", text = L["Small"], scale = 0.8 },
+    { key = "normal", text = L["Normal"], scale = 1 },
+    { key = "large", text = L["Large"], scale = 1.2 },
+}
+
+--- The quest level stepper's place: 0 to 10 levels up, or 11 for any.
+function Panel.QuestLevelsValue()
+    local finder = ns.Finder
+    if not finder then return 4 end
+    return finder:QuestLevelsAbove() or finder.QUEST_LEVELS_ANY
+end
+
+--- Its words, as Where to get upgrades says them.
+function Panel.QuestLevelsText(value)
+    if ns.FinderUI and ns.FinderUI.QuestLevelsText then return ns.FinderUI.QuestLevelsText(value) end
+    return tostring(value)
+end
+
+--- The lines the right-click menu shares with Settings and the Upgrade
+--- Quest tab, each ticked as it stands. A click changes it.
+function Panel:OptionLines()
+    local quest, finder = ns.UpgradeQuest, ns.Finder
+    local lines = {}
+    if quest then
+        local zoneOnly = quest:ZoneOnly()
+        lines[#lines + 1] = { text = L["This Zone Only"], checked = zoneOnly,
+            run = function()
+                quest:SetZoneOnly(not zoneOnly)
+                quest:BoxChanged("zone", not zoneOnly)
+            end }
+        local swap = quest:ZoneSwap()
+        lines[#lines + 1] = { text = L["Change on a New Zone"], checked = swap, disabled = not zoneOnly,
+            run = function() quest:SetZoneSwap(not swap) end }
+    end
+    if finder then
+        local solo = finder:SoloOnly()
+        lines[#lines + 1] = { text = L["Solo Quests Only"], checked = solo,
+            run = function()
+                finder:SetSoloOnly(not solo)
+                if quest then quest:BoxChanged("solo", not solo) end
+            end }
+    end
+    if quest then
+        local stepOnly = quest:StepOnly()
+        lines[#lines + 1] = { text = L["Current Step Only"], checked = stepOnly,
+            run = function() quest:SetStepOnly(not stepOnly) end }
+    end
+    if quest and quest.STYLES then
+        -- How You Gear Up: one pick sets the boxes and the tab order (card D).
+        local style = quest:Style()
+        lines[#lines + 1] = { text = L["How You Gear Up:"] .. " " .. (style.label or L["Anything"]),
+            run = function() Panel:OpenStyles() end }
+    end
+    if finder then
+        lines[#lines + 1] = { text = L["Quest Level:"] .. " " .. Panel.QuestLevelsText(Panel.QuestLevelsValue()),
+            run = function() Panel:OpenLevels() end }
+    end
+    lines[#lines + 1] = { text = L["Settings"], run = function()
+        -- Opened on the Upgrade quest page (UI/SettingsPages.lua).
+        if ns.db then ns.db.settingsPage = "quest" end
+        if ns.SettingsUI then ns.SettingsUI:Show() end
+    end }
+    return lines
+end
+
+--- Quest Level's choices, the one set ticked.
+function Panel:LevelLines()
+    local finder = ns.Finder
+    if not finder then return {} end
+    local now = Panel.QuestLevelsValue()
+    local lines = {}
+    for value = 0, finder.QUEST_LEVELS_ANY or 11 do
+        lines[#lines + 1] = { text = Panel.QuestLevelsText(value), checked = value == now,
+            run = function() finder:SetQuestLevelsAbove(value) end }
+    end
+    return lines
+end
+
+--- How You Gear Up's choices, the one picked ticked, then what it sets.
+function Panel:StyleLines()
+    local quest = ns.UpgradeQuest
+    if not (quest and quest.STYLES) then return {} end
+    local now = quest:Style()
+    local lines = {}
+    for _, style in ipairs(quest.STYLES) do
+        lines[#lines + 1] = { text = style.label, checked = style.key == now.key,
+            run = function() quest:SetStyle(style.key) end }
+    end
+    local sets = quest.StyleLines(now)
+    if sets and #sets > 0 then
+        lines[#lines + 1] = { text = L["This sets:"], disabled = true }
+        for _, line in ipairs(sets) do lines[#lines + 1] = { text = "  " .. line, disabled = true } end
+    end
+    return lines
+end
+
+function Panel:OpenStyles()
+    if not ns.RowMenu then return end
+    local function Open() ns.RowMenu:Open(Panel:StyleLines(), { title = L["How You Gear Up:"] }) end
+    if C_Timer and C_Timer.After then C_Timer.After(0, Open) else Open() end
+end
+
+function Panel:OpenLevels()
+    if not ns.RowMenu then return end
+    -- The menu closes as a line runs; open the levels once it has.
+    local function Open() ns.RowMenu:Open(Panel:LevelLines(), { title = L["Quest Level:"] }) end
+    if C_Timer and C_Timer.After then C_Timer.After(0, Open) else Open() end
+end
+
+function Panel:ShowOnMap()
+    local place = ns.UpgradeQuest and ns.UpgradeQuest:NextPlace()
+    if not (place and ns.Waypoints) then return false end
+    -- A spot gets the big marker on it; only a zone, a "Somewhere in ZONE"
+    -- marker in its middle. Either way the arrow shows the way when the
+    -- game won't take its own pin.
+    local quest = ns.UpgradeQuest.Current and ns.UpgradeQuest:Current()
+    local icon = quest and quest.link and Theme.ItemIcon(quest.link)
+    return ns.Waypoints:Show(place, place.name, icon)
+end
+
+--- A frame's own scale, or 1 when it cannot say.
+function Panel.ScaleOf(frame)
+    local ok, scale = pcall(function() return frame:GetScale() end)
+    if ok and type(scale) == "number" and scale > 0 then return scale end
+    return 1
+end
+
+--- How much to multiply a saved offset by, taken at `saved` size and put
+--- back at `now`.
+function Panel.PositionFactor(saved, now)
+    saved = tonumber(saved) or 1
+    now = tonumber(now) or 1
+    if saved <= 0 or now <= 0 then return 1 end
+    return saved / now
+end
+
+--- The name of a size, "Small (80%)", or "87%" for one dragged to.
+function Panel.ScaleText(scale)
+    local percent = math.floor((tonumber(scale) or 1) * 100 + 0.5)
+    for _, size in ipairs(Panel.SIZES) do
+        if math.floor(size.scale * 100 + 0.5) == percent then
+            return ("%s (%d%%)"):format(size.text, percent)
+        end
+    end
+    return ("%d%%"):format(percent)
+end
+
+--- "small", "normal", "large", "80", "80%" or "0.8" as a size, or nil.
+function Panel.ParseSize(text)
+    text = (text or ""):lower():gsub("%s", ""):gsub("%%$", "")
+    if text == "" then return nil end
+    for _, size in ipairs(Panel.SIZES) do
+        if size.key == text then return size.scale end
+    end
+    local number = tonumber(text)
+    if not number or number <= 0 then return nil end
+    -- 80 means 80%; 0.8 means the same.
+    if number > 5 then number = number / 100 end
+    return number
+end
+
+--- The size the panel is drawn at, 0.5 to 1.5: the saved one, in bounds.
+function Panel:GetScale()
+    return self:SizePercent() / 100
+end
+
+--- Save a size and draw the panel at it. Returns the size it ended up at.
+function Panel:SetPanelScale(value)
+    value = tonumber(value) or 1
+    local scale = Widgets.ClampSize(value * 100, SCALE_MIN, SCALE_MAX) / 100
+    if ns.db then ns.db.questScale = scale end
+    self:ApplyScale()
+    if ns.SettingsUI and ns.SettingsUI.Refresh then ns.SettingsUI:Refresh() end
+    return scale
+end
+
+--- A tracked upgrade's right-click menu (the house row menu).
+function Panel:HuntMenu(hunt)
+    if not (hunt and ns.RowMenu) then return end
+    local lines = {}
+    if hunt.place and hunt.place.x and ns.Waypoints then
+        lines[#lines + 1] = { text = L["Show on Map"], run = function()
+            ns.Waypoints:Show(hunt.place, hunt.place.name)
+        end }
+    end
+    if not hunt.done and ns.Tracking then
+        lines[#lines + 1] = { text = L["Stop Tracking"], run = function()
+            ns.Tracking:Untrack(hunt.itemID)
+        end }
+    end
+    return ns.RowMenu:Open(lines, { title = ns.Items and ns.Items.ShowLink(hunt.link) or nil })
+end
+
+--------------------------------------------------------------------------------
 -- Size and spot
 --------------------------------------------------------------------------------
 
@@ -609,10 +805,10 @@ end
 function Panel:ApplyScale()
     local frame = self.frame
     if not frame then return end
-    local old = ns.QuestPanel and ns.QuestPanel.ScaleOf(frame) or 1
+    local old = Panel.ScaleOf(frame)
     local ok, left, top = pcall(function() return frame:GetLeft(), frame:GetTop() end)
     Widgets.ApplySize(frame, self:SizePercent(), SCALE_MIN, SCALE_MAX)
-    local scale = ns.QuestPanel and ns.QuestPanel.ScaleOf(frame) or 1
+    local scale = Panel.ScaleOf(frame)
     if math.abs(old - scale) < 0.001 then return end
     if ok and type(left) == "number" and type(top) == "number" then
         frame:ClearAllPoints()
@@ -629,7 +825,7 @@ function Panel:SavePosition()
     local point, _, relativePoint, x, y = self.frame:GetPoint()
     ns.db.questPoint, ns.db.questRelativePoint = point, relativePoint
     ns.db.questX, ns.db.questY = x, y
-    ns.db.questScaleAt = ns.QuestPanel and ns.QuestPanel.ScaleOf(self.frame) or 1
+    ns.db.questScaleAt = Panel.ScaleOf(self.frame)
 end
 
 function Panel:RestorePosition()
@@ -646,10 +842,7 @@ function Panel:RestorePosition()
             place = function() Panel:RestorePosition() end,
         }) then return end
     end
-    local factor = 1
-    if ns.QuestPanel then
-        factor = ns.QuestPanel.PositionFactor(db.questX and db.questScaleAt or 1, ns.QuestPanel.ScaleOf(frame))
-    end
+    local factor = Panel.PositionFactor(db.questX and db.questScaleAt or 1, Panel.ScaleOf(frame))
     frame:SetPoint(db.questPoint or "RIGHT", UIParent, db.questRelativePoint or "RIGHT",
         (db.questX or -40) * factor, (db.questY or -120) * factor)
 end
@@ -1149,7 +1342,7 @@ function Panel:ListClicked(row, mouse)
     GameTooltip:Hide()
     if kind == "hunt" then
         if mouse == "RightButton" then
-            if ns.TrackerPanel then ns.TrackerPanel:OpenMenu(line) end
+            Panel:HuntMenu(line)
             return
         end
         if Widgets.ItemClick(line.itemID, line.link) then return end
@@ -1172,7 +1365,7 @@ function Panel:MenuLines()
     if quest then
         if logic:NextPlace() then
             lines[#lines + 1] = { text = L["Show on Map"], run = function()
-                if ns.QuestPanel then ns.QuestPanel:ShowOnMap() end
+                Panel:ShowOnMap()
             end }
         end
         local on = ns.QuestArrow and ns.QuestArrow.IsOn()
@@ -1181,8 +1374,8 @@ function Panel:MenuLines()
         end }
         lines[#lines + 1] = { text = L["Ignore"], run = function() ns.HandleSlash("quest ignore") end }
     end
-    if QuestOn() and ns.QuestPanel then
-        for _, line in ipairs(ns.QuestPanel:OptionLines()) do
+    if QuestOn() then
+        for _, line in ipairs(Panel:OptionLines()) do
             -- The steps open and close with a click here.
             if line.text ~= L["Current Step Only"] and line.text ~= L["Settings"] then lines[#lines + 1] = line end
         end
@@ -1312,7 +1505,7 @@ function Panel:FillOffer()
     box:SetHeight(32 + itemHeight + 6 + textHeight + 12 + 22 + 12)
     box:ClearAllPoints()
     box:SetPoint("BOTTOMRIGHT", self.frame, "TOPRIGHT", 0, 8)
-    pcall(box.SetScale, box, ns.QuestPanel and ns.QuestPanel.ScaleOf(self.frame) or 1)
+    pcall(box.SetScale, box, Panel.ScaleOf(self.frame))
     if not Shown(box) then
         box:Show()
         Motion:Run(box, "offer", 0.9, function(p)

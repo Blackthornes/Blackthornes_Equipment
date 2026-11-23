@@ -1,13 +1,18 @@
 -- Blackthornes Equipment -- UI/Settings.lua
--- The settings window: every switch the addon has, in one place.
+-- The Settings tab of the Equipment window (UI/GearWindow.lua): every
+-- switch the addon has, in one place.
 --
--- Built the way Tradeskills' Settings tab is (UI/SettingsPages.lua), as in
--- Pets and Farmer: pages picked along the top, two columns of rows a page,
--- a row being [label .. control] on one line, and what it does in the row's
--- tooltip or, with Show descriptions ticked, underneath it.
+-- A page of that window since rework step 6 (2026-11-23): it has no frame,
+-- rim or spot of its own. Built on UI/SettingsPages.lua as in the sister
+-- addons: two columns of rows a page, a row being [label .. control] on one
+-- line, and what it does in the row's tooltip or, with Show descriptions
+-- ticked, underneath it. Here the pages are picked from a list down the
+-- left (SettingsUI:Rail), not along the top; the shared file is unchanged.
 --
--- Open it with /beq settings, a click on the minimap button, or from the
--- game's own Options > AddOns list. Nothing here deletes anything.
+-- Stat Weights (UI/WeightsPage.lua) and Characters (UI/CharactersPage.lua)
+-- are pages of it. Open it with /beq settings, a click on the Settings tab,
+-- or from the game's own Options > AddOns list. Nothing here deletes
+-- anything but Forget on the Characters page, which asks first.
 
 local _, ns = ...
 local L = ns.L
@@ -18,21 +23,18 @@ local Theme = ns.Theme
 local Widgets = ns.Widgets
 
 local PADDING = 18
-local HEADER = 36
-
--- The metal rim (UI/Titanforged.lua) reaches this far in from the edge;
--- the header sits inside it.
-local RIM = 6
+-- The list of pages down the left.
+local RAIL = 150
+local RAIL_ROW = 26
 
 local COLUMN_GAP = 18
--- Two columns across the width every tab of the gear window shares
--- (UI/FinderWindow.lua), set again as the window is built, since that file
--- loads after this one.
+-- Two columns in the room every page of the Equipment window has, beside
+-- the list of pages; set again as the page is built.
 local COLUMN_WIDTH = 330
 local function TabColumnWidth()
-    local width = ns.FinderUI and ns.FinderUI.WIDTH
+    local width = ns.GearWindow and ns.GearWindow.WIDTH
     if type(width) ~= "number" then return COLUMN_WIDTH end
-    return math.floor((width - PADDING * 2 - COLUMN_GAP) / 2)
+    return math.floor((width - RAIL - PADDING * 2 - COLUMN_GAP) / 2)
 end
 -- Where the controls start: room for a label like "Upgrade Arrows:" in the
 -- game's font, which runs wider than it looks. A longer one wraps.
@@ -40,25 +42,29 @@ local CONTROL_X = 150
 
 local TITLE = "Blackthornes Equipment"
 
--- The pages along the top (UI/SettingsPages.lua), as Tradeskills' Settings
--- tab has them. Every setting kept its saved name; only its place moved.
+-- The pages, top to bottom. Every setting kept its saved name; only its
+-- place moved. This addon's own pages first, then the ones every
+-- Blackthornes addon has, in the house order. A saved page from before
+-- still opens: "gear", "quest", "general", "all" and "about" kept their
+-- keys.
 local PAGES = {
     { key = "gear", text = L["GEAR"],
       tip = L["How gear is judged, and the arrows, tooltip lines and chat lines that say so"] },
+    { key = "weights", text = L["STAT WEIGHTS"] },
     { key = "quest", text = L["UPGRADE QUEST"],
       tip = L["The upgrade quest, its panel and the arrow that points the way"] },
-    -- The settings every Blackthornes addon shares (2026-11-16): reached
-    -- by the one window's gear while One Window is on, so it is left off
-    -- the switch then; on the switch while each addon has its own window.
-    -- General became Windows and comes before All Addons, the same order
-    -- in all five (the owner said build it, 2026-11-17). Its key stays
-    -- "general", so a saved page still opens.
+    { key = "characters", text = L["CHARACTERS"] },
+    { key = "tooltips", text = L["TOOLTIPS"] },
     { key = "general", text = L["WINDOWS"],
       tip = L["Window size and how much the panels let the world show through"] },
+    -- Reached by the one window's gear while One Window is on, so it is
+    -- left off the list then.
     { key = "all", text = L["ALL ADDONS"] },
     { key = "about", text = L["ABOUT"],
       tip = L["How these addons are made, the version, the Discord and the other Blackthornes addons"] },
 }
+SettingsUI.PAGES = PAGES
+SettingsUI.RAIL = RAIL
 
 --------------------------------------------------------------------------------
 -- Layout helpers
@@ -148,22 +154,16 @@ local POSITION_KEYS = {
     { "dungeonLootPoint", "dungeonLootRelPoint", "dungeonLootX", "dungeonLootY" },
 }
 
---- Put every Equipment window back where it started: the gear window, this
---- one, the stat weights, the upgrade finder, the upgrade tracker and the
---- upgrade quest. Only
---- the saved spots are cleared; nothing else is touched.
+--- Put every Equipment window back where it started: the Equipment
+--- window, the small panel and the quest arrow. Only the saved spots are
+--- cleared (the old windows' too); nothing else is touched. Laid into the
+--- one window, the Equipment window stays there.
 function SettingsUI:ResetPositions()
     for _, keys in ipairs(POSITION_KEYS) do
         for _, key in ipairs(keys) do ns.db[key] = nil end
     end
-    -- A tab laid into the one window stays where it is: putting it back in
-    -- its own place would pull it out of the one window (a player's report,
-    -- 2026-10-31). Its saved place is still forgotten above.
-    local hosted = ns.FinderUI and ns.FinderUI.oneArea
-    local tabs = { [self] = true, [ns.UI or false] = true, [ns.FinderUI or false] = true,
-        [ns.DungeonQuestsUI or false] = true, [ns.DungeonLootUI or false] = true }
-    for _, module in ipairs({ self, ns.UI, ns.GearWindow, ns.WeightsUI, ns.FinderUI, ns.TrackerPanel, ns.QuestPanel, ns.SmallPanel, ns.QuestArrowUI, ns.IgnoredUI, ns.DungeonQuestsUI, ns.DungeonLootUI }) do
-        if module and module.frame and module.RestorePosition and not (hosted and tabs[module]) then
+    for _, module in ipairs({ ns.GearWindow, ns.SmallPanel, ns.QuestArrowUI }) do
+        if module and module.frame and module.RestorePosition then
             module:RestorePosition()
         end
     end
@@ -189,88 +189,155 @@ end
 -- Construction
 --------------------------------------------------------------------------------
 
-function SettingsUI:Build()
+--- The list of pages down the left, in place of the shared file's switch
+--- along the top: each name a dark glass row, the one showing lit with a
+--- gold left edge. Done on this one set of pages, so the file every addon
+--- shares stays as it is.
+function SettingsUI:Rail(pages)
+    local frame = self.frame
+    local opts = pages.opts
+    local top = opts.top + pages:BarHeight() + 14
+
+    local rail = CreateFrame("Frame", nil, frame)
+    rail:SetPoint("TOPLEFT", 0, -top)
+    rail:SetPoint("BOTTOMLEFT", 0, opts.bottom or 0)
+    rail:SetWidth(RAIL)
+    Theme.Fill(rail, "glass")
+    local side = rail:CreateTexture(nil, "ARTWORK")
+    side:SetPoint("TOPRIGHT")
+    side:SetPoint("BOTTOMRIGHT")
+    side:SetWidth(1)
+    side:SetColorTexture(Theme.Unpack("border", 0.6))
+    self.rail = rail
+
+    for _, part in ipairs(pages.switch) do
+        local button = part.button
+        button:SetParent(rail)
+        button:SetSize(RAIL - 1, RAIL_ROW)
+        part.back = Theme.Fill(button, "glass")
+        local under = button:CreateTexture(nil, "BACKGROUND", nil, 1)
+        under:SetPoint("BOTTOMLEFT")
+        under:SetPoint("BOTTOMRIGHT")
+        under:SetHeight(1)
+        under:SetColorTexture(Theme.Unpack("border", 0.6))
+        -- The gold line that sat under the name stands down its left.
+        part.underline:ClearAllPoints()
+        part.underline:SetPoint("TOPLEFT")
+        part.underline:SetPoint("BOTTOMLEFT")
+        part.underline:SetWidth(3)
+        part.edge = button:CreateTexture(nil, "ARTWORK")
+        part.edge:SetPoint("TOPLEFT")
+        part.edge:SetPoint("BOTTOMLEFT")
+        part.edge:SetWidth(3)
+        part.edge:SetColorTexture(Theme.Unpack("accent"))
+        part.edge:Hide()
+        part.glow:Hide()
+        part.label:ClearAllPoints()
+        part.label:SetPoint("LEFT", 12, 0)
+        part.label:SetPoint("RIGHT", -6, 0)
+        part.label:SetJustifyH("LEFT")
+    end
+
+    -- One under the other, the hidden ones skipped. Never more than one
+    -- line of bar, so the pages never move.
+    function pages:LayoutSwitch()
+        local place = 0
+        for _, part in ipairs(self.switch) do
+            local hidden = self:Hidden(part.key)
+            part.button:SetShown(not hidden)
+            if not hidden then
+                part.button:ClearAllPoints()
+                part.button:SetPoint("TOPLEFT", rail, "TOPLEFT", 0, -place * RAIL_ROW)
+                place = place + 1
+                part.place = place
+            end
+        end
+        self.lines = 1
+        return false
+    end
+
+    -- The window is as wide as the list, the two columns and the bar's
+    -- search box and tick box need.
+    function pages:BarWidth()
+        return math.max(RAIL + opts.padding * 2 + opts.columnWidth * 2 + opts.columnGap,
+            opts.padding * 2 + self:ToolsWidth())
+    end
+
+    local paint = pages.Paint
+    function pages:Paint()
+        paint(self)
+        local current = self:Current()
+        for _, part in ipairs(self.switch) do
+            local active = part.key == current
+            local over = part.hovered == true and not active
+            part.glow:Hide()
+            part.back:SetColorTexture(Theme.Unpack(active and "glassActive" or over and "glassHover"
+                or ((part.place or 1) % 2 == 0 and "glassAlt" or "glass")))
+            part.edge:SetShown(over)
+        end
+    end
+
+    -- Stat Weights and Characters draw their own page: each is put in step
+    -- as it is shown, by a click here or by SettingsUI:Refresh.
+    local show = pages.Show
+    function pages:Show(key)
+        show(self, key)
+        local module = self.shown == "weights" and ns.WeightsPage
+            or self.shown == "characters" and ns.CharactersPage
+        if module and module.Refresh then module:Refresh() end
+    end
+
+    -- The pages sit right of the list.
+    pages.view:ClearAllPoints()
+    pages.view:SetPoint("TOPLEFT", RAIL, -top)
+    pages.view:SetPoint("BOTTOMRIGHT", 0, opts.bottom or 0)
+    pages:LayoutSwitch()
+end
+
+--- Build the page in the Equipment window's page area. Asked without one,
+--- the window is built first, which builds this.
+function SettingsUI:Build(area)
     if self.frame then return self.frame end
+    local Gear = ns.GearWindow
+    if not area then
+        if not Gear then return nil end
+        Gear:Build()
+        if self.frame then return self.frame end
+        area = Gear.area
+    end
 
     COLUMN_WIDTH = TabColumnWidth()
-    local frame = CreateFrame("Frame", "BlackthornesEquipmentSettings", UIParent)
-    frame:SetSize(COLUMN_WIDTH * 2 + COLUMN_GAP + PADDING * 2, 600)
-    frame:SetFrameStrata("HIGH")
-    frame:SetToplevel(true)
-    frame:SetClampedToScreen(true)
-    frame:EnableMouse(true)
-    frame:SetMovable(true)
-    frame:RegisterForDrag("LeftButton")
-
+    local frame = CreateFrame("Frame", "BlackthornesEquipmentSettings", area)
+    frame:SetAllPoints(area)
     Theme.Fill(frame, "window")
-
-    -- The house frame (UI/Titanforged.lua): the gold rim and corner gems,
-    -- the name on a plate and the red close gem. No portrait: that is for
-    -- the gear window and the finder.
-    if ns.Titanforged then
-        local trim = ns.Titanforged:Dress(frame, {
-            title = TITLE,
-            close = function() SettingsUI:Hide() end,
-        })
-        local left, right, top, bottom = ns.Titanforged.Reach(trim)
-        if frame.SetClampRectInsets then frame:SetClampRectInsets(-left, right, top, -bottom) end
-    else
-        Theme.Border(frame, "borderLit")
-    end
-    Theme.Halo(frame, 12, 0.14)
-
-    -- The fold gem beside the close gem folds the window down to its plate
-    -- (UI/FoldWindow.lua, a player asked, 2026-10-24).
-    if ns.FoldWindow then
-        ns.FoldWindow:Add(frame, { key = "Settings", onToggle = function(folded)
-            if not folded then SettingsUI:Refresh() end
-        end })
-    end
-    -- And left of it, the swap gem: it joins every Blackthornes addon into
-    -- the one window (UI/SharedWindow.lua).
-    if ns.SharedWindow and ns.SharedWindow.AddSwap then ns.SharedWindow.AddSwap(frame, "equipment") end
-
-    frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
-    frame:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        SettingsUI:SavePosition()
-    end)
-
-    -- The house size grip under the bottom right corner (Widgets.WindowGrip),
-    -- saved as the one scale every tab shares (`settingsScale`, from
-    -- before the tabs, stays in the save unread).
-    self.sizeGrip = Widgets.WindowGrip(frame, ns.FinderUI and ns.FinderUI.SCALE_KEY or "settingsScale", function()
-        SettingsUI:SavePosition()
-        if ns.FinderUI then ns.FinderUI:ScaleChanged() end
-    end)
-
-    -- Escape closes it, like the game's own windows.
-    if type(UISpecialFrames) == "table" then
-        table.insert(UISpecialFrames, "BlackthornesEquipmentSettings")
-    end
+    frame:Hide()
 
     self.frame = frame
     self.controls = {}
 
-    self:BuildHeader()
-
     self.pages = ns.SettingsPages.New(frame, {
         pages = PAGES,
-        top = HEADER + 4,
-        bottom = 40,
+        top = 4,
+        bottom = 30,
         padding = PADDING,
         columnWidth = COLUMN_WIDTH,
         columnGap = COLUMN_GAP,
         controlX = CONTROL_X,
         db = function() return ns.db end,
     })
+    self:Rail(self.pages)
     self:BuildGear()
     self:BuildQuest()
+    self:BuildTooltips()
     self:BuildGeneral()
+    -- Stat Weights and Characters draw their own page.
+    local pages = self.pages
+    local wide = COLUMN_WIDTH * 2 + COLUMN_GAP
+    if ns.WeightsPage then ns.WeightsPage:Build(pages, "weights", wide) end
+    if ns.CharactersPage then ns.CharactersPage:Build(pages, "characters", wide) end
     -- About (UI/About.lua): the note on how the addons are made, then the
     -- version, the Discord and the other Blackthornes addons.
     if ns.About then
-        local pages = self.pages
         pages:Section("about", 1, L["HOW THESE ADDONS ARE MADE"])
         local note = pages:Place("about", 1, ns.About:Note(pages.pages.about.content, COLUMN_WIDTH))
         pages:Searchable("about", note, note.words)
@@ -279,33 +346,21 @@ function SettingsUI:Build()
         pages:Searchable("about", info, info.words)
         self:BuildShareBox()
     end
-    -- The pages fit their fullest page; the window is then the size every
-    -- tab shares, or more when a page needs it (UI/FinderWindow.lua).
-    local pages = self.pages
+    -- The pages ask the Equipment window for the width they need; a page
+    -- taller than the window scrolls, so the window never grows taller.
     local fit = pages.Fit
     pages.Fit = function(page)
         fit(page)
-        if ns.FinderUI then
-            -- What the pages asked for: laid into the one window the frame
-            -- fills the area, so its own size would only say how big that is.
-            local need = page.need or { frame:GetWidth(), frame:GetHeight() }
-            ns.FinderUI:Need("settings", need[1], need[2])
-            ns.FinderUI:FitTab(frame)
-        end
+        if Gear and page.need then Gear:Need("settings", page.need[1], nil) end
     end
     pages:Fit()
 
-    -- Upgrades, Enchants and Settings hang under it as under the gear
-    -- window, so the two read as one (the owner approved it 2026-10-22).
-    self.tabStrip = ns.FinderUI and ns.FinderUI:HangTabs(frame, "settings")
-
     local footer = Theme.CreateLabel(frame, "tiny", "dim")
-    footer:SetPoint("BOTTOMLEFT", PADDING, 14)
-    footer:SetPoint("BOTTOMRIGHT", -PADDING, 14)
+    footer:SetPoint("BOTTOMLEFT", PADDING, 10)
+    footer:SetPoint("BOTTOMRIGHT", -PADDING, 10)
     footer:SetText(L["Changes save as you make them."])
     self.footer = footer
 
-    frame:Hide()
     return frame
 end
 
@@ -337,34 +392,6 @@ function SettingsUI:BuildShareBox()
     pages:Place("about", 2, holder, -14)
     pages:Searchable("about", holder, text)
     self.controls.shareData = box
-end
-
-function SettingsUI:BuildHeader()
-    local frame = self.frame
-
-    -- The name is on the plate across the top edge and the close gem on the
-    -- top right corner (UI/Titanforged.lua), so the header holds what this
-    -- window is and the version, a little low, under the plate.
-    local header = CreateFrame("Frame", nil, frame)
-    header:SetPoint("TOPLEFT", RIM, 0)
-    header:SetPoint("TOPRIGHT", -RIM, 0)
-    header:SetHeight(HEADER)
-
-    local subtitle = Theme.CreateLabel(header, "normal", "muted")
-    subtitle:SetPoint("LEFT", PADDING - RIM, -4)
-    subtitle:SetText(L["Settings"])
-
-    -- Clear of the close gem on the corner.
-    local version = Theme.CreateLabel(header, "tiny", "dim", "RIGHT")
-    version:SetText(ns.VersionLabel())
-    version:SetPoint("RIGHT", -(PADDING + 16 - RIM), -4)
-
-    -- A gold rule under it, bright at the left and fading out to the right.
-    local rule = header:CreateTexture(nil, "ARTWORK")
-    rule:SetPoint("BOTTOMLEFT")
-    rule:SetPoint("BOTTOMRIGHT")
-    rule:SetHeight(1)
-    Theme.SetGradientAlpha(rule, "HORIZONTAL", "accent", 0.6, 0.05)
 end
 
 --- A tick box on `row` that saves `key` and calls `after` when it changes.
@@ -400,8 +427,7 @@ local function ShiftStepper(row, key, lineKey)
     return stepper
 end
 
---- Gear: how it is judged on the left; the gear window, the bags and the
---- tooltip on the right.
+--- Gear: what shows on screen on the left, how gear is judged on the right.
 function SettingsUI:BuildGear()
     local controls = self.controls
     local pages = self.pages
@@ -410,9 +436,9 @@ function SettingsUI:BuildGear()
     -- 2026-11-16). Each box keeps its saved key.
     self:BuildShowGrid()
 
-    pages:Section("gear", 1, L["JUDGING GEAR"])
+    pages:Section("gear", 2, L["JUDGING GEAR"])
 
-    local specRow = pages:Row("gear", 1, L["Judge Gear As:"], function() return SettingsUI:SpecHint() end)
+    local specRow = pages:Row("gear", 2, L["Judge Gear As:"], function() return SettingsUI:SpecHint() end)
     controls.spec = Widgets.CreateChoice(specRow, {
         min = 1, max = #SettingsUI:SpecChoices(), step = 1, value = 1,
         format = function(index)
@@ -430,83 +456,13 @@ function SettingsUI:BuildGear()
     controls.spec:SetPoint("TOPLEFT", CONTROL_X, 0)
     self.specRow = specRow
 
-    local weightsRow = pages:Row("gear", 1, L["Stat Weights:"],
-        L["How much each stat counts for any class and spec."])
-    controls.weights = Widgets.CreateButton(weightsRow, L["Change"], function()
-        if ns.WeightsUI then ns.WeightsUI:Show() end
-    end, { width = 120, height = 20 })
-    controls.weights:SetPoint("TOPLEFT", CONTROL_X, 0)
-    self.weightsRow = weightsRow
-
-    local tooltipRow = pages:Row("gear", 1, L["Tooltip Line:"],
-        L["Says if gear beats what you wear."])
-    controls.tooltip = ShiftStepper(tooltipRow, "tooltipLine", "upgrade")
-
-    local autoRow = pages:Row("gear", 1, L["Put On Upgrades:"],
-        L["Puts an upgrade on as soon as you get it. Gear that would bind waits for your click."])
-    controls.autoEquip = Tick(autoRow, L["On"], "autoEquip", false)
-
     -- Saved per character, since the armor a class wears is its own.
-    local armorRow = pages:Row("gear", 1, L["Best Armor Only:"],
+    local armorRow = pages:Row("gear", 2, L["Best Armor Only:"],
         L["Only shows armor of the heaviest kind you can wear. Cloaks, rings, necks and trinkets still show."])
     controls.bestArmorOnly = Widgets.CreateCheckbox(armorRow, L["On"], function(checked)
         if ns.Compare then ns.Compare:SetBestArmorOnly(checked) end
     end, ns.Compare and ns.Compare.BestArmorOnly() or false)
     controls.bestArmorOnly:SetPoint("TOPLEFT", CONTROL_X, -2)
-
-    -- Characters skipped for upgrades (a player asked, the owner agreed
-    -- 2026-10-14): pick one by its whole name, then tick it.
-    pages:Section("gear", 1, L["YOUR CHARACTERS"])
-    local pickRow = pages:Row("gear", 1, L["Character:"],
-        L["Each character shows here after it logs in with Equipment."])
-    controls.skipPicker = SettingsUI.CharacterPicker(pickRow, CONTROL_X, function() SettingsUI:RefreshSkip() end)
-
-    local skipRow = pages:Row("gear", 1, L["Skip Upgrades:"],
-        function() return SettingsUI:SkipHint() end)
-    controls.skipUpgrades = Widgets.CreateCheckbox(skipRow, L["Skip"], function(checked)
-        local entry = controls.skipPicker:GetEntry()
-        if entry and ns.Alts then ns.Alts:SetSkipped(entry.key, checked) end
-    end, false)
-    controls.skipUpgrades:SetPoint("TOPLEFT", CONTROL_X, -2)
-    self.skipRow = skipRow
-
-    -- Forget the picked character (a player asked, the owner said build
-    -- it, 2026-11-22): for one that was deleted. The first click turns the
-    -- button to Confirm for a few seconds; the second forgets.
-    local forgetRow = pages:Row("gear", 1, L["Forget Character:"],
-        function() return SettingsUI:ForgetHint() end)
-    controls.forget = Widgets.CreateButton(forgetRow, L["Forget"], function(button)
-        SettingsUI:ForgetClicked(button)
-    end, { width = math.max(100, Theme.TextWidth("small", L["Confirm"]) + 24), height = 20 })
-    controls.forget:SetPoint("TOPLEFT", CONTROL_X, 0)
-    self.forgetRow = forgetRow
-
-    -- The buttons that open a window, together.
-    pages:Section("gear", 2, L["OPEN"])
-
-    local windowRow = pages:Row("gear", 2, L["Gear Window:"], "")
-    controls.openWindow = Widgets.CreateButton(windowRow, L["Open"], function()
-        ns.HandleSlash("window")
-    end, { width = 100, height = 20, primary = true })
-    controls.openWindow:SetPoint("TOPLEFT", CONTROL_X, 0)
-    self:BuildOpenRows()
-
-    pages:Section("gear", 2, L["BAGS AND TOOLTIPS"])
-
-    local suffixRow = pages:Row("gear", 2, L["Random Roll Names:"],
-        L["Adds a green's roll, like of the Monkey, to its tooltip."])
-    controls.suffixLine = ShiftStepper(suffixRow, "suffixLine", "suffix")
-
-    local altRow = pages:Row("gear", 2, L["Upgrades for Alts:"],
-        L["Names the other character an item helps most."])
-    controls.altTooltipLine = ShiftStepper(altRow, "altTooltipLine", "alt")
-
-    local enchantRow = pages:Row("gear", 2, L["Best Enchant:"],
-        L["Names the best enchant for a piece you wear."])
-    controls.enchantTooltip = ShiftStepper(enchantRow, "enchantTooltip", "enchant")
-
-    local dropsRow = pages:Row("gear", 2, L["Boss Drops:"], nil)
-    controls.dropsTooltip = ShiftStepper(dropsRow, "dropsTooltip", "drops")
 
     -- Show or Hide for this character (a player's report, 2026-10-20: one
     -- Show button that only cleared the banner's ignored types read as
@@ -535,129 +491,34 @@ function SettingsUI:BuildGear()
         self:SetValue(WeaponsShown(), true)
     end
     self.weaponsRow = weaponsRow
-
-    pages:Section("gear", 2, L["CLASS TRAINING"])
-
-    local trainingRow = pages:Row("gear", 2, L["Class Training:"],
-        L["The Training button shows spells you can learn and their cost. Visit a class trainer once so prices show."])
-    controls.classTraining = Widgets.CreateCheckbox(trainingRow, L["Show"], function(checked)
-        ns.ClassTraining:SetOn(checked)
-        if not checked and ns.TrainingDrawer then ns.TrainingDrawer:Hide() end
-    end, ns.ClassTraining:IsOn())
-    controls.classTraining:SetPoint("TOPLEFT", CONTROL_X, -2)
 end
 
---- The player's characters by whole name, in a drop-down (the owner,
---- 2026-10-23: drop-downs, never < > pickers), as wide as the longest
---- name so none is cut short. :SetEntries(list of { key, name }),
---- :GetEntry().
-function SettingsUI.CharacterPicker(row, x, onChange)
-    local picker = Widgets.CreateDropdown(row, {}, function()
-        if onChange then onChange() end
-    end, { width = 180, placeholder = L["No characters yet"] })
-    picker:SetPoint("TOPLEFT", x, -1)
-    picker.characters = {}
-
-    function picker:SetEntries(characters)
-        local current = picker:GetEntry()
-        self.characters = characters or {}
-        local options = {}
-        for index, entry in ipairs(self.characters) do
-            options[index] = { text = entry.name or L["A character not seen yet"], value = entry.key }
-        end
-        self:SetWidth(Widgets.DropdownWidth(options, 180))
-        local keep = nil
-        for _, entry in ipairs(self.characters) do
-            if current and entry.key == current.key then keep = entry.key end
-        end
-        self.options = options
-        self:SetValue(keep or (options[1] and options[1].value))
-    end
-
-    function picker:GetEntry()
-        local key = self:GetValue()
-        for _, entry in ipairs(self.characters or {}) do
-            if entry.key == key then return entry end
-        end
-    end
-
-    return picker
-end
-
---- What the Skip upgrades row says: what it does, and who is skipped.
-function SettingsUI:SkipHint()
-    local names = ns.Alts and ns.Alts:SkippedNames() or {}
-    if #names == 0 then
-        return L["Good for a crafting alt. It never hears about upgrades or gets your other characters' gear."]
-    end
-    return L.Format("Good for a crafting alt. It never hears about upgrades or gets your other characters' gear. Skipped now: %s.",
-        table.concat(names, ", "))
-end
-
--- How long the Forget button waits on Confirm, in seconds.
-SettingsUI.FORGET_ARMED = 4
-
---- What the Forget row says, for the character picked.
-function SettingsUI:ForgetHint()
-    local entry = self.controls and self.controls.skipPicker and self.controls.skipPicker:GetEntry()
-    if entry and entry.me then
-        return L["This is the character you're playing, so it can't be forgotten."]
-    end
-    return L["For a character you deleted. Equipment stops picking gear for it. It shows up again if it logs in."]
-end
-
---- Turn the Forget button to Confirm, or back.
-function SettingsUI:ArmForget(button, on)
-    button.armed = on and true or false
-    button.armedAt = on and (type(GetTime) == "function" and GetTime() or 0) or nil
-    button:SetText(on and L["Confirm"] or L["Forget"])
-    if button.SetLabelColor then button:SetLabelColor(on and "loss" or "gilt") end
-    if on and C_Timer and C_Timer.After then
-        local at = button.armedAt
-        C_Timer.After(self.FORGET_ARMED, function()
-            if button.armed and button.armedAt == at then SettingsUI:ArmForget(button, false) end
-        end)
-    end
-end
-
---- First click asks for Confirm; the second forgets the picked character.
-function SettingsUI:ForgetClicked(button)
-    local entry = self.controls.skipPicker:GetEntry()
-    if not (entry and ns.Alts and ns.Alts:CanForget(entry.key)) then
-        self:ArmForget(button, false)
-        return
-    end
-    -- A Confirm armed for another character starts over.
-    if not button.armed or button.armedKey ~= entry.key then
-        self:ArmForget(button, true)
-        button.armedKey = entry.key
-        return
-    end
-    self:ArmForget(button, false)
-    local done = ns.Alts:Forget(entry.key)
-    if done then
-        local name = type(done) == "string" and done or L["A character not seen yet"]
-        ns.Print(L.Format("Equipment forgot %s.", name))
-    end
-    self:RefreshSkip()
-end
-
---- The picker's characters and the tick for the one shown.
-function SettingsUI:RefreshSkip()
+--- Tooltips: the lines Equipment adds to an item's tooltip, each Off, on
+--- Shift or Always, as every Blackthornes addon has them.
+function SettingsUI:BuildTooltips()
     local controls = self.controls
-    if not (controls and controls.skipPicker and ns.Alts) then return end
-    controls.skipPicker:SetEntries(ns.Alts:Characters())
-    local entry = controls.skipPicker:GetEntry()
-    controls.skipUpgrades:SetChecked(entry ~= nil and ns.Alts:IsSkipped(entry.key))
-    controls.skipUpgrades:SetAlpha(entry and 1 or 0.45)
-    if self.skipRow then self.skipRow:SetDescription(self:SkipHint()) end
-    if controls.forget then
-        local can = entry ~= nil and ns.Alts:CanForget(entry.key)
-        if not can and controls.forget.armed then self:ArmForget(controls.forget, false) end
-        controls.forget.canForget = can
-        controls.forget:SetAlpha(can and 1 or 0.45)
-        if self.forgetRow then self.forgetRow:SetDescription(self:ForgetHint()) end
-    end
+    local pages = self.pages
+
+    pages:Section("tooltips", 1, L["TOOLTIPS"])
+
+    local tooltipRow = pages:Row("tooltips", 1, L["Tooltip Line:"],
+        L["Says if gear beats what you wear."])
+    controls.tooltip = ShiftStepper(tooltipRow, "tooltipLine", "upgrade")
+
+    local suffixRow = pages:Row("tooltips", 1, L["Random Roll Names:"],
+        L["Adds a green's roll, like of the Monkey, to its tooltip."])
+    controls.suffixLine = ShiftStepper(suffixRow, "suffixLine", "suffix")
+
+    local altRow = pages:Row("tooltips", 1, L["Upgrades for Alts:"],
+        L["Names the other character an item helps most."])
+    controls.altTooltipLine = ShiftStepper(altRow, "altTooltipLine", "alt")
+
+    local enchantRow = pages:Row("tooltips", 2, L["Best Enchant:"],
+        L["Names the best enchant for a piece you wear."])
+    controls.enchantTooltip = ShiftStepper(enchantRow, "enchantTooltip", "enchant")
+
+    local dropsRow = pages:Row("tooltips", 2, L["Boss Drops:"], nil)
+    controls.dropsTooltip = ShiftStepper(dropsRow, "dropsTooltip", "drops")
 end
 
 --- What the Untrained weapons row says: which types this character
@@ -682,7 +543,7 @@ local HUNTING = {
         L["Hover a gear slot to see its upgrades."], L["Show"] },
     { "upgradeToast", 1, L["Upgrade Banner:"], "", L["Show"] },
     { "showTracker", 2, L["Upgrade Tracker:"],
-        L["The panel of upgrades you're tracking."], L["Show"], "TrackerPanel" },
+        L["The panel of upgrades you're tracking."], L["Show"], "SmallPanel" },
     { "mapPins", 2, L["Map Pins:"],
         L["Shows where each tracked upgrade comes from."], L["Show"], "MapPins" },
 }
@@ -712,12 +573,9 @@ function SettingsUI:BuildShowGrid()
     local function Hunt(entry)
         local redraw = entry[6]
         return { entry[1], entry[3], entry[4], Plain(entry[1], true, function()
+            -- "Upgrade Tracker:" is the small panel's Tracking tab.
             local module = redraw and ns[redraw]
             if module and module.OnTrackingChanged then pcall(module.OnTrackingChanged, module) end
-            -- The small panel's Tracking tab follows "Upgrade Tracker:" too.
-            if redraw == "TrackerPanel" and ns.SmallPanel then
-                pcall(ns.SmallPanel.OnTrackingChanged, ns.SmallPanel)
-            end
         end) }
     end
 
@@ -761,6 +619,17 @@ function SettingsUI:BuildShowGrid()
                   if ns.QuestArrow then ns.QuestArrow:SetOn(checked) end
               end, false)
           end },
+        { "classTraining", L["Class Training:"],
+          L["The Training tab shows spells you can learn and their cost. Visit a class trainer once so prices show."],
+          function(parent, text)
+              return Widgets.CreateCheckbox(parent, text, function(checked)
+                  ns.ClassTraining:SetOn(checked)
+              end, ns.ClassTraining:IsOn())
+          end },
+        -- Off unless ticked.
+        { "autoEquip", L["Put On Upgrades:"],
+          L["Puts an upgrade on as soon as you get it. Gear that would bind waits for your click."],
+          Plain("autoEquip", false) },
     }
 
     local width = pages.opts.columnWidth
@@ -798,39 +667,6 @@ function SettingsUI:BuildShowGrid()
     end
 end
 
---- OPEN: the buttons that open a window, under the gear window's own.
-function SettingsUI:BuildOpenRows()
-    local controls = self.controls
-    local pages = self.pages
-
-    local _, findButton = CommandRow(pages, "gear", 2, L["Where to Get Upgrades:"], "",
-        L["Open"], "find", { primary = true })
-    controls.find = findButton
-
-    -- The panel's Quest log tab (UI/QuestLogTab.lua), and the box that
-    -- keeps it to tracked quests.
-    local logRow = pages:Row("gear", 2, L["Quest Log:"],
-        L["Your quests on a tab of the quest panel."])
-    controls.questLogOpen = Widgets.CreateButton(logRow, L["Show"], function()
-        ns.HandleSlash("quest log")
-    end, { width = 64, height = 20 })
-    controls.questLogOpen:SetPoint("TOPLEFT", CONTROL_X, 0)
-    controls.questLogTracked = Widgets.CreateCheckbox(logRow, L["Tracked Only"], function(checked)
-        if ns.QuestLogUI then ns.QuestLogUI:SetTrackedOnly(checked) end
-    end, false)
-    controls.questLogTracked:SetPoint("TOPLEFT", CONTROL_X + math.max(76, controls.questLogOpen:GetWidth() + 12), -2)
-
-    -- Every quest done inside a dungeon or raid (UI/DungeonQuestsWindow.lua).
-    local _, dungeonsButton = CommandRow(pages, "gear", 2, L["Dungeon Quests:"], nil,
-        L["Open"], "dungeons")
-    controls.dungeonQuests = dungeonsButton
-
-    -- What each dungeon's bosses drop (UI/DungeonLootWindow.lua).
-    local _, lootButton = CommandRow(pages, "gear", 2, L["Dungeon Loot:"], nil,
-        L["Open"], "loot")
-    controls.dungeonLoot = lootButton
-end
-
 --- The upgrade quest on the left, the arrow that leads there on the right.
 function SettingsUI:BuildQuest()
     local controls = self.controls
@@ -840,19 +676,15 @@ function SettingsUI:BuildQuest()
 
     -- Ignore, Switch and the tab to show are on the panel itself, and stay
     -- typed (/beq quest ignore, switch, vendor...); the owner, 2026-10-15.
+    -- The list of ignored upgrades, each with Restore, and Restore all, is
+    -- on the Upgrade Quest tab.
     local panelRow = pages:Row("quest", 1, L["Quest Panel:"],
         L["Ignored lists upgrades you skipped, so you can bring them back."])
     self.questPanelRow = panelRow
-    controls.questOpen = Widgets.CreateButton(panelRow, L["Open"], function()
-        ns.HandleSlash("quest")
-    end, { width = 64, height = 20 })
-    controls.questOpen:SetPoint("TOPLEFT", CONTROL_X, 0)
-    -- The list of ignored upgrades, each with Restore, and Restore all
-    -- (UI/IgnoredWindow.lua).
     controls.questReset = Widgets.CreateButton(panelRow, L["Ignored"], function()
         ns.HandleSlash("quest ignored")
     end, { width = 84, height = 20 })
-    controls.questReset:SetPoint("LEFT", controls.questOpen, "RIGHT", 12, 0)
+    controls.questReset:SetPoint("TOPLEFT", CONTROL_X, 0)
 
     -- The upgrade quest panel's size, as its gold corner grip and /beq quest
     -- size set it (the owner asked 2026-10-07). The size in use is lit green.
@@ -860,7 +692,7 @@ function SettingsUI:BuildQuest()
     self.questSizeRow = questSizeRow
     controls.questSizes = {}
     local previous
-    for _, size in ipairs(ns.QuestPanel and ns.QuestPanel.SIZES or {}) do
+    for _, size in ipairs(ns.SmallPanel and ns.SmallPanel.SIZES or {}) do
         local button = Widgets.CreateButton(questSizeRow, size.text, function()
             ns.HandleSlash("quest size " .. size.key)
         end, { width = 54, height = 20 })
@@ -888,14 +720,6 @@ function SettingsUI:BuildQuest()
     end, true)
     -- Past the first box however long its words run (German runs longer).
     controls.questZoneSwap:SetPoint("TOPLEFT", CONTROL_X + math.max(92, controls.soloQuests:GetWidth() + 12), -2)
-
-    -- The panel's "Current step only" (the owner asked 2026-10-13).
-    local stepsRow = pages:Row("quest", 1, L["Current Step Only:"],
-        L["The panel shows only the step to do now."])
-    controls.questStepOnly = Widgets.CreateCheckbox(stepsRow, L["On"], function(checked)
-        if ns.UpgradeQuest then ns.UpgradeQuest:SetStepOnly(checked) end
-    end, false)
-    controls.questStepOnly:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- How You Gear Up (the upgrade quest mockups, card B): one pick that
     -- sets the quest's boxes. Its hover says which boxes it sets.
@@ -962,10 +786,20 @@ function SettingsUI:BuildQuest()
     ns.SettingsPages.FitStepper(controls.arrowSize, { "50%", "75%", "100%" })
     controls.arrowSize:SetPoint("TOPLEFT", CONTROL_X, -2)
 
-    -- The panel's Quest log tab (UI/QuestLogTab.lua) and its two tick boxes.
-    -- The Quest log tab's Show button and Tracked Only box are under OPEN on
-    -- the Gear page.
+    -- The small panel's Quest log tab (UI/QuestLogTab.lua): open it, keep
+    -- it to tracked quests, and hide the game's own tracker meanwhile.
     pages:Section("quest", 2, L["QUEST LOG"])
+
+    local logRow = pages:Row("quest", 2, L["Quest Log:"],
+        L["Your quests on a tab of the quest panel."])
+    controls.questLogOpen = Widgets.CreateButton(logRow, L["Show"], function()
+        ns.HandleSlash("quest log")
+    end, { width = 64, height = 20 })
+    controls.questLogOpen:SetPoint("TOPLEFT", CONTROL_X, 0)
+    controls.questLogTracked = Widgets.CreateCheckbox(logRow, L["Tracked Only"], function(checked)
+        if ns.QuestLogUI then ns.QuestLogUI:SetTrackedOnly(checked) end
+    end, false)
+    controls.questLogTracked:SetPoint("TOPLEFT", CONTROL_X + math.max(76, controls.questLogOpen:GetWidth() + 12), -2)
 
     local trackerRow = pages:Row("quest", 2, L["Hide Game's Tracker:"],
         L["Hides the game's quest tracker while the panel is up."])
@@ -1002,14 +836,18 @@ function SettingsUI:BuildGeneral()
     local textRow = pages:Row("all", 1, L["Text Size:"], "")
     controls.textSize = ns.SettingsPages.TextSizeControl(textRow, CONTROL_X, function() return ns.db end)
 
-    -- The size every gear window tab shares, the one its grip saves.
+    -- The Equipment window's size, the one its grip saves.
     local sizeRow = pages:Row("general", 1, L["Window Size:"], nil)
     controls.windowScale = ns.SettingsPages.WindowSizeControl(sizeRow, CONTROL_X,
         function() return ns.db and ns.db.finderScale end,
         function(percent)
             if not ns.db then return end
             ns.db.finderScale = percent
-            if ns.FinderUI then ns.FinderUI:ScaleChanged() end
+            -- Laid into the one window, that window's own size holds.
+            local Gear = ns.GearWindow
+            if Gear and Gear.frame and not Gear.hostArea and Widgets.ApplySize then
+                Widgets.ApplySize(Gear.frame, percent)
+            end
         end)
 
     -- How much the windows move: they rise in, glow and glint at Full,
@@ -1187,7 +1025,6 @@ function SettingsUI:Refresh()
     controls.altTooltipLine:Sync()
     controls.enchantTooltip:Sync()
     controls.dropsTooltip:Sync()
-    self:RefreshSkip()
     controls.classTraining:SetChecked(ns.ClassTraining:IsOn())
     for _, entry in ipairs(HUNTING) do
         controls[entry[1]]:SetChecked(ns.db[entry[1]] ~= false)
@@ -1204,7 +1041,6 @@ function SettingsUI:Refresh()
     controls.weapons:Sync()
     controls.soloQuests:SetChecked(ns.db.soloQuestsOnly == true)
     controls.questZoneSwap:SetChecked(ns.db.upgradeQuestZoneSwap ~= false)
-    controls.questStepOnly:SetChecked(ns.db.upgradeQuestStepOnly == true)
     if controls.questStyle and ns.UpgradeQuest then
         local now = ns.UpgradeQuest:Style()
         for index, style in ipairs(ns.UpgradeQuest.STYLES) do
@@ -1233,7 +1069,7 @@ function SettingsUI:Refresh()
     controls.textSize:Sync()
     controls.windowStyle:Sync()
     controls.combineButtons:SetChecked(not ns.SharedMinimap or ns.SharedMinimap.Combined())
-    local One = ns.FinderUI and ns.FinderUI.One()
+    local One = ns.GearWindow and ns.GearWindow.One()
     controls.oneWindow:SetChecked(One ~= nil and One.On() == true)
     controls.effects:SetValue(controls.effectsIndex(), true)
     controls.muteSounds:SetChecked(ns.Muted ~= nil and ns.Muted() == true)
@@ -1242,21 +1078,19 @@ function SettingsUI:Refresh()
     end
     controls.windowScale:Sync()
     -- In the one window, All Addons is behind its gear, not on the switch.
-    local OneAll = ns.FinderUI and ns.FinderUI.One and ns.FinderUI.One()
-    self.pages:SetHidden("all", OneAll ~= nil and OneAll.On() == true)
+    self.pages:SetHidden("all", One ~= nil and One.On() == true)
     self.pages:Refresh()
 end
 
 --- Open Settings on the All Addons page (the one window's gear).
 function SettingsUI:ShowAllAddons()
-    self:Show()
-    if self.pages then self.pages:Show("all") end
+    self:Show("all")
 end
 
 --- The quest panel's size buttons: the one in use is lit green.
 function SettingsUI:RefreshQuestSize()
-    local panel = ns.QuestPanel
-    if not (panel and self.questSizeRow) then return end
+    local panel = ns.SmallPanel
+    if not (panel and panel.GetScale and self.questSizeRow) then return end
     local scale = panel:GetScale()
     for _, button in ipairs(self.controls.questSizes) do
         button:SetLabelColor(math.abs(button.scale - scale) < 0.005 and "good" or "gilt")
@@ -1282,82 +1116,69 @@ function SettingsUI:OnQuestFilterChanged()
     self:Refresh()
 end
 
-function SettingsUI:SavePosition()
-    if not (ns.db and self.frame) then return end
-
-    local point, _, relativePoint, x, y = self.frame:GetPoint()
-
-    ns.db.settingsPoint = point
-    ns.db.settingsRelativePoint = relativePoint
-    ns.db.settingsX = x
-    ns.db.settingsY = y
-end
-
-function SettingsUI:RestorePosition()
-    if not self.frame then return end
-
-    local db = ns.db or {}
-
-    self.frame:ClearAllPoints()
-    self.frame:SetPoint(db.settingsPoint or "CENTER", UIParent,
-        db.settingsRelativePoint or "CENTER", db.settingsX or 0, db.settingsY or 0)
-end
-
 --------------------------------------------------------------------------------
 -- Visibility
 --------------------------------------------------------------------------------
 
-function SettingsUI:Show()
-    -- With "One Window:" ticked, it opens as a tab of the one window
-    -- (FinderUI:Route).
-    if ns.FinderUI and ns.FinderUI.Route and ns.FinderUI:Route("settings") then return end
-    self:Build()
-    -- Opened on its own; the Settings tab marks it as standing in after.
-    self.asTab = false
+--- Is the Settings page up and its window open?
+function SettingsUI:IsShown()
+    local frame = self.frame
+    if not frame then return false end
+    local ok, shown = pcall(frame.IsShown, frame)
+    if not (ok and shown == true) then return false end
+    local okSeen, seen = pcall(frame.IsVisible, frame)
+    if okSeen and type(seen) == "boolean" then return seen end
+    return true
+end
 
-    if not self.frame:IsShown() then
-        -- Inside the one window it fills the area: no spot of its own.
-        if not (ns.FinderUI and ns.FinderUI.oneArea) then self:RestorePosition() end
-        if ns.FinderUI then ns.FinderUI:FitTab(self.frame) end
-        self.frame:Show()
-        ns.Motion:Open(self.frame)
+--- Show Settings, on `page` when one is named. Asked by anything but the
+--- Equipment window, it opens that window on its Settings tab, which shows
+--- this (Gear.driving).
+function SettingsUI:Show(page)
+    local Gear = ns.GearWindow
+    if page then self.wantPage = page end
+    if Gear and not Gear.driving then
+        Gear:Open("settings")
+        return
     end
-    if ns.FoldWindow then ns.FoldWindow:Unfold(self.frame) end
-
+    self:Build()
+    if not self.frame then return end
+    self.frame:Show()
+    local want = self.wantPage
+    self.wantPage = nil
+    if want and self.pages and self.pages.pages[want] then self.pages:Show(want) end
     self:Refresh()
 end
 
 --- Tick or untick "One Window:" in every loaded addon, and open Settings
---- again in the one window, or in its own.
+--- again in the one window, or in the Equipment window's own frame.
 function SettingsUI:SetOneWindow(on)
-    local Finder = ns.FinderUI
-    local One = Finder and Finder.One()
+    local Gear = ns.GearWindow
+    local One = Gear and Gear.One()
     if not One then return end
-    local inside = Finder:Hosted()
+    local inside = Gear.hostArea ~= nil
+    local showing = self:IsShown()
     One.SetOn(on)
-    if on and not inside and self.frame and self.frame:IsShown() then
+    if on and not inside and showing then
         -- The Equipment window closes in its own place and opens again in
         -- the one window, on Settings.
-        if ns.GearWindow then
-            ns.GearWindow:Close()
-        else
-            Finder.switching = true
-            self.frame:Hide()
-            Finder.switching = false
-        end
+        Gear:Close()
         self:Show()
     elseif not on and inside then
         self:Show()
     end
 end
 
+--- The page goes; the Equipment window stays (it calls this as it changes
+--- tabs and as it closes).
 function SettingsUI:Hide()
     if self.frame then self.frame:Hide() end
 end
 
+--- /beq settings: open on Settings, or close the window when it is there.
 function SettingsUI:Toggle()
-    if self.frame and self.frame:IsShown() then
-        self:Hide()
+    if self:IsShown() then
+        if ns.GearWindow then ns.GearWindow:Close() else self:Hide() end
     else
         self:Show()
     end
@@ -1442,7 +1263,7 @@ function SettingsUI:SetMuteSounds(on)
         ns.db.muteSounds = on
         ns.db.muteSoundsAt = at
     end
-    if self.Refresh and self.frame and self.frame:IsShown() then pcall(self.Refresh, self) end
+    if self:IsShown() then pcall(self.Refresh, self) end
 end
 
 ns.RegisterCommand("mute", L["turn every Blackthornes sound off or back on (on/off)"], function(arg)
@@ -1499,7 +1320,9 @@ ns.RegisterCommand("windows", L["put every Blackthornes window back where it sta
     end
 end)
 
--- Kept folded through a /reload, its round button opens it (UI/FoldWindow.lua).
+-- A window folded into its round button before step 6 opens Settings.
 if ns.FoldWindow and ns.FoldWindow.Opener then
     ns.FoldWindow:Opener("Settings", { open = function() SettingsUI:Show() end })
 end
+
+if ns.GearWindow then ns.GearWindow:AddPage("settings", SettingsUI) end
