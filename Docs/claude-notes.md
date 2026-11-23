@@ -2727,3 +2727,68 @@ The mockup the owner approved is the plan's `my-gear.html`.
 - Tested in `tools/test_mygear.lua`, `tools/test_mainwindow.lua`,
   `tools/test_onewindow.lua` and `tools/test_swapwindows.lua`. Not yet
   seen in game.
+
+## Find Upgrades (rework step 3, 2026-11-23)
+
+Step 3 of the rework: the Find Upgrades tab and its side sheet. The mockup
+the owner approved is the plan's `find-upgrades.html`.
+
+- **The tab** (`UI/FindUpgrades.lua`, `ns.FindUpgrades`, the page key
+  "find"): every slot's upgrades in one list, the biggest gain first. The
+  filters stay down the left (FROM, SLOT, NARROW IT DOWN), Judge Gear As
+  and Find run along the top, and the sheet on the right shows the row
+  picked. It took the tab bar's place of the old Upgrades tab.
+- **The old gear list** (`UI/FinderWindow.lua`) has no tab any more. Its
+  window still holds the Enchants tab, so the code stays until step 6, and
+  the key "upgrades" still shows the old list when code asks
+  (`Gear:ShowTab("upgrades")`, `FinderUI:Show()`): the old suites test the
+  filters through it. Nothing a player clicks opens it. What used to open
+  it (the upgrade banner, the quest panel's Change, the slot pop-up's All
+  Upgrades, `/beq find`, an old folded "Finder" button) calls
+  `FinderUI.OpenFind()`. My Gear's See All calls `Find:SetSlot`.
+- **One set of filters.** The page sets the old list's saved choices
+  through the old list's own calls (`FinderUI:SetSource`, `SetZoneOnly`,
+  `SetGetNowOnly`, `Finder:SetSoloOnly`, `SetQuestLevelsAbove`,
+  `finderAhead`), so `FinderUI:SourceFilter`, the upgrade quest and the
+  character sheet still agree with it. "Only What I Can Get Now" is not
+  on the mockup; it stays, under NARROW IT DOWN, since the upgrade quest
+  reads it. New saved key: `findSlot` (a slot group's first slot, nil for
+  All Slots). Nothing was renamed or removed.
+- **How it reads**: `Find:Read(found)` lays a scan out as one line an
+  upgrade (ignored ones left out; a one-hander under both hands keeps a
+  line for each). `Find:Filtered` applies the filters and counts each
+  kind of source (the count ignores the source boxes, the slot and Find,
+  so an unticked source still shows what it holds). `Find:Sorted` sorts.
+  `Find:Narrow` runs those and draws; every tick box, slot, heading and
+  letter typed calls it. None of them judges gear or starts a scan.
+- **When it looks**: for now it takes `Finder:Fresh()`, else
+  `Finder:ScanInBackground`, as My Gear does. Planning ahead needs a scan
+  of its own (`Finder:ScanSliced`), kept as `aheadFound` until
+  `Find:AheadKey` moves (the plan, `Finder:JudgeKey()` or
+  `Finder.changes`). It never calls `Finder:Scan`: the old list scanned
+  in one go on every click, which was the hitch. Events go through
+  `RefreshSoon`; nothing runs while the page is hidden or folded.
+- **Rows** are pooled (22) and only those in view are filled
+  (`Find:Draw`); a row grows to wrap its words. The wheel moves three
+  lines and stops at the last row. The upgrade quest says it changed
+  often, so `Find:OnUpgradeQuestChanged` moves only when the quests
+  followed or the ignored count did.
+- **The sheet** (`Find:PaintSheet`): the item, its slot and kind, its
+  gain, what you wear there, what it waits on, then WHERE TO GET IT:
+  every place (`Find.Places`, the ones in your zone first, whatever the
+  tick boxes say), as many as fit above the buttons, then "and N more".
+  Buttons (`Find:Actions`): Make It My Quest (the old Follow; greyed with
+  "Not a quest yet: ..." when it can't be), Track or Stop Tracking, Show
+  on Map, Queue It, Ignore. They share one width, the longest label's.
+- **Ignore for any item**: `UpgradeQuest:Ignore(itemID)` (new) adds to
+  the same `upgradeQuestSkipped` list the quest panel's Ignore fills, and
+  a tab whose quest it was picks another. Settings' Ignored list brings
+  it back.
+- A row's click picks it for the sheet (it used to follow it). Shift,
+  Ctrl and Alt clicks and the right-click menu are as before.
+- `Tracking:Changed`, `UpgradeQuest:Changed` and
+  `Finder:QuestFilterChanged` now tell `FindUpgrades` (and the first two
+  `MyGear`, whose handlers were never called).
+- Tested in `tools/test_findupgrades.lua` (it counts judging, sources and
+  scans for clicks, filters, typing, sorting and opening again). Not yet
+  seen in game.

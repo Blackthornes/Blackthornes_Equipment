@@ -349,7 +349,7 @@ function SlotUpgrades:Build()
 
     local all = Widgets.CreateButton(frame, L["All upgrades"], function()
         frame:Hide()
-        if ns.FinderUI then ns.FinderUI:Show() end
+        if ns.FinderUI then ns.FinderUI.OpenFind() end
     end, { width = 110, height = 22, primary = true })
     all:SetPoint("BOTTOMRIGHT", -PAD, 10)
 

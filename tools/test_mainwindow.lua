@@ -41,7 +41,7 @@ UI:Show()
 suite.check("it opens", UI:IsShown() and Gear.frame:IsShown())
 suite.check("on My Gear", Gear.tab == "gear" and ns.MyGear:IsShown())
 Gear:ShowTab("upgrades")
-suite.check("the Upgrades tab shows the old gear window", UI.frame:IsShown() and not ns.MyGear:IsShown())
+suite.check("asked for by its old key, the old gear list still shows", UI.frame:IsShown() and not ns.MyGear:IsShown())
 suite.check("one window: the gear window is the finder's", UI.frame == Finder.frame)
 suite.check("laid into the Equipment window", Finder.frame:GetParent() == Gear.area)
 suite.check("named on its plate", Finder.frame ~= nil)
@@ -55,8 +55,8 @@ suite.check("the header has Training and Upgrade quest",
 suite.check("Dungeon Loot is a tab now, not a header button", UI.lootButton == nil)
 local tabKeys = {}
 for _, tab in ipairs(Gear.strip.tabs) do tabKeys[#tabKeys + 1] = tab.key end
-suite.check("the tabs are My Gear, Upgrades, Enchants, Dungeon Quests, Dungeon Loot and Settings",
-    table.concat(tabKeys, ",") == "gear,upgrades,enchant,dungeons,loot,settings", table.concat(tabKeys, ","))
+suite.check("the tabs are My Gear, Find Upgrades, Enchants, Dungeon Quests, Dungeon Loot and Settings",
+    table.concat(tabKeys, ",") == "gear,find,enchant,dungeons,loot,settings", table.concat(tabKeys, ","))
 
 suite.check("the bigger of two chest upgrades", Owned(5) == "item:2", Owned(5))
 suite.check("an item above your level is not offered", not Owned(5):find("item:8", 1, true))

@@ -132,6 +132,7 @@ Locale (grep one key, never read): `Locale/ruRU` 1206 lines, 99 KB; `frFR`, `deD
 
 Code:
 - `UI/FinderWindow.lua` 2817 lines, 111 KB: the old Upgrades list and tabs, laid into the new window.
+- `UI/FindUpgrades.lua` 1570 lines, 60 KB: the Find Upgrades tab and its side sheet (see "Find Upgrades" in Docs/claude-notes.md).
 - `UI/MyGear.lua` 1453 lines, 54 KB: the My Gear tab (`UI/GearWindow.lua` is the window and tab bar; see "The Equipment window and My Gear" in Docs/claude-notes.md).
 - `Logic/UpgradeQuest.lua` 2532 lines, 108 KB: the upgrade quest.
 - `Logic/Weights.lua` 1667 lines, 69 KB: stat weights.

@@ -95,6 +95,7 @@ local HEIGHT = HEADER + 10 + FILTERS + QUEST_ROW + 8 + LIST_HEAD + COLUMN_HEAD +
 
 -- The tag in front of a source, in its own colour.
 local KIND_COLORS = { vendor = "accent", quest = "quest", dungeon = "dungeon", craft = "craft" }
+FinderUI.KIND_COLORS = KIND_COLORS
 
 -- A tick box for each kind of source, in this order. Raids are dungeon
 -- drops from a raid (FinderUI.SourceKind).
@@ -2788,6 +2789,18 @@ function FinderUI:Route(key)
     return true
 end
 
+--- Open Find Upgrades (UI/FindUpgrades.lua, rework step 3), the tab that
+--- took the place of this window's gear list. For everything that used to
+--- open that list: the toast, the quest panel's Change, /beq find.
+function FinderUI.OpenFind()
+    local Gear = ns.GearWindow
+    if Gear and Gear.pages and Gear.pages.find then
+        Gear:Open("find")
+    else
+        FinderUI:Show()
+    end
+end
+
 --- A tab's window closed by itself (Escape): the Equipment window closes
 --- with it, unless a tab change is under way.
 function FinderUI:Closed(frame)
@@ -2800,5 +2813,5 @@ end
 
 -- Kept folded through a /reload, its round button opens it (UI/FoldWindow.lua).
 if ns.FoldWindow and ns.FoldWindow.Opener then
-    ns.FoldWindow:Opener("Finder", { open = function() FinderUI:Show() end })
+    ns.FoldWindow:Opener("Finder", { open = function() FinderUI.OpenFind() end })
 end

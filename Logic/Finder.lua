@@ -369,7 +369,7 @@ end
 --- filters changed.
 function Finder:QuestFilterChanged()
     self:MarkStale()
-    for _, name in ipairs({ "FinderUI", "UpgradeQuest", "SettingsUI" }) do
+    for _, name in ipairs({ "FinderUI", "UpgradeQuest", "SettingsUI", "FindUpgrades" }) do
         local module = ns[name]
         if module and module.OnQuestFilterChanged then pcall(module.OnQuestFilterChanged, module) end
     end
@@ -1830,5 +1830,10 @@ function Finder.RollText(pick)
 end
 
 ns.RegisterCommand("find", L["where to get upgrades: vendors, quests, dungeons and crafting"], function()
-    if ns.FinderUI then ns.FinderUI:Toggle() end
+    local Gear = ns.GearWindow
+    if Gear and Gear.pages and Gear.pages.find then
+        if Gear:IsShown() and Gear.tab == "find" then Gear:Close() else Gear:Open("find") end
+    elseif ns.FinderUI then
+        ns.FinderUI:Toggle()
+    end
 end)

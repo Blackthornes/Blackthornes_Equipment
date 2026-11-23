@@ -20,7 +20,7 @@ end
 local function Near(a, b) return type(a) == "number" and math.abs(a - b) <= 12 end
 local opened = 0
 ns.FinderUI = ns.FinderUI or {}
-ns.FinderUI.Show = function() opened = opened + 1 end
+ns.FinderUI.OpenFind = function() opened = opened + 1 end
 
 Toast:Show({ title = "Upgrade in your bags", link = "item:1" })
 local frame = Toast.frame
