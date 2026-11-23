@@ -6,8 +6,10 @@
 -- which rework step 6 took out; the menu choices, the map pin and the size
 -- words they kept live here now.
 --
--- 250 wide. One thin bar holds the tabs (Quest, Tracking, Log), the fold
--- gem and the red close gem. There is no title bar, footer or button row.
+-- 250 wide. One thin bar holds the tabs (Quest, Tracking, Log), a small
+-- gold button right after them that opens the Upgrade Quest tab (the owner
+-- asked 2026-11-23, from a mockup), the fold gem and the red close gem.
+-- There is no title bar, footer or button row.
 --   Quest     the upgrade, the step to do now and five marks for how far
 --             along it is. A click on the step opens every step; a click
 --             again closes them.
@@ -49,6 +51,8 @@ local ICON = 20
 local ROW_ICON = 17
 local MARK = 12
 local GEM = 15
+local OPEN_SIZE = 18
+local OPEN_ICON = [[Interface\Icons\INV_Scroll_03]]
 local MARKS = 5
 local MARK_HEIGHT = 4
 local MOST_STEPS = 14
@@ -347,6 +351,37 @@ function Panel:BuildTab(key)
     return tab
 end
 
+--- The small gold button after the tabs: opens the Upgrade Quest tab.
+function Panel:BuildOpenButton()
+    local button = CreateFrame("Button", nil, self.bar)
+    button:SetSize(OPEN_SIZE, OPEN_SIZE)
+    button.fill = Theme.Fill(button, "header")
+    Theme.Border(button, "accent")
+    button.icon = button:CreateTexture(nil, "ARTWORK")
+    button.icon:SetPoint("TOPLEFT", 2, -2)
+    button.icon:SetPoint("BOTTOMRIGHT", -2, 2)
+    button.icon:SetTexture(OPEN_ICON)
+    button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    button:SetScript("OnClick", function()
+        GameTooltip:Hide()
+        Panel:OpenTab()
+    end)
+    button:SetScript("OnEnter", function(self)
+        Theme.SetBorderColor(self, "accentHi")
+        self.fill:SetColorTexture(Theme.Unpack("glassHover"))
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(L["Upgrade Quest"], Theme.Unpack("accent"))
+        GameTooltip:AddLine(L["Opens the Upgrade Quest tab."], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function(self)
+        Theme.SetBorderColor(self, "accent")
+        self.fill:SetColorTexture(Theme.Unpack("header"))
+        GameTooltip:Hide()
+    end)
+    return button
+end
+
 function Panel:BuildStepRow(index)
     local row = Glass(self.body, index)
     row.index = index
@@ -460,6 +495,7 @@ function Panel:Build()
     self.bar = bar
     self.tabs = {}
     for _, key in ipairs(VIEWS) do self.tabs[key] = self:BuildTab(key) end
+    self.openTab = self:BuildOpenButton()
 
     -- The gems ride on a holder of their own, so the fold gem can stay on
     -- the one line when the bar is gone.
@@ -906,6 +942,12 @@ function Panel:FillBar(view, line)
             tab:Show()
             x = x + tab:GetWidth()
         end
+    end
+    local open = self.openTab
+    if open then
+        open:ClearAllPoints()
+        open:SetPoint("LEFT", bar, "LEFT", x + 4, 0)
+        open:Show()
     end
 end
 
