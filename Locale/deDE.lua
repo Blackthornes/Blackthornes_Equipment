@@ -510,11 +510,7 @@ L["Looking for upgrades. Hover again in a moment"] = "Suche nach Verbesserungen.
 L["Still loading gear. Hover again in a moment"] = "Lade noch Ausrüstung. Fahr gleich noch einmal darüber"
 L["Nothing on offer beats this yet"] = "Noch ist nichts im Angebot besser"
 L["Upgrades on offer"] = "Verbesserungen im Angebot"
-L["Alt-click for upgrades you can track"] = "Alt-Klick für Verbesserungen, die du verfolgen kannst"
-L["Map"] = "Karte"
-L["All upgrades"] = "Alle Verbesserungen"
-L["Upgrades: %s"] = "Verbesserungen: %s"
-L["this slot"] = "dieser Platz"
+L["Alt-click to see this slot in My Gear"] = "Alt-Klick zeigt diesen Platz in Meine Ausrüstung"
 L["Nothing on offer beats what you wear here."] = "Nichts im Angebot ist hier besser als das, was du trägst."
 
 -- UI/MainWindow.lua

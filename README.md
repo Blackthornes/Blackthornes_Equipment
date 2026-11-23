@@ -78,10 +78,11 @@ small tracker panel with where to get each, get a pin on the world map at the
 vendor, quest giver or trainer, and a banner says so the moment one lands in
 your bags; once you wear it the hunt is done and moves to the finished list.
 Click a tracker row (or Alt-click a finder row) to put the game's map pin on
-the spot. On the character sheet, hovering a gear slot lists its best
-upgrades on offer, and Alt-clicking it opens a panel of them with Track and
-Map buttons. The green arrow also marks upgrades on a vendor's page and in
-the loot window. Each of these has a switch under Settings > Upgrade hunts.
+the spot. On the character sheet, a green arrow marks each gear slot with
+an upgrade, hovering a slot lists its best upgrades on offer, and
+Alt-clicking it opens My Gear on that slot beside the sheet. The green
+arrow also marks upgrades on a vendor's page and in the loot window, with
+how much better under it. Each of these has a switch under Settings > Upgrade hunts.
 
 **Upgrade quest.** Turn it on under Settings > Upgrade quest (or type
 `/beq quest`) and Equipment hands you a quest for your best next upgrade:

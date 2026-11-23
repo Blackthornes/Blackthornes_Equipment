@@ -19,20 +19,31 @@ Done.FADE = 0.8
 Done.SPARKS = 12
 Done.TOP = -150
 
+--- Take its place on the shared top shelf, once it is built and before
+--- it first shows: the shelf hears it come and go from then on, so the
+--- banner and the note cards under it move down and back up. Joined after
+--- the first show, the first plaque stood on top of them.
+function Done.Join()
+    local sw = ns.SharedWindow
+    local frame = Done.frame
+    if not (frame and sw and sw.ShelfJoin) or Done.joined == frame then return end
+    Done.joined = frame
+    sw.ShelfJoin("upgrade.done", {
+        frame = frame,
+        height = function()
+            local ok, h = pcall(function() return Done.plaque:GetHeight() + 20 end)
+            return ok and h or 60
+        end,
+        place = function() pcall(frame.SetPoint, frame, "TOP", UIParent, "TOP", 0, Done.Top()) end,
+    })
+end
+
 --- Where the plaque stands: its place on the shared top shelf (it is never
 --- dragged), else Done.TOP.
 function Done.Top()
     local sw = ns.SharedWindow
-    local frame = Done.frame
-    if frame and sw and sw.ShelfJoin and sw.ShelfSpot then
-        sw.ShelfJoin("upgrade.done", {
-            frame = frame,
-            height = function()
-                local ok, h = pcall(function() return Done.plaque:GetHeight() + 20 end)
-                return ok and h or 60
-            end,
-            place = function() pcall(frame.SetPoint, frame, "TOP", UIParent, "TOP", 0, Done.Top()) end,
-        })
+    Done.Join()
+    if Done.frame and sw and sw.ShelfSpot then
         local ok, _, _, y = pcall(sw.ShelfSpot, "upgrade.done")
         if ok and type(y) == "number" then return y end
     end
@@ -99,6 +110,7 @@ function Done:Show(quest, count)
     count = tonumber(count) or 0
     local level = Level()
 
+    Done.Join()
     frame:SetAlpha(1)
     frame:Show()
     plaque:Show()

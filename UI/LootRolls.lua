@@ -104,6 +104,11 @@ end
 -- The marker
 --------------------------------------------------------------------------------
 
+--- The percentage already made for an icon, or nil; never makes one.
+function LootRolls:ExistingLabel(icon)
+    return labels[icon]
+end
+
 --- The percentage under the icon, made the first time it is asked for.
 function LootRolls:Label(icon)
     local label = labels[icon]

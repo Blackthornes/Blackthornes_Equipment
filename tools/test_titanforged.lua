@@ -363,7 +363,6 @@ Gear:Open("find")
 Gear:Open("settings")
 addon.SmallPanel:Build()
 addon.Toast:Build()
-addon.SlotUpgrades:Build()
 
 local gear = Titan(Gear.frame)
 check("the Equipment window wears the frame", gear ~= nil, true)
@@ -390,18 +389,6 @@ check("with no plate or portrait", rawget(banner, "plate") == nil and rawget(ban
 addon.Toast.frame:Show()
 banner.closeButton:GetScript("OnClick")(banner.closeButton)
 check("and its gem closes it", addon.Toast.frame:IsShown(), false)
-
--- The upgrade list by the character sheet wears the rim, the slot on the
--- plate and the close gem.
-local slots = Titan(addon.SlotUpgrades.frame)
-check("the slot upgrades list wears the rim and close gem",
-    slots ~= nil and rawget(slots, "closeButton") ~= nil, true)
-addon.SlotUpgrades.slot = 5
-addon.SlotUpgrades:Fill()
-check("with the slot on its plate", slots.plate.label:GetText(), "Upgrades: Chest")
-addon.SlotUpgrades.frame:Show()
-slots.closeButton:GetScript("OnClick")(slots.closeButton)
-check("and its gem closes it", addon.SlotUpgrades.frame:IsShown(), false)
 
 -- The test frames keep no texture colours, so each button's face records
 -- its own before it is lit. A stepper's - or + dimmed at the end of its

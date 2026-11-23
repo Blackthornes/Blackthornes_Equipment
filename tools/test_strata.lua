@@ -7,7 +7,7 @@ local suite = env.NewSuite("strata")
 local ns = env.Load({ ui = true })
 
 -- The Equipment window holds every tab; the old windows are gone.
-local windows = { "GearWindow", "SlotUpgrades" }
+local windows = { "GearWindow" }
 for _, name in ipairs(windows) do
     local module = ns[name] or (ns.modules and ns.modules[name])
     local ok, frame = pcall(function() return module:Build() end)

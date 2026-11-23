@@ -509,11 +509,7 @@ L["Looking for upgrades. Hover again in a moment"] = "Ищу улучшения.
 L["Still loading gear. Hover again in a moment"] = "Снаряжение ещё загружается. Наведи ещё раз чуть позже"
 L["Nothing on offer beats this yet"] = "Пока ничего доступного не лучше этого"
 L["Upgrades on offer"] = "Доступные улучшения"
-L["Alt-click for upgrades you can track"] = "Alt-щелчок: улучшения, которые можно отслеживать"
-L["Map"] = "Карта"
-L["All upgrades"] = "Все улучшения"
-L["Upgrades: %s"] = "Улучшения: %s"
-L["this slot"] = "эта ячейка"
+L["Alt-click to see this slot in My Gear"] = "Alt-щелчок: эта ячейка в окне «Моя экипировка»"
 L["Nothing on offer beats what you wear here."] = "Здесь ничего доступного не лучше того, что ты носишь."
 
 -- UI/MainWindow.lua

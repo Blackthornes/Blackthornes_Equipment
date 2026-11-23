@@ -33,9 +33,16 @@ end
 
 local function Mark(button, link)
     if type(button) ~= "table" or not ns.BagIcons then return end
-    local show = MoreMarks:IsEnabled() and link ~= nil and Compare:IsUpgradeNow(link)
+    local result
+    if MoreMarks:IsEnabled() and link ~= nil then
+        local ok, judged = pcall(Compare.Judge, Compare, link)
+        if ok then result = judged end
+    end
+    local show = Compare.WearableUpgrade(result)
     local arrow = show and ns.BagIcons:Arrow(button) or ns.BagIcons:ExistingArrow(button)
     if arrow then arrow:SetShown(show and true or false) end
+    -- The percent under it, as in the bags.
+    pcall(ns.BagIcons.Percent, ns.BagIcons, button, show and result or nil)
 end
 
 --------------------------------------------------------------------------------

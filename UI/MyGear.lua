@@ -138,21 +138,70 @@ end
 --- per slot what is worn, what you own that beats it, the best enchant and
 --- the pieces to go and get, then the cards. Read once a look; every draw
 --- after reads this.
+--- The better pieces in the bags by slot, judged once for each scan: gear
+--- coming or going makes a new scan, so asking again judges nothing. The
+--- character sheet's arrows read it too (UI/SlotUpgrades.lua).
+function MyGear:Owned(found)
+    local owned = found and self.bagsFor == found and self.bags or nil
+    if owned then return owned end
+    owned = {}
+    if ns.UI and ns.UI.ReadBags then
+        local ok, read = pcall(ns.UI.ReadBags, ns.UI)
+        if ok and type(read) == "table" then owned = read end
+    end
+    self.bagsFor, self.bags = found, owned
+    return owned
+end
+
+--- A slot's pieces to go and get, from a scan: those to wear now, then
+--- those for later, each best first and at most TOP.
+function MyGear.Picks(found, slot, skipped)
+    local now, later = {}, {}
+    for _, pick in ipairs(found and found.all and found.all[slot] or {}) do
+        if not (skipped and skipped[pick.itemID]) then
+            if MyGear.Later(pick) then
+                if #later < TOP then later[#later + 1] = pick end
+            else
+                if #now < TOP then now[#now + 1] = pick end
+            end
+            if #now >= TOP then break end
+        end
+    end
+    return now, later
+end
+
+--- A slot's mark: what you own comes first, then the best to get now
+--- (both green), then the best for later (amber).
+function MyGear.Mark(mine, now, later)
+    if mine then return mine.result, "good" end
+    if now then return now.result, "good" end
+    if later then return later.result, "warn" end
+    return nil, nil
+end
+
+--- The slots with a green mark, { [slot] = true }, for the character
+--- sheet's arrows: the same answer the figure shows.
+function MyGear:GreenSlots(found)
+    local quest = ns.UpgradeQuest
+    local skipped = quest and quest:Skipped() or {}
+    local owned = self:Owned(found)
+    local green = {}
+    for _, entry in ipairs(Slots()) do
+        local slot = entry[1]
+        local now, later = MyGear.Picks(found, slot, skipped)
+        local _, tone = MyGear.Mark((owned[slot] or {})[1], now[1], later[1])
+        if tone == "good" then green[slot] = true end
+    end
+    return green
+end
+
 function MyGear:Read(found)
     local Items, FinderUI = ns.Items, ns.FinderUI
     local quest = ns.UpgradeQuest
     local skipped = quest and quest:Skipped() or {}
     -- The bags are judged once for each scan: gear coming or going makes
     -- a new scan, so opening the page again judges nothing.
-    local owned = found and self.bagsFor == found and self.bags or nil
-    if not owned then
-        owned = {}
-        if ns.UI and ns.UI.ReadBags then
-            local ok, read = pcall(ns.UI.ReadBags, ns.UI)
-            if ok and type(read) == "table" then owned = read end
-        end
-        self.bagsFor, self.bags = found, owned
-    end
+    local owned = self:Owned(found)
 
     local state = { slots = {}, ready = {}, upgrades = 0, enchants = 0, found = found }
     local readySeen = {}
@@ -164,17 +213,7 @@ function MyGear:Read(found)
 
         -- The pieces to go and get: those you can wear now first, then
         -- those for later, each best first as the finder sorted them.
-        local now, later = {}, {}
-        for _, pick in ipairs(found and found.all and found.all[slot] or {}) do
-            if not skipped[pick.itemID] then
-                if MyGear.Later(pick) then
-                    if #later < TOP then later[#later + 1] = pick end
-                else
-                    if #now < TOP then now[#now + 1] = pick end
-                end
-                if #now >= TOP then break end
-            end
-        end
+        local now, later = MyGear.Picks(found, slot, skipped)
         for _, pick in ipairs(now) do info.picks[#info.picks + 1] = pick end
         for _, pick in ipairs(later) do
             if #info.picks < TOP then info.picks[#info.picks + 1] = pick end
@@ -182,14 +221,7 @@ function MyGear:Read(found)
         info.now, info.later = now[1], later[1]
 
         -- The slot's mark: what you own comes first, then the best to get.
-        local mine = info.owned[1]
-        if mine then
-            info.mark, info.tone = mine.result, "good"
-        elseif info.now then
-            info.mark, info.tone = info.now.result, "good"
-        elseif info.later then
-            info.mark, info.tone = info.later.result, "warn"
-        end
+        info.mark, info.tone = MyGear.Mark(info.owned[1], info.now, info.later)
         if info.tone == "good" then state.upgrades = state.upgrades + 1 end
 
         for _, piece in ipairs(info.owned) do
@@ -245,6 +277,10 @@ end
 --- The slot to show: the one clicked, else the first with something
 --- better, else the first.
 function MyGear:ChooseSlot(state)
+    -- Asked for from the character sheet: that slot, once.
+    local asked = self.asked
+    self.asked = nil
+    if asked and state.slots[asked] then return asked end
     if self.slot and state.slots[self.slot] then return self.slot end
     for _, entry in ipairs(Slots()) do
         if state.slots[entry[1]] and state.slots[entry[1]].tone == "good" then return entry[1] end
@@ -1403,6 +1439,16 @@ function MyGear:IsShown()
     local ok, visible = pcall(page.IsVisible, page)
     if ok and type(visible) == "boolean" then return visible end
     return true
+end
+
+--- Open on a slot (an Alt-click on the character sheet). The window is
+--- already on My Gear, or about to be: the next draw starts on this slot.
+function MyGear:Ask(slot)
+    self.asked = slot
+    if self:IsShown() and self.state and self.state.slots[slot] then
+        self.asked = nil
+        self:PickSlot(slot)
+    end
 end
 
 function MyGear:Show()

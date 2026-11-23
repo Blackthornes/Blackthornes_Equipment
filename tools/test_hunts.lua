@@ -258,7 +258,7 @@ chest:GetScript("OnEnter")(chest)
 local text = table.concat(_G.GameTooltip._lines, "\n")
 suite.check("hovering the slot lists the upgrade", text:find("Upgrades on offer", 1, true)
     and text:find("item:1002", 1, true), text)
-suite.check("and says how to track it", text:find("Alt-click", 1, true) ~= nil)
+suite.check("and says what Alt-click does", text:find("Alt-click", 1, true) ~= nil)
 
 -- The game redraws a slot's tooltip several times a second, which wipes
 -- added lines; they go straight back on, without a new scan.
@@ -279,23 +279,12 @@ _G.GameTooltip._lines = {}
 _G.GameTooltip:GetScript("OnUpdate")(_G.GameTooltip, 0.2)
 suite.check("another owner's tooltip is left alone", #_G.GameTooltip._lines == 0)
 
+-- Alt-click opens My Gear on the slot (tools/test_sheet.lua has the rest).
 _G.IsAltKeyDown = function() return true end
 chest:GetScript("OnClick")(chest)
-suite.check("Alt-click opens the panel", ns.SlotUpgrades.frame and ns.SlotUpgrades.frame:IsShown())
-local row = ns.SlotUpgrades.rows[1]
-suite.check("with the pick", row:IsShown() and row.item:GetText() == "item:1002")
-suite.check("already tracked", row.track.label:GetText() == "Untrack", row.track.label:GetText())
-Tracking:Untrack(1002)
-suite.check("the panel follows the tracking", row.track.label:GetText() == "Track")
--- Both buttons keep one width, the longest label's, whatever they say.
-local wide = ns.SlotUpgrades.ButtonWidth()
-suite.check("the buttons are as wide as their longest label",
-    wide >= ns.Theme.TextWidth("small", "Untrack") + 12, wide)
-suite.check("Track is that wide", row.track:GetWidth() == wide, row.track:GetWidth())
-row.track:SetText("Untrack")
-suite.check("and stays so as Untrack", row.track:GetWidth() == wide, row.track:GetWidth())
-suite.check("Map matches it", row.map:GetWidth() == wide, row.map:GetWidth())
-suite.check("the text keeps clear of the buttons", row.textWidth <= 380 - 24 - 44 - wide - 12, row.textWidth)
+suite.check("Alt-click opens My Gear on the slot", ns.GearWindow:IsShown() and ns.MyGear.slot == 5,
+    ns.MyGear.slot)
+ns.GearWindow:Close()
 _G.IsAltKeyDown = nil
 
 --------------------------------------------------------------------------------
