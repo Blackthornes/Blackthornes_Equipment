@@ -3091,3 +3091,22 @@ level-up offer (`LookForBetter`) uses the same score. Ticking or unticking
 did not follow by hand, so the tabs pick again in the new order; the
 pick's why line reads "Biggest gain on this tab". Tested in
 `tools/test_biggestfirst.lua`.
+
+## Restore Defaults (Equipment Settings: Set Default)
+
+The owner said build it, 2026-11-23 (a player asked how to reset settings),
+in all five addons, from `Docs/mockups/restore-defaults.html` in the project
+files. A row on the ALL ADDONS page under Window Locations (renamed from
+Window Spots the same day): "Equipment Settings:" with Set Default. The
+first click turns the words red and says Confirm; a second within
+`SettingsUI.CONFIRM_WAIT` (4 s) runs `SettingsUI:RestoreDefaults()`: every
+key in `SettingsUI.SETTING_KEYS` back to `ns.DEFAULTS` (else nil), every key
+in `CHAR_SETTING_KEYS` back to `ns.CHAR_DEFAULTS` for the character playing,
+then `settingsRestored` is set and the interface reloads;
+`SettingsUI:SayRestored()` at login says "Every Equipment setting is back to
+how it started." once. Never touched: gear, alts, stat weights, quests on
+the Upgrade Quest tabs, window spots and the ALL ADDONS choices (text size,
+window style, effects, mute, combined buttons, One Window, sister note).
+`tools/test_restoredefaults.lua` clicks every Settings control twice and
+fails if one writes a key that is in neither list nor its kept list: a new
+setting must join the list.
