@@ -222,12 +222,28 @@ end
 
 --- The tab picked: "vendor" until one is. A picked tab that is left out
 --- gives way to the first tab still shown.
-function UpgradeQuest:Tab()
+function UpgradeQuest:PickedTab()
     local tab = ns.charDB and ns.charDB.upgradeQuestTab
     tab = IS_TAB[tab] and tab or "vendor"
     if self:TabShown(tab) then return tab end
     for _, each in ipairs(TABS) do
         if self:TabShown(each.key) then return each.key end
+    end
+    return tab
+end
+
+--- The tab on show: the one picked, unless it has nothing and is not still
+--- looking while another shown tab has an upgrade. Then that tab shows, so
+--- the panel never says "nothing" with an upgrade waiting (the owner's
+--- report, 2026-11-24). The saved pick is left alone and comes back once
+--- it has an upgrade again. A tab the player picked this session
+--- (`handPicked`, set by SelectTab) always shows, empty or not.
+function UpgradeQuest:Tab()
+    local tab = self:PickedTab()
+    local quests = self:Quests()
+    if Valid(quests[tab]) or self.states[tab] == "waiting" or self.handPicked == tab then return tab end
+    for _, each in ipairs(TABS) do
+        if each.key ~= tab and Valid(quests[each.key]) and self:TabShown(each.key) then return each.key end
     end
     return tab
 end
@@ -254,8 +270,14 @@ function UpgradeQuest:SelectTab(tab)
     -- (UI/QuestLogTab.lua).
     local fromLog = ns.charDB.questLogTab == true
     ns.charDB.questLogTab = nil
-    if tab == self:Tab() and ns.charDB.upgradeQuestTab then
-        if fromLog then self:Changed() end
+    local shownBefore = self:Tab()
+    self.handPicked = tab
+    if tab == self:PickedTab() and ns.charDB.upgradeQuestTab then
+        -- Standing in for it, another tab was on show: show this one now.
+        if shownBefore ~= tab or fromLog then
+            self:Mirror()
+            self:Changed()
+        end
         return true
     end
     ns.charDB.upgradeQuestTab = tab
@@ -664,6 +686,7 @@ function UpgradeQuest:Follow(pick)
     -- Picked by hand: "This zone only" never lets it go.
     quest.followed = true
     ns.charDB.upgradeQuestTab = self.TabOf(source)
+    self.handPicked = nil
     -- Shown on its tab, not left behind the Quest log tab.
     ns.charDB.questLogTab = nil
     -- Chosen by hand: no level-up offer to swap it straight away.
@@ -2058,8 +2081,8 @@ function UpgradeQuest:WindowFiltersChanged()
     end
     -- The tab shown was left out: the first tab still shown takes its
     -- place, and stays picked when the box is ticked again.
-    if ns.charDB and ns.charDB.upgradeQuestTab and ns.charDB.upgradeQuestTab ~= self:Tab() then
-        ns.charDB.upgradeQuestTab = self:Tab()
+    if ns.charDB and ns.charDB.upgradeQuestTab and ns.charDB.upgradeQuestTab ~= self:PickedTab() then
+        ns.charDB.upgradeQuestTab = self:PickedTab()
     end
     self:Mirror()
     self.rescan = true

@@ -2887,6 +2887,17 @@ glass lights again (fixed 2026-11-24). Nothing happens while
 "Search Again" and "Looks for upgrades again now." Tested in
 `tools/test_smallpanel.lua`.
 
+An empty source never hides an upgrade (the owner's report, 2026-11-24:
+Quest was the picked source and had nothing, while Crafted held
+Shadoweave Pants, so the panel and the tab said "No quest reward is an
+upgrade right now."). `UpgradeQuest:Tab()` is the source on show: the
+picked one (`PickedTab()`, the old `Tab()`), unless it has no quest, is
+not still looking, and another shown source has one; then the first such
+source shows. The saved `upgradeQuestTab` is not changed, so the pick
+comes back once it has an upgrade. A source picked by hand this session
+(`SelectTab` sets `handPicked`, `Follow` clears it) shows even when
+empty. Tested in `tools/test_emptytab.lua`.
+
 ## Dungeons and Training tabs (rework step 5, 2026-11-23)
 
 Step 5 of the rework. The mockups the owner approved are the plan's

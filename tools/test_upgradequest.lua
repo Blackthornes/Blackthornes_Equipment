@@ -153,7 +153,9 @@ ns.Finder:MarkStale()
 Quest:OnEvent("PLAYER_EQUIPMENT_CHANGED")
 suite.check("a new quest once there is an upgrade again", Quest:Current() and Quest:Current().itemID == 1002)
 ns.HandleSlash("quest skip")
-suite.check("skip leaves the tab with the next best: no other quest reward here", Quest:Current() == nil)
+suite.check("skip leaves the tab with the next best: no other quest reward here", Quest:QuestOn("quest") == nil)
+suite.check("so the Vendor tab's upgrade shows in its place", Quest:Tab() == "vendor"
+    and Quest:Current() and Quest:Current().itemID == 1001, Quest:Tab())
 suite.check("and remembers it", ns.charDB.upgradeQuestSkipped[1002] == true)
 ns.HandleSlash("quest vendor")
 quest = Quest:Current()
@@ -351,7 +353,7 @@ Quest:Update()
 suite.check("still not in the bags: the quest is dropped",
     env.ChatText():find("that quest is already done", 1, true) ~= nil)
 suite.check("and never picked again", ns.charDB.upgradeQuestSkipped[1002] == true
-    and Quest:Current() == nil, Quest:Current() and Quest:Current().itemID)
+    and Quest:QuestOn("quest") == nil, Quest:QuestOn("quest") and Quest:QuestOn("quest").itemID)
 suite.check("the Vendor tab keeps its own", Quest:QuestOn("vendor") and Quest:QuestOn("vendor").itemID == 1001)
 _G.GetTime = nil
 turnedIn = false
