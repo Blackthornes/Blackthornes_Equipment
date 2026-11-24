@@ -5,15 +5,13 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.22.0", lines = {
+        "Your Way There is now a small see-through box with only your current step and a dial that points the way. It hangs under the small panel.",
+    } },
     { version = "1.21.0", lines = {
         "My Gear follows the filters on Find Upgrades.",
     } },
     { version = "1.20.0", lines = {
         "The All Addons page in Settings has a Set Default button. Click Confirm and this addon's settings go back to how they started.",
-    } },
-    { version = "1.19.0", lines = {
-        "The small Upgrade Quest panel has a Search Again magnifying glass.",
-        "The panel's Options menu is shorter: Current Zone Only, Update on Zone Change, Solo Quests Only and Open Equipment.",
-        "Worn gear names show in their rarity color on My Gear.",
     } },
 }

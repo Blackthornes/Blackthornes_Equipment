@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.22.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Your Way There.** The Your Way There window is now a small see-through box. It shows only your current step, how far it is and the time left. A dial at the end turns to point the way. Stop and Show on Map show while the mouse is on the box. A red X puts it away for this trip. While the box shows, the big arrow keeps only its name. It hangs under the small panel.
+
 ## 1.21.1
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
