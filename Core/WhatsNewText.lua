@@ -6,7 +6,7 @@ local _, ns = ...
 
 ns.WHATS_NEW = {
     { version = "1.21.0", lines = {
-        "My Gear follows the filters on Find Upgrades, so its count and list match that tab.",
+        "My Gear follows the filters on Find Upgrades.",
     } },
     { version = "1.20.0", lines = {
         "The All Addons page in Settings has a Set Default button. Click Confirm and this addon's settings go back to how they started.",

@@ -25,7 +25,7 @@ tool prints a note for a shipped line that reads like an advert.
 
 ## 1.21.0
 
-- My Gear follows the filters on Find Upgrades, so its count and list match that tab.
+- My Gear follows the filters on Find Upgrades.
 
 Fixes and changes:
 - The upgrade count no longer starts short and grows after item details load.
