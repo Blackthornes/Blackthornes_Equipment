@@ -4,6 +4,13 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.21.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **My Gear.** My Gear follows the filters on Find Upgrades: the From boxes, Only What I Can Get Now and This Zone Only. The upgrade count, the list, the cards and the arrows on the slots match that list. Gear in your bags still shows.
+- **Upgrade count.** After the game finishes loading item details, My Gear and Find Upgrades look again, so the count no longer starts short and grows later.
+
 ## 1.20.0
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.

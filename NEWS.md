@@ -23,6 +23,13 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.21.0
+
+- My Gear follows the filters on Find Upgrades, so its count and list match that tab.
+
+Fixes and changes:
+- The upgrade count no longer starts short and grows after item details load.
+
 ## 1.20.0
 
 - The All Addons page in Settings has a Set Default button. Click Confirm and this addon's settings go back to how they started.
