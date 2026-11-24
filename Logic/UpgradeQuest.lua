@@ -717,7 +717,9 @@ end
 
 --- Search for upgrades again now (the glass on the small panel): forget
 --- what the finder judged and scan every place again, a slice per frame.
---- Does nothing while a search is already running.
+--- Does nothing while a search is already running. The scan runs whether
+--- or not a tab wants a pick: with a quest on every tab, or with the
+--- upgrade quest off (the panel up for Tracking), Update starts none.
 -- @return true when a new search was asked for
 function UpgradeQuest:SearchAgain()
     local finder = ns.Finder
@@ -727,7 +729,16 @@ function UpgradeQuest:SearchAgain()
     self.staleScans = 0
     self.scanFailed = nil
     self.letGo = nil
-    if self:IsEnabled() then self:Update() else self:Changed() end
+    if self:IsEnabled() then self:Update() end
+    if not finder:Scanning() and not finder:Fresh() then
+        finder:ScanInBackground(function(result)
+            UpgradeQuest.scanFailed = not result
+            if not UpgradeQuest.updating then UpgradeQuest:UpdateSoon(0) end
+            -- Draw again either way, so the glass lights when it is done.
+            UpgradeQuest:Changed()
+        end)
+    end
+    self:Changed()
     return true
 end
 

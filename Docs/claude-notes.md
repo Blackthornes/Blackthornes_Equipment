@@ -2878,7 +2878,11 @@ The Search Again glass (the owner said build it, 2026-11-23, from a
 mockup): `Panel.searchButton`, the same 18 by 18 gold button with the
 game's `UI-Searchbox-Icon`, 4 pixels right of the scroll. A click runs
 `UpgradeQuest:SearchAgain()`: `Finder:ForgetVerdicts()`, `rescan`, then
-`Update()`, which starts a background scan. Nothing happens while
+`Update()`, which starts a background scan when a tab wants a pick.
+With a quest on every tab, or with the upgrade quest off, `Update()`
+starts none, so `SearchAgain` starts the scan itself
+(`Finder:ScanInBackground`) and calls `Changed()` when it ends, so the
+glass lights again (fixed 2026-11-24). Nothing happens while
 `Finder:Scanning()`; the glass dims then (`search.dimmed`). Tooltip:
 "Search Again" and "Looks for upgrades again now." Tested in
 `tools/test_smallpanel.lua`.

@@ -66,6 +66,12 @@ suite.check("no upgrade, no mark", MarkText(5) == nil)
 mark = { percent = 6, slot = 1 }
 local text = MarkText(5)
 suite.check("an upgrade shows its gain and slot", type(text) == "string" and text:find("+6%", 1, true) ~= nil)
+-- Found 2026-11-24: the gain was cut short, not rounded, so the Log said
+-- "+18%" where the tooltip and the panel said 19.
+mark = { percent = 18.6, slot = 1 }
+local okRound, rounded = pcall(MarkText, 5)
+suite.check("a gain is rounded like everywhere else",
+    okRound and type(rounded) == "string" and rounded:find("+19%", 1, true) ~= nil, tostring(rounded))
 mark = { percent = 0, slot = 1, empty = true }
 local empty = MarkText(5)
 suite.check("an empty slot shows the slot alone", type(empty) == "string" and not empty:find("%%"))

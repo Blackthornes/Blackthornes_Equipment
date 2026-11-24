@@ -94,8 +94,9 @@ function QuestLogUI.MarkText(questID)
     if mark.empty or (mark.percent or 0) <= 0 then
         return slot ~= "" and slot or nil
     end
-    if slot == "" then return ("+%d%%"):format(mark.percent) end
-    return L.Format("+%d%% %s", mark.percent, slot)
+    local percent = math.floor(mark.percent + 0.5)
+    if slot == "" then return ("+%d%%"):format(percent) end
+    return L.Format("+%d%% %s", percent, slot)
 end
 
 --------------------------------------------------------------------------------
