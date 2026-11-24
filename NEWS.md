@@ -23,6 +23,13 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.20.0
+
+- The All Addons page in Settings has a Set Default button. Click Confirm and this addon's settings go back to how they started.
+
+Fixes and changes:
+- Hunters are no longer offered thrown weapons.
+
 ## 1.19.0
 
 - The small Upgrade Quest panel has a Search Again magnifying glass.
