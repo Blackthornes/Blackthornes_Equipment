@@ -1155,6 +1155,8 @@ function Finder:Build(only, ahead, pause)
     -- What had changed when this scan began. A sliced scan runs over many
     -- frames, and a change that lands meanwhile leaves it out of date.
     local changes = self.changes or 0
+    -- How many item answers had come in; one after this is not in it.
+    local answersAt = self.answers or 0
 
     local weights = Weights:ForPlayer()
     if not weights then return nil, "noweights" end
@@ -1306,6 +1308,7 @@ function Finder:Build(only, ahead, pause)
     }
     if not only and reach == level then
         self.latest, self.latestAt, self.latestKey = found, self.Now(), judgedKey
+        self.latestAnswers = answersAt
         -- A whole scan with nothing changed meanwhile is up to date, whoever
         -- made it, so the upgrade quest and the character sheet read this
         -- one and start no second scan of their own.
@@ -1439,6 +1442,15 @@ function Finder:AnswersSettled()
     local done = true
     if not again and self:KeepsAsking() then
         done = self:AskMore() == 0
+        -- Every batch is in, and some came after the last scan began, so
+        -- that scan lacks them: the page showing looks once more. My Gear
+        -- read the old scan and showed fewer upgrades until Judge Gear As
+        -- made a new one (a player's report on 1.18.0). The scan that
+        -- follows asks for nothing new, so this stops there.
+        if done and self.latest and (self.answers or 0) > (self.latestAnswers or 0) then
+            self.stale = true
+            self.changes = (self.changes or 0) + 1
+        end
     end
     for _, fn in ipairs(self.answerWatchers) do
         local ok, err = pcall(fn, again, done)

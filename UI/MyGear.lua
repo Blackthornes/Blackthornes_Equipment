@@ -153,12 +153,36 @@ function MyGear:Owned(found)
     return owned
 end
 
+--- The test Find Upgrades' filters make (its From boxes, Only What I Can
+--- Get Now and This Zone Only), so My Gear and the character sheet show
+--- what that list shows. Nil when FinderShared is not loaded.
+function MyGear.Filter(found)
+    local FinderUI = ns.FinderUI
+    if not (FinderUI and FinderUI.SourceFilter) then return nil end
+    return FinderUI:SourceFilter(found)
+end
+
+--- A pick with only the sources the filters let through, or nil when none
+--- pass. A copy: the scan's own pick is left whole for the other pages.
+local function Passing(pick, pass)
+    if not pass then return pick end
+    local sources = pass(pick)
+    if #sources == 0 then return nil end
+    if #sources == #(pick.sources or {}) then return pick end
+    local copy = {}
+    for key, value in pairs(pick) do copy[key] = value end
+    copy.sources = sources
+    return copy
+end
+
 --- A slot's pieces to go and get, from a scan: those to wear now, then
---- those for later, each best first and at most TOP.
-function MyGear.Picks(found, slot, skipped)
+--- those for later, each best first and at most TOP. Only those Find
+--- Upgrades' filters let through (`pass`, from MyGear.Filter).
+function MyGear.Picks(found, slot, skipped, pass)
     local now, later = {}, {}
-    for _, pick in ipairs(found and found.all and found.all[slot] or {}) do
-        if not (skipped and skipped[pick.itemID]) then
+    for _, whole in ipairs(found and found.all and found.all[slot] or {}) do
+        local pick = not (skipped and skipped[whole.itemID]) and Passing(whole, pass) or nil
+        if pick then
             if MyGear.Later(pick) then
                 if #later < TOP then later[#later + 1] = pick end
             else
@@ -185,10 +209,11 @@ function MyGear:GreenSlots(found)
     local quest = ns.UpgradeQuest
     local skipped = quest and quest:Skipped() or {}
     local owned = self:Owned(found)
+    local pass = MyGear.Filter(found)
     local green = {}
     for _, entry in ipairs(Slots()) do
         local slot = entry[1]
-        local now, later = MyGear.Picks(found, slot, skipped)
+        local now, later = MyGear.Picks(found, slot, skipped, pass)
         local _, tone = MyGear.Mark((owned[slot] or {})[1], now[1], later[1])
         if tone == "good" then green[slot] = true end
     end
@@ -202,6 +227,7 @@ function MyGear:Read(found)
     -- The bags are judged once for each scan: gear coming or going makes
     -- a new scan, so opening the page again judges nothing.
     local owned = self:Owned(found)
+    local pass = MyGear.Filter(found)
 
     local state = { slots = {}, ready = {}, upgrades = 0, enchants = 0, found = found }
     local readySeen = {}
@@ -213,7 +239,7 @@ function MyGear:Read(found)
 
         -- The pieces to go and get: those you can wear now first, then
         -- those for later, each best first as the finder sorted them.
-        local now, later = MyGear.Picks(found, slot, skipped)
+        local now, later = MyGear.Picks(found, slot, skipped, pass)
         for _, pick in ipairs(now) do info.picks[#info.picks + 1] = pick end
         for _, pick in ipairs(later) do
             if #info.picks < TOP then info.picks[#info.picks + 1] = pick end

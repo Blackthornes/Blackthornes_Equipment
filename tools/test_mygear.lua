@@ -278,4 +278,29 @@ do
     MyGear:SetView("figure")
 end
 
+-- 9. My Gear follows Find Upgrades' From boxes (a player's report on
+-- 1.18.0): with every box unticked, the figure still showed arrows, gains
+-- and a dungeon drop under Next To Go Get.
+do
+    MyGear:SetView("figure")
+    ns.db.finderSourcesOff = nil
+    MyGear:Refresh()
+    local before = MyGear.state
+    suite.check("with every box ticked the head has picks", #before.slots[1].picks > 0, #before.slots[1].picks)
+    suite.check("and a next card", before.next ~= nil)
+    for _, entry in ipairs(ns.FinderUI.SOURCE_BOXES) do ns.FinderUI:SetSource(entry[1], false) end
+    MyGear:Refresh()
+    local state = MyGear.state
+    suite.check("with every box unticked the head has no picks", #state.slots[1].picks == 0, #state.slots[1].picks)
+    suite.check("and no mark", state.slots[1].tone == nil, tostring(state.slots[1].tone))
+    suite.check("and no next card", state.next == nil)
+    suite.check("what is in the bags still shows", state.slots[5].owned[1] ~= nil and state.slots[5].tone == "good")
+    suite.check("the sheet's arrows agree", not MyGear:GreenSlots(state.found)[1])
+    ns.FinderUI:SetSource("vendor", true)
+    MyGear:Refresh()
+    suite.check("ticking Vendor again brings the vendor picks back", #MyGear.state.slots[1].picks > 0)
+    ns.db.finderSourcesOff = nil
+    MyGear:Refresh()
+end
+
 suite.done()

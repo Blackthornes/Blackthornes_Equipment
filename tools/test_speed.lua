@@ -523,9 +523,16 @@ do
     Answer()
     suite.check("the window hears once, when all are in", looks == 1 and #requests == 0 and scans == 0,
         looks .. " " .. #requests .. " " .. scans)
+    -- The pages read the finder's last scan when it is up to date. Items
+    -- answered after it began are not in it, so it is out of date now: My
+    -- Gear showed a short list until Judge Gear As made a new scan.
+    suite.check("and the scan made before them is out of date", Finder:Fresh() == nil)
     found = Finder:Scan()
     suite.check("the scan after that waits on nothing", found.waiting == 0, found.waiting)
     suite.check("and asks for nothing", #requests == 0, #requests)
+    suite.check("that scan is up to date", Finder:Fresh() == found)
+    Finder:AnswersSettled()
+    suite.check("and a settle with no new answers keeps it so", Finder:Fresh() == found)
 
     -- With nothing showing the list, the rest is left unasked.
     for id = 2001, 2100 do unseen[id] = true end
