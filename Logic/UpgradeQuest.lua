@@ -1021,6 +1021,26 @@ local function EndPlace(p)
     return place
 end
 
+--- Quest items that a person hands over only for another item, checked
+--- by hand: the data says nothing about what a side quest asks for.
+--- Warsong Supplies needs the Warsong Saw Blades, and Pixel gives them only
+--- for a Deadly Blunderbuss (her own quest, Warsong Saw Blades, 6581). Each
+--- entry: the quest item as the log names it, who trades it and where, and
+--- the item they want. A quest like it takes one more line.
+UpgradeQuest.TRADES = {
+    [6571] = {
+        { item = "Warsong Saw Blades", name = "Pixel", zone = "Ashenvale", x = 73.1, y = 61.5,
+            wants = 4369, wantsName = "Deadly Blunderbuss" },
+    },
+}
+
+--- A trade as a place the steps use, like one from Data/QuestEnds.lua.
+local function TradePlace(trade)
+    if type(trade) ~= "table" then return nil end
+    return { kind = "npc", name = trade.name, zone = trade.zone, x = trade.x, y = trade.y,
+        item = trade.item, wants = trade.wants, wantsName = trade.wantsName }
+end
+
 --- Where a quest is worked on and handed in (Data/QuestEnds.lua): { hand,
 --- goal, goals }, each a place { kind, name, zone, x, y }, `goal` with the
 --- `item` to collect when that is the objective and `dungeon` for a boss.
@@ -1029,7 +1049,9 @@ end
 function UpgradeQuest.Ender(questID)
     local ends = ns.Sources and ns.Sources.ENDS
     local row = type(ends) == "table" and questID and ends[questID]
-    if type(row) ~= "table" then return nil end
+    local trades = questID and UpgradeQuest.TRADES[questID]
+    if type(row) ~= "table" and not trades then return nil end
+    if type(row) ~= "table" then row = {} end
     local hand = row[1] and EndPlace(row) or nil
     if hand then hand.item = nil end
     local goals = {}
@@ -1037,6 +1059,8 @@ function UpgradeQuest.Ender(questID)
     if type(row.m) == "table" then
         for _, more in ipairs(row.m) do goals[#goals + 1] = EndPlace(more) end
     end
+    -- A traded item comes last: the item it costs is got on the way.
+    for _, trade in ipairs(trades or {}) do goals[#goals + 1] = TradePlace(trade) end
     return { hand = hand, goal = goals[1], goals = goals }
 end
 
@@ -1100,6 +1124,10 @@ end
 local function GoalText(goal)
     local where = goal.dungeon and L.Format(" in %s", Z(goal.dungeon))
         or L.Format(" in %s", Z(goal.zone)) .. At(goal)
+    if goal.wants then
+        local wanted = Items.ColorName(goal.wants, goal.wantsName)
+        return L.Format("bring a %s to %s%s for the %s", wanted, goal.name, where, goal.item)
+    end
     if goal.item then
         -- The data names the item without its ID: coloured once the
         -- client knows the name, else as it is.
@@ -1138,6 +1166,57 @@ local function Who(names)
     if type(names) ~= "table" or #names == 0 then return L["An alt"] end
     if #names == 1 then return names[1] end
     return L.Format("%s or %s", names[1], names[2])
+end
+
+-- Who to ask for a made item, by its profession's skill line.
+local CRAFTERS = {
+    [164] = L["a blacksmith"],
+    [165] = L["a leatherworker"],
+    [171] = L["an alchemist"],
+    [197] = L["a tailor"],
+    [202] = L["an engineer"],
+    [333] = L["an enchanter"],
+}
+
+--- Whether the log shows a trade's quest item collected.
+local function Traded(trade, objectives)
+    for _, objective in ipairs(type(objectives) == "table" and objectives or {}) do
+        if type(objective) == "table" and objective.done and type(objective.text) == "string"
+            and Names(objective.text, trade) then
+            return true
+        end
+    end
+    return false
+end
+UpgradeQuest.Traded = Traded
+
+--- The step to get the item a trade costs: make it when this character
+--- knows the recipe, else buy it or ask a crafter. Done once it is in the
+--- bags, or the quest item is.
+function UpgradeQuest:TradeStep(trade, objectives, finished, Add, steps)
+    local wanted = Items.ColorName(trade.wants, trade.wantsName)
+    local done = finished or self.Count(trade.wants) > 0 or Traded(trade, objectives)
+    local craft = ns.Crafts and ns.Crafts.ITEMS and ns.Crafts.ITEMS[trade.wants]
+    local crafting = ns.Crafting
+    local knows = craft and crafting and Read(crafting.Knows, crafting, craft[3]) == true
+    local text
+    if knows then
+        local profession = ns.Crafts.PROFESSIONS[craft[1]]
+        text = L.Format("Make a %s (%s) for %s", wanted, profession and L[profession] or L["the profession"],
+            trade.name)
+    elseif CRAFTERS[craft and craft[1]] then
+        text = L.Format("Get a %s for %s. Buy one at the auction house, or ask %s to make it.",
+            wanted, trade.name, CRAFTERS[craft[1]])
+    else
+        text = L.Format("Get a %s for %s. Buy one at the auction house.", wanted, trade.name)
+    end
+    local price = not knows and crafting and Read(crafting.AuctionPrice, crafting, trade.wants)
+    local money = ns.Finder and ns.Finder.Money
+    local cost = price and money and money(price)
+    Add(text, done, nil, cost and L.Format("About %s at the auction house.", cost) or nil)
+    -- Got on the way: the quest's work goes on while it waits, so it is
+    -- never the step to do now and never marks the steps before it done.
+    steps[#steps].aside = true
 end
 
 --- The steps to get the quest's upgrade, worked out from where it comes
@@ -1352,6 +1431,11 @@ function UpgradeQuest:Steps(quest)
         -- Where to work on it and who takes it back (Data/QuestEnds.lua),
         -- so the arrow leaves the giver once the quest is in the log.
         local ender = questID and UpgradeQuest.Ender(questID) or {}
+        -- An item someone wants for a quest item: have it on hand first.
+        local logged = onQuest and LogObjectives(questID) or nil
+        for _, trade in ipairs(questID and UpgradeQuest.TRADES[questID] or {}) do
+            self:TradeStep(trade, logged, have or turnedIn or (questID and QuestReady(questID)), Add, steps)
+        end
         -- In the log, the first objective not done yet: Warsong Supplies
         -- moves on from Logging Rope once the log shows it collected.
         local goal = ender.goal
@@ -1441,14 +1525,14 @@ function UpgradeQuest:Steps(quest)
     -- found once the item is bought, wherever the character is now.
     local furthest = 0
     for index, step in ipairs(steps) do
-        if step.done and not step.soft then furthest = index end
+        if step.done and not step.soft and not step.aside then furthest = index end
     end
     local current = #steps
     for index, step in ipairs(steps) do
         if index < furthest then step.done = true end
     end
     for index, step in ipairs(steps) do
-        if not step.done then
+        if not step.done and not step.aside then
             current = index
             break
         end

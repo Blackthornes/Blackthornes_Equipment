@@ -1237,3 +1237,16 @@ L["The Training tab shows spells you can learn and their cost. Visit a class tra
 L["Equipment Settings:"] = "Настройки Equipment:"
 L["Puts every Equipment setting back to how it started. Your gear, characters and stat weights stay. So do your window locations and the choices on this page."] = "Возвращает каждую настройку Equipment к началу. Твоя экипировка, персонажи и веса характеристик остаются. Положение окон и выбор на этой странице тоже остаются."
 L["Every Equipment setting is back to how it started."] = "Все настройки Equipment снова как в начале."
+
+-- Upgrade Quest: an item traded for a quest item (2026-11-24)
+L["bring a %s to %s%s for the %s"] = "принеси %s персонажу %s%s в обмен на %s"
+L["Make a %s (%s) for %s"] = "Сделай %s (%s) для %s"
+L["Get a %s for %s. Buy one at the auction house, or ask %s to make it."] = "Достань %s для %s. Купи на аукционе или попроси %s сделать."
+L["Get a %s for %s. Buy one at the auction house."] = "Достань %s для %s. Купи на аукционе."
+L["About %s at the auction house."] = "На аукционе около %s."
+L["a blacksmith"] = "кузнеца"
+L["a leatherworker"] = "кожевника"
+L["an alchemist"] = "алхимика"
+L["a tailor"] = "портного"
+L["an engineer"] = "инженера"
+L["an enchanter"] = "зачаровывателя"

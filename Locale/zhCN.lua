@@ -1238,3 +1238,16 @@ L["The Training tab shows spells you can learn and their cost. Visit a class tra
 L["Equipment Settings:"] = "Equipment 设置："
 L["Puts every Equipment setting back to how it started. Your gear, characters and stat weights stay. So do your window locations and the choices on this page."] = "把 Equipment 的每个设置恢复到最初的样子。 你的装备、角色和属性权重都会保留。 你的窗口位置和这一页的选择也会保留。"
 L["Every Equipment setting is back to how it started."] = "Equipment 的所有设置都已恢复到最初的样子。"
+
+-- Upgrade Quest: an item traded for a quest item (2026-11-24)
+L["bring a %s to %s%s for the %s"] = "把%s交给%s%s，换取%s"
+L["Make a %s (%s) for %s"] = "为%3$s制作%1$s（%2$s）"
+L["Get a %s for %s. Buy one at the auction house, or ask %s to make it."] = "为%2$s准备%1$s。可以在拍卖行买，也可以请%3$s帮你做。"
+L["Get a %s for %s. Buy one at the auction house."] = "为%2$s准备%1$s。可以在拍卖行买。"
+L["About %s at the auction house."] = "拍卖行大约%s。"
+L["a blacksmith"] = "铁匠"
+L["a leatherworker"] = "制皮师"
+L["an alchemist"] = "炼金师"
+L["a tailor"] = "裁缝"
+L["an engineer"] = "工程师"
+L["an enchanter"] = "附魔师"

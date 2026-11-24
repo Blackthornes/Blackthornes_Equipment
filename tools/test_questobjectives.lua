@@ -74,8 +74,43 @@ ns.HandleSlash("quest quest")
 suite.check("the quest reward is picked", Quest:Current() and Quest:Current().itemID == 1002)
 
 local ender = Quest.Ender(6571)
-suite.check("every objective's place is read", ender and #ender.goals == 3
+suite.check("every objective's place is read", ender and #ender.goals == 4
     and ender.goal == ender.goals[1] and ender.goals[2].name == "Warsong Oil")
+suite.check("the saw blades come last, from Pixel, for a Deadly Blunderbuss", ender.goals[4].name == "Pixel"
+    and ender.goals[4].item == "Warsong Saw Blades" and ender.goals[4].wants == 4369
+    and ender.goals[4].x == 73.1 and ender.goals[4].y == 61.5)
+
+-- The Deadly Blunderbuss: a step to have one on hand, before the quest's work.
+local function Find(text)
+    for index, row in ipairs((Quest:Steps())) do
+        if row.text:find(text, 1, true) then return row, index end
+    end
+end
+local realCount = Quest.Count
+local gun, gunAt = Find("Deadly Blunderbuss for Pixel")
+local _, completeAt = Find("Complete Warsong Supplies")
+suite.check("a step says to get a Deadly Blunderbuss for Pixel", gun ~= nil and gun.done == false
+    and gun.text:find("auction house", 1, true) ~= nil and gun.text:find("an engineer", 1, true) == nil,
+    gun and gun.text)
+suite.check("it comes before the quest's work", gunAt and completeAt and gunAt < completeAt)
+ns.Crafts.ITEMS[4369] = { 202, 105, 3936, 16, 21, 0, 0, 0, m = {} }
+gun = Find("Deadly Blunderbuss for Pixel")
+suite.check("an engineer can make it", gun and gun.text:find("ask an engineer to make it", 1, true) ~= nil,
+    gun and gun.text)
+local realKnows, realPrice = ns.Crafting.Knows, ns.Crafting.AuctionPrice
+ns.Crafting.AuctionPrice = function() return 21000 end
+gun = Find("Deadly Blunderbuss for Pixel")
+suite.check("the auction price shows under it when known", gun and gun.note
+    and gun.note:find("auction house", 1, true) ~= nil, gun and gun.note)
+ns.Crafting.Knows = function(_, spell) return spell == 3936 end
+gun = Find("Make a")
+suite.check("knowing the recipe, the step is to make it", gun and gun.text:find("Deadly Blunderbuss", 1, true)
+    and gun.text:find("for Pixel", 1, true) and gun.note == nil, gun and gun.text)
+ns.Crafting.Knows, ns.Crafting.AuctionPrice = realKnows, realPrice
+Quest.Count = function(id) return id == 4369 and 1 or realCount(id) end
+gun = Find("Deadly Blunderbuss for Pixel")
+suite.check("with one in the bags, the step is done", gun and gun.done == true)
+Quest.Count = realCount
 
 -- Not in the log: the step shows the first objective, as before.
 local step = Now()
@@ -104,12 +139,28 @@ objectives[3] = { text = "Warsong Oil: 1/1", finished = true }
 step = Now()
 suite.check("then the next one", step.place and step.place.name == "Warsong Axe Shipment", step.text)
 
+-- The rest done, the saw blades are left: bring Pixel the gun.
+objectives[2] = { text = "Warsong Axe Shipment: 1/1", finished = true }
+Quest.Count = function(id) return id == 4369 and 1 or realCount(id) end
+step = Now()
+suite.check("last, the step is to bring Pixel the gun", step.text:find("Complete Warsong Supplies", 1, true) ~= nil
+    and step.text:find("Deadly Blunderbuss to Pixel", 1, true) ~= nil
+    and step.text:find("Warsong Saw Blades", 1, true) ~= nil and step.done == false, step.text)
+suite.check("and the arrow goes to Pixel", step.place and step.place.name == "Pixel" and step.place.x == 73.1)
+Quest.Count = realCount
+objectives[1] = { text = "Warsong Saw Blades: 1/1", finished = true }
+gun = Find("Deadly Blunderbuss for Pixel")
+suite.check("with the saw blades, the gun step is done", gun and gun.done == true)
+
 -- Every known place done, one objective left the data has no place for:
 -- no made-up spot, the step still waits.
-objectives[2] = { text = "Warsong Axe Shipment: 1/1", finished = true }
+local trades = Quest.TRADES[6571]
+Quest.TRADES[6571] = nil
+objectives[1] = { text = "Warsong Saw Blades: 0/1", finished = false }
 step = Now()
 suite.check("with no place left, the step names only the quest", step.text:find("Complete Warsong Supplies", 1, true) ~= nil
     and step.place == nil and step.done == false, step.text)
+Quest.TRADES[6571] = trades
 
 -- All done: the hand-in.
 objectives[1] = { text = "Warsong Saw Blades: 1/1", finished = true }
@@ -136,6 +187,7 @@ suite.check("a mob objective matches by its name", Quest.OpenGoal(
 
 -- A quest with one objective reads as before.
 S.ENDS[6571].m = nil
+Quest.TRADES[6571] = nil
 ender = Quest.Ender(6571)
 suite.check("one objective: one place", #ender.goals == 1 and ender.goal.name == "Foulweald Den Watcher")
 
