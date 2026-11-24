@@ -23,6 +23,15 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.19.0
+
+- The small Upgrade Quest panel has a Search Again magnifying glass.
+- The panel's Options menu is shorter: Current Zone Only, Update on Zone Change, Solo Quests Only and Open Equipment.
+- Worn gear names show in their rarity color on My Gear.
+
+Fixes and changes:
+- Upgrade Quest shows another source's upgrade when the one you picked has none.
+
 ## 1.18.0
 
 - A new Biggest Upgrade First box on the Upgrade Quest page of Settings makes each tab pick the biggest gain first. It starts off.

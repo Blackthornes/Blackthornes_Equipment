@@ -5,6 +5,11 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.19.0", lines = {
+        "The small Upgrade Quest panel has a Search Again magnifying glass.",
+        "The panel's Options menu is shorter: Current Zone Only, Update on Zone Change, Solo Quests Only and Open Equipment.",
+        "Worn gear names show in their rarity color on My Gear.",
+    } },
     { version = "1.18.0", lines = {
         "A new Biggest Upgrade First box on the Upgrade Quest page of Settings makes each tab pick the biggest gain first. It starts off.",
     } },
@@ -15,8 +20,5 @@ ns.WHATS_NEW = {
         "Arrows on bags, bank, vendor and loot say how much better the item is, like +14%.",
         "Four dungeons were missing and are in now: Krol'dok Stronghold, Alcaz Prison, Blackmaw Hold and The Shaper's Terrace.",
         "This Zone Only keeps dungeon and raid drops in the list when you are not in that zone.",
-    } },
-    { version = "1.16.0", lines = {
-        "Settings has a Forget button for characters you deleted.",
     } },
 }

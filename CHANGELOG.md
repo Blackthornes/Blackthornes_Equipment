@@ -4,6 +4,15 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 1.19.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Search Again.** The small Upgrade Quest panel has a magnifying glass. Click it to search again. It also works when every tab already has a quest.
+- **Panel Options.** The Options menu on the small panel now holds Current Zone Only, Update on Zone Change, Solo Quests Only and Open Equipment.
+- **My Gear.** Worn gear names show in their rarity color.
+- **Upgrade Quest.** When the source you picked has no upgrade, the panel shows one from another source.
+
 ## 1.18.0
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
