@@ -375,3 +375,11 @@ client can close these through `PLAYER_INTERACTION_MANAGER_FRAME_HIDE`
 (its argument an `Enum.PlayerInteractionType`: MailInfo 17, Merchant 5,
 Trainer 7, Auctioneer 21) without the old close event, so that event
 undocks too. Every event is registered inside a pcall.
+
+## Item links name their colour (2026-11-24, the owner's screenshot)
+
+Worn item links come as `|cnIQ2:|Hitem:...|h[Name]|h|r`: the colour by
+name, not `|cff1eff00`. Code that takes a link's colour with
+`|c(%x%x%x%x%x%x%x%x)` finds none and shows the name white (My Gear's
+worn names did). `FinderUI.ItemText` now colours by the item's quality
+when the link has no hex colour, else keeps the named colour.
