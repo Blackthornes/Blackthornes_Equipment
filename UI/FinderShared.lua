@@ -591,12 +591,21 @@ function FinderUI:SourceFilter(found)
 end
 
 --- An item's name in its rarity colour, from its link: plain text, so it
---- can be cut to fit.
+--- can be cut to fit. Forever writes the colour by name ("|cnIQ2:"), not
+--- as "|cff1eff00": then the colour comes from the item's quality, and if
+--- the client can't say yet, from the link's own named colour.
 function FinderUI.ItemText(link)
     if type(link) ~= "string" then return "" end
     local name = link:match("%[(.-)%]") or link
     local color = link:match("|c(%x%x%x%x%x%x%x%x)")
-    return color and ("|c" .. color .. name .. "|r") or name
+    if color then return "|c" .. color .. name .. "|r" end
+    local Items = ns.Items
+    if Items and Items.ColorName then
+        local shown = Items.ColorName(link, name)
+        if shown ~= name then return shown end
+    end
+    local named = link:match("|cn[%w_]+:")
+    return named and (named .. name .. "|r") or name
 end
 
 --- Can a click put this owned piece on? Only one in the bags, and never

@@ -256,4 +256,26 @@ suite.check("a click on a row shows its slot", MyGear.slot == MyGear.listRows[1]
 MyGear:SetView("figure")
 suite.check("Figure brings the slots back", ns.db.myGearView == "figure" and MyGear.figure:IsShown())
 
+-- 8. Worn names show in their rarity colour. Forever writes item links with
+-- the named colour ("|cnIQ2:"), not "|cff1eff00"; the names showed white.
+do
+    _G.ITEM_QUALITY_COLORS = { [2] = { r = 0.12, g = 1, b = 0 } }
+    local green = "|cnIQ2:|Hitem:800::::::::20:::::|h[Crown of Leaves]|h|r"
+    env.items[green] = ITEMS["item:800"]
+    local text = ns.FinderUI.ItemText(green)
+    suite.check("a named-colour link keeps its colour", text == "|c" .. ns.Items.QualityHex(2) .. "Crown of Leaves|r", text)
+    suite.check("an old-style link keeps its colour",
+        ns.FinderUI.ItemText("|cff0070dd|Hitem:9::|h[Blue Hat]|h|r") == "|cff0070ddBlue Hat|r")
+    env.worn[1] = green
+    MyGear:Refresh()
+    local shown = MyGear.slotButtons[1].name:GetText()
+    suite.check("the figure shows the worn name in colour", shown == text, shown)
+    MyGear:SetView("list")
+    local row
+    for _, r in ipairs(MyGear.listRows) do if r.slot == 1 then row = r end end
+    suite.check("the list shows the worn name in colour", row and row.worn:GetText() == text,
+        row and row.worn:GetText())
+    MyGear:SetView("figure")
+end
+
 suite.done()
