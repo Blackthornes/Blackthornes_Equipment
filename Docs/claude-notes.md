@@ -2743,6 +2743,19 @@ The mockup the owner approved is the plan's `my-gear.html`.
 - Tested in `tools/test_mygear.lua`, `tools/test_mainwindow.lua`,
   `tools/test_onewindow.lua` and `tools/test_swapwindows.lua`. Not yet
   seen in game.
+- Follows Find Upgrades' filters (a player's report on 1.18.0, 2026-11-24):
+  `MyGear.Picks` keeps only picks with a source that
+  `FinderUI:SourceFilter` lets through (From boxes, Only What I Can Get
+  Now, This Zone Only), with only those sources, so the figure, the list,
+  the cards and the sheet's arrows (`GreenSlots`) show what that list
+  shows. Bag pieces still show. Tested in `tools/test_mygear.lua` (9).
+- One more scan once every item answer is in (same report: My Gear showed
+  4 upgrades, then 14 after Judge Gear As changed). While a page asks for
+  more (`Finder:KeepsAsking`), the batches come in with no scan between;
+  when the last settles, `Finder:AnswersSettled` marks the scan stale if
+  any answer came after it began (`latestAnswers`), so the page looks
+  again. The scan after that asks for nothing, so it stops. Tested in
+  `tools/test_speed.lua`.
 
 ## Find Upgrades (rework step 3, 2026-11-23)
 
