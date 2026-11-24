@@ -1479,9 +1479,12 @@ function Weights:CanUse(class, classID, subclassID, equipLoc)
 
     -- A weapon skill the game says this character knows proves the class
     -- can use it, whatever the list says: the list is classic's rules with
-    -- the Forever changes we know of, and Forever may change more.
+    -- the Forever changes we know of, and Forever may change more. Not for
+    -- the ranged slot: Forever's client says a hunter knows Thrown, yet
+    -- hunters never use thrown weapons (the owner, 2026-11-24), so bows,
+    -- guns, crossbows, thrown and wands go by the list alone.
     if classID == CLASS_WEAPON and subclassID ~= nil and class == self:PlayerClass()
-        and not (RANGED_SLOTS[equipLoc] and not RANGED_WEAPONS[subclassID]) then
+        and not RANGED_SLOTS[equipLoc] and not RANGED_WEAPONS[subclassID] then
         local skills = ns.WeaponSkills
         local ok, known = pcall(function() return skills and skills:Known() end)
         if ok and type(known) == "table" and known[subclassID] then
