@@ -51,4 +51,52 @@ ns = Load("PRIEST", nil)
 suite.check("with nothing known the list decides",
     ns.Compare:Judge("item:1").verdict == "cantuse", ns.Compare:Judge("item:1").verdict)
 
+-- The ranged slot follows the class list only. A player's hunter was told a
+-- thrown weapon would replace a bow (1.19.0): Forever's client says a hunter
+-- knows the Thrown skill (spell 2567), and a known skill beat the list.
+-- Hunters never use thrown weapons, so a known skill must not open one.
+ITEMS["item:3"] = { loc = "INVTYPE_THROWN", class = 2, subclass = 16,
+    stats = { ITEM_MOD_AGILITY_SHORT = 8, ITEM_MOD_DAMAGE_PER_SECOND_SHORT = 14 } }
+ITEMS["item:4"] = { loc = "INVTYPE_RANGED", class = 2, subclass = 2,
+    stats = { ITEM_MOD_AGILITY_SHORT = 2, ITEM_MOD_DAMAGE_PER_SECOND_SHORT = 6 } }
+ITEMS["item:5"] = { loc = "INVTYPE_RANGEDRIGHT", class = 2, subclass = 19,
+    stats = { ITEM_MOD_INTELLECT_SHORT = 4, ITEM_MOD_DAMAGE_PER_SECOND_SHORT = 12 } }
+
+-- Every skill a hunter could be said to know: bows, guns, crossbows, thrown, wands.
+local ALL_RANGED = { [264] = true, [266] = true, [5011] = true, [2567] = true, [5009] = true }
+ns = Load("HUNTER", ALL_RANGED)
+suite.check("a hunter the game says knows Thrown still can't use a thrown weapon",
+    ns.Compare:Judge("item:3").verdict == "cantuse", ns.Compare:Judge("item:3").verdict)
+suite.check("nor a wand", ns.Compare:Judge("item:5").verdict == "cantuse", ns.Compare:Judge("item:5").verdict)
+suite.check("but a bow is still for a hunter", ns.Compare:Judge("item:4").verdict ~= "cantuse",
+    ns.Compare:Judge("item:4").verdict)
+
+-- Who uses what in the ranged slot, by class, with every ranged skill
+-- "known": classic's rules, which Forever keeps.
+local RANGED = {
+    -- class:     bow    gun    thrown crossbow wand
+    HUNTER  = { true,  true,  false, true,  false },
+    WARRIOR = { true,  true,  true,  true,  false },
+    ROGUE   = { true,  true,  true,  true,  false },
+    MAGE    = { false, false, false, false, true  },
+    PRIEST  = { false, false, false, false, true  },
+    WARLOCK = { false, false, false, false, true  },
+    DRUID   = { false, false, false, false, false },
+    PALADIN = { false, false, false, false, false },
+    SHAMAN  = { false, false, false, false, false },
+}
+local KINDS = {
+    { 2, "INVTYPE_RANGED", "bow" }, { 3, "INVTYPE_RANGED", "gun" },
+    { 16, "INVTYPE_THROWN", "thrown" }, { 18, "INVTYPE_RANGED", "crossbow" },
+    { 19, "INVTYPE_RANGEDRIGHT", "wand" },
+}
+for class, row in pairs(RANGED) do
+    ns = Load(class, ALL_RANGED)
+    for index, kind in ipairs(KINDS) do
+        local can = ns.Weights:CanUse(class, 2, kind[1], kind[2]) and true or false
+        suite.check(("%s %s a %s"):format(class, row[index] and "can use" or "can't use", kind[3]),
+            can == row[index], tostring(can))
+    end
+end
+
 suite.done()

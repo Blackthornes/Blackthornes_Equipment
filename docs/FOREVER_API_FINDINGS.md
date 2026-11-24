@@ -272,6 +272,12 @@ its class, whatever the list says. Other differences fix themselves once the
 skill is trained; add them to the class lists in `Logic/Weights.lua` when
 seen, so an untrained character is sent to the trainer.
 
+The ranged slot is the exception (2026-11-24): a player's hunter was offered
+a thrown weapon in place of a bow, since the client says a hunter knows
+Thrown (spell 2567). Hunters never use thrown weapons, so bows, guns,
+crossbows, thrown and wands go by the class lists alone, whatever skill the
+game reports. Tested in `tools/test_forever_weapons.lua`.
+
 ## Not yet checked: weapon skills and faction (first notes)
 
 The weapon master line (`Logic/WeaponSkills.lua`) reads which weapon skills
