@@ -1238,3 +1238,16 @@ L["The Training tab shows spells you can learn and their cost. Visit a class tra
 L["Equipment Settings:"] = "Réglages de Equipment :"
 L["Puts every Equipment setting back to how it started. Your gear, characters and stat weights stay. So do your window locations and the choices on this page."] = "Remet chaque réglage de Equipment comme au départ. Ton équipement, tes personnages et tes poids de stats restent. La position de tes fenêtres et les choix de cette page restent aussi."
 L["Every Equipment setting is back to how it started."] = "Tous les réglages de Equipment sont revenus comme au départ."
+
+-- Upgrade Quest: an item traded for a quest item (2026-11-24)
+L["bring a %s to %s%s for the %s"] = "apporte %s à %s%s en échange de %s"
+L["Make a %s (%s) for %s"] = "Fabrique %s (%s) pour %s"
+L["Get a %s for %s. Buy one at the auction house, or ask %s to make it."] = "Trouve %s pour %s. Achète-le à l'hôtel des ventes, ou demande à %s de le fabriquer."
+L["Get a %s for %s. Buy one at the auction house."] = "Trouve %s pour %s. Achète-le à l'hôtel des ventes."
+L["About %s at the auction house."] = "Environ %s à l'hôtel des ventes."
+L["a blacksmith"] = "un forgeron"
+L["a leatherworker"] = "un travailleur du cuir"
+L["an alchemist"] = "un alchimiste"
+L["a tailor"] = "un tailleur"
+L["an engineer"] = "un ingénieur"
+L["an enchanter"] = "un enchanteur"

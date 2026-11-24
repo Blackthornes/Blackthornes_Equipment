@@ -941,6 +941,18 @@ on; a line it can't match (another language) counts as not done. The
 quest log tab's `QuestLog.Place` uses the same. An item objective prefers
 a source in the quest's own zone, Forever's before Classic's. Tested in
 `tools/test_questobjectives.lua`.
+Items traded for a quest item (the owner asked 2026-11-24, Warsong Boots):
+`UpgradeQuest.TRADES[questID]` is a hand-checked list of quest items a
+person gives only for another item (Pixel gives the Warsong Saw Blades
+for a Deadly Blunderbuss, her quest 6581). The data has no list of what a
+side quest asks for, so a quest like it takes one line there. Each entry
+joins the quest's places last (`Ender`, "bring a X to Pixel ... for the
+Warsong Saw Blades"), and `UpgradeQuest:TradeStep` adds a step to get the
+item: make it when the recipe is known (`Crafts.ITEMS`, `Crafting:Knows`),
+else buy it or ask the crafter (`CRAFTERS` by skill line), with the
+auction price as its note. That step is `aside`: never the step to do now,
+never marking the steps before it done. Done once the item or the quest
+item is in hand. Tested in `tools/test_questobjectives.lua`.
 A hand-in step whose quest is ready (`QuestReady`) carries `turnIn`, and
 the panel then shows the game's yellow ? (`ActiveQuestIcon`) on that step
 and in its header instead of the ! (the owner asked 2026-10-10), read on
