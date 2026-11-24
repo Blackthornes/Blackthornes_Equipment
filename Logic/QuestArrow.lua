@@ -870,4 +870,8 @@ ns.TravelHost = {
     Refresh = function() if ns.QuestArrowUI and ns.QuestArrowUI.Refresh then ns.QuestArrowUI:Refresh() end end,
     State = function() return ns.QuestArrowUI and ns.QuestArrowUI.state end,
     Print = function(text) ns.Print(text) end,
+    -- The step box (UI/TravelCard.lua) hangs under the small panel while it
+    -- shows, else under the dial.
+    Hang = function() return ns.SmallPanel and ns.SmallPanel.frame end,
+    Dial = function() return ns.QuestArrowUI end,
 }
