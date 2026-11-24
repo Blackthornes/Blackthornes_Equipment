@@ -23,6 +23,11 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 1.21.1
+
+Fixes and changes:
+- Items you can make with a favor recipe no longer show as dungeon boss drops.
+
 ## 1.21.0
 
 - My Gear follows the filters on Find Upgrades.
