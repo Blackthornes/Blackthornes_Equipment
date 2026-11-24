@@ -1473,23 +1473,31 @@ function Panel:MenuLines()
         end }
         lines[#lines + 1] = { text = L["Ignore"], run = function() ns.HandleSlash("quest ignore") end }
     end
+    -- Four options and no more (the owner, 2026-11-24). The rest live in
+    -- Settings and on the Upgrade Quest tab, their saved values untouched.
+    local finder = ns.Finder
     if QuestOn() then
-        for _, line in ipairs(Panel:OptionLines()) do
-            -- The steps open and close with a click here.
-            if line.text ~= L["Current Step Only"] and line.text ~= L["Settings"] then lines[#lines + 1] = line end
+        local zoneOnly = logic:ZoneOnly()
+        lines[#lines + 1] = { text = L["Current Zone Only"], checked = zoneOnly,
+            run = function()
+                logic:SetZoneOnly(not zoneOnly)
+                logic:BoxChanged("zone", not zoneOnly)
+            end }
+        local swap = logic:ZoneSwap()
+        lines[#lines + 1] = { text = L["Update on Zone Change"], checked = swap, disabled = not zoneOnly,
+            run = function() logic:SetZoneSwap(not swap) end }
+        if finder then
+            local solo = finder:SoloOnly()
+            lines[#lines + 1] = { text = L["Solo Quests Only"], checked = solo,
+                run = function()
+                    finder:SetSoloOnly(not solo)
+                    logic:BoxChanged("solo", not solo)
+                end }
         end
     end
-    local ui = ns.QuestLogUI
-    if ui then
-        local tracked = ui:TrackedOnly()
-        lines[#lines + 1] = { text = L["Tracked Only"], checked = tracked, run = function()
-            ui:SetTrackedOnly(not tracked)
-        end }
-        local hides = ui:HidesTracker()
-        lines[#lines + 1] = { text = (L["Hide Game's Tracker:"]:gsub("%s*[:\239\188\154]+%s*$", "")), checked = hides,
-            run = function() ui:SetHidesTracker(not hides) end }
-    end
-    lines[#lines + 1] = { text = L["Upgrade Quest"], run = function() Panel:OpenTab() end }
+    lines[#lines + 1] = { text = L["Open Equipment"], run = function()
+        if ns.GearWindow then ns.GearWindow:Open() end
+    end }
     return lines
 end
 
