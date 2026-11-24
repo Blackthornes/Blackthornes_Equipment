@@ -5,6 +5,9 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "1.20.0", lines = {
+        "The All Addons page in Settings has a Set Default button. Click Confirm and this addon's settings go back to how they started.",
+    } },
     { version = "1.19.0", lines = {
         "The small Upgrade Quest panel has a Search Again magnifying glass.",
         "The panel's Options menu is shorter: Current Zone Only, Update on Zone Change, Solo Quests Only and Open Equipment.",
@@ -12,13 +15,5 @@ ns.WHATS_NEW = {
     } },
     { version = "1.18.0", lines = {
         "A new Biggest Upgrade First box on the Upgrade Quest page of Settings makes each tab pick the biggest gain first. It starts off.",
-    } },
-    { version = "1.17.0", lines = {
-        "I was not happy with the overall quality of Equipment and did a full rework of the Addon. Feedback is appreciated.",
-        "Equipment opens in one new window. My Gear shows your character with a green mark on every slot that has an upgrade. Find Upgrades lists every upgrade in one place. Upgrade Quest, Dungeons and Training have their own tabs.",
-        "Your character sheet shows green arrows on slots with an upgrade. Alt-click a slot to see it in My Gear.",
-        "Arrows on bags, bank, vendor and loot say how much better the item is, like +14%.",
-        "Four dungeons were missing and are in now: Krol'dok Stronghold, Alcaz Prison, Blackmaw Hold and The Shaper's Terrace.",
-        "This Zone Only keeps dungeon and raid drops in the list when you are not in that zone.",
     } },
 }
