@@ -292,10 +292,25 @@ suite.check("changing tabs judges nothing", Worked() == 0, Worked())
 do
     local texts = {}
     for _, line in ipairs(Panel:MenuLines()) do texts[line.text] = line end
-    suite.check("the menu has Arrow, Ignore and Upgrade Quest",
-        texts["Arrow"] ~= nil and texts["Ignore"] ~= nil and texts["Upgrade Quest"] ~= nil)
-    suite.check("and the log's two choices", texts["Tracked Only"] ~= nil and texts["Hide Game's Tracker"] ~= nil)
-    suite.check("but not Current Step Only", texts["Current Step Only"] == nil)
+    suite.check("the menu has Arrow and Ignore", texts["Arrow"] ~= nil and texts["Ignore"] ~= nil)
+    suite.check("and the four options", texts["Current Zone Only"] ~= nil and texts["Update on Zone Change"] ~= nil
+        and texts["Solo Quests Only"] ~= nil and texts["Open Equipment"] ~= nil)
+    for _, gone in ipairs({ "This Zone Only", "Change on a New Zone", "Current Step Only", "Tracked Only",
+        "Hide Game's Tracker", "Upgrade Quest", "Settings" }) do
+        suite.check("but not " .. gone, texts[gone] == nil)
+    end
+    local gone = 0
+    for text in pairs(texts) do
+        if text:find("How You Gear Up", 1, true) or text:find("Quest Level", 1, true) then gone = gone + 1 end
+    end
+    suite.check("nor How You Gear Up or Quest Level", gone == 0)
+    local soloBefore, zoneBefore = ns.Finder:SoloOnly(), ns.UpgradeQuest:ZoneOnly()
+    suite.check("the log's saved choices are left alone",
+        ns.db.questLogTrackedOnly == nil or type(ns.db.questLogTrackedOnly) == "boolean")
+    texts["Open Equipment"].run()
+    suite.check("Open Equipment opens the Equipment window", ns.GearWindow.frame and ns.GearWindow.frame:IsShown())
+    suite.check("and changes no setting", ns.Finder:SoloOnly() == soloBefore and ns.UpgradeQuest:ZoneOnly() == zoneBefore)
+    ns.GearWindow.frame:Hide()
 end
 
 --------------------------------------------------------------------------------
