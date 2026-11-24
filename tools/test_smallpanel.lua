@@ -189,6 +189,13 @@ end
 suite.check("a quest ready to hand in shows a check",
     Panel.LogMark({ title = "x", complete = true, objectives = {} }) == "check")
 suite.check("a failed one shows nothing", Panel.LogMark({ title = "x", failed = true, objectives = {} }) == nil)
+do
+    local realMark = Quest.RewardMark
+    Quest.RewardMark = function() return { percent = 18.6, slot = 1 } end
+    local ok, text = pcall(Panel.LogMark, { title = "x", questID = 5, objectives = {} })
+    Quest.RewardMark = realMark
+    suite.check("a reward's gain is rounded like everywhere else", ok and text == "+19%", tostring(text))
+end
 suite.check("several goals show how many are done", Panel.LogMark({ title = "x",
     objectives = { { text = "a", done = true }, { text = "b" }, { text = "c" } } }) == "1/3")
 
@@ -242,6 +249,36 @@ do
     finder.ForgetVerdicts, logic.Update = realForget, realUpdate
     Panel:FillBar(Panel:View(), false)
     suite.check("and lights again after", search.dimmed == false)
+end
+
+-- Found 2026-11-24: with a quest on every tab, or with the upgrade quest
+-- off, a click on the glass forgot the verdicts and searched nothing.
+do
+    local search, finder = Panel.searchButton, ns.Finder
+    local asked = 0
+    local realScan = finder.ScanInBackground
+    finder.ScanInBackground = function(self, ...) asked = asked + 1; return realScan(self, ...) end
+    local tabs = Quest:Quests()
+    local kept, held = {}, nil
+    for _, tab in ipairs(Quest.TABS) do
+        kept[tab.key] = tabs[tab.key]
+        held = held or tabs[tab.key]
+    end
+    suite.check("a tab holds a quest to copy", held ~= nil)
+    for _, tab in ipairs(Quest.TABS) do tabs[tab.key] = tabs[tab.key] or held end
+    Click(search, "LeftButton")
+    suite.check("a click searches with a quest on every tab", asked >= 1, asked)
+    for _, tab in ipairs(Quest.TABS) do tabs[tab.key] = kept[tab.key] end
+
+    local was = ns.db.upgradeQuest
+    ns.db.upgradeQuest = false
+    asked = 0
+    Click(search, "LeftButton")
+    suite.check("and with the upgrade quest off", asked >= 1, asked)
+    ns.db.upgradeQuest = was
+    finder.ScanInBackground = realScan
+    Quest:Update()
+    Quiet()
 end
 
 Click(Panel.tabs.quest, "LeftButton")

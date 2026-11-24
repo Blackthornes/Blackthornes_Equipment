@@ -216,7 +216,7 @@ function Panel.LogMark(quest)
     local logic = ns.UpgradeQuest
     local mark = logic and quest.questID and logic.RewardMark and logic:RewardMark(quest.questID)
     if type(mark) == "table" and not mark.empty and (tonumber(mark.percent) or 0) > 0 then
-        return ("+%d%%"):format(mark.percent), "good"
+        return ("+%d%%"):format(math.floor(mark.percent + 0.5)), "good"
     end
     if quest.failed then return nil end
     if quest.complete then return "check", "good" end
