@@ -590,6 +590,15 @@ Thanes' door is Ironforge and City of Dalaran's Alterac Mountains
 (`FOREVER_DUNGEONS`). Tested in `tools/test_forever_drops.py`,
 `tools/test_forever_dungeon_quests.py` and `tools/test_dungeonquests.lua`.
 
+Crafted gear is never a fact's drop (a player found 2026-11-24): 91 pieces
+made by Forever's new Blacksmithing, Leatherworking and Tailoring recipes
+(the ones sold for Merchant's Favor) had been typed in as boss loot, so
+Find Upgrades sent players to The Deadmines and other dungeons for them.
+They were taken out of `forever_facts.json`, and `--tables` now also leaves
+out any fact item a recipe in the client's tables makes (`table_crafted`:
+SpellEffect effect 24 on a SkillLineAbility spell). Run the import with
+`--tables` so the check holds. Tested in `tools/test_forever_drops.py`.
+
 Forever's own dungeons and raids (the owner asked 2026-10-14, after
 "can equipment learn drops inside a new dungeon?"): Classic's list in
 `Sources.DUNGEONS` lacks them, so their drops used to be thrown away.

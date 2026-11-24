@@ -28,7 +28,10 @@ tools/forever_facts.json holds those facts, item IDs
 checked against the Forever client's game tables (pass --tables to check
 them again). A fact never replaces what Farmer saw: Farmer's rate wins,
 and a fact's drop has no rate (0). For Classic's dungeons only gear
-Classic's data never had as a drop is added.
+Classic's data never had as a drop is added. Gear a profession makes is
+never a fact's drop: with --tables, any item a recipe in the client's
+tables makes is left out (a player found 2026-11-24 that favor recipes'
+gear was shown as Deadmines loot).
 
 Everything Farmer saw is kept, gear or not: the game itself says what an
 item is, and the finder only judges what can be worn. Item stats are never
@@ -38,7 +41,7 @@ whose stats Forever changed is judged as it is now.
 Options:
     --stdout          print the file instead of writing it
     --tables <folder> the Forever client's game tables: leave out a fact's
-                      item the tables do not have
+                      item the tables do not have, or one a recipe makes
 """
 
 import csv
@@ -131,12 +134,24 @@ def table_items(tables):
         return {int(r["ID"]) for r in csv.DictReader(f)}
 
 
-def collect(sources, items, facts=None, known=None):
+def table_crafted(tables):
+    """Every item ID a profession recipe makes, by the client's tables: a
+    spell that creates an item (effect 24) and belongs to a skill line."""
+    with open(os.path.join(tables, "SkillLineAbility.csv"), encoding="utf-8") as f:
+        recipes = {r["Spell"] for r in csv.DictReader(f)}
+    with open(os.path.join(tables, "SpellEffect.csv"), encoding="utf-8") as f:
+        return {int(r["EffectItemType"]) for r in csv.DictReader(f)
+                if r["Effect"] == "24" and r["SpellID"] in recipes
+                and r["EffectItemType"] not in ("", "0")}
+
+
+def collect(sources, items, facts=None, known=None, crafted=None):
     """What dungeons and raids were seen dropping on Forever, and the Forever
     dungeons among them: ({itemID: {(mob, key): chance}}, {key: row}).
     `facts` adds what tools/forever_facts.json knows; `known`, when given,
     is the item IDs the client has, and a fact's item outside it is left
-    out."""
+    out; `crafted`, the item IDs a recipe makes, and a fact's item inside
+    it is left out."""
     facts = facts or {}
     dungeons = {}          # plain name -> key
     for key in sources.DUNGEONS:
@@ -188,6 +203,8 @@ def collect(sources, items, facts=None, known=None):
             for itemID in ids:
                 itemID = int(itemID)
                 if known is not None and itemID not in known:
+                    continue
+                if crafted and itemID in crafted:
                     continue
                 classic = sources.ITEMS and sources.ITEMS[itemID]
                 if base not in forever_keys and classic and classic.d:
@@ -262,7 +279,8 @@ def main(argv):
     lua = lua51.LuaRuntime(unpack_returned_tuples=True)
     sources = load_sources(lua)
     known = table_items(tables) if tables else None
-    drops, added = collect(sources, load_harvest(lua, farmer), load_facts(), known)
+    crafted = table_crafted(tables) if tables else None
+    drops, added = collect(sources, load_harvest(lua, farmer), load_facts(), known, crafted)
     text = render(drops, added)
 
     if "--stdout" in argv:

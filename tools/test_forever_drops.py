@@ -99,6 +99,22 @@ expect("a Classic drop Classic already lists is not added", 500 not in drops)
 expect("new gear at a Classic boss is", drops[501] == {("Mutanus the Devourer", "43"): 0})
 expect("a dungeon the addon does not know is skipped", 703 not in drops)
 
+# Gear a profession makes is never a boss drop, even when the facts say so
+# (a player found 2026-11-24: Redridge favor recipes shown at The Deadmines).
+drops, added = collect(sources, items, facts, known={200, 500, 501, 700, 702, 703}, crafted={700})
+expect("a fact's item a recipe makes is left out", 700 not in drops)
+expect("the other facts still count", drops[702] == {("The Baron", "2999"): 0})
+
+# The favor gear the player saw: shirts, robes and armor at Sneed, pants at
+# Edwin VanCleef. All are made by Blacksmithing, Leatherworking or Tailoring.
+FAVOR_GEAR = [250488, 250492, 250493, 250497, 252434, 252445, 252490, 252503,
+              253901, 253911, 253937, 253947, 250498, 250546, 254037, 254103]
+listed = {int(i) for by_boss in load_facts()["loot"].values() for ids in by_boss.values() for i in ids}
+expect("the facts list no favor gear as a boss drop", not listed.intersection(FAVOR_GEAR))
+shipped = open(os.path.join(os.path.dirname(FACTS), "..", "Data", "ForeverDrops.lua"), encoding="utf-8").read()
+expect("the shipped drops list no favor gear",
+       not any(f"[{i}] = {{" in shipped for i in FAVOR_GEAR))
+
 nothing, none = collect(sources, lua.execute("return {}"))
 expect("the facts file is in the repo and names no site",
        load_facts()["dungeons"] and "http" not in open(FACTS, encoding="utf-8").read())
