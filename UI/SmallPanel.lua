@@ -646,10 +646,13 @@ function Panel:Build()
     thumb:Hide()
     self.thumb = thumb
 
-    -- The size grip: 50% to 150%, the size the old panel kept.
+    -- The size grip: 50% to 150%, the size the old panel kept. It hangs
+    -- beside the bottom right corner, not under it: the step box
+    -- (UI/TravelCard.lua) hangs under the panel as wide as it and hid the
+    -- grip (the owner's screenshot, 2026-11-25).
     Widgets.ApplySize(frame, self:SizePercent(), SCALE_MIN, SCALE_MAX)
     self.grip = Widgets.CreateSizeGrip(frame, {
-        name = "panel", min = SCALE_MIN, max = SCALE_MAX,
+        name = "panel", min = SCALE_MIN, max = SCALE_MAX, beside = true,
         get = function() return Panel:SizePercent() end,
         save = function(percent)
             if ns.db then ns.db.questScale = percent / 100 end

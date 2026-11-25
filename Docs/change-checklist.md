@@ -147,3 +147,10 @@ Check: A verdict that reads worn gear outside its own slot, or anything
 Why: Verdicts are kept across gear swaps since 2026-11-23; one that reads
   something new and is not dropped when it changes would show a stale
   upgrade.
+
+## Something hung under a panel
+Lines: "BOTTOMLEFT", 0, 1\)|CreateSizeGrip|\.Hang\b|Hang = function
+Check: A box hung under a window's bottom edge, as wide as it, covers a
+  size grip hung under its bottom right corner. Hang the grip beside the
+  corner (`CreateSizeGrip(frame, { beside = true })`) or leave room for it.
+Why: The step box hid the small panel's size grip (2026-11-25).

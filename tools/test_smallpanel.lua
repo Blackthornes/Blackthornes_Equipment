@@ -425,5 +425,20 @@ do
     box:Hide()
 end
 
+--------------------------------------------------------------------------------
+-- 11. The step box never covers the size grip (the owner's screenshot,
+--     2026-11-25: the step box hangs under the panel, as wide as it, and
+--     hid the grip under the bottom right corner)
+--------------------------------------------------------------------------------
+
+do
+    local grip = Panel.grip
+    local point, anchor, relative, x, y = grip:GetPoint()
+    suite.check("the size grip sits beside the bottom right corner, not under it",
+        point == "BOTTOMLEFT" and anchor == Panel.frame and relative == "BOTTOMRIGHT"
+        and (x or 0) > 0 and (y or 0) >= 0,
+        tostring(point) .. " " .. tostring(relative) .. " " .. tostring(x) .. " " .. tostring(y))
+end
+
 Compare.Judge, Finder.Build = realJudge, realBuild
 suite.done()
