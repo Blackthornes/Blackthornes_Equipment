@@ -153,7 +153,8 @@ function DL.SlotText(link, info)
 end
 
 --- One dungeon's rows for the chips picked: { rows = { { itemID, link,
---- boss, chance, slot, upgrade, gain (whole percent or nil), result } },
+--- boss, chance, slot, upgrade, gain (whole percent or nil), result, owned
+--- ("bags" or "bank" when you have it already) } },
 --- shown, waiting, upgrades }. Rows come best first: upgrades by gain, an
 --- empty slot's ahead of any, then the rest by name. With no chip picked, a
 --- Forever boss no drop names yet follows as a row of its own (`bossOnly`,
@@ -162,6 +163,9 @@ function DL:Rows(key, armor, stat, upgradesOnly)
     local items = self:Index()[key] or {}
     local Finder, Compare = ns.Finder, ns.Compare
     local judged = Finder and Finder:Judged()
+    -- A drop owned already is no upgrade to go and get: its row says
+    -- where it is instead (Finder:Owned).
+    local owned = Finder and Finder.Owned and Finder:Owned() or {}
     local rows, waiting, upgrades, asked = {}, 0, 0, 0
     local dropped = {}
     for _, drop in pairs(items) do
@@ -185,12 +189,13 @@ function DL:Rows(key, armor, stat, upgradesOnly)
                     local _, ok, judgedResult = Finder:JudgeOnce(judged, itemID)
                     result = ok and judgedResult or nil
                 end
-                local upgrade = result ~= nil and Compare.WearableUpgrade(result) == true
+                local where = owned[itemID]
+                local upgrade = not where and result ~= nil and Compare.WearableUpgrade(result) == true
                 if upgrade then upgrades = upgrades + 1 end
                 -- An upgrade only for the Off Spec (Logic/OffSpec.lua): shown
                 -- in blue, after the Main Spec's.
                 local offUpgrade, offGain = false, nil
-                if not upgrade and ns.OffSpec and ns.OffSpec:On() then
+                if not upgrade and not where and ns.OffSpec and ns.OffSpec:On() then
                     local _, okOff, offResult = ns.OffSpec:JudgeOnce(itemID)
                     if okOff and Compare.WearableUpgrade(offResult) then
                         offUpgrade, offGain = true, Finder.Shown(offResult)
@@ -201,7 +206,7 @@ function DL:Rows(key, armor, stat, upgradesOnly)
                         itemID = itemID, link = link, boss = drop.boss, chance = drop.chance,
                         slot = DL.SlotText(link, info), upgrade = upgrade,
                         gain = upgrade and Finder.Shown(result) or nil, result = result,
-                        offUpgrade = offUpgrade or nil, offGain = offGain,
+                        offUpgrade = offUpgrade or nil, offGain = offGain, owned = where,
                         name = DL.NameOf(itemID),
                     }
                 end

@@ -861,6 +861,25 @@ function Finder:Carried()
     return carried
 end
 
+--- Gear the character playing owns already, as { [itemID] = "bags" or
+--- "bank" }: the carried bags, and its own bank as last seen open
+--- (Alts:ReadBank). No GUID (a dungeon can keep it back): the bags only.
+--- Nothing owned is an upgrade to go and get (a player's report,
+--- 2026-11-25: dungeon drops already in the bags were listed).
+function Finder:Owned()
+    local owned = {}
+    local Alts = ns.Alts
+    local me = Alts and Alts.PlayerGUID()
+    local note = me and Alts:Notes()[me]
+    for _, entry in ipairs(type(note) == "table" and type(note.bank) == "table" and note.bank or {}) do
+        local link = type(entry) == "table" and entry.link or entry
+        local id = type(link) == "string" and tonumber(link:match("item:(%d+)"))
+        if id then owned[id] = "bank" end
+    end
+    for id in pairs(self:Carried()) do owned[id] = "bags" end
+    return owned
+end
+
 --------------------------------------------------------------------------------
 -- The scan
 --------------------------------------------------------------------------------
@@ -1218,9 +1237,9 @@ function Finder:Build(only, ahead, pause)
         plan.level = reach
     end
 
-    -- Gear already in the bags is the gear window's to show, not something
-    -- to go and buy or farm again.
-    local carried = self:Carried()
+    -- Gear already in the bags or bank is the gear window's to show, not
+    -- something to go and buy or farm again.
+    local carried = self:Owned()
 
     local judged = self:Judged()
     -- The key these verdicts were made under; a scan made meanwhile may move

@@ -17,6 +17,9 @@
 --      look judges nothing, and a hidden page does nothing.
 --   8. A wing shows its dungeon's quests, and the other side's dungeons
 --      and quests never show.
+--   9. A drop you own already (in your bags or bank) is no upgrade to go
+--      get: it says where it is, Upgrades Only hides it, and the count and
+--      Find Upgrades leave it out (a player's report, 2026-11-25).
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("dungeonstab")
@@ -331,6 +334,59 @@ suite.check("the row under the mouse shows its gold edge", row.edge:IsShown())
 row:GetScript("OnLeave")(row)
 suite.check("and lets it go", not row.edge:IsShown())
 suite.check("the picked row keeps its edge", DungeonRow("Test Caverns").edge:IsShown())
+
+--------------------------------------------------------------------------------
+-- 9. A drop you own already
+--------------------------------------------------------------------------------
+
+Window:ShowTab("instances")
+Tab:Pick("43")
+env.bags[0] = { [1] = "item:1001", [2] = "item:1004" }
+doneIDs[1] = nil
+ns.DungeonQuests:Changed()
+Finder:OnBags()
+Tab:Refresh()
+text = Lines()
+local reward = LineRow("Leaders of the Fang")
+suite.check("a quest reward in your bags says so, with no gain",
+    reward ~= nil and reward.sub:GetText():find("in your bags", 1, true) ~= nil
+    and reward.sub:GetText():find("+200%", 1, true) == nil, reward and reward.sub:GetText())
+suite.check("a drop in your bags says so, with no gain",
+    text:find("drop:item:1001|24%|in your bags", 1, true) ~= nil, text)
+suite.check("it no longer counts as an upgrade",
+    DungeonRow("Test Caverns").upgrades:GetText() == "1", DungeonRow("Test Caverns").upgrades:GetText())
+Click(Tab.onlyBox)
+text = Lines()
+suite.check("Upgrades Only hides it", text:find("item:1001", 1, true) == nil
+    and text:find("item:1002", 1, true) ~= nil, text)
+Click(Tab.onlyBox)
+local listed = false
+for _, list in pairs((Finder.latest or {}).all or {}) do
+    for _, pick in ipairs(list) do if pick.itemID == 1001 then listed = true end end
+end
+suite.check("Find Upgrades leaves it out", not listed)
+
+env.bags[0] = {}
+Finder:OnBags()
+_G.UnitGUID = function() return "Player-1-00000001" end
+local guid = ns.Alts.PlayerGUID()
+local notes = ns.Alts:Notes()
+notes[guid] = notes[guid] or { name = "Test" }
+notes[guid].bank = { { link = "item:1002", bound = true } }
+Finder:MarkStale()
+Tab:Refresh()
+text = Lines()
+suite.check("a drop in your bank says so",
+    text:find("drop:item:1002|Under 1%|in your bank", 1, true) ~= nil, text)
+suite.check("and the one back out of your bags is an upgrade again",
+    text:find("drop:item:1001|24%|+100%", 1, true) ~= nil, text)
+listed = false
+for _, list in pairs((Finder.latest or {}).all or {}) do
+    for _, pick in ipairs(list) do if pick.itemID == 1002 then listed = true end end
+end
+suite.check("Find Upgrades leaves out the one in the bank", not listed)
+notes[guid].bank = nil
+Finder:MarkStale()
 
 Compare.Judge, Finder.Build = realJudge, realBuild
 suite.done()

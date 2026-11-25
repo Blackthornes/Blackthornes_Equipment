@@ -384,13 +384,27 @@ function Alts.BankBags()
     return bags
 end
 
+--- The bank's gear as one string, to tell when it changed.
+local function BankKey(bank)
+    local links = {}
+    for _, entry in ipairs(type(bank) == "table" and bank or {}) do
+        links[#links + 1] = type(entry) == "table" and tostring(entry.link) or tostring(entry)
+    end
+    table.sort(links)
+    return table.concat(links, ",")
+end
+
 --- The bank is open: keep the gear in it on the character's note.
 function Alts:ReadBank()
     local guid = self.PlayerGUID()
     local note = guid and self:Notes()[guid]
     if type(note) ~= "table" then return false end
+    local before = BankKey(note.bank)
     note.bank = self.GearIn(self.BankBags(), false)
     note.bankAt = Call(_G.time)
+    -- Gear in the bank is owned: the upgrade lists leave it out
+    -- (Finder:Owned), so a change there starts them over.
+    if BankKey(note.bank) ~= before and ns.Finder and ns.Finder.MarkStale then ns.Finder:MarkStale() end
     self.version = (self.version or 0) + 1
     return true
 end
