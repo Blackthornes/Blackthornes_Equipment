@@ -129,14 +129,14 @@ end
 --- outlined so it reads over any icon. Left off when even the smallest size
 --- would spill past the icon's edges.
 -- @return true when it is showing
-function LootRolls:FitLabel(label, icon, words)
+function LootRolls:FitLabel(label, icon, words, tone)
     local width = (tonumber(Ask(icon, "GetWidth")) or ICON_WIDTH) - 2
     for size = LABEL_SIZE, LABEL_MIN_SIZE, -1 do
         pcall(label.SetFont, label, Theme.FONT, size, "OUTLINE")
         label:SetText(words)
         local measured = tonumber(Ask(label, "GetStringWidth")) or 0
         if measured <= width then
-            label:SetTextColor(Theme.Unpack("good"))
+            label:SetTextColor(Theme.Unpack(tone or "good"))
             label:Show()
             return true
         end
@@ -159,12 +159,16 @@ function LootRolls:UpdateFrame(frame)
     local icon = self:IconOf(frame)
     if not icon then return false end
 
-    local result
+    local result, off
     if self:IsEnabled() and Ask(frame, "IsShown") then
         local link = self:LinkOf(frame)
         local ok, judged = pcall(Compare.JudgeCarried, Compare, link)
         if ok and Compare.WearableUpgrade(judged) then
             result = judged
+        elseif ns.OffSpec then
+            -- An upgrade only for the Off Spec: the blue arrow.
+            result = ns.OffSpec:OnlyUpgrade(link, false, ok and judged or nil)
+            off = result ~= nil
         end
     end
 
@@ -177,11 +181,12 @@ function LootRolls:UpdateFrame(frame)
 
     local arrow = ns.BagIcons:Arrow(icon)
     if arrow then arrow:Show() end
+    ns.BagIcons:Tint(arrow, off)
 
     local words = Words(result)
     local label = words and self:Label(icon)
     if label then
-        self:FitLabel(label, icon, words)
+        self:FitLabel(label, icon, words, off and "offSpec" or nil)
     elseif labels[icon] then
         labels[icon]:Hide()
     end

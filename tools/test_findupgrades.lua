@@ -224,7 +224,7 @@ local function Head(key)
     end
 end
 suite.check("a heading each for Item, Slot, Where, Level and Gain", Head("item") and Head("slot") and Head("where")
-    and Head("level") and Head("gain") and #Find.heads == 5)
+    and Head("level") and Head("gain") and #Find.heads == 6 and not Head("off"):IsShown())
 suite.check("Gain is the sorted one to start", Head("gain").arrow:IsShown() and not Head("item").arrow:IsShown())
 Click(Head("item"))
 suite.check("Item sorts by name", Listed() == "1001,1002,1101,1102,1201" and Head("item").arrow:IsShown(), Listed())

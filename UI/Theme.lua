@@ -46,6 +46,7 @@ Theme.colors = {
     quest     = { 0.400, 0.690, 1.000 },   -- #66B0FF, a quest reward in the upgrade finder
     dungeon   = { 0.722, 0.522, 1.000 },   -- #B885FF, a dungeon drop in the upgrade finder
     craft     = { 1.000, 0.584, 0.302 },   -- #FF954D, crafted gear in the upgrade finder
+    offSpec   = { 0.345, 0.651, 1.000 },   -- #58A6FF, an upgrade only for the Off Spec (Logic/OffSpec.lua)
 
     -- Column headings in the game's own yellow.
     heading   = { 1.000, 0.820, 0.000 },   -- #FFD100

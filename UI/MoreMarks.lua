@@ -39,10 +39,17 @@ local function Mark(button, link)
         if ok then result = judged end
     end
     local show = Compare.WearableUpgrade(result)
+    -- An upgrade only for the Off Spec gets the arrow in blue.
+    local off = false
+    if not show and MoreMarks:IsEnabled() and link ~= nil and ns.OffSpec then
+        local offResult = ns.OffSpec:OnlyUpgrade(link, false, result)
+        if offResult then show, off, result = true, true, offResult end
+    end
     local arrow = show and ns.BagIcons:Arrow(button) or ns.BagIcons:ExistingArrow(button)
     if arrow then arrow:SetShown(show and true or false) end
+    ns.BagIcons:Tint(arrow, off)
     -- The percent under it, as in the bags.
-    pcall(ns.BagIcons.Percent, ns.BagIcons, button, show and result or nil)
+    pcall(ns.BagIcons.Percent, ns.BagIcons, button, show and result or nil, off and "offSpec" or nil)
 end
 
 --------------------------------------------------------------------------------

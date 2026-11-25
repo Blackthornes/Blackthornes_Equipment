@@ -882,9 +882,22 @@ function Weights:OnEnable()
     ns.RegisterEvent(self, "PLAYER_LEVEL_UP", self.ForgetRatings)
 end
 
---- The spec this character is judged as, and why: "picked", "talents" or
---- "default". Nil when there are no weights for the class yet.
+--- The spec this character is judged as, and why: "picked", "talents",
+--- "default", or "offspec" while Logic/OffSpec.lua judges for the Off Spec
+--- (`Weights.judgeAs`, set only for a moment). Nil when there are no
+--- weights for the class yet.
 function Weights:CurrentSpec()
+    local class = self:PlayerClass()
+    local specs = class and SPECS[class]
+    if not specs then return nil, nil, class end
+    local off = self.judgeAs
+    if off and specs[off] then return off, "offspec", class end
+    return self:MainSpec()
+end
+
+--- The Main Spec, whatever is being judged for right now: the pick
+--- (`charDB.spec`, never renamed), else the talents, else the default.
+function Weights:MainSpec()
     local class = self:PlayerClass()
     local specs = class and SPECS[class]
     if not specs then return nil, nil, class end
@@ -893,6 +906,14 @@ function Weights:CurrentSpec()
     if picked and specs[picked] then
         return picked, "picked", class
     end
+    return self:AutoSpec()
+end
+
+--- What Auto judges as: the tree with most talent points, else the default.
+function Weights:AutoSpec()
+    local class = self:PlayerClass()
+    local specs = class and SPECS[class]
+    if not specs then return nil, nil, class end
 
     local points = self:SpentPoints(class)
     if points then
@@ -1807,13 +1828,49 @@ local function ShowSpec()
     end
     ns.Print(L.Format("judging gear as |c%s%s|r (%s)",
         ns.COLORS.accent, Weights:SpecName(class, spec), WHY[why]))
+    local off = ns.OffSpec and ns.OffSpec:Name()
+    if off then ns.Print(L["Off Spec:"] .. " |c" .. ns.COLORS.accent .. off .. "|r") end
 end
 
-ns.RegisterCommand("spec", L["show the spec gear is judged for, or pick one by name (or auto)"],
+-- /beq spec off <name|none>: the Off Spec (Logic/OffSpec.lua).
+local function OffCommand(rest)
+    local OffSpec = ns.OffSpec
+    if not OffSpec then return end
+    local class = Weights:PlayerClass()
+    if rest == "" then
+        ns.Print(L["Off Spec:"] .. " |c" .. ns.COLORS.accent .. (OffSpec:Name() or L["None"]) .. "|r")
+        return
+    end
+    if rest == "none" then
+        OffSpec:Set(nil)
+        ShowSpec()
+        return
+    end
+    local spec = Weights:ResolveSpec(rest, class)
+    if not spec or not (class and SPECS[class] and SPECS[class][spec]) then
+        local names = {}
+        for _, key in ipairs(class and SPECS[class] and SPECS[class].order or {}) do
+            names[#names + 1] = key
+        end
+        names[#names + 1] = "none"
+        ns.Warn(L.Format("%s isn't a spec (try %s)", rest, table.concat(names, ", ")))
+        return
+    end
+    OffSpec:Set(spec)
+    ShowSpec()
+end
+
+ns.RegisterCommand("spec", L["show the spec gear is judged for, or pick one by name (or auto); off picks the Off Spec (or none)"],
     function(rest)
         rest = (rest or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
         if rest == "" then
             ShowSpec()
+            return
+        end
+
+        local off = rest:match("^off%s*(.*)$")
+        if off then
+            OffCommand(off)
             return
         end
 

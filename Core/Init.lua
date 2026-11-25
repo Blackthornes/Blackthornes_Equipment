@@ -62,6 +62,7 @@ ns.COLORS = {
     downgrade = "ffe5604f",
     muted     = "ff857c68",
     warn      = "ffe8c15a",
+    offspec   = "ff58a6ff",
     text      = "ffffffff",
 }
 

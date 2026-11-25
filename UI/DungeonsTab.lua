@@ -233,6 +233,11 @@ function Dungeons.GainText(row)
         if row.gain then return ("%+d%%"):format(row.gain), "good" end
         return L["empty slot"], "good"
     end
+    -- Only for the Off Spec: in blue.
+    if row.offUpgrade then
+        if row.offGain then return ("%+d%%"):format(row.offGain), "offSpec" end
+        return L["empty slot"], "offSpec"
+    end
     if type(result) ~= "table" then return "", "muted" end
     if result.verdict == "upgrade" and result.level then
         return L.Format("Level %d", result.level), "warn"
@@ -336,6 +341,13 @@ function Dungeons:Lines(dungeon)
                             local percent = Finder.Shown(result)
                             name = ("%s |c%s%s|r"):format(name, ns.COLORS.upgrade,
                                 percent and ("%+d%%"):format(percent) or L["empty slot"])
+                        elseif ns.OffSpec and ns.OffSpec:On() then
+                            local _, okOff, offResult = ns.OffSpec:JudgeOnce(reward)
+                            if okOff and ns.Compare.WearableUpgrade(offResult) then
+                                local percent = Finder.Shown(offResult)
+                                name = ("%s |c%s%s|r"):format(name, ns.COLORS.offspec,
+                                    percent and ("%+d%%"):format(percent) or L["empty slot"])
+                            end
                         end
                     end
                     parts[#parts + 1] = L.Format("Reward: %s", name)
@@ -415,17 +427,16 @@ function Dungeons:BuildBar(page)
     local FinderUI = ns.FinderUI
     local judge = Theme.CreateLabel(page, "small", "muted")
     judge:SetPoint("TOPLEFT", PAD, -14)
-    judge:SetText(L["Judge Gear As:"])
-    local spec = Widgets.CreateChoice(page, {
-        min = 1, max = math.max(1, #FinderUI.SpecChoices()), step = 1, value = 1, width = 150,
-        format = function(index) return FinderUI.SpecText(index) end,
-        onChange = function(index)
-            local choices = FinderUI.SpecChoices()
-            if ns.SettingsUI and ns.SettingsUI.SetSpec then ns.SettingsUI:SetSpec(choices[index] or "auto") end
-        end,
-    })
+    judge:SetText(L["Main Spec:"])
+    local spec = FinderUI.MainSpecChoice(page, 150)
     spec:SetPoint("LEFT", judge, "RIGHT", 8, 0)
     self.specChoice = spec
+    local offLabel = Theme.CreateLabel(page, "small", "muted")
+    offLabel:SetPoint("LEFT", spec, "RIGHT", 16, 0)
+    offLabel:SetText(L["Off Spec:"])
+    local off = FinderUI.OffSpecChoice(page, 120)
+    off:SetPoint("LEFT", offLabel, "RIGHT", 8, 0)
+    self.offChoice = off
 
     local hide = Widgets.CreateCheckbox(page, L["Hide Finished Quests"], function(checked)
         ns.DungeonQuests:SetHideDone(checked)
@@ -450,20 +461,8 @@ end
 
 function Dungeons:SyncSpec()
     local FinderUI = ns.FinderUI
-    local choice = self.specChoice
-    if not (choice and FinderUI) then return end
-    local choices = FinderUI.SpecChoices()
-    local options = rawget(choice, "options")
-    if type(options) == "table" and #options ~= #choices then
-        for index = #options, 1, -1 do options[index] = nil end
-        for index = 1, #choices do options[index] = { text = FinderUI.SpecText(index), value = index } end
-    end
-    local picked = ns.charDB and ns.charDB.spec
-    local index = 1
-    for i, key in ipairs(choices) do
-        if key == picked then index = i end
-    end
-    choice:SetValue(index, true)
+    if not (self.specChoice and FinderUI) then return end
+    FinderUI.SyncSpecChoices(self.specChoice, self.offChoice)
 end
 
 local function Heads(parent, heads, onClick)
