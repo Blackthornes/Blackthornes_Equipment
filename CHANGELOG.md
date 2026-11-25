@@ -4,6 +4,13 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 2.0.1
+
+For WoW: Forever (interface 16001). A full restart is needed after updating.
+
+- **Upgrade Quest.** Each step names the quests you need first. For example, Stonetalon Standstill comes before the Befouled Water Globe, and the Wildhunter Cloak lists its quest chain.
+- **Gear you own.** Gear in your bags or bank no longer shows as an upgrade on Dungeons, Find Upgrades or Upgrade Quest. On Dungeons its Gain cell says where it is.
+
 ## 2.0.0
 
 For WoW: Forever (interface 16001). A full restart is needed after updating.
