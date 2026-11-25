@@ -10,18 +10,19 @@
 local _, ns = ...
 
 ns.ForeverNPCs = {
-    [2393] = { "Christoph Jeffcoat", "Hillsbrad Foothills", 62.3, 19.2 },
-    [2394] = { "Mallen Swain", "Hillsbrad Foothills", 62, 20.8 },
+    [2393] = { "Christoph Jeffcoat", "Hillsbrad Foothills", 62.3, 19.3 },
+    [2394] = { "Mallen Swain", "Hillsbrad Foothills", 61.9, 20.8 },
     [2399] = { "Daryl Stack", "Hillsbrad Foothills", 63.6, 20.8 },
-    [2401] = { "Kayren Soothallow", "Hillsbrad Foothills", 62.4, 19.9 },
+    [2401] = { "Kayren Soothallow", "Hillsbrad Foothills", 62.5, 19.8 },
     [2997] = { "Jyn Stonehoof", "Thunder Bluff", 41.7, 61.9 },
     [2999] = { "Taur Stonehoof", "Thunder Bluff", 40.3, 55.3 },
     [3011] = { "Teg Dawnstrider", "Thunder Bluff", 45.1, 38.3 },
     [3014] = { "Nida Winterhoof", "Thunder Bluff", 49.3, 39.2 },
     [3015] = { "Kuna Thunderhorn", "Thunder Bluff", 46.8, 46 },
     [3029] = { "Sewa Mistrunner", "Thunder Bluff", 56.2, 47.2 },
+    [3367] = { "Felika", "Orgrimmar", 58.3, 57.4 },
     [3534] = { "Wallace the Blind", "Silverpine Forest", 43.9, 84.4 },
-    [3537] = { "Zixil", "Hillsbrad Foothills", 60.7, 19.7 },
+    [3537] = { "Zixil", "Hillsbrad Foothills", 55.9, 28.8 },
     [4561] = { "Daniel Bartlett", "Undercity", 64.1, 38 },
     [4576] = { "Josef Gregorian", "Undercity", 70.7, 29.9 },
     [4577] = { "Millie Gregorian", "Undercity", 70.8, 29.4 },
