@@ -3239,3 +3239,32 @@ lists show upgrades for both.
   arrows, quest reward arrows, Tradeskills and Butler (`Logic/Butler.lua`).
   Make It My Quest on an Off only row follows it like any pick.
 - Tested in `tools/test_offspec.lua`. Not yet seen in game.
+
+## Quests needed first (2026-11-25)
+
+The owner found two Upgrade Quest gaps in Ashenvale: Tideress drops the
+Befouled Water Globe only while Stonetalon Standstill is in the log, and
+The Hunt Completed (Wildhunter Cloak) opens only once Sharptalon's Claw,
+Ursangous's Paw and Shadumbra's Head are all handed in. His rule: "If a
+quest has a prerequisite quest that needs to be said first."
+
+- `Data/QuestNeeds.lua`, written by `tools/quest_needs.py <spawn database>
+  <classicQuestDB.lua>` (run after make_sources.py and forever_quests.py,
+  before make_quest_starts.py): `Sources.NEEDS[quest]` every quest to hand
+  in first, `Sources.HOLD[quest]` a quest to keep in the log for its
+  starting item to drop, `Sources.NEEDED` rows for quests needed first
+  that Sources.QUESTS lacks or names no giver for. HOLD comes only from the
+  "needs" part of `tools/forever_facts.json`, checked by hand.
+- The quest file says which quests must all be done and which are "any
+  one of". Only a lone "any one of" quest open to the same races and
+  classes is kept. A quest with a `p` and one different quest before it
+  keeps its `p`.
+- `Finder:Chain` walks every quest needed (`Finder.QuestsFirst`, not
+  `Finder:Needs`, which is about gear), each once, and adds a HOLD quest
+  until it is in the log. `Finder.QuestRow` reads NEEDED where QUESTS has
+  no row or no giver. The globe's step says "It only drops while %s is in
+  your quest log." `make_quest_starts.py` covers NEEDED quests that start
+  from an item (the three beasts' drops).
+- `make_sources.py`'s `load_spawn_db` reads the spawn database as data
+  (`tools/lua_literal.py`) and never runs it.
+- Tested in `tools/test_questneeds.lua`. Not yet seen in game.

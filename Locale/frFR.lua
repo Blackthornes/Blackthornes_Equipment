@@ -82,6 +82,7 @@ L["A dungeon boss, so bring a group."] = "C'est un boss de donjon, alors viens a
 L["A rare, so it may not be up when you get there."] = "C'est un rare, alors il ne sera peut-être pas là quand tu arriveras."
 L["A %s%% drop."] = "Il tombe dans %s %% des cas."
 L["Seen dropping on Forever."] = "Vu tomber sur Forever."
+L["It only drops while %s is in your quest log."] = "Il ne tombe que si %s est dans ton journal de quêtes."
 L[" and "] = " et "
 L["Also from %s and %d more."] = "Aussi sur %s et %d autres."
 L["Also from %s."] = "Aussi sur %s."

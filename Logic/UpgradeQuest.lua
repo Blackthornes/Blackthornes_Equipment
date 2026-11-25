@@ -1288,6 +1288,13 @@ function UpgradeQuest:Steps(quest)
                 notes[#notes + 1] = L.Format("A %s%% drop.", tostring(chance))
             end
             if first.forever then notes[#notes + 1] = L["Seen dropping on Forever."] end
+            -- Some items drop only while another quest is in the log
+            -- (Tideress and Stonetalon Standstill).
+            local hold = type(ns.Sources.HOLD) == "table" and ns.Sources.HOLD[questID] or nil
+            local holdRow = hold and ns.Finder and ns.Finder.QuestRow(hold)
+            if holdRow then
+                notes[#notes + 1] = L.Format("It only drops while %s is in your quest log.", T(hold, holdRow[1]) or holdRow[1])
+            end
             local others = {}
             for index = 2, #starter.places do others[#others + 1] = starter.places[index].name end
             if #others > 0 then
