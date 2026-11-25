@@ -175,9 +175,10 @@ facing = 0
 -- The dial draws it.
 ArrowUI:Refresh()
 suite.check("the dial shows", ArrowUI.frame and ArrowUI.frame:IsShown())
-suite.check("the plate names the upgrade", ArrowUI.title:GetText() == "Item", ArrowUI.title:GetText())
+suite.check("the top line names the upgrade", ArrowUI.title:GetText() == "Item", ArrowUI.title:GetText())
 suite.check("the distance under it", ArrowUI.distance:GetText() == Arrow.Yards(yards), ArrowUI.distance:GetText())
-suite.check("the arrow is up", ArrowUI.arrow:IsShown() and not ArrowUI.check:IsShown())
+suite.check("the chevron is up", ArrowUI.chevron:IsShown() and not ArrowUI.check:IsShown())
+suite.check("a slim pill, no plate", ArrowUI.plate == nil and ArrowUI.frame:GetHeight() <= 30)
 suite.check("no tooltip on the dial", ArrowUI.frame:GetScript("OnEnter") == nil and ArrowUI.ShowTooltip == nil)
 suite.check("no click on the dial", ArrowUI.frame:GetScript("OnMouseUp") == nil and ArrowUI.OnClick == nil)
 
@@ -189,7 +190,7 @@ do
     ArrowUI.since, ArrowUI.restFor = 0, 0
     for _ = 1, 100 do ArrowUI:Step(0.03) end
     suite.check("standing still the dial reads about twice a second", reads >= 4 and reads <= 10, reads)
-    suite.check("and still shows the way", ArrowUI.arrow:IsShown()
+    suite.check("and still shows the way", ArrowUI.chevron:IsShown()
         and ArrowUI.distance:GetText() == Arrow.Yards(yards), ArrowUI.distance:GetText())
     Arrow.State, _G.IsPlayerMoving = realState, nil
     ArrowUI.settled = false
@@ -203,7 +204,7 @@ state = Arrow:State(clock)
 suite.check("close enough is You're there", state.mode == "arrived" and state.distance == "You're there",
     state.mode)
 ArrowUI:Draw(true)
-suite.check("with the green check", ArrowUI.check:IsShown() and not ArrowUI.arrow:IsShown())
+suite.check("with the green check", ArrowUI.check:IsShown() and not ArrowUI.chevron:IsShown())
 
 --------------------------------------------------------------------------------
 -- Inside, and unreadable
@@ -247,7 +248,8 @@ state = Arrow:State(clock)
 suite.check("from another continent: no arrow, just the zone", state.mode == "far"
     and state.distance == "Westfall", state.distance)
 ArrowUI:Draw(true)
-suite.check("a question mark instead", ArrowUI.mark:IsShown() and not ArrowUI.arrow:IsShown())
+suite.check("a gold dot instead", ArrowUI.dot:IsShown() and not ArrowUI.chevron:IsShown())
+suite.check("and the zone under the name", ArrowUI.distance:GetText() == "Westfall", ArrowUI.distance:GetText())
 zone = "Elwynn Forest"
 where = { map = 37, x = 0.45, y = 0.50 }
 
