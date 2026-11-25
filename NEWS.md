@@ -23,6 +23,13 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 2.0.0
+
+- You can pick an Off Spec as well as your Main Spec. The lists show upgrades for both.
+- Find Upgrades has a column for each spec, and you can show both or just one.
+- My Gear marks a slot blue when only your Off Spec has something to get.
+- Tooltips and arrows show your Off Spec gains in blue.
+
 ## 1.23.2
 
 Fixes and changes:

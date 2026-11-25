@@ -4,6 +4,18 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 2.0.0
+
+For WoW: Forever (interface 16001). A full restart is needed after updating.
+
+- **Main Spec and Off Spec.** Pick an Off Spec as well as your Main Spec, and the lists show upgrades for both. "Judge Gear As:" is now "Main Spec:". Both sit on the Gear page in Settings, and on My Gear, Find Upgrades and Dungeons. Off Spec starts on None. `/beq spec off <name>` sets it and `/beq spec off none` turns it off.
+- **Find Upgrades.** A Main column and an Off column show the gain for each spec, and you can sort by either. Show: Both, Main Spec or Off Spec picks which upgrades are listed. The side sheet shows both gains.
+- **My Gear.** A slot with only an Off Spec piece to get is marked blue and listed under Off Spec.
+- **Dungeons.** Off Spec gains show in blue after your Main Spec's.
+- **Item tooltips.** They say "Main Spec: +97%" and "Off Spec: +42%" when either one gains.
+- **Blue arrows.** An upgrade for your Off Spec only gets a blue arrow on vendor items, loot rolls, the bank and the Off Spec gear in your bags. That gear never gets the sell coin.
+- **Still your Main Spec.** Putting gear on, the Upgrade Quest, the small panel, Upgrade Done!, the character sheet arrows and quest reward arrows all use your Main Spec.
+
 ## 1.23.2
 
 For WoW: Forever (interface 16001). A full restart is needed after updating.
