@@ -82,6 +82,7 @@ L["A dungeon boss, so bring a group."] = "是地下城首领，所以带上队�
 L["A rare, so it may not be up when you get there."] = "是稀有怪，你到的时候它可能不在。"
 L["A %s%% drop."] = "掉率 %s%%。"
 L["Seen dropping on Forever."] = "在 Forever 上见过它掉落。"
+L["It only drops while %s is in your quest log."] = "只有在你的任务日志里有%s时才会掉落。"
 L[" and "] = "、"
 L["Also from %s and %d more."] = "也可以从%s和另外 %d 个来源拿到。"
 L["Also from %s."] = "也可以从%s拿到。"

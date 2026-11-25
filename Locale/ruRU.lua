@@ -81,6 +81,7 @@ L["A dungeon boss, so bring a group."] = "Босс подземелья, так 
 L["A rare, so it may not be up when you get there."] = "Редкий противник, так что его может не быть на месте, когда ты придёшь."
 L["A %s%% drop."] = "Выпадает с шансом %s%%."
 L["Seen dropping on Forever."] = "Замечено как добыча на Forever."
+L["It only drops while %s is in your quest log."] = "Выпадает, только пока задание «%s» есть в твоём журнале."
 L[" and "] = " и "
 L["Also from %s and %d more."] = "Ещё с %s и ещё %d."
 L["Also from %s."] = "Ещё с %s."

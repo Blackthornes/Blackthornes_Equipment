@@ -8,7 +8,9 @@ checked out somewhere and a Farmer checkout beside this one:
 Some quests start from an item rather than a person: The Demon Scarred
 Cloak starts from a cloak that Ghost Howl drops in Mulgore. Data/Sources.lua
 names only the item for those (its zone is 0), which tells the player
-nothing about where to go. For each such quest in Sources.QUESTS this writes
+nothing about where to go. For each such quest in Sources.QUESTS (and in
+Sources.NEEDED, from Data/QuestNeeds.lua: run tools/quest_needs.py first)
+this writes
 the item and up to three places to get it: the mobs that drop it (zone, one
 real spawn spot, level, drop chance, and whether it is a rare), the objects
 it is found in, the dungeon boss that drops it (the dungeon is its place,
@@ -115,9 +117,22 @@ def main(argv):
     unit_names, object_names = spawn["units"]["enUS"], spawn["objects"]["enUS"]
     item_names, zone_names = spawn["items"]["enUS"], spawn["zones"]["enUS"]
 
+    # Quests needed first that Sources.QUESTS lacks (Data/QuestNeeds.lua,
+    # from tools/quest_needs.py) can start from an item too: Sharptalon's
+    # Claw comes before The Hunt Completed.
+    needs_path = os.path.join(ROOT, "Data", "QuestNeeds.lua")
+    rows = {qid: sources.QUESTS[qid] for qid in sources.QUESTS}
+    if os.path.exists(needs_path):
+        chunk = lua.eval("function(path) return assert(loadfile(path)) end")(needs_path)
+        chunk("Blackthornes_Equipment", lua.eval("ns"))
+        needed = lua.eval("ns.Sources.NEEDED") or {}
+        for qid in needed:
+            quest = rows.get(qid)
+            if quest is None or (not quest[6] and quest[7] == 0):
+                rows[qid] = needed[qid]
+
     starts = {}
-    for qid in sources.QUESTS:
-        quest = sources.QUESTS[qid]
+    for qid, quest in rows.items():
         if quest[7] != 0:
             continue
         pq = sp_quests[qid]

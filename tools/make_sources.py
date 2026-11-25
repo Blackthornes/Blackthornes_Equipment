@@ -197,15 +197,14 @@ def rows(path, table):
 
 
 def load_spawn_db(folder):
-    lua = lua51.LuaRuntime(unpack_returned_tuples=True)
-    lua.execute("pfDB = setmetatable({}, {__index = function(t, k) "
-                "local v = {} rawset(t, k, v) return v end})")
+    """The spawn database's tables, read as data (tools/lua_literal.py):
+    the files are never run."""
+    from lua_literal import load_assignments
     db = folder / "db"
-    for name in ["units.lua", "objects.lua", "items.lua", "quests.lua", "zones.lua",
-                 "enUS/units.lua", "enUS/objects.lua", "enUS/items.lua",
-                 "enUS/quests.lua", "enUS/zones.lua"]:
-        lua.execute((db / name).read_text(encoding="utf-8"))
-    return lua.eval("pfDB")
+    names = ["units.lua", "objects.lua", "items.lua", "quests.lua", "zones.lua",
+             "enUS/units.lua", "enUS/objects.lua", "enUS/items.lua",
+             "enUS/quests.lua", "enUS/zones.lua"]
+    return load_assignments([db / name for name in names])
 
 
 def lua_table(t):

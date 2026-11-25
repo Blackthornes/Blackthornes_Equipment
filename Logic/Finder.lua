@@ -273,8 +273,17 @@ end
 -- How far back a chain is followed, as in tools/make_sources.py.
 local CHAIN_MOST = 20
 
-local function QuestPlace(questID)
+--- A quest's row: Sources.QUESTS, or Sources.NEEDED (Data/QuestNeeds.lua)
+--- for a quest needed first that the data lacks or names no giver for.
+function Finder.QuestRow(questID)
     local quest = ns.Sources.QUESTS[questID]
+    local needed = type(ns.Sources.NEEDED) == "table" and ns.Sources.NEEDED[questID] or nil
+    if needed and (not quest or ((quest[6] or "") == "" and (quest[7] or 0) == 0)) then return needed end
+    return quest
+end
+
+local function QuestPlace(questID)
+    local quest = Finder.QuestRow(questID)
     if not quest then return nil end
     return {
         questID = questID, title = quest[1], questLevel = quest[3], name = quest[6],
@@ -294,26 +303,62 @@ function Finder.Given(itemID, questID)
     return false
 end
 
+--- Is a quest in the quest log? Nil when the client cannot say.
+function Finder.OnQuest(questID)
+    local log = _G.C_QuestLog
+    local on = Read(log and log.IsOnQuest, questID)
+    if on ~= nil then return on == true end
+    local index = Read(log and log.GetLogIndexForQuestID, questID)
+    if index ~= nil then return (tonumber(index) or 0) > 0 end
+    return nil
+end
+
+--- The quests to hand in before a quest opens: all of Sources.NEEDS
+--- (Data/QuestNeeds.lua) when it lists them, else the one before it.
+function Finder.QuestsFirst(questID, quest)
+    local needs = type(ns.Sources.NEEDS) == "table" and ns.Sources.NEEDS[questID] or nil
+    if needs then return needs end
+    return quest and quest.p and { quest.p } or nil
+end
+
 --- The quests still to do before a quest opens, first one first: a list of
---- { questID, title, questLevel, name, zone, x, y, group }. A quest earlier
---- in the chain that the data does not have is named in the second return,
---- by its title, so the player can still be told to do it.
+--- { questID, title, questLevel, name, zone, x, y, group }. A quest can need
+--- several (The Hunt Completed needs all three beasts' quests), and each of
+--- those its own first. A quest the item that starts it drops only for
+--- (Sources.HOLD: Stonetalon Standstill for the Befouled Water Globe) comes
+--- before it until it is in the log. A quest earlier in the chain that the
+--- data does not have is named in the second return, by its title, so the
+--- player can still be told to do it.
 function Finder:Chain(questID)
-    local chain, unknown = {}, nil
-    local quest = ns.Sources.QUESTS[questID]
-    for _ = 1, CHAIN_MOST do
-        if not quest then break end
-        local before = quest.p
-        if not before then
+    local chain, unknown, seen = {}, nil, { [questID] = true }
+    local holds = type(ns.Sources.HOLD) == "table" and ns.Sources.HOLD or {}
+    local function Walk(id, depth)
+        local quest = Finder.QuestRow(id)
+        if not quest or depth > CHAIN_MOST or #chain >= CHAIN_MOST then return end
+        local befores = Finder.QuestsFirst(id, quest)
+        local hold = holds[id]
+        if not befores and not hold then
             -- Named, but not in the data: whether it is done cannot be
             -- asked, so the steps let a later quest tick it off.
-            if quest[10] ~= "" then unknown = quest[10] end
-            break
+            if (quest[10] or "") ~= "" and not unknown then unknown = quest[10] end
+            return
         end
-        if self:QuestDone(before) then break end
-        table.insert(chain, 1, QuestPlace(before))
-        quest = ns.Sources.QUESTS[before]
+        for _, before in ipairs(befores or {}) do
+            if not seen[before] and not self:QuestDone(before) then
+                seen[before] = true
+                Walk(before, depth + 1)
+                local place = QuestPlace(before)
+                if place then chain[#chain + 1] = place end
+            end
+        end
+        if hold and not seen[hold] and not self:QuestDone(hold) and not Finder.OnQuest(hold) then
+            seen[hold] = true
+            Walk(hold, depth + 1)
+            local place = QuestPlace(hold)
+            if place then chain[#chain + 1] = place end
+        end
     end
+    Walk(questID, 0)
     return chain, unknown
 end
 

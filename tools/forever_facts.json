@@ -420,6 +420,13 @@
    ]
   }
  },
+ "needs": {
+  "1918": {
+   "hold": 25,
+   "title": "The Befouled Element",
+   "why": "Tideress drops the Befouled Water Globe only while Stonetalon Standstill is in the log"
+  }
+ },
  "quests": {
   "1013": {
    "dungeon": "33",
