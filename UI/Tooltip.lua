@@ -246,7 +246,12 @@ function Tooltip:WorkOutLines(link, carried, bag, slot)
     local judge = carried and Compare.JudgeCarried or Compare.Judge
     local result = judge(Compare, link)
     local text, color = Compare:Describe(result)
-    if text then
+    -- With an Off Spec (Logic/OffSpec.lua): a line for each spec when either
+    -- gains, "Main Spec: +97%" and "Off Spec: +42%".
+    local specLines = Tooltip.SpecLines(link, carried, result)
+    if specLines then
+        for _, line in ipairs(specLines) do lines[#lines + 1] = line end
+    elseif text then
         local label, answer = Tooltip.VerdictPair(result)
         lines[#lines + 1] = { text, color, key = "upgrade", label = label, answer = answer }
     end
@@ -425,6 +430,34 @@ function Tooltip.VerdictPair(result)
         return label, L.Format("Worse, %s", percent or "")
     end
     return label, L["About the same"]
+end
+
+--- One spec's answer on the tooltip: "+97%", "Upgrade at level 30, +5%",
+--- or "no upgrade"; and its colour.
+function Tooltip.SpecAnswer(result, tone)
+    if type(result) ~= "table" or result.verdict ~= "upgrade" then return L["no upgrade"], "muted" end
+    if result.level or result.train or result.skill then
+        local _, answer = Tooltip.VerdictPair(result)
+        return answer, "warn"
+    end
+    return Compare:HowMuch(result), tone
+end
+
+--- The two spec lines, when an Off Spec is picked and the item is an
+--- upgrade for either; else nil (the one line as before).
+function Tooltip.SpecLines(link, carried, main)
+    local OffSpec = ns.OffSpec
+    if not (OffSpec and OffSpec:On()) then return nil end
+    local off = OffSpec:Judge(link, carried)
+    local mainUp = type(main) == "table" and main.verdict == "upgrade"
+    local offUp = type(off) == "table" and off.verdict == "upgrade"
+    if not (mainUp or offUp) then return nil end
+    local out = {}
+    for _, entry in ipairs({ { L["Main Spec:"], main, "upgrade" }, { L["Off Spec:"], off, "offspec" } }) do
+        local answer, tone = Tooltip.SpecAnswer(entry[2], entry[3])
+        out[#out + 1] = { entry[1] .. " " .. answer, tone, key = "upgrade", label = entry[1], answer = answer }
+    end
+    return out
 end
 
 --- "Learn Maces in Orgrimmar" for the weapon master line, or nil.

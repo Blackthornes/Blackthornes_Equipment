@@ -187,11 +187,21 @@ function DL:Rows(key, armor, stat, upgradesOnly)
                 end
                 local upgrade = result ~= nil and Compare.WearableUpgrade(result) == true
                 if upgrade then upgrades = upgrades + 1 end
-                if upgrade or not upgradesOnly then
+                -- An upgrade only for the Off Spec (Logic/OffSpec.lua): shown
+                -- in blue, after the Main Spec's.
+                local offUpgrade, offGain = false, nil
+                if not upgrade and ns.OffSpec and ns.OffSpec:On() then
+                    local _, okOff, offResult = ns.OffSpec:JudgeOnce(itemID)
+                    if okOff and Compare.WearableUpgrade(offResult) then
+                        offUpgrade, offGain = true, Finder.Shown(offResult)
+                    end
+                end
+                if upgrade or offUpgrade or not upgradesOnly then
                     rows[#rows + 1] = {
                         itemID = itemID, link = link, boss = drop.boss, chance = drop.chance,
                         slot = DL.SlotText(link, info), upgrade = upgrade,
                         gain = upgrade and Finder.Shown(result) or nil, result = result,
+                        offUpgrade = offUpgrade or nil, offGain = offGain,
                         name = DL.NameOf(itemID),
                     }
                 end
@@ -233,6 +243,11 @@ function DL.Best(a, b)
         if (a.gain == nil) ~= (b.gain == nil) then return a.gain == nil end
         if a.gain ~= b.gain then return a.gain > b.gain end
     end
+    if (a.offUpgrade or false) ~= (b.offUpgrade or false) then return a.offUpgrade == true end
+    if a.offUpgrade then
+        if (a.offGain == nil) ~= (b.offGain == nil) then return a.offGain == nil end
+        if a.offGain ~= b.offGain then return a.offGain > b.offGain end
+    end
     if a.name ~= b.name then return a.name < b.name end
     return a.itemID < b.itemID
 end
@@ -245,7 +260,9 @@ function DL.SortRows(rows, key, flip)
         if key == "item" then return row.name ~= "" and row.name or nil end
         if key == "slot" then return row.slot ~= "" and row.slot or nil end
         if key == "boss" then return row.boss end
-        if key == "gain" then return row.gain or (row.upgrade and math.huge) or nil end
+        if key == "gain" then
+            return row.gain or (row.upgrade and math.huge) or row.offGain or (row.offUpgrade and 100000) or nil
+        end
     end
     local keyed = {}
     for index, row in ipairs(rows) do keyed[index] = { row = row, index = index, value = Value(row) } end

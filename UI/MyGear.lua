@@ -220,7 +220,7 @@ function MyGear:GreenSlots(found)
     return green
 end
 
-function MyGear:Read(found)
+function MyGear:Read(found, off)
     local Items, FinderUI = ns.Items, ns.FinderUI
     local quest = ns.UpgradeQuest
     local skipped = quest and quest:Skipped() or {}
@@ -249,6 +249,15 @@ function MyGear:Read(found)
         -- The slot's mark: what you own comes first, then the best to get.
         info.mark, info.tone = MyGear.Mark(info.owned[1], info.now, info.later)
         if info.tone == "good" then state.upgrades = state.upgrades + 1 end
+        -- Nothing for the Main Spec, but something to wear now for the Off
+        -- Spec (Logic/OffSpec.lua): the blue mark.
+        if off then
+            local offNow = MyGear.Picks(off, slot, skipped, pass)
+            info.offPicks = offNow
+            if not info.mark and offNow[1] then
+                info.mark, info.tone, info.offNow = offNow[1].result, "offSpec", offNow[1]
+            end
+        end
 
         for _, piece in ipairs(info.owned) do
             if FinderUI and FinderUI.CanPutOn(piece) and not readySeen[piece.link] then
@@ -646,25 +655,23 @@ function MyGear:BuildFigure()
 
     local judge = Theme.CreateLabel(middle, "small", "gilt", "CENTER")
     judge:SetPoint("TOP", level, "BOTTOM", 0, -16)
-    judge:SetText(L["Judge Gear As:"])
+    judge:SetText(L["Main Spec:"])
     local FinderUI = ns.FinderUI
-    local spec = Widgets.CreateChoice(middle, {
-        min = 1, max = math.max(1, #FinderUI.SpecChoices()), step = 1, value = 1,
-        format = function(index) return FinderUI.SpecText(index) end,
-        onChange = function(index)
-            local choices = FinderUI.SpecChoices()
-            if ns.SettingsUI and ns.SettingsUI.SetSpec then
-                ns.SettingsUI:SetSpec(choices[index] or "auto")
-            end
-        end,
-    })
-    spec:SetWidth(150)
+    local spec = FinderUI.MainSpecChoice(middle, 150)
     spec:SetPoint("TOP", judge, "BOTTOM", 0, -6)
     self.specChoice = spec
+    local offLabel = Theme.CreateLabel(middle, "small", "gilt", "CENTER")
+    offLabel:SetPoint("TOP", spec, "BOTTOM", 0, -10)
+    offLabel:SetText(L["Off Spec:"])
+    local off = FinderUI.OffSpecChoice(middle, 150)
+    off:SetPoint("TOP", offLabel, "BOTTOM", 0, -6)
+    self.offChoice = off
 
-    -- The key: green to wear now, amber for later.
-    local keys = { { "good", L["Wear it now"] }, { "warn", L["For later"] } }
-    local anchor = spec
+    -- The key: green to wear now, blue for the Off Spec (while one is
+    -- picked), amber for later.
+    local keys = { { "good", L["Wear it now"] }, { "offSpec", L["Off Spec"] }, { "warn", L["For later"] } }
+    local anchor = off
+    self.keyWords = {}
     for index, key in ipairs(keys) do
         local words = Theme.CreateLabel(middle, "tiny", "muted", "CENTER")
         words:SetPoint("TOP", anchor, "BOTTOM", 6, index == 1 and -16 or -6)
@@ -672,6 +679,7 @@ function MyGear:BuildFigure()
         local arrow = UpArrow(middle, 10)
         arrow:SetPoint("RIGHT", words, "LEFT", -4, 0)
         Tint(arrow, key[1])
+        self.keyWords[key[1]] = { words = words, arrow = arrow }
         anchor = words
     end
 end
@@ -681,18 +689,14 @@ end
 function MyGear:SyncSpec()
     local choice, FinderUI = self.specChoice, ns.FinderUI
     if not (choice and FinderUI) then return end
-    local choices = FinderUI.SpecChoices()
-    local options = rawget(choice, "options")
-    if type(options) == "table" and #options ~= #choices then
-        for index = #options, 1, -1 do options[index] = nil end
-        for index = 1, #choices do options[index] = { text = FinderUI.SpecText(index), value = index } end
+    FinderUI.SyncSpecChoices(choice, self.offChoice)
+    -- The blue key shows only while an Off Spec is picked.
+    local key = self.keyWords and self.keyWords.offSpec
+    if key then
+        local on = ns.OffSpec and ns.OffSpec:On() or false
+        key.words:SetText(on and L["Off Spec"] or "")
+        key.arrow:SetShown(on)
     end
-    local picked = ns.charDB and ns.charDB.spec
-    local index = 1
-    for i, key in ipairs(choices) do
-        if key == picked then index = i end
-    end
-    choice:SetValue(index, true)
 end
 
 --- The character's name as the game shows it, and "Level 38 Warrior".
@@ -901,7 +905,7 @@ end
 local function BestName(info)
     local FinderUI = ns.FinderUI
     local link = (info.owned[1] and info.owned[1].link) or (info.now and info.now.link)
-        or (info.later and info.later.link)
+        or (info.later and info.later.link) or (info.offNow and info.offNow.link)
     return link and FinderUI and FinderUI.ItemText(link) or ""
 end
 
@@ -1104,6 +1108,10 @@ function MyGear.Lines(info)
         lines[#lines + 1] = { heading = L["TO GO AND GET"] }
         for _, pick in ipairs(info.picks) do lines[#lines + 1] = { pick = pick } end
     end
+    if info.offPicks and #info.offPicks > 0 then
+        lines[#lines + 1] = { heading = L["Off Spec"]:upper() }
+        for _, pick in ipairs(info.offPicks) do lines[#lines + 1] = { pick = pick, off = true } end
+    end
     return lines
 end
 
@@ -1205,6 +1213,8 @@ function MyGear:FillRow(row, line, width)
             tone = "loss"
         elseif MyGear.Later(pick) then
             tone = "warn"
+        elseif line.off then
+            tone = "offSpec"
         end
         row.gain:SetText(gain)
     end
@@ -1401,7 +1411,9 @@ end
 --- Draw the page from a scan (nil before the first one is in).
 function MyGear:Present(found)
     if not self.page then return nil end
-    local state = self:Read(found)
+    self.lastFound = found
+    local off = ns.OffSpec and ns.OffSpec:On() and self.offFound or nil
+    local state = self:Read(found, off)
     self.state = state
     self.slot = self:ChooseSlot(state)
     self:PlaceBody(self:PaintCards(state))
@@ -1413,8 +1425,29 @@ end
 
 --- Look and draw: the finder's scan when it is up to date, else what
 --- shows stays while a new one is made a slice per frame.
+--- The Off Spec's scan (Logic/OffSpec.lua), kept while fresh, else made
+--- a slice per frame and drawn when in. Nothing with Off Spec on None.
+function MyGear:LookOff()
+    if not (ns.OffSpec and ns.OffSpec:On()) then
+        self.offFound = nil
+        return
+    end
+    local kept = Finder:OffFound(0)
+    if kept then
+        self.offFound = kept
+        return
+    end
+    self.offFound = self.offFound or Finder:OffLatest()
+    Finder:ScanOff(0, function(off)
+        if not MyGear:IsShown() then return end
+        if off then MyGear.offFound = off end
+        if MyGear.lastFound then MyGear:Present(MyGear.lastFound) end
+    end)
+end
+
 function MyGear:Refresh()
     if not self:IsShown() then return nil end
+    self:LookOff()
     local found = Finder:Fresh()
     if found then return self:Present(found) end
     if not self.state then self:Present(Finder.latest) end

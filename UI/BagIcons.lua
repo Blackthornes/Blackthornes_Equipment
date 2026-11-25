@@ -208,7 +208,7 @@ end
 --- loot roll (LootRolls:FitLabel): written when `result` has one, taken
 --- off when not. Bags, the bank, a vendor's wares and the loot window
 --- use it, so one mark says the same thing everywhere.
-function BagIcons:Percent(button, result)
+function BagIcons:Percent(button, result, tone)
     local rolls = ns.LootRolls
     if not (rolls and rolls.Label and rolls.FitLabel) then return false end
     local words = type(result) == "table" and not result.empty and tonumber(result.percent)
@@ -220,8 +220,21 @@ function BagIcons:Percent(button, result)
     end
     local label = rolls:Label(button)
     if not label then return false end
-    local ok, shown = pcall(rolls.FitLabel, rolls, label, button, words)
+    local ok, shown = pcall(rolls.FitLabel, rolls, label, button, words, tone)
     return ok and shown == true
+end
+
+--- The arrow in blue for an upgrade only for the Off Spec
+--- (Logic/OffSpec.lua), else back to its own green.
+function BagIcons:Tint(arrow, off)
+    if not arrow then return end
+    if off then
+        pcall(arrow.SetDesaturated, arrow, true)
+        pcall(arrow.SetVertexColor, arrow, ns.Theme.Unpack("offSpec"))
+    else
+        pcall(arrow.SetDesaturated, arrow, false)
+        pcall(arrow.SetVertexColor, arrow, 1, 1, 1)
+    end
 end
 
 --- The coin already made for a button, or nil; never makes one.
@@ -434,7 +447,7 @@ end
 
 --- Show or hide the arrow and the coin on one button.
 function BagIcons:UpdateButton(button, frame)
-    local show, sell, percentOf = false, false, nil
+    local show, sell, percentOf, off = false, false, nil, false
     if self:IsEnabled() or self:CoinsEnabled() then
         local bag, slot = self:Location(button, frame)
         local link = bag and Items:InBag(bag, slot)
@@ -444,14 +457,23 @@ function BagIcons:UpdateButton(button, frame)
             if not ok then result = nil end
             show = self:IsEnabled() and Compare.WearableUpgrade(result)
             if show then percentOf = result end
-            if not show then sell = self:Sells(bag, slot, link, result) end
+            -- An Off Spec piece (Logic/OffSpec.lua): the blue arrow, and
+            -- never the sell coin.
+            local OffSpec = ns.OffSpec
+            local offPiece = not show and OffSpec and OffSpec:On() and OffSpec:InOutfit(link)
+            if offPiece and self:IsEnabled() then
+                local offResult = OffSpec:OnlyUpgrade(link, true, result)
+                if offResult then show, off, percentOf = true, true, offResult end
+            end
+            if not show and not offPiece then sell = self:Sells(bag, slot, link, result) end
         end
     end
 
     if show then
         local arrow = self:Arrow(button)
         if arrow then arrow:Show() end
-        self:Percent(button, percentOf)
+        self:Tint(arrow, off)
+        self:Percent(button, percentOf, off and "offSpec" or nil)
     elseif arrows[button] then
         arrows[button]:Hide()
         self:Percent(button, nil)
