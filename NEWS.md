@@ -23,6 +23,12 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 2.0.1
+
+Fixes and changes:
+- Upgrade Quest names the quests you need first, like Stonetalon Standstill before the Befouled Water Globe.
+- Gear you already own in your bags or bank no longer shows as an upgrade.
+
 ## 2.0.0
 
 - You can pick an Off Spec as well as your Main Spec. The lists show upgrades for both.
