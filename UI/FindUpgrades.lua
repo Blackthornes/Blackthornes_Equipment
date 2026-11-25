@@ -50,6 +50,8 @@ local SLOT_WIDTH = 70
 local WHERE_WIDTH = 124
 local LEVEL_WIDTH = 38
 local GAIN_WIDTH = 78
+-- Each of the two gain columns (MAIN and OFF) while an Off Spec is picked.
+local DUAL_GAIN = 62
 local CELL_GAP = 6
 -- Rows built: more than the tallest list holds at their shortest.
 local ROWS = 22
@@ -172,14 +174,17 @@ end
 --- a scan, and every sort and filter after reads this. Ignored upgrades
 --- are left out. A piece shown under two slots (a one-hander that beats
 --- both hands) keeps a line for each, since its gain differs.
-function Find:Read(found)
-    local state = { found = found, lines = {}, ignored = 0 }
+function Find:Read(found, off)
+    local state = { found = found, off = off, lines = {}, ignored = 0 }
     if not found then return state end
     local quest = ns.UpgradeQuest
     local skipped = quest and quest:Skipped() or {}
     local all = type(found.all) == "table" and found.all or found.slots or {}
+    -- The Off Spec's scan (Logic/OffSpec.lua): its picks join the Main
+    -- Spec's line for the same item, or make a line of their own.
+    local offAll = type(off) == "table" and (type(off.all) == "table" and off.all or off.slots) or nil
     for order, group in ipairs(Groups()) do
-        local seen = {}
+        local seen, byItem = {}, {}
         for _, slot in ipairs({ group[1], group[3] }) do
             for _, pick in ipairs(all[slot] or {}) do
                 if not seen[pick.itemID] then
@@ -187,16 +192,59 @@ function Find:Read(found)
                     if skipped[pick.itemID] then
                         state.ignored = state.ignored + 1
                     else
-                        state.lines[#state.lines + 1] = {
-                            pick = pick, group = group[1], slotName = group[2], order = order,
+                        local line = {
+                            pick = pick, main = pick, group = group[1], slotName = group[2], order = order,
                             key = pick.itemID .. ":" .. group[1], index = #state.lines + 1,
                         }
+                        byItem[pick.itemID] = line
+                        state.lines[#state.lines + 1] = line
+                    end
+                end
+            end
+        end
+        if offAll then
+            local offSeen = {}
+            for _, slot in ipairs({ group[1], group[3] }) do
+                for _, pick in ipairs(offAll[slot] or {}) do
+                    if not offSeen[pick.itemID] and not skipped[pick.itemID] then
+                        offSeen[pick.itemID] = true
+                        local line = byItem[pick.itemID]
+                        if line then
+                            line.off = pick
+                        elseif not seen[pick.itemID] then
+                            line = {
+                                pick = pick, off = pick, group = group[1], slotName = group[2], order = order,
+                                key = pick.itemID .. ":" .. group[1], index = #state.lines + 1,
+                            }
+                            byItem[pick.itemID] = line
+                            state.lines[#state.lines + 1] = line
+                        end
                     end
                 end
             end
         end
     end
     return state
+end
+
+--- Is an Off Spec picked and its list in? Then the list shows two gain
+--- columns, unless Show picks one.
+function Find:Dual()
+    return self.state ~= nil and self.state.off ~= nil
+end
+
+--- What Show picks: "both", "main" or "off". "both" while no Off Spec is
+--- picked. Kept for the session.
+function Find:ShowWhich()
+    if not (ns.OffSpec and ns.OffSpec:On()) then return "both" end
+    return self.show or "both"
+end
+
+function Find:SetShow(which)
+    self.show = which
+    self.offset = 0
+    self:SyncShow()
+    self:Narrow()
 end
 
 --- A line's words, in small letters, for the Find box: the item, and each
@@ -253,7 +301,10 @@ function Find:Filtered(state)
             end
         end
         line.sources = sources
-        if #sources > 0 and (not slot or line.group == slot)
+        local which = self:ShowWhich()
+        local wanted = which == "both" or (which == "main" and line.main ~= nil)
+            or (which == "off" and line.off ~= nil)
+        if wanted and #sources > 0 and (not slot or line.group == slot)
             and (not find or Find.Hay(line):find(find, 1, true)) then
             shown[#shown + 1] = line
         end
@@ -275,8 +326,14 @@ function Find.SortValue(line, key)
         if line.level == nil then line.level = FinderUI.LevelOf(pick) or false end
         return line.level or nil
     end
-    if pick.result and pick.result.empty then return math.huge end
-    return pick.result and Finder.Shown(pick.result) or nil
+    -- MAIN sorts by the Main Spec's gain, OFF by the Off Spec's; with Show
+    -- on Off Spec the one column is the Off Spec's.
+    local lead = line.main
+    if key == "off" or (line.showOff and key == "gain") then lead = line.off end
+    if not (line.main or line.off) then lead = pick end
+    if not lead then return nil end
+    if lead.result and lead.result.empty then return math.huge end
+    return lead.result and Finder.Shown(lead.result) or nil
 end
 
 --- `lines` in the order the list shows them: by the heading clicked, the
@@ -286,8 +343,9 @@ function Find:Sorted(lines)
     local key, flip = self.sortKey or "gain", self.sortFlip == true
     local keyed = {}
     for index, line in ipairs(lines) do
+        line.showOff = self:ShowWhich() == "off" or nil
         keyed[index] = { line = line, value = Find.SortValue(line, key),
-            waits = key == "gain" and line.pick.needs ~= nil }
+            waits = (key == "gain" or key == "off") and line.pick.needs ~= nil }
     end
     table.sort(keyed, function(a, b)
         if a.waits ~= b.waits then return not a.waits end
@@ -295,7 +353,7 @@ function Find:Sorted(lines)
         if va ~= vb then
             if va == nil then return false end
             if vb == nil then return true end
-            if key == "gain" then return va > vb end
+            if key == "gain" or key == "off" then return va > vb end
             return va < vb
         end
         return a.line.index < b.line.index
@@ -514,13 +572,14 @@ function Find:BuildHeads(itemWidth)
     local whereRight = levelRight + LEVEL_WIDTH + CELL_GAP
     local slotRight = whereRight + WHERE_WIDTH + CELL_GAP
     self.columns = { gainRight = gainRight, levelRight = levelRight, whereRight = whereRight,
-        slotRight = slotRight, item = itemWidth }
+        slotRight = slotRight, item = itemWidth, baseItem = itemWidth, dual = false, gainWidth = GAIN_WIDTH }
     local heads = {
         { key = "item", text = L["ITEM"], left = TEXT_X },
         { key = "slot", text = L["SLOT"], right = slotRight, width = SLOT_WIDTH },
         { key = "where", text = L["WHERE"], right = whereRight, width = WHERE_WIDTH },
         { key = "level", text = L["LEVEL"], right = levelRight, width = LEVEL_WIDTH },
         { key = "gain", text = L["GAIN"], right = gainRight, width = GAIN_WIDTH, justify = "RIGHT" },
+        { key = "off", text = L["OFF"], right = gainRight, width = DUAL_GAIN, justify = "RIGHT" },
     }
     self.heads = {}
     for _, head in ipairs(heads) do
@@ -544,7 +603,7 @@ function Find:BuildHeads(itemWidth)
         end
         label:SetText(head.text)
         arrow:Hide()
-        button.label, button.arrow, button.key = label, arrow, head.key
+        button.label, button.arrow, button.key, button.left = label, arrow, head.key, head.left
         button:SetScript("OnClick", function(self) Find:SortBy(self.key) end)
         button:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -552,19 +611,77 @@ function Find:BuildHeads(itemWidth)
             GameTooltip:Show()
         end)
         button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        if head.key == "off" then button:Hide() end
         self.heads[#self.heads + 1] = button
+    end
+end
+
+--- Lay the columns for one gain column or two (MAIN and OFF), from the
+--- row's right edge. Only when that changes.
+function Find:LayColumns(dual)
+    local columns = self.columns
+    if not columns or columns.dual == dual then return end
+    columns.dual = dual
+    local gainWidth = dual and DUAL_GAIN or GAIN_WIDTH
+    local offRight = 8
+    local gainRight = dual and (offRight + DUAL_GAIN + CELL_GAP) or 8
+    local levelRight = gainRight + gainWidth + CELL_GAP
+    local whereRight = levelRight + LEVEL_WIDTH + CELL_GAP
+    local slotRight = whereRight + WHERE_WIDTH + CELL_GAP
+    columns.gainRight, columns.levelRight, columns.whereRight, columns.slotRight = gainRight, levelRight,
+        whereRight, slotRight
+    columns.gainWidth = gainWidth
+    columns.item = columns.baseItem - (dual and (DUAL_GAIN * 2 + CELL_GAP - GAIN_WIDTH) or 0)
+    local spots = {
+        slot = { slotRight, SLOT_WIDTH }, where = { whereRight, WHERE_WIDTH },
+        level = { levelRight, LEVEL_WIDTH }, gain = { gainRight, gainWidth }, off = { offRight, DUAL_GAIN },
+    }
+    for _, head in ipairs(self.heads or {}) do
+        local spot = spots[head.key]
+        if spot then
+            head:ClearAllPoints()
+            head:SetPoint("TOPRIGHT", -(1 + SCROLL + spot[1]), 0)
+            head:SetWidth(spot[2])
+        elseif head.left then
+            head:SetWidth(columns.item)
+        end
+        if head.key == "off" then head:SetShown(dual) end
+    end
+    for _, row in ipairs(self.rows or {}) do
+        for key, spot in pairs(spots) do
+            local cell = rawget(row, key)
+            if cell then
+                cell:ClearAllPoints()
+                cell:SetPoint("TOPRIGHT", -spot[1], -8)
+                cell:SetWidth(spot[2])
+            end
+        end
+        row.off:SetShown(dual)
+        row.item:SetWidth(columns.item)
     end
 end
 
 function Find:PaintHeads()
     local key, flip = self.sortKey or "gain", self.sortFlip == true
+    -- MAIN and OFF with two columns; with Show on one spec the one column
+    -- is named for it; GAIN with no Off Spec.
+    local which, dual = self:ShowWhich(), self:Dual()
+    for _, head in ipairs(self.heads) do
+        if head.key == "gain" then
+            local words = L["GAIN"]
+            if dual and which == "both" then words = L["MAIN"]
+            elseif dual and which == "main" then words = L["MAIN"]
+            elseif dual and which == "off" then words = L["OFF"] end
+            head.label:SetText(words)
+        end
+    end
     for _, head in ipairs(self.heads) do
         local sorted = head.key == key
         head.label:SetTextColor(Theme.Unpack(sorted and "text" or "heading"))
         head.arrow:SetShown(sorted)
         if sorted then
             -- Gain starts with the biggest; the rest start at the top.
-            local down = (key == "gain") ~= flip
+            local down = (key == "gain" or key == "off") ~= flip
             pcall(head.arrow.SetTexCoord, head.arrow, 0, 1, down and 0 or 1, down and 1 or 0)
         end
     end
@@ -618,6 +735,8 @@ function Find:BuildRow(index)
     row.where = Cell("small", "text", columns.whereRight, WHERE_WIDTH)
     row.level = Cell("small", "text", columns.levelRight, LEVEL_WIDTH)
     row.gain = Cell("normal", "good", columns.gainRight, GAIN_WIDTH, "RIGHT")
+    row.off = Cell("normal", "offSpec", 8, DUAL_GAIN, "RIGHT")
+    row.off:Hide()
 
     row:SetScript("OnEnter", function(self)
         self.over = true
@@ -669,6 +788,14 @@ function Find:FillRow(row, line)
     if ns.Tracking and ns.Tracking:IsTracked(pick.itemID) then
         name = name .. "  " .. Colored("accent", L["Tracking"])
     end
+    -- With two gain columns, a row that helps only one spec says so.
+    if self:Dual() and self:ShowWhich() == "both" then
+        if line.main and not line.off then
+            name = name .. "\n" .. Colored("muted", L["Main only"])
+        elseif line.off and not line.main then
+            name = name .. "\n" .. Colored("offSpec", L["Off only"])
+        end
+    end
     row.item:SetText(name)
     row.slot:SetText(line.slotName or "")
 
@@ -688,12 +815,35 @@ function Find:FillRow(row, line)
     row.level:SetText(line.level and tostring(line.level) or "")
     row.level:SetTextColor(Theme.Unpack(pick.at and "warn" or "text"))
 
-    local gain, tone = Find.GainText(pick)
+    -- The gain: the Main Spec's, then the Off Spec's in blue. A dash where
+    -- a spec gains nothing. With Show on Off Spec the one column is its.
+    local dual, which = self:Dual(), self:ShowWhich()
+    local first = line.main
+    if dual and which == "off" then first = line.off end
+    if not dual then first = pick end
+    local gain, tone = "\226\128\147", "dim"
+    if first then
+        gain, tone = Find.GainText(first)
+        if first == line.off and first ~= line.main and tone == "good" then tone = "offSpec" end
+    end
     row.gain:SetText(gain)
     row.gain:SetTextColor(Theme.Unpack(tone))
+    local offShown = dual and which == "both"
+    if offShown then
+        local offGain, offTone = "\226\128\147", "dim"
+        if line.off then
+            offGain, offTone = Find.GainText(line.off)
+            if offTone == "good" then offTone = "offSpec" end
+        end
+        row.off:SetText(offGain)
+        row.off:SetTextColor(Theme.Unpack(offTone))
+    end
+    row.off:SetShown(offShown)
 
+    local gainWidth = self.columns.gainWidth or GAIN_WIDTH
     local height = math.max(TextHeight(row.item, "normal", self.columns.item),
-        TextHeight(row.where, "small", WHERE_WIDTH), TextHeight(row.gain, "normal", GAIN_WIDTH),
+        TextHeight(row.where, "small", WHERE_WIDTH), TextHeight(row.gain, "normal", gainWidth),
+        offShown and TextHeight(row.off, "normal", DUAL_GAIN) or 0,
         TextHeight(row.slot, "small", SLOT_WIDTH))
     height = math.max(ROW_MIN, math.ceil(height + 16))
     row:SetHeight(height)
@@ -980,6 +1130,10 @@ function Find:BuildSheet(left, width)
     local arrow = Arrow(hold, 12)
     arrow:SetPoint("RIGHT", gain, "LEFT", -4, 0)
     self.sheetArrow = arrow
+    -- The Off Spec's gain under it, when the row helps both specs.
+    local offGain = Theme.CreateLabel(hold, "title", "offSpec")
+    offGain:Hide()
+    self.sheetOffGain = offGain
     -- What it would replace, and what it waits on.
     local notes = Theme.CreateLabel(hold, "small", "muted")
     notes:SetWidth(inner)
@@ -1122,13 +1276,33 @@ function Find:PaintSheet()
         + TextHeight(self.sheetKind, "small", inner - 46))
     local y = 12 + headHeight + 12
 
-    local gain, tone = Find.GainText(pick)
+    -- The gain; with an Off Spec, one line for each spec it helps.
+    local dual = self:Dual()
+    local gainPick = line.main or line.off or pick
+    local gain, tone = Find.GainText(gainPick)
+    if dual and gainPick == line.off and tone == "good" then tone = "offSpec" end
+    if dual then gain = (line.main and L["Main Spec:"] or L["Off Spec:"]) .. " " .. gain end
     self.sheetGain:SetText(gain)
     self.sheetGain:SetTextColor(Theme.Unpack(tone))
     pcall(self.sheetArrow.SetVertexColor, self.sheetArrow, Theme.Unpack(tone))
     self.sheetGain:ClearAllPoints()
     self.sheetGain:SetPoint("TOPLEFT", hold, "TOPLEFT", 12 + 16, -y)
     y = y + (Theme.sizes.title or 16) + 6
+    local offGain = self.sheetOffGain
+    if offGain then
+        if dual and line.main and line.off then
+            local words, offTone = Find.GainText(line.off)
+            if offTone == "good" then offTone = "offSpec" end
+            offGain:SetText(L["Off Spec:"] .. " " .. words)
+            offGain:SetTextColor(Theme.Unpack(offTone))
+            offGain:ClearAllPoints()
+            offGain:SetPoint("TOPLEFT", hold, "TOPLEFT", 12 + 16, -y)
+            offGain:Show()
+            y = y + (Theme.sizes.title or 16) + 6
+        else
+            offGain:Hide()
+        end
+    end
 
     -- What it takes the place of, then what it waits on.
     local notes = {}
@@ -1206,20 +1380,26 @@ end
 
 function Find:SyncSpec()
     local FinderUI = ns.FinderUI
-    local choice = self.specChoice
-    if not (choice and FinderUI) then return end
-    local choices = FinderUI.SpecChoices()
-    local options = rawget(choice, "options")
-    if type(options) == "table" and #options ~= #choices then
-        for index = #options, 1, -1 do options[index] = nil end
-        for index = 1, #choices do options[index] = { text = FinderUI.SpecText(index), value = index } end
+    if not (self.specChoice and FinderUI) then return end
+    FinderUI.SyncSpecChoices(self.specChoice, self.offChoice)
+    self:SyncShow()
+end
+
+--- Show: Both, Main Spec or Off Spec, only while an Off Spec is picked;
+--- the picked one lit green. Find moves up beside them or the drop-downs.
+function Find:SyncShow()
+    local hold = self.showHold
+    if not hold then return end
+    local on = ns.OffSpec and ns.OffSpec:On() or false
+    hold:SetShown(on)
+    local which = self:ShowWhich()
+    for key, button in pairs(self.showButtons or {}) do
+        button:SetLabelColor(key == which and "good" or "gilt")
     end
-    local picked = ns.charDB and ns.charDB.spec
-    local index = 1
-    for i, key in ipairs(choices) do
-        if key == picked then index = i end
-    end
-    choice:SetValue(index, true)
+    self.findLabel:ClearAllPoints()
+    self.findLabel:SetPoint("LEFT", on and hold or self.offChoice, "RIGHT", 16, 0)
+    -- The note on the right makes room while Show is there.
+    self.note:SetShown(not on)
 end
 
 function Find:Build(area)
@@ -1233,31 +1413,58 @@ function Find:Build(area)
     page:Hide()
     self.page = page
 
-    -- Along the top: Judge Gear As (the same choice as Settings), Find,
-    -- and when the list was last made.
+    -- Along the top: Main Spec and Off Spec (the same choices as Settings),
+    -- Show while an Off Spec is picked, Find, and when the list was made.
     local judge = Theme.CreateLabel(page, "small", "muted")
     judge:SetPoint("TOPLEFT", PAD, -14)
-    judge:SetText(L["Judge Gear As:"])
-    local spec = Widgets.CreateChoice(page, {
-        min = 1, max = math.max(1, #FinderUI.SpecChoices()), step = 1, value = 1, width = 150,
-        format = function(index) return FinderUI.SpecText(index) end,
-        onChange = function(index)
-            local choices = FinderUI.SpecChoices()
-            if ns.SettingsUI and ns.SettingsUI.SetSpec then ns.SettingsUI:SetSpec(choices[index] or "auto") end
-        end,
-    })
+    judge:SetText(L["Main Spec:"])
+    local spec = FinderUI.MainSpecChoice(page, 150)
     spec:SetPoint("LEFT", judge, "RIGHT", 8, 0)
     self.specChoice = spec
 
+    local offLabel = Theme.CreateLabel(page, "small", "muted")
+    offLabel:SetPoint("LEFT", spec, "RIGHT", 16, 0)
+    offLabel:SetText(L["Off Spec:"])
+    local off = FinderUI.OffSpecChoice(page, 120)
+    off:SetPoint("LEFT", offLabel, "RIGHT", 8, 0)
+    self.offChoice = off
+
+    local hold = CreateFrame("Frame", nil, page)
+    hold:SetHeight(20)
+    hold:SetPoint("LEFT", off, "RIGHT", 16, 0)
+    local showLabel = Theme.CreateLabel(hold, "small", "muted")
+    showLabel:SetPoint("LEFT", 0, 0)
+    showLabel:SetText(L["Show:"])
+    local width = Theme.TextWidth("small", L["Show:"]) + 8
+    local anchor
+    self.showButtons = {}
+    for _, entry in ipairs({ { "both", L["Both"] }, { "main", L["Main Spec"] }, { "off", L["Off Spec"] } }) do
+        local button = Widgets.CreateButton(hold, entry[2], function() Find:SetShow(entry[1]) end,
+            { width = math.max(44, Theme.TextWidth("normal", entry[2]) + 20), height = 20 })
+        if anchor then
+            button:SetPoint("LEFT", anchor, "RIGHT", 4, 0)
+        else
+            button:SetPoint("LEFT", showLabel, "RIGHT", 8, 0)
+        end
+        local okWidth, buttonWidth = pcall(button.GetWidth, button)
+        width = width + (okWidth and type(buttonWidth) == "number" and buttonWidth or 60) + 4
+        self.showButtons[entry[1]] = button
+        anchor = button
+    end
+    hold:SetWidth(width)
+    hold:Hide()
+    self.showHold = hold
+
     local findLabel = Theme.CreateLabel(page, "small", "muted")
-    findLabel:SetPoint("LEFT", spec, "RIGHT", 20, 0)
+    findLabel:SetPoint("LEFT", off, "RIGHT", 16, 0)
     findLabel:SetText(L["Find:"])
+    self.findLabel = findLabel
     local box = Widgets.CreateSearchBox(page, L["Item or place"], function(text)
         Find.find = type(text) == "string" and text:lower():gsub("^%s+", ""):gsub("%s+$", "") or nil
         Find.offset = 0
         Find:Narrow()
     end)
-    box:SetWidth(230)
+    box:SetWidth(180)
     box:SetPoint("LEFT", findLabel, "RIGHT", 8, 0)
     self.findBox = box
 
@@ -1295,9 +1502,12 @@ end
 --------------------------------------------------------------------------------
 
 --- "42 upgrades you can go and get. Your filters hide 6 more."
-function Find.FooterText(shown, total, waiting, amber)
+function Find.FooterText(shown, total, waiting, amber, specs)
     local parts = {}
-    if shown == 1 then
+    -- Both specs: "19 upgrades for Retribution, 11 for Protection."
+    if specs then
+        parts[#parts + 1] = L.Format("%d upgrades for %s, %d for %s.", specs[1], specs[2], specs[3], specs[4])
+    elseif shown == 1 then
         parts[#parts + 1] = L["1 upgrade you can go and get."]
     elseif shown > 1 then
         parts[#parts + 1] = L.Format("%d upgrades you can go and get.", shown)
@@ -1353,6 +1563,7 @@ end
 function Find:Narrow()
     local state = self.state
     if not (self.page and state) then return end
+    self:LayColumns(self:Dual() and self:ShowWhich() == "both")
     local shown, counts = self:Filtered(state)
     self.shown = self:Sorted(shown)
     self:PaintCounts(state.found and counts or nil)
@@ -1373,13 +1584,26 @@ function Find:Narrow()
         end
     end
     self:PaintEmpty(state, #state.lines)
-    self.footer:SetText(Find.FooterText(#self.shown, #state.lines, state.found and state.found.waiting, amber))
+    local specs
+    if self:Dual() and self:ShowWhich() == "both" then
+        local mains, offs = 0, 0
+        for _, line in ipairs(self.shown) do
+            if line.main then mains = mains + 1 end
+            if line.off then offs = offs + 1 end
+        end
+        local main, _, class = ns.Weights:MainSpec()
+        specs = { mains, ns.Weights:SpecName(class, main) or "", offs, ns.OffSpec:Name() or "" }
+    end
+    self.footer:SetText(Find.FooterText(#self.shown, #state.lines, state.found and state.found.waiting, amber,
+        specs))
 end
 
 --- Draw a scan (nil before the first one is in, with why it failed).
 function Find:Present(found, why)
     if not self.page then return nil end
-    local state = self:Read(found)
+    self.lastFound, self.lastWhy = found, why
+    local off = ns.OffSpec and ns.OffSpec:On() and self.offFound or nil
+    local state = self:Read(found, off)
     state.why = why
     self.state = state
     self:SyncSpec()
@@ -1398,9 +1622,31 @@ end
 --- else one made a slice per frame while what shows stays. Planning
 --- ahead needs a scan of its own, kept until gear, level or a setting
 --- changes.
+--- The Off Spec's list for these choices (Logic/OffSpec.lua): kept when
+--- still fresh, else made a slice per frame and drawn when it is in, the
+--- last one showing meanwhile. Nothing with Off Spec on None.
+function Find:LookOff(ahead)
+    if not (ns.OffSpec and ns.OffSpec:On()) then
+        self.offFound, self.offFor = nil, nil
+        return
+    end
+    local kept = Finder:OffFound(ahead)
+    if kept then
+        self.offFound, self.offFor = kept, ahead
+        return
+    end
+    if self.offFor ~= ahead then self.offFound = ahead == 0 and Finder:OffLatest() or nil end
+    Finder:ScanOff(ahead, function(off)
+        if not Find:IsShown() or Find:Ahead() ~= ahead then return end
+        if off then Find.offFound, Find.offFor = off, ahead end
+        if Find.lastFound then Find:Present(Find.lastFound, Find.lastWhy) end
+    end)
+end
+
 function Find:Refresh()
     if not self:IsShown() then return nil end
     local ahead = self:Ahead()
+    self:LookOff(ahead)
     if ahead <= 0 then
         local found = Finder:Fresh()
         if found then return self:Present(found) end

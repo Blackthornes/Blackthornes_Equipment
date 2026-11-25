@@ -93,6 +93,9 @@ Pump = function()
             jobs[#jobs + 1] = job
         else
             local ok, found, why = coroutine.resume(job.worker)
+            -- A slice that stopped on an error mid-way may have left the
+            -- Off Spec entered (Logic/OffSpec.lua).
+            if ns.OffSpec then ns.OffSpec:Settle() end
             if not ok then
                 ns.Debug("worker:", tostring(found))
                 job.found, job.why = nil, "error"

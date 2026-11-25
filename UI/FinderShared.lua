@@ -452,12 +452,76 @@ function FinderUI.SpecChoices()
     return { "auto" }, nil
 end
 
---- A spec choice's words: "Auto", or the spec's name.
+--- A spec choice's words: "Auto (Retribution)", or the spec's name.
 function FinderUI.SpecText(index)
     local choices, specs = FinderUI.SpecChoices()
     local key = choices[index]
-    if key == "auto" or not key or not specs or not specs[key] then return L["Auto"] end
+    if key == "auto" or not key or not specs or not specs[key] then
+        local auto = Weights.AutoSpec and Weights:AutoSpec()
+        local name = auto and specs and specs[auto] and Weights.Label(specs[auto].name)
+        return name and (L["Auto"] .. " (" .. name .. ")") or L["Auto"]
+    end
     return Weights.Label(specs[key].name)
+end
+
+--- The Off Spec keys, "none" first (Settings' list).
+function FinderUI.OffSpecChoices()
+    if ns.SettingsUI and ns.SettingsUI.OffSpecChoices then return ns.SettingsUI:OffSpecChoices() end
+    return { "none" }, nil
+end
+
+--- An Off Spec choice's words: "None", or the spec's name.
+function FinderUI.OffSpecText(index)
+    local choices, specs = FinderUI.OffSpecChoices()
+    local key = choices[index]
+    if key == "none" or not key or not specs or not specs[key] then return L["None"] end
+    return Weights.Label(specs[key].name)
+end
+
+--- The Main Spec drop-down every page shows (the same pick as Settings).
+function FinderUI.MainSpecChoice(parent, width)
+    return Widgets.CreateChoice(parent, {
+        min = 1, max = math.max(1, #FinderUI.SpecChoices()), step = 1, value = 1, width = width or 150,
+        format = function(index) return FinderUI.SpecText(index) end,
+        onChange = function(index)
+            local choices = FinderUI.SpecChoices()
+            if ns.SettingsUI and ns.SettingsUI.SetSpec then ns.SettingsUI:SetSpec(choices[index] or "auto") end
+        end,
+    })
+end
+
+--- The Off Spec drop-down every page shows beside it.
+function FinderUI.OffSpecChoice(parent, width)
+    return Widgets.CreateChoice(parent, {
+        min = 1, max = math.max(1, #FinderUI.OffSpecChoices()), step = 1, value = 1, width = width or 130,
+        format = function(index) return FinderUI.OffSpecText(index) end,
+        onChange = function(index)
+            local choices = FinderUI.OffSpecChoices()
+            if ns.SettingsUI and ns.SettingsUI.SetOffSpec then
+                ns.SettingsUI:SetOffSpec(choices[index] or "none")
+            end
+        end,
+    })
+end
+
+local function SyncChoice(choice, choices, text, picked, fallback)
+    if not choice then return end
+    local options = rawget(choice, "options")
+    if type(options) == "table" then
+        for index = #options, 1, -1 do options[index] = nil end
+        for index = 1, #choices do options[index] = { text = text(index), value = index } end
+    end
+    local index = fallback
+    for i, key in ipairs(choices) do
+        if key == picked then index = i end
+    end
+    choice:SetValue(index, true)
+end
+
+--- Put both drop-downs in step with the saved picks.
+function FinderUI.SyncSpecChoices(main, off)
+    SyncChoice(main, (FinderUI.SpecChoices()), FinderUI.SpecText, ns.charDB and ns.charDB.spec, 1)
+    SyncChoice(off, (FinderUI.OffSpecChoices()), FinderUI.OffSpecText, ns.charDB and ns.charDB.offSpec, 1)
 end
 
 --- Is "Only what I can get now" ticked? Saved account wide as

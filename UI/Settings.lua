@@ -124,6 +124,33 @@ function SettingsUI:SetSpec(key)
     ns.Weights:Changed()
 end
 
+--- The Off Spec keys this character can pick from, "none" first.
+function SettingsUI:OffSpecChoices()
+    local choices = { "none" }
+    local class = ns.Weights:PlayerClass()
+    local specs = class and ns.Weights.SPECS[class]
+    if specs then
+        for _, key in ipairs(specs.order) do choices[#choices + 1] = key end
+    end
+    return choices, specs
+end
+
+--- Pick the Off Spec (`key`, or "none"). Logic/OffSpec.lua.
+function SettingsUI:SetOffSpec(key)
+    if ns.OffSpec then ns.OffSpec:Set(key ~= "none" and key or nil) end
+    self:Refresh()
+end
+
+--- The Off Spec drop-down's index for the saved pick.
+function SettingsUI:OffSpecIndex()
+    local choices = self:OffSpecChoices()
+    local picked = ns.charDB and ns.charDB.offSpec
+    for i, key in ipairs(choices) do
+        if key == picked then return i end
+    end
+    return 1
+end
+
 --- What the spec row's description says: which spec is in use, and why.
 function SettingsUI:SpecHint()
     local spec, why, class = ns.Weights:CurrentSpec()
@@ -541,7 +568,7 @@ function SettingsUI:BuildGear()
 
     pages:Section("gear", 2, L["JUDGING GEAR"])
 
-    local specRow = pages:Row("gear", 2, L["Judge Gear As:"], function() return SettingsUI:SpecHint() end)
+    local specRow = pages:Row("gear", 2, L["Main Spec:"], function() return SettingsUI:SpecHint() end)
     controls.spec = Widgets.CreateChoice(specRow, {
         min = 1, max = #SettingsUI:SpecChoices(), step = 1, value = 1,
         format = function(index)
@@ -558,6 +585,24 @@ function SettingsUI:BuildGear()
     controls.spec:SetWidth(150)
     controls.spec:SetPoint("TOPLEFT", CONTROL_X, 0)
     self.specRow = specRow
+
+    -- The Off Spec (Logic/OffSpec.lua): starts on None, saved per character.
+    local offRow = pages:Row("gear", 2, L["Off Spec:"], L["Pick None to turn it off. Starts on None."])
+    controls.offSpec = Widgets.CreateChoice(offRow, {
+        min = 1, max = #SettingsUI:OffSpecChoices(), step = 1, value = SettingsUI:OffSpecIndex(),
+        format = function(index)
+            local choices, specs = SettingsUI:OffSpecChoices()
+            local key = choices[index]
+            if key == "none" or not key or not specs or not specs[key] then return L["None"] end
+            return ns.Weights.Label(specs[key].name)
+        end,
+        onChange = function(index)
+            local choices = SettingsUI:OffSpecChoices()
+            SettingsUI:SetOffSpec(choices[index] or "none")
+        end,
+    })
+    controls.offSpec:SetWidth(150)
+    controls.offSpec:SetPoint("TOPLEFT", CONTROL_X, 0)
 
     -- Saved per character, since the armor a class wears is its own.
     local armorRow = pages:Row("gear", 2, L["Best Armor Only:"],
@@ -1185,6 +1230,7 @@ function SettingsUI:Refresh()
     end
     controls.spec:SetValue(index, true)
     self.specRow:SetDescription(self:SpecHint())
+    if controls.offSpec then controls.offSpec:SetValue(self:OffSpecIndex(), true) end
 
     controls.textSize:Sync()
     controls.windowStyle:Sync()

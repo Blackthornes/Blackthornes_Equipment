@@ -898,6 +898,7 @@ end
 --- When it changes, every verdict is made again.
 function Finder:VerdictKey()
     return table.concat({
+        tostring(Weights.judgeAs or ""),
         tostring(Items:PlayerLevel()),
         tostring(Weights.generation or 0), tostring(self.judgeGeneration or 0),
         tostring(ns.Alts and ns.Alts:PlayerSkipped() or false),
@@ -1306,7 +1307,9 @@ function Finder:Build(only, ahead, pause)
         slots = slots, all = all, count = count, checked = checked, waiting = waiting, player = player,
         reach = reach,
     }
-    if not only and reach == level then
+    -- An Off Spec scan (Logic/OffSpec.lua) is kept apart: the shared scan
+    -- the upgrade quest and the small panel read stays the Main Spec's.
+    if not only and reach == level and not self.offPass then
         self.latest, self.latestAt, self.latestKey = found, self.Now(), judgedKey
         self.latestAnswers = answersAt
         -- A whole scan with nothing changed meanwhile is up to date, whoever
@@ -1321,7 +1324,7 @@ function Finder:Build(only, ahead, pause)
     end
     -- What this scan left unasked. Set only by a scan that finished, so one
     -- dropped half way keeps the list the last whole scan made.
-    self.queue = queue
+    if not self.offPass then self.queue = queue end
     -- Something is due from the server. If none of it comes, the next step
     -- is taken anyway, so a batch the server drops is not waited on for ever.
     if asked > 0 or held > 0 then self:WaitForAnswers() end
@@ -1652,6 +1655,103 @@ function Finder:ScanSliced(only, ahead, done)
             if not ok then ns.Debug("finder:", tostring(err)) end
         end
     end)
+end
+
+--------------------------------------------------------------------------------
+-- The Off Spec's scans (Logic/OffSpec.lua, 2026-11-25)
+--
+-- The same scan, judged for the Off Spec against the best pieces owned for
+-- it. Its verdicts are kept apart from the Main Spec's: the fields below
+-- are swapped in while the Off Spec is entered. Its scans are kept by how
+-- far ahead they look, until the gear, bags, level, weights or the pick
+-- change. Nothing runs with Off Spec on None.
+--------------------------------------------------------------------------------
+
+local OFF_STATE = { "judged", "verdictKey", "judgedKey", "toLook", "slotLooks", "wornSeen",
+    "wornLinks", "hitLooks", "setLooks", "wornKey", "wornBest" }
+
+--- Swap the kept verdicts and what they lean on with the Off Spec's set
+--- (`entering` true) or back (false). Called by OffSpec:Enter and Leave.
+function Finder:SwapJudging(entering)
+    if (self.offPass == true) == (entering == true) then return end
+    local other = self.offState or {}
+    local mine = {}
+    for _, key in ipairs(OFF_STATE) do
+        mine[key] = self[key]
+        self[key] = other[key]
+    end
+    self.offState = mine
+    self.offPass = entering == true or nil
+end
+
+--- What an Off Spec scan `ahead` levels on is made from, or nil with None.
+function Finder:OffKey(ahead)
+    local OffSpec = ns.OffSpec
+    local spec = OffSpec and OffSpec:Key()
+    if not spec then return nil end
+    local judgeKey = OffSpec:Run(function() return Finder:JudgeKey() end)
+    return table.concat({ spec, tostring(ahead or 0), tostring(judgeKey), tostring(self.changes or 0) }, "|")
+end
+
+--- The Off Spec scan kept for `ahead` (0 for now), while nothing it was
+--- made from has changed; else nil.
+function Finder:OffFound(ahead)
+    ahead = ahead or 0
+    local kept = self.offKept and self.offKept[ahead]
+    if not kept then return nil end
+    local key = self:OffKey(ahead)
+    if key and kept.key == key then return kept.found end
+    return nil
+end
+
+--- The last Off Spec scan for now, fresh or not (for drawing meanwhile).
+function Finder:OffLatest()
+    local kept = self.offKept and self.offKept[0]
+    return kept and kept.found or nil
+end
+
+--- Make an Off Spec scan, a slice per frame on the worker, and hand it to
+--- `done(found, why)`. A fresh kept one is handed over at once, and one
+--- under way for the same key takes the new caller too. With None,
+--- done(nil, "none").
+function Finder:ScanOff(ahead, done)
+    ahead = ahead or 0
+    local OffSpec = ns.OffSpec
+    local spec = OffSpec and OffSpec:Key()
+    local key = spec and self:OffKey(ahead)
+    if not key then
+        if done then pcall(done, nil, "none") end
+        return
+    end
+    local kept = self:OffFound(ahead)
+    if kept then
+        if done then pcall(done, kept) end
+        return
+    end
+    self.offJobs = self.offJobs or {}
+    local job = self.offJobs[ahead]
+    if job and job.key == key then
+        if done then job.waiting[#job.waiting + 1] = done end
+        return
+    end
+    job = { key = key, waiting = { done } }
+    self.offJobs[ahead] = job
+    Sliced(function(pause) return OffSpec:Build(spec, ahead, pause) end, function(found, why)
+        if Finder.offJobs[ahead] == job then Finder.offJobs[ahead] = nil end
+        if found then
+            Finder.offKept = Finder.offKept or {}
+            Finder.offKept[ahead] = { key = key, found = found }
+        end
+        for _, fn in ipairs(job.waiting) do
+            local ok, err = pcall(fn, found, why)
+            if not ok then ns.Debug("finder:", tostring(err)) end
+        end
+    end, ahead == 0)
+end
+
+--- Is an Off Spec scan under way?
+function Finder:ScanningOff()
+    return self.offJobs ~= nil and next(self.offJobs) ~= nil
 end
 
 function Finder:OnEnable()

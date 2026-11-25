@@ -368,6 +368,13 @@ end
 --- The link of what is worn in an inventory slot, or nil when it is empty.
 --- While a fishing pole is in hand, the weapons worn before it.
 function Items:Equipped(slot)
+    -- While Logic/OffSpec.lua judges for the Off Spec: the best piece owned
+    -- for it in this slot (false for none).
+    local as = Items.wornAs
+    if as then
+        local stand = as[slot]
+        if stand ~= nil then return stand or nil end
+    end
     local link = self:WornNow(slot)
     if slot ~= MAIN_HAND and slot ~= OFF_HAND then return link end
     local main = slot == MAIN_HAND and link or self:WornNow(MAIN_HAND)
