@@ -237,7 +237,7 @@ SettingsUI.SETTING_KEYS = {
 
 --- The same, for keys saved for one character.
 SettingsUI.CHAR_SETTING_KEYS = {
-    "bestArmorOnly", "hideUntrainedWeapons", "ignoredWeaponTypes", "spec",
+    "bestArmorOnly", "hideUntrainedWeapons", "ignoredWeaponTypes", "spec", "offSpec",
 }
 
 --- How long the red Confirm waits for the second click, in seconds.

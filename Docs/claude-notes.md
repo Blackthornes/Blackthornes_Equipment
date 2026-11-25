@@ -3186,3 +3186,56 @@ shadowed. While it shows, each arrow's `ArrowUI.Words` asks
 `TravelCard:Words(state)` and keeps only its name. `travelCardScale` is no
 longer read (left in saves). Tested in `tools/test_stepbox.lua` (the same in
 all five). Not yet seen in game.
+
+## Main Spec and Off Spec (2026-11-25)
+
+The owner said build it from the mockup (`Docs/mockups/equipment-dual-spec.html`
+in the project files). A player picks a Main Spec and an Off Spec, and the
+lists show upgrades for both.
+
+- **Saved keys**: Main Spec is the old pick, `charDB.spec` (never rename).
+  Off Spec is `charDB.offSpec` (never rename), per character, nil for None,
+  the start. The same spec as Main counts as None (`OffSpec:Key`). Set
+  Default clears both (`CHAR_SETTING_KEYS`).
+- **Where it is picked**: Settings' Gear page ("Main Spec:" was "Judge Gear
+  As:", then "Off Spec:"), and the two drop-downs on My Gear, Find Upgrades
+  and Dungeons (`FinderUI.MainSpecChoice`, `OffSpecChoice`,
+  `SyncSpecChoices`; `SettingsUI:SetOffSpec`, `OffSpecChoices`). Auto reads
+  "Auto (Retribution)" (`Weights:AutoSpec`). `/beq spec off <name|none>`.
+- **How it judges** (`Logic/OffSpec.lua`): `OffSpec:Enter` sets
+  `Weights.judgeAs` (so `Weights:CurrentSpec` answers the Off Spec, with
+  why "offspec") and `Items.wornAs`, which `Items:Equipped` answers with:
+  the best piece owned for the Off Spec in each slot, worn or in the bags
+  (the outfit; hands are the best two-hander or best main and off hand
+  pair, two-handers left out for a shield tank). So Off Spec gains are
+  measured against that, and a piece carried is never offered again.
+  `Weights:MainSpec` is the Main Spec whatever is judged. `Leave` puts all
+  back. `Run`/`RunReal` wrap one call (RunReal keeps the real gear, for a
+  carried outfit piece's gain over what is worn). The worker calls
+  `OffSpec:Settle` after every slice, so an error mid-scan leaves nothing
+  entered.
+- **The finder**: `Finder:SwapJudging` swaps the kept verdicts and what
+  they lean on (`OFF_STATE`) with the Off Spec's set while entered
+  (`Finder.offPass`). `VerdictKey` holds `judgeAs`. An Off Spec scan never
+  writes `latest`, `stale` or `queue`. `Finder:ScanOff(ahead, done)` runs
+  one on the worker (calm for now, not for Plan Ahead), kept per `ahead`
+  in `offKept` until `OffKey` moves (outfit, level, weights, pick,
+  `changes`). `OffFound`, `OffLatest`, `ScanningOff`. Nothing runs with
+  None.
+- **What shows it**: Find Upgrades gets MAIN and OFF columns (`LayColumns`,
+  sortable, key "off"), "Main only"/"Off only" tags, Show: Both, Main Spec,
+  Off Spec (session only, `Find.show`), the footer "%d upgrades for %s, %d
+  for %s.", and the sheet's "Main Spec:"/"Off Spec:" gains. My Gear marks
+  a slot blue when only the Off Spec has a piece to get, lists those under
+  OFF SPEC, and shows the blue key. Dungeons shows Off Spec gains in blue
+  after the Main Spec's. Tooltips say "Main Spec: +97%" and "Off Spec: +42%"
+  when either gains (`Tooltip.SpecLines`). Bags (outfit pieces), the bank,
+  vendors (`MoreMarks`) and loot rolls get the arrow in blue
+  (`BagIcons:Tint`, `OffSpec:OnlyUpgrade`); an outfit piece never gets the
+  sell coin. Colour key `offSpec` (#58A6FF) in `UI/Theme.lua`, `offspec` in
+  `ns.COLORS`.
+- **What stays on Main**: putting gear on (`Logic/Wear.lua`), the upgrade
+  quest, the small panel, Upgrade Done!, the character sheet's green
+  arrows, quest reward arrows, Tradeskills and Butler (`Logic/Butler.lua`).
+  Make It My Quest on an Off only row follows it like any pick.
+- Tested in `tools/test_offspec.lua`. Not yet seen in game.

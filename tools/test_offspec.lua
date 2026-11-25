@@ -163,6 +163,15 @@ suite.check("asked again with nothing changed it is handed back", again == offFo
 env.bags[0][3] = "item:11"
 OffSpec:Forget()
 suite.check("a bag change makes it old", Finder:OffFound(0) == nil)
+suite.check("the shield bought joins the outfit and is no Off Spec upgrade any more",
+    Verdict(OffSpec:Judge("item:11")) == "equipped" and OffSpec:Outfit()[17] == "item:11",
+    Verdict(OffSpec:Judge("item:11")))
+local keptShield, keptChest = OffSpec:Run(function()
+    local judged = Finder:Judged()
+    return Finder:Kept(judged, 11), Finder:Kept(judged, 12)
+end)
+suite.check("kept Off Spec verdicts on the changed slot are judged again, others kept",
+    keptShield == nil and keptChest ~= nil, tostring(keptShield) .. " " .. tostring(keptChest))
 env.bags[0][3] = nil
 OffSpec:Forget()
 
@@ -171,14 +180,80 @@ suite.check("blue arrow: only the Off Spec gains", OffSpec:OnlyUpgrade("item:11"
 suite.check("no blue arrow when the Main Spec gains too", OffSpec:OnlyUpgrade("item:12") == nil)
 suite.check("no blue arrow for a two-hander", OffSpec:OnlyUpgrade("item:2") == nil)
 
+
+-- 9. Find Upgrades: MAIN and OFF columns, Show, the tags and the footer.
+local Gear, Find = ns.GearWindow, ns.FindUpgrades
+ns.UI:Show()
+Gear:ShowTab("find")
+Find.sheetHold:SetHeight(590)
+Find:Refresh()
+local function Head(key)
+    for _, head in ipairs(Find.heads) do
+        if head.key == key then return head end
+    end
+end
+local function Line(itemID)
+    for _, line in ipairs(Find.shown or {}) do
+        if line.pick.itemID == itemID then return line end
+    end
+end
+suite.check("with an Off Spec the list has two gain columns", Find:Dual() and Head("off"):IsShown()
+    and Head("gain").label:GetText() == "MAIN" and Head("off").label:GetText() == "OFF",
+    tostring(Head("gain").label:GetText()))
+suite.check("Show is there", Find.showHold:IsShown())
+local shieldLine, bigLine, chestLine = Line(11), Line(2), Line(12)
+suite.check("the better shield is an Off only row", shieldLine and shieldLine.off and not shieldLine.main)
+suite.check("the big two-hander is a Main only row", bigLine and bigLine.main and not bigLine.off)
+suite.check("the chest helps both", chestLine and chestLine.main and chestLine.off)
+suite.check("the footer counts both", Find.footer:GetText():find("for Retribution", 1, true) ~= nil
+    and Find.footer:GetText():find("for Protection", 1, true) ~= nil, Find.footer:GetText())
+Find:SetShow("off")
+suite.check("Show Off Spec: only rows that help it, one column named OFF",
+    Line(11) and Line(12) and not Line(2) and not Head("off"):IsShown() and Head("gain").label:GetText() == "OFF")
+Find:SetShow("main")
+suite.check("Show Main Spec: only rows that help it", Line(2) and Line(12) and not Line(11)
+    and Head("gain").label:GetText() == "MAIN")
+Find:SetShow("both")
+
+-- 10. The tooltip: a line for each spec.
+local tipLines = ns.Tooltip.SpecLines("item:11", false, Compare:Judge("item:11"))
+suite.check("the tooltip says Main Spec: no upgrade and the Off Spec's gain",
+    tipLines and tipLines[1].label == "Main Spec:" and tipLines[1].answer == "no upgrade"
+    and tipLines[2].label == "Off Spec:" and tipLines[2].answer:find("^%+%d+%%$") ~= nil,
+    tipLines and tipLines[2].answer)
+suite.check("no spec lines when neither gains", ns.Tooltip.SpecLines("item:10", false, Compare:Judge("item:10")) == nil)
+
+-- 11. The tank set in the bags gets the blue arrow, not a sell coin.
+suite.check("the shield in the bags gets the blue arrow", OffSpec:OnlyUpgrade("item:4", true) ~= nil)
+
 -- 8.
 ns.HandleSlash("spec off none")
 suite.check("/beq spec off none turns it off", ns.charDB.offSpec == nil and OffSpec:Key() == nil)
+Find:Refresh()
+suite.check("with None the list is as before", not Find:Dual() and not Head("off"):IsShown()
+    and Head("gain").label:GetText() == "GAIN" and not Find.showHold:IsShown())
 ns.HandleSlash("spec off holy")
 suite.check("/beq spec off holy picks it", ns.charDB.offSpec == "holy", tostring(ns.charDB.offSpec))
 ns.HandleSlash("spec off nonsense")
 suite.check("a wrong name keeps the pick", ns.charDB.offSpec == "holy")
 ns.HandleSlash("spec auto")
 suite.check("/beq spec auto leaves the Off Spec alone", ns.charDB.offSpec == "holy" and ns.charDB.spec == nil)
+
+
+-- 12. Settings: the Off Spec row, and the drop-down on Find Upgrades.
+Gear:ShowTab("settings")
+local controls = ns.SettingsUI.controls
+suite.check("Settings has the Off Spec drop-down, set to the pick", controls.offSpec ~= nil
+    and controls.offSpec:GetValue() == ns.SettingsUI:OffSpecIndex())
+controls.offSpec:Pick(1)
+suite.check("picking None in Settings turns it off", ns.charDB.offSpec == nil)
+local choices = ns.SettingsUI:OffSpecChoices()
+local protIndex
+for index, key in ipairs(choices) do if key == "prot" then protIndex = index end end
+Gear:ShowTab("find")
+Find.offChoice:Pick(protIndex)
+suite.check("picking it on Find Upgrades saves it", ns.charDB.offSpec == "prot")
+suite.check("the Main Spec drop-down names what Auto follows", ns.FinderUI.SpecText(1):find("^Auto %(") ~= nil,
+    ns.FinderUI.SpecText(1))
 
 suite.done()
