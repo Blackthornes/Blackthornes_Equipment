@@ -229,6 +229,9 @@ end
 --- What the gain cell says for a drop: the words and their colour.
 function Dungeons.GainText(row)
     local result = row.result
+    -- Owned already: where it is, not a gain to go and get.
+    if row.owned == "bags" then return L["in your bags"], "dim" end
+    if row.owned == "bank" then return L["in your bank"], "dim" end
     if row.upgrade then
         if row.gain then return ("%+d%%"):format(row.gain), "good" end
         return L["empty slot"], "good"
@@ -318,6 +321,7 @@ function Dungeons:Lines(dungeon)
             lines[#lines + 1] = { kind = "note", text = L["Every quest here is done."] }
         end
         local judged = Finder and Finder:Judged()
+        local owned = Finder and Finder.Owned and Finder:Owned() or {}
         for _, quest in ipairs(dungeon.quests) do
             local parts = {}
             if (quest.level or 0) > 0 then parts[#parts + 1] = L.Format("Level %d.", quest.level) end
@@ -334,8 +338,12 @@ function Dungeons:Lines(dungeon)
                         name = ("|cff%02x%02x%02x%s|r"):format(math.floor(r * 255 + 0.5),
                             math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5), name)
                     end
-                    -- Its gain, when the client holds the item already.
-                    if judged and Finder:IsCached(reward) then
+                    -- Where it is, when you have it already; else its
+                    -- gain, when the client holds the item.
+                    if owned[reward] then
+                        name = ("%s |c%s%s|r"):format(name, ns.COLORS.muted,
+                            owned[reward] == "bank" and L["in your bank"] or L["in your bags"])
+                    elseif judged and Finder:IsCached(reward) then
                         local _, okJudge, result = Finder:JudgeOnce(judged, reward)
                         if okJudge and ns.Compare.WearableUpgrade(result) then
                             local percent = Finder.Shown(result)

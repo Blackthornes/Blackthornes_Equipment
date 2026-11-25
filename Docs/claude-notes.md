@@ -3268,3 +3268,17 @@ quest has a prerequisite quest that needs to be said first."
 - `make_sources.py`'s `load_spawn_db` reads the spawn database as data
   (`tools/lua_literal.py`) and never runs it.
 - Tested in `tools/test_questneeds.lua`. Not yet seen in game.
+
+## Owned gear is no upgrade to go get (2026-11-25)
+
+A player's report: the Dungeons tab listed drops already in their bags as
+upgrades. `Finder:Owned()` gives the gear the character playing owns
+(`{ [itemID] = "bags" or "bank" }`: carried bags, and its own bank note from
+`Alts:ReadBank`, by `Alts.PlayerGUID()`; no GUID means bags only). The
+finder scan (Find Upgrades, Upgrade Quest, the Dungeons count) leaves it
+out; before, only the bags were left out. `DL:Rows` marks such a drop
+`owned` and never an upgrade, so Upgrades Only hides it and its gain cell
+reads "in your bags" or "in your bank"; a quest reward you own says the
+same. A bank whose gear changed marks the finder stale. New word "in your
+bags" (six languages) waits for the owner's OK. Tested in
+`tools/test_dungeonstab.lua` section 9.
