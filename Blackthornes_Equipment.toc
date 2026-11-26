@@ -103,6 +103,7 @@ UI\Minimap.lua
 UI\MainWindow.lua
 UI\FinderShared.lua
 UI\GearWindow.lua
+UI\Welcome.lua
 UI\MyGear.lua
 UI\FindUpgrades.lua
 UI\UpgradeQuestTab.lua

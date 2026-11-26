@@ -593,6 +593,13 @@ local function LoadSavedVariables()
         BlackthornesEquipmentCharDB = {}
     end
 
+    -- First Time Setup (UI/Welcome.lua): only a save with nothing in it
+    -- yet is a new player. Anyone who already used the addon is marked as
+    -- having seen the card, so it never shows for them. Never rename it.
+    if BlackthornesEquipmentDB.welcomeSeen == nil then
+        BlackthornesEquipmentDB.welcomeSeen = next(BlackthornesEquipmentDB) ~= nil
+    end
+
     ApplyDefaults(BlackthornesEquipmentDB, DEFAULTS)
     ApplyDefaults(BlackthornesEquipmentCharDB, CHAR_DEFAULTS)
 

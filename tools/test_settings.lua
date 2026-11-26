@@ -294,7 +294,7 @@ local covered = { sisters = true, whatsnew = true,
     settings = true, weapons = true, training = true, skip = true, autoequip = true,
     dungeons = true, loot = true, mute = true, windows = true,
 }
-local typedOnly = { bags = true, tracked = true, help = true }
+local typedOnly = { bags = true, tracked = true, help = true, welcome = true }
 for _, name in ipairs(ns.commandOrder) do
     suite.check("/beq " .. name .. " has a button or a tab, or is typed only",
         covered[name] == true or typedOnly[name] == true)
