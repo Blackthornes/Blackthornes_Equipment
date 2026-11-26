@@ -438,6 +438,9 @@ function Gear:ShowTab(key)
     self.driving = true
     local ok, err = pcall(module.Show, module)
     self.driving = was
+    -- A new player's first open: the welcome card lies over the page
+    -- (UI/Welcome.lua).
+    if ns.Welcome then pcall(ns.Welcome.Offer, ns.Welcome) end
     if not ok then error(err, 0) end
 end
 

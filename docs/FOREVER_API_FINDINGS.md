@@ -389,3 +389,19 @@ name, not `|cff1eff00`. Code that takes a link's colour with
 `|c(%x%x%x%x%x%x%x%x)` finds none and shows the name white (My Gear's
 worn names did). `FinderUI.ItemText` now colours by the item's quality
 when the link has no hex colour, else keeps the named colour.
+
+## Model frames and inspect (2026-11-26, `/beq probe looks`)
+
+Model frames work. `CreateFrame("DressUpModel")` has SetUnit, TryOn,
+Undress, Dress, SetRotation and the rest; `SetUnit("player")` loads a body
+(a model file ID comes back) and `TryOn(link)` returns 0. `PlayerModel`
+loads too but has no TryOn. A `ModelScene` actor has SetModelByUnit and
+TryOn and loads the same body. The character sheet uses
+`CharacterModelScene`; `DressUpFrame` is there.
+
+Inspect answers but gave no gear: on a warlock beside the owner, outside
+an instance, CanInspect was true, NotifyInspect raised nothing,
+INSPECT_READY came with the GUID and GetInspectSpecialization read 1490,
+yet `GetInventoryItemLink("target", 1..19)` gave 0 of 19, 2 seconds after.
+The probe now also reads item IDs and icons, and reads at INSPECT_READY
+itself, in case another addon lets go of the inspect first.
