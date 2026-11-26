@@ -114,7 +114,7 @@ end
 --- Does a piece wait on something (a level, a reputation, a crafter)? Then
 --- it shows in amber, as in the old list.
 function MyGear.Later(pick)
-    return (pick.needs or pick.at or pick.remote) and true or false
+    return (pick.needs or pick.at or pick.remote or ns.Crafting.WearWaits(pick)) and true or false
 end
 
 --- The gain a slot's badge shows: "+14%", or "+" for an empty slot.

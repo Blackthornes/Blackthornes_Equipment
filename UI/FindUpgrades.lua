@@ -68,6 +68,10 @@ local WHY_NAME = 92
 local WHY_AMOUNT = 46
 
 local MAIN_HAND = 16
+-- The Reputation box's key in `finderSourcesOff` (FinderUI.REP).
+local REP = "rep"
+local HIDDEN_STRIP = 28
+local BAR_WIDTH = 56
 
 local function Colored(key, text)
     local r, g, b = Theme.Unpack(key)
@@ -230,6 +234,22 @@ function Find:Read(found, off)
             end
         end
     end
+    -- Two one-handers (or one and a shield) that beat the two-hander worn
+    -- (Finder:MakePairs): one line each, under the main hand.
+    local mainOrder = 0
+    for order, group in ipairs(Groups()) do
+        if group[1] == MAIN_HAND then mainOrder = order end
+    end
+    for _, pick in ipairs(type(found.pairs) == "table" and found.pairs or {}) do
+        local partner = pick.pair
+        if partner and not skipped[pick.itemID] and not skipped[partner.itemID] then
+            state.lines[#state.lines + 1] = {
+                pick = pick, main = pick, pair = partner, group = MAIN_HAND, slotName = L["Both Hands"],
+                order = mainOrder, key = "pair:" .. pick.itemID .. ":" .. partner.itemID,
+                index = #state.lines + 1,
+            }
+        end
+    end
     return state
 end
 
@@ -259,7 +279,13 @@ function Find.Hay(line)
     if line.hay then return line.hay end
     local FinderUI = ns.FinderUI
     local parts = { FinderUI.ItemName(line.pick) }
-    for _, source in ipairs(line.pick.sources or {}) do
+    local all = {}
+    for _, source in ipairs(line.pick.sources or {}) do all[#all + 1] = source end
+    if line.pair then
+        parts[#parts + 1] = FinderUI.ItemName(line.pair)
+        for _, source in ipairs(line.pair.sources or {}) do all[#all + 1] = source end
+    end
+    for _, source in ipairs(all) do
         for _, key in ipairs({ "name", "dungeon", "zone", "title", "profession" }) do
             local value = source[key]
             if type(value) == "string" then
@@ -290,11 +316,29 @@ function Find:Filtered(state)
         on[entry[1]] = FinderUI:SourceOn(entry[1])
         counts[entry[1]] = 0
     end
+    local repOn = FinderUI:SourceOn(REP)
+    counts[REP] = 0
+    -- Rows the Reputation box hides, for the line under the list.
+    self.repHidden = 0
 
     local shown = {}
+    -- A pair's partner needs a place the filters let through too.
+    local function Passes(source, pick)
+        return (not getNow or FinderUI.GetsNow(source, pick))
+            and (not here or not inZone or inZone(source, here))
+            and on[FinderUI.SourceKind(source)] ~= false
+            and (source.kind ~= "auction" or ns.AuctionGear:Affords(source))
+    end
     for _, line in ipairs(state.lines) do
         local pick = line.pick
         local sources, kinds = {}, {}
+        if line.pair then
+            local partner = {}
+            for _, source in ipairs(line.pair.sources or {}) do
+                if Passes(source, pick) then partner[#partner + 1] = source end
+            end
+            line.pairSources = partner
+        end
         for _, source in ipairs(pick.sources or {}) do
             if (not getNow or FinderUI.GetsNow(source, pick))
                 and (not here or not inZone or inZone(source, here)) then
@@ -303,16 +347,27 @@ function Find:Filtered(state)
                     kinds[kind] = true
                     counts[kind] = (counts[kind] or 0) + 1
                 end
-                if on[kind] ~= false then sources[#sources + 1] = source end
+                -- The auction house: only what you can pay for, within
+                -- Auction Price.
+                if on[kind] ~= false and (kind ~= "auction" or ns.AuctionGear:Affords(source)) then
+                    sources[#sources + 1] = source
+                end
             end
         end
+        if line.pair and #line.pairSources == 0 then sources = {} end
         line.sources = sources
+        if pick.rep and next(kinds) then counts[REP] = counts[REP] + 1 end
+        if pick.rep and not repOn then sources = {} end
         local which = self:ShowWhich()
         local wanted = which == "both" or (which == "main" and line.main ~= nil)
             or (which == "off" and line.off ~= nil)
-        if wanted and #sources > 0 and (not slot or line.group == slot)
+        if wanted and (not slot or line.group == slot)
             and (not find or Find.Hay(line):find(find, 1, true)) then
-            shown[#shown + 1] = line
+            if #sources > 0 then
+                shown[#shown + 1] = line
+            elseif pick.rep and not repOn and #line.sources > 0 then
+                self.repHidden = self.repHidden + 1
+            end
         end
     end
     return shown, counts
@@ -398,6 +453,7 @@ function Find:ShowAll()
     ns.db.finderGetNow = false
     ns.db.finderZoneOnly = false
     ns.db.findSlot = nil
+    ns.db.findAuctionMost = nil
     self.find = nil
     if self.findBox then self.findBox:SetText("") end
     self.offset = 0
@@ -417,6 +473,7 @@ function Find:SyncFilters()
     self.slotChoice:SetValue(self:SlotIndex(), true)
     self.questLevels:SetValue(FinderUI:QuestLevelsValue(), true)
     self.aheadChoice:SetValue(self:Ahead(), true)
+    if self.mostChoice then self.mostChoice:SetValue(Find.MostIndex(), true) end
 end
 
 local function Heading(parent, text, y)
@@ -434,6 +491,7 @@ local function LeftWidth()
         widest = math.max(widest, Theme.TextWidth(size, text) + extra)
     end
     for _, entry in ipairs(FinderUI.SOURCE_BOXES) do Take("small", entry[2], 24 + 40) end
+    Take("small", L["Reputation"], 24 + 40)
     for _, text in ipairs({ L["This Zone Only"], L["Solo Quests Only"], L["Only What I Can Get Now"] }) do
         Take("small", text, 24)
     end
@@ -459,6 +517,9 @@ function Find:BuildFilters(width)
     self.sourceBoxes, self.sourceCounts = {}, {}
     for _, entry in ipairs(FinderUI.SOURCE_BOXES) do
         local kind = entry[1]
+        -- The Auction House box needs Tradeskills' scans; without it, no box.
+        if kind == "auction" and not Find.AuctionOn() then
+        else
         local box = Widgets.CreateCheckbox(panel, entry[2], function(checked)
             FinderUI:SetSource(kind, checked)
             Find.offset = 0
@@ -471,7 +532,23 @@ function Find:BuildFilters(width)
         self.sourceBoxes[#self.sourceBoxes + 1] = box
         self.sourceCounts[kind] = count
         y = y - 22
+        end
     end
+    -- Reputation: gear a faction's quartermaster sells. Not a kind of
+    -- place but a kind of gear, so it hides whole rows; ticked until
+    -- unticked, like the rest (`finderSourcesOff.rep`).
+    local rep = Widgets.CreateCheckbox(panel, L["Reputation"], function(checked)
+        FinderUI:SetSource(REP, checked)
+        Find.offset = 0
+        Find:Narrow()
+    end, FinderUI:SourceOn(REP))
+    rep.kind = REP
+    rep:SetPoint("TOPLEFT", 12, y)
+    local repCount = Theme.CreateLabel(panel, "small", "muted", "RIGHT")
+    repCount:SetPoint("TOPRIGHT", -12, y - 3)
+    self.sourceBoxes[#self.sourceBoxes + 1] = rep
+    self.sourceCounts[REP] = repCount
+    y = y - 22
 
     -- SLOT: every slot, or one.
     y = y - 8
@@ -488,6 +565,33 @@ function Find:BuildFilters(width)
     slot:SetPoint("TOPLEFT", 12, y)
     self.slotChoice = slot
     y = y - 30
+
+    -- AUCTION PRICE: the most you would pay, and how old the prices are.
+    if Find.AuctionOn() then
+        local AG = ns.AuctionGear
+        y = y - 8
+        Heading(panel, L["AUCTION PRICE"], y)
+        y = y - 18
+        local most = Widgets.CreateChoice(panel, {
+            min = 1, max = #AG.MOST, step = 1, value = Find.MostIndex(), width = inner,
+            format = function(index) return Find.MostText(index) end,
+            onChange = function(index)
+                AG:SetMost(AG.MOST[index])
+                Find.offset = 0
+                Find:Narrow()
+            end,
+        })
+        most:SetPoint("TOPLEFT", 12, y)
+        self.mostChoice = most
+        y = y - 28
+        local age = Theme.CreateLabel(panel, "small", "dim")
+        age:SetPoint("TOPLEFT", 12, y)
+        age:SetWidth(inner)
+        age:SetJustifyH("LEFT")
+        if age.SetWordWrap then age:SetWordWrap(true) end
+        self.auctionAge = age
+        y = y - 32
+    end
 
     -- NARROW IT DOWN: the old window's switches, each with its own words.
     y = y - 8
@@ -555,6 +659,36 @@ function Find:BuildFilters(width)
         { width = math.max(90, Theme.TextWidth("normal", L["Show All"]) + 28), height = 22 })
     all:SetPoint("BOTTOMLEFT", 12, 12)
     self.showAll = all
+end
+
+--- Can the auction house be read (Tradeskills loaded with its call)?
+function Find.AuctionOn()
+    return ns.AuctionGear ~= nil and ns.AuctionGear:On()
+end
+
+--- Auction Price's place: 1 Any, 2 Up to 1g, 3 Up to 5g, 4 Up to 20g.
+function Find.MostIndex()
+    local AG = ns.AuctionGear
+    local most = AG and AG:Most()
+    for index, copper in ipairs(AG and AG.MOST or {}) do
+        if copper == most then return index end
+    end
+    return 1
+end
+
+function Find.MostText(index)
+    if index == 2 then return L["Up to 1g"] end
+    if index == 3 then return L["Up to 5g"] end
+    if index == 4 then return L["Up to 20g"] end
+    return L["Any"]
+end
+
+--- "Prices are from your last scan, 2 hours ago."
+function Find.AuctionAgeText()
+    local AG = ns.AuctionGear
+    local ago = AG and AG.Ago(AG:LastScan())
+    if not ago then return "" end
+    return L.Format("Prices are from your last scan, %s ago.", ago)
 end
 
 --- The count beside each source's tick box.
@@ -743,6 +877,16 @@ function Find:BuildRow(index)
     row.gain = Cell("normal", "good", columns.gainRight, GAIN_WIDTH, "RIGHT")
     row.off = Cell("normal", "offSpec", 8, DUAL_GAIN, "RIGHT")
     row.off:Hide()
+    -- A thin bar under the gain: how big it is next to the others shown.
+    local track = row:CreateTexture(nil, "ARTWORK")
+    track:SetPoint("TOPRIGHT", row.gain, "BOTTOMRIGHT", 0, -4)
+    track:SetSize(BAR_WIDTH, 3)
+    track:SetColorTexture(Theme.Unpack("well"))
+    row.barTrack = track
+    local fill = row:CreateTexture(nil, "OVERLAY")
+    fill:SetPoint("TOPLEFT", track, "TOPLEFT")
+    fill:SetSize(1, 3)
+    row.barFill = fill
 
     row:SetScript("OnEnter", function(self)
         self.over = true
@@ -772,8 +916,20 @@ function Find.GainText(pick)
         or result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5)) or L["better"]
     local train = ns.WeaponSkills and ns.WeaponSkills:NeedsTraining(pick.link)
     if train then return L.Format("Train: %s", gain), "loss" end
-    local later = pick.needs or pick.at or pick.remote
+    local later = pick.needs or pick.at or pick.remote or ns.Crafting.WearWaits(pick)
     return gain, later and "warn" or "good"
+end
+
+--- How full a gain's bar is, 0 to 1, against the biggest shown. An empty
+--- slot fills it; nil hides the bar (no percent to show).
+function Find.BarShare(pick, most)
+    local result = pick and pick.result
+    if not result then return nil end
+    if result.empty then return 1 end
+    local percent = tonumber(result.percent)
+    if not percent or percent <= 0 then return nil end
+    if not most or most <= 0 then return 1 end
+    return math.max(0.04, math.min(1, percent / most))
 end
 
 --- Fill a row with a line.
@@ -790,6 +946,7 @@ function Find:FillRow(row, line)
     Theme.SetItemIcon(row.icon, pick.link)
 
     local name = ns.Items.ShowLink(pick.link)
+    if line.pair then name = name .. " + " .. ns.Items.ShowLink(line.pair.link) end
     if quest and quest:IsFollowing(pick.itemID) then name = name .. "  " .. Colored("good", L["Following"]) end
     if ns.Tracking and ns.Tracking:IsTracked(pick.itemID) then
         name = name .. "  " .. Colored("accent", L["Tracking"])
@@ -802,6 +959,13 @@ function Find:FillRow(row, line)
             name = name .. "\n" .. Colored("offSpec", L["Off only"])
         end
     end
+    if line.pair then name = name .. "\n" .. Colored("accent", L["Pair"]) end
+    -- Gear only a crafter can wear says the skill, in amber while you
+    -- lack it.
+    local wear = ns.Crafting.WearText(pick)
+    if wear then
+        name = name .. "\n" .. Colored(ns.Crafting.WearWaits(pick) and "warn" or "muted", wear)
+    end
     row.item:SetText(name)
     row.slot:SetText(line.slotName or "")
 
@@ -812,6 +976,14 @@ function Find:FillRow(row, line)
     local where = source and FinderUI.WhereOf(line) or ""
     where = FinderUI.MarkZone(where or "", quest and quest.Zone())
     if source then where = Colored(FinderUI.KIND_COLORS[source.kind] or "text", Finder.Label(source)) .. "  " .. where end
+    -- A pair: where each of the two comes from.
+    local partner = line.pair and line.pairSources and line.pairSources[1]
+    if partner then
+        local other = FinderUI.WhereOf({ sources = line.pairSources }) or ""
+        other = FinderUI.MarkZone(other, quest and quest.Zone())
+        where = where .. "\n+ " .. Colored(FinderUI.KIND_COLORS[partner.kind] or "text", Finder.Label(partner))
+            .. "  " .. other
+    end
     if pick.needs then
         where = Colored("warn", L.Format("Needs %s with %s", pick.needs.standing, pick.needs.faction))
     end
@@ -834,6 +1006,13 @@ function Find:FillRow(row, line)
     end
     row.gain:SetText(gain)
     row.gain:SetTextColor(Theme.Unpack(tone))
+    local share = first and Find.BarShare(first, self.mostPercent) or nil
+    row.barTrack:SetShown(share ~= nil)
+    row.barFill:SetShown(share ~= nil)
+    if share then
+        row.barFill:SetWidth(math.max(1, math.floor(BAR_WIDTH * share + 0.5)))
+        row.barFill:SetColorTexture(Theme.Unpack(tone, 0.85))
+    end
     local offShown = dual and which == "both"
     if offShown then
         local offGain, offTone = "\226\128\147", "dim"
@@ -961,6 +1140,37 @@ function Find:BuildList(left, width)
         Find:ScrollBy(delta > 0 and -WHEEL or WHEEL)
     end)
 
+    -- Under the rows, while the Reputation box hides some: how many, and
+    -- a word that ticks it again.
+    local hidden = CreateFrame("Frame", nil, list)
+    hidden:SetPoint("BOTTOMLEFT", 1, 1)
+    hidden:SetPoint("BOTTOMRIGHT", -1, 1)
+    hidden:SetHeight(HIDDEN_STRIP)
+    local hiddenRule = hidden:CreateTexture(nil, "ARTWORK")
+    hiddenRule:SetPoint("TOPLEFT")
+    hiddenRule:SetPoint("TOPRIGHT")
+    hiddenRule:SetHeight(1)
+    hiddenRule:SetColorTexture(Theme.Unpack("border", 0.6))
+    local hiddenText = Theme.CreateLabel(hidden, "small", "muted")
+    hiddenText:SetPoint("LEFT", 12, 0)
+    hidden.text = hiddenText
+    local showThem = CreateFrame("Button", nil, hidden)
+    local showLabel = Theme.CreateLabel(showThem, "small", "accent")
+    showLabel:SetPoint("LEFT")
+    showLabel:SetText(L["Show them"])
+    showThem.label = showLabel
+    local underline = showThem:CreateTexture(nil, "ARTWORK")
+    underline:SetPoint("BOTTOMLEFT", showLabel, "BOTTOMLEFT", 0, -2)
+    underline:SetPoint("BOTTOMRIGHT", showLabel, "BOTTOMRIGHT", 0, -2)
+    underline:SetHeight(1)
+    underline:SetColorTexture(Theme.Unpack("accent", 0.8))
+    showThem:SetSize(Theme.TextWidth("small", L["Show them"]) + 4, HIDDEN_STRIP - 6)
+    showThem:SetPoint("LEFT", hiddenText, "RIGHT", 10, 0)
+    showThem:SetScript("OnClick", function() Find:ShowReputation() end)
+    hidden.button = showThem
+    hidden:Hide()
+    self.repStrip = hidden
+
     local empty = Widgets.CreateEmpty(list, { width = width - 60 })
     empty:SetPoint("TOP", list, "TOP", 0, -(HEAD + 60))
     empty:Hide()
@@ -972,7 +1182,34 @@ function Find:MeasureList()
     local ok, height = pcall(self.list.GetHeight, self.list)
     if ok and type(height) == "number" and height > HEAD + ROW_MIN then
         self.listArea = height - HEAD - 2
+        if self.repStrip and self.repStrip:IsShown() then self.listArea = self.listArea - HIDDEN_STRIP end
     end
+end
+
+--- "3 upgrades from reputation vendors are hidden. Show them", while the
+--- Reputation box hides any of the rows the other filters let through.
+function Find.RepHiddenText(count)
+    if (count or 0) <= 0 then return nil end
+    if count == 1 then return L["1 upgrade from a reputation vendor is hidden."] end
+    return L.Format("%d upgrades from reputation vendors are hidden.", count)
+end
+
+function Find:PaintRepStrip()
+    local strip = self.repStrip
+    if not strip then return end
+    local words = Find.RepHiddenText(self.repHidden)
+    strip.text:SetText(words or "")
+    strip:SetShown(words ~= nil)
+end
+
+--- "Show them": tick the Reputation box again.
+function Find:ShowReputation()
+    local FinderUI = ns.FinderUI
+    if not FinderUI then return end
+    FinderUI:SetSource(REP, true)
+    self.offset = 0
+    self:SyncFilters()
+    self:Narrow()
 end
 
 --------------------------------------------------------------------------------
@@ -1061,18 +1298,59 @@ function Find.PlaceText(pick, source, zone)
     return text
 end
 
+--- The sheet's lines for an auction house source: "Lowest price: 4g 20s",
+--- "2 for sale at your last scan, 2 hours ago.", "You have 11g 4s."
+function Find.AuctionLines(source)
+    local lines = {}
+    local price = Finder.Money(source.price)
+    if price then lines[#lines + 1] = L.Format("Lowest price: %s", price) end
+    local ago = ns.AuctionGear and ns.AuctionGear.Ago(source.at or source.seen)
+    if source.count and ago then
+        lines[#lines + 1] = Colored("muted", L.Format("%d for sale at your last scan, %s ago.", source.count, ago))
+    end
+    local held = Finder.Money(Finder.MoneyHeld())
+    if held then lines[#lines + 1] = L.Format("You have %s.", held) end
+    return lines
+end
+
+--- The auction house source of a line, from its filtered sources, or nil.
+function Find.AuctionSource(line)
+    for _, source in ipairs(line.sources or line.pick.sources or {}) do
+        if source.kind == "auction" then return source end
+    end
+    return nil
+end
+
+--- Search the auction house for it, through Tradeskills (open the auction
+--- house first). Chat says why when it can't.
+function Find.SearchAuction(itemID)
+    local ts = _G.BlackthornesTS
+    local butler = type(ts) == "table" and ts.Butler
+    if not (type(butler) == "table" and type(butler.SearchAuctions) == "function") then return false end
+    local ok, done, why = pcall(butler.SearchAuctions, butler, { { itemID = itemID, count = 1 } })
+    if ok and not done and type(why) == "string" and why ~= "" then ns.Print(why) end
+    return ok and done == true
+end
+
 --- What the sheet's buttons do for a pick: { key, text, run, primary,
 --- dimmed, tip }, in the order they show.
 function Find:Actions(line)
     local FinderUI, quest = ns.FinderUI, ns.UpgradeQuest
     local pick = line.pick
     local actions = {}
-    if quest then
-        local can, why = quest.CanFollow(pick)
+    local auction = Find.AuctionSource(line)
+    local can, why
+    if quest then can, why = quest.CanFollow(pick) end
+    -- On the auction house and no quest to make of it: Search leads.
+    if quest and not (auction and not can) then
         actions[#actions + 1] = { key = "quest", text = L["Make It My Quest"], primary = true,
             dimmed = not can, why = why,
             tip = L["It becomes your upgrade quest, with steps to get it. A green Quest tag marks it here."],
             run = function() FinderUI:Follow(pick) end }
+    end
+    if auction then
+        actions[#actions + 1] = { key = "search", text = L["Search the Auction House"], primary = #actions == 0,
+            run = function() Find.SearchAuction(pick.itemID) end }
     end
     if ns.Tracking then
         local tracked = ns.Tracking:IsTracked(pick.itemID)
@@ -1400,7 +1678,9 @@ function Find:PaintSheet()
     local zone = quest and quest.Zone() or nil
 
     Theme.SetItemIcon(self.sheetIcon, pick.link)
-    self.sheetName:SetText(Items.ShowLink(pick.link))
+    local sheetName = Items.ShowLink(pick.link)
+    if line.pair then sheetName = sheetName .. " + " .. Items.ShowLink(line.pair.link) end
+    self.sheetName:SetText(sheetName)
     local kind = line.slotName or ""
     local okInfo, _, _, _, _, _, _, subType = pcall(function()
         local info = (_G.C_Item and _G.C_Item.GetItemInfo) or _G.GetItemInfo
@@ -1448,8 +1728,16 @@ function Find:PaintSheet()
     if quest and quest:IsFollowing(pick.itemID) then notes[#notes + 1] = Colored("good", L["Following"]) end
     if pick.needs then notes[#notes + 1] = Colored("warn", Finder.NeedsText(pick.needs)) end
     if pick.at then notes[#notes + 1] = Colored("warn", L.Format("You can wear it from level %d", pick.at)) end
+    local wear = ns.Crafting.WearText(pick)
+    if wear then notes[#notes + 1] = Colored(ns.Crafting.WearWaits(pick) and "warn" or "muted", wear) end
     local roll = Finder.RollText(pick)
     if roll then notes[#notes + 1] = Colored("good", roll) end
+    -- On the auction house: its price at the last scan, how many, and the
+    -- gold you carry.
+    local auction = Find.AuctionSource(line)
+    if auction then
+        for _, words in ipairs(Find.AuctionLines(auction)) do notes[#notes + 1] = words end
+    end
     self.sheetNotes:SetText(table.concat(notes, "\n"))
     self.sheetNotes:ClearAllPoints()
     self.sheetNotes:SetPoint("TOPLEFT", hold, "TOPLEFT", 12, -y)
@@ -1484,13 +1772,25 @@ function Find:PaintSheet()
     if not (okHeight and type(height) == "number" and height > 200) then height = 560 end
     local room = height - foot - 18
     local places = Find.Places(pick, zone)
+    -- A pair: the main hand's places, then its partner's.
+    local whose = {}
+    if line.pair then
+        for index = 1, #places do whose[index] = pick end
+        for _, source in ipairs(Find.Places(line.pair, zone)) do
+            places[#places + 1] = source
+            whose[#places] = line.pair
+        end
+    end
     self.places = places
     local shown = 0
     for index, label in ipairs(self.sheetPlaces) do
         local source = places[index]
         label:Hide()
         if source and shown == index - 1 then
-            label:SetText(Find.PlaceText(pick, source, zone))
+            local owner = whose[index] or pick
+            local text = Find.PlaceText(owner, source, zone)
+            if line.pair then text = Items.ShowLink(owner.link) .. "\n" .. text end
+            label:SetText(text)
             local tall = TextHeight(label, "small", inner)
             if index == 1 or y + tall <= room then
                 label:ClearAllPoints()
@@ -1640,7 +1940,7 @@ end
 --------------------------------------------------------------------------------
 
 --- "42 upgrades you can go and get. Your filters hide 6 more."
-function Find.FooterText(shown, total, waiting, amber, specs)
+function Find.FooterText(shown, total, waiting, amber, specs, onSale)
     local parts = {}
     -- Both specs: "19 upgrades for Retribution, 11 for Protection."
     if specs then
@@ -1649,6 +1949,12 @@ function Find.FooterText(shown, total, waiting, amber, specs)
         parts[#parts + 1] = L["1 upgrade you can go and get."]
     elseif shown > 1 then
         parts[#parts + 1] = L.Format("%d upgrades you can go and get.", shown)
+    end
+    -- "4 are on the auction house."
+    if (onSale or 0) == 1 then
+        parts[#parts + 1] = L["1 is on the auction house."]
+    elseif (onSale or 0) > 1 then
+        parts[#parts + 1] = L.Format("%d are on the auction house.", onSale)
     end
     local hidden = math.max(0, total - shown)
     if hidden == 1 then
@@ -1704,8 +2010,19 @@ function Find:Narrow()
     self:LayColumns(self:Dual() and self:ShowWhich() == "both")
     local shown, counts = self:Filtered(state)
     self.shown = self:Sorted(shown)
+    -- The biggest gain shown, for the bars under the gains.
+    local most = 0
+    for _, line in ipairs(self.shown) do
+        local lead = line.main or line.off or line.pick
+        if self:ShowWhich() == "off" then lead = line.off or lead end
+        local percent = lead and lead.result and tonumber(lead.result.percent)
+        if percent and percent > most then most = percent end
+    end
+    self.mostPercent = most
     self:PaintCounts(state.found and counts or nil)
+    if self.auctionAge then self.auctionAge:SetText(Find.AuctionAgeText()) end
     self:PaintHeads()
+    self:PaintRepStrip()
     self:MeasureList()
 
     -- The row picked stays picked while it shows; else the top row is.
@@ -1716,7 +2033,7 @@ function Find:Narrow()
     local amber = false
     for _, line in ipairs(self.shown) do
         local pick = line.pick
-        if pick.needs or pick.at or pick.remote then
+        if pick.needs or pick.at or pick.remote or ns.Crafting.WearWaits(pick) then
             amber = true
             break
         end
@@ -1732,8 +2049,12 @@ function Find:Narrow()
         local main, _, class = ns.Weights:MainSpec()
         specs = { mains, ns.Weights:SpecName(class, main) or "", offs, ns.OffSpec:Name() or "" }
     end
+    local onSale = 0
+    for _, line in ipairs(self.shown) do
+        if Find.AuctionSource(line) then onSale = onSale + 1 end
+    end
     self.footer:SetText(Find.FooterText(#self.shown, #state.lines, state.found and state.found.waiting, amber,
-        specs))
+        specs, onSale))
 end
 
 --- Draw a scan (nil before the first one is in, with why it failed).

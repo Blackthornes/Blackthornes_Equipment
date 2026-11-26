@@ -65,6 +65,7 @@ Logic\Crafting.lua
 Logic\Enchants.lua
 Logic\TradeskillsQueue.lua
 Logic\Rolls.lua
+Logic\AuctionGear.lua
 Logic\Finder.lua
 Logic\OffSpec.lua
 Logic\GearList.lua

@@ -272,8 +272,16 @@ ts.LearnNext:WhereFor(recipeID)       -- { kind, name, zone, x, y, price }, or n
 ts.LearnNext:ShowTheWayFor(recipeID)  -- the Level Up tab's pin and chat line; true when set
 ```
 
-If these change in Tradeskills, change `Logic/Enchants.lua` too. Nothing
-else here calls the other addons, apart from the shared arrow table (see
+If these change in Tradeskills, change `Logic/Enchants.lua` too.
+
+Auction house upgrades (2026-11-26, see "More in Find Upgrades"):
+`Logic/AuctionGear.lua` reads, inside a pcall and read only,
+`ts.Prices:OnSale()` (`{ [itemID] = { price, count, seen, rolls } }` and
+the last scan's time) and listens with `ts.Prices:WatchScans(fn)`; Find
+Upgrades' Search the Auction House calls the existing
+`ts.Butler:SearchAuctions({ { itemID, count } })`. If these change in
+Tradeskills, change `Logic/AuctionGear.lua` and `UI/FindUpgrades.lua` too.
+Nothing else here calls the other addons, apart from the shared arrow table (see
 the quest arrow below) and the whispers of "Sending vendors and quests to
 Blackthornes", which only talk to Equipment.
 
@@ -3506,3 +3514,73 @@ The owner said build it from the mockup `equipment-improve-5-level-up`
   slower, Subtle quicker, Off just shows.
 - Tested in `tools/test_levelupcard.lua` and `tools/test_settings.lua`.
   Not seen in game: the look, the drag, and the event on Forever.
+## More in Find Upgrades (2026-11-26)
+
+The owner said "build 1-9" on the improvement mockups (2026-11-26); this is
+#1, `equipment-improve-1-find-upgrades`. His yes covers the mockup's words.
+
+- **Reputation box** (FROM, after Crafted): ticked until unticked, saved
+  as `finderSourcesOff.rep` (`FinderUI.REP`; the same table as the source
+  boxes, nothing renamed). It is a kind of gear, not of place, so it hides
+  whole rows (`pick.rep`). Its count is the rows a faction sells. While it
+  hides any, a strip under the list says "N upgrades from reputation
+  vendors are hidden." with "Show them" (`Find:PaintRepStrip`,
+  `Find:ShowReputation`). `FinderUI:SourceFilter`,
+  `UpgradeQuest.WindowAllows` and `UpgradeQuest:Choose` leave such gear out
+  too, so the old list, the character sheet and the upgrade quest agree.
+  Show All ticks it again (it clears `finderSourcesOff`).
+- **Gear only a crafter can wear** (goggles): `Crafting:SourceFor` used to
+  drop it when the skill was short. Now it stays, and every pick carries
+  `wear = { profession, rank, have, met }` (`Crafting:Wear`, from
+  `Data/Crafts.lua`'s `w`). The row and sheet say "Needs Engineering 245 to
+  wear" (`Crafting.WearText`), amber while `Crafting.WearWaits(pick)`,
+  muted once met. Waiting gear is amber gear: not a quest yet
+  (`UpgradeQuest.CanFollow` gives the same words), hidden by Only What I
+  Can Get Now (`FinderUI.GetsNow`), skipped by `Choose` and My Gear's
+  "later". A bind on pickup piece still needs the profession to be listed.
+- **Find on the Dungeons tab**: a search box after Off Spec. It narrows the
+  picked dungeon's lines (`Dungeons.Match`: a drop's item, slot and boss, a
+  quest's title and reward; a boss's name keeps all its drops; notes drop
+  out) and the foot adds "N of M shown." Typing reads the kept lines
+  (`allLines`), so it judges nothing. Session only; it stays while another
+  dungeon is picked.
+- **A pair against a worn two-hander**: before, only a two-hander was
+  weighed against both hands. Now, while the main hand holds a two-hander,
+  the Main Spec's scan of today notes every one-hander and off-hand piece
+  it judges (`Finder.NotePair`; main: one-hand and main-hand weapons; off:
+  shields, held items, off-hand weapons, and one-handers for a class that
+  dual wields) and `Finder:MakePairs` keeps up to `PAIRS_KEPT` (3): each
+  strong main hand with its best partner, each item in one pair at most,
+  only when the two scores beat the two-hander's by 1% or more. Pieces that
+  wait on a level, training or a weapon skill, and gear owned or ignored,
+  are left out. Sources are worked out for those few only. `found.pairs`
+  holds them (a pick of the main hand with `pair = { itemID, link,
+  sources, result }`); nothing else reads it, so the upgrade quest, My
+  Gear and the small panel are unchanged. Find Upgrades shows each as one
+  line, "A + B", tagged Pair, slot Both Hands, under the Main Hand slot
+  filter, with where each comes from; the partner needs a source the
+  filters let through too. The sheet lists both items' places; its buttons
+  act on the main hand. Off-hand weapons count at their full score, as the
+  two-hander check already did.
+- **Auction house gear** (`Logic/AuctionGear.lua`, a new file): read from
+  Tradeskills' recent scans, never a scan of its own (see "What this addon
+  calls in Tradeskills"). Kept until Tradeskills says a scan finished,
+  which marks the finder stale and refreshes the page. `CandidateIDs` adds
+  gear on sale that no other place offers (client class 2 or 4, a worn
+  slot); `SourcesFor` adds `{ kind = "auction", price, count, seen, at }`.
+  Random suffix gear is left out: the best roll the finder judges is not
+  the roll on sale. The upgrade quest never picks an auction source
+  (`UpgradeQuest.BestSource` skips it), so a piece only on sale has no
+  Make It My Quest; Search the Auction House leads its sheet. FROM gets
+  an Auction House box (`finderSourcesOff.auction`; only while Tradeskills
+  answers), and AUCTION PRICE a stepper (Any, Up to 1g, 5g, 20g; saved as
+  `findAuctionMost`, copper, nil for Any; Show All clears it) with "Prices
+  are from your last scan, N ago." A source shows only within that price
+  and the gold carried (`AuctionGear:Affords`). The sheet says the lowest
+  price, how many and when, and the gold you have. The footer adds "N are
+  on the auction house."
+- **Gain bars**: a thin bar under each row's gain, its length the gain
+  against the biggest shown (`Find.BarShare`; an empty slot fills it).
+- Tested in `tools/test_findmore.lua`, `tools/test_finderpairs.lua` and
+  `tools/test_auctiongear.lua`. Not yet seen in game. Full restart (a new
+  file and the TOC).
