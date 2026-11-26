@@ -2852,6 +2852,13 @@ puts on as before), else the slot's bag piece, else its best pick.
 hidden or in List. `/beq probe looks` found the model works on Forever.
 Tested in `tools/test_mygear.lua` (10).
 
+Bigger (the owner, 2026-11-26, the figure and "Fair" ring were too small):
+with the character on, the name, level and rating (large word in an
+11-pixel ring) sit at the top, the figure takes 262 high and reaches 24
+past the middle on each side under the slot buttons (`MODEL_REACH`,
+frame level of the figure), and Main Spec and Off Spec sit side by side
+on a row under the foot slots. Unticked, everything goes back.
+
 ### Another Player's Gear (2026-11-26)
 
 The owner said build it (improvement 8, from the mockup). `UI/InspectGear.lua`:
