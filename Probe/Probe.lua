@@ -526,6 +526,7 @@ Probe.LOOKS_CALLS = {
     "DressUpItemLink", "DressUpLink", "DressUpFrame_Show", "C_ModelInfo.GetModelSceneInfoByID",
     "CanInspect", "NotifyInspect", "ClearInspectPlayer", "InspectUnit", "UnitIsPlayer",
     "GetInspectSpecialization", "C_PaperDollInfo.GetInspectItemLevel", "C_Timer.After",
+    "GetInventoryItemID", "GetInventoryItemTexture", "UnitExists",
 }
 Probe.LOOKS_FRAMES = { "DressUpFrame", "InspectFrame", "CharacterModelScene", "CharacterModelFrame" }
 Probe.MODEL_METHODS = { "SetUnit", "TryOn", "Undress", "Dress", "SetRotation", "GetModelFileID",
@@ -582,6 +583,26 @@ local function CountLinks(unit)
         end
     end
     return count, first, raised > 0 and (raised .. " raised") or nil
+end
+
+--- What the unit's 19 gear slots give: links, item IDs and icons, since a
+--- client may hand out an ID or icon before (or instead of) a link.
+local function GearSummary(unit)
+    local links, first, note = CountLinks(unit)
+    local ids, icons, firstID = 0, 0, nil
+    for slot = 1, 19 do
+        if Has("GetInventoryItemID") then
+            local ok, id = pcall(GetInventoryItemID, unit, slot)
+            if ok and type(id) == "number" and id > 0 then ids = ids + 1; firstID = firstID or id end
+        end
+        if Has("GetInventoryItemTexture") then
+            local ok, icon = pcall(GetInventoryItemTexture, unit, slot)
+            if ok and icon then icons = icons + 1 end
+        end
+    end
+    local name = type(first) == "string" and (first:match("%[(.-)%]") or first) or "none"
+    return ("links %d, item IDs %d, icons %d of 19; first link %s, first ID %s%s"):format(
+        links, ids, icons, name, tostring(firstID or "none"), note and (", " .. note) or ""), first
 end
 
 local function Plain(link)
@@ -659,10 +680,13 @@ function Probe:Looks()
         if Has("CanInspect") then
             target.canInspect = Text(pcall(CanInspect, "target"))
         end
-        target.linksBefore = { CountLinks("target") }
+        target.gearBefore = GearSummary("target")
         if Has("NotifyInspect") then
             ns.RegisterEvent(self, "INSPECT_READY", function(_, _, guid)
                 found.inspectReady = Text(true, guid)
+                -- Read right away too: another addon may let go of the
+                -- inspect before the report runs.
+                found.gearAtReady = GearSummary("target")
             end)
             target.notify = Text(pcall(NotifyInspect, "target"))
         end
@@ -737,11 +761,14 @@ function Probe:LooksReport()
         Line("  CanInspect", target.canInspect or "no CanInspect")
         Line("  NotifyInspect", target.notify or "no NotifyInspect")
         Line("  inspect ready", found.inspectReady or "no answer in " .. self.LOOKS_WAIT .. " seconds")
-        local before = target.linksBefore or {}
-        Line("  links before", ("%d of 19, first %s%s"):format(before[1] or 0, Plain(before[2]),
-            before[3] and (", " .. before[3]) or ""))
-        local count, first, note = CountLinks("target")
-        Line("  links after", ("%d of 19, first %s%s"):format(count, Plain(first), note and (", " .. note) or ""))
+        Line("  gear before", target.gearBefore or "not read")
+        Line("  gear at ready", found.gearAtReady or "no answer")
+        local summary, first = GearSummary("target")
+        Line("  gear after", summary)
+        Line("  target still there", Has("UnitExists") and Text(pcall(UnitExists, "target")) or "no UnitExists")
+        if Has("C_PaperDollInfo.GetInspectItemLevel") then
+            Line("  their item level", Text(pcall(C_PaperDollInfo.GetInspectItemLevel, "target")))
+        end
         if first then
             local stats = self:ItemStats(first)
             Line("  their stats read", stats and next(stats) and "yes" or "no")

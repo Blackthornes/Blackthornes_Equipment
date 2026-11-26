@@ -229,7 +229,7 @@ SettingsUI.SETTING_KEYS = {
     "hideQuestTracker", "mapPins", "questArrow", "questArrowSize",
     "questLevelsAbove", "questLogTrackedOnly", "questScale", "rewardButton",
     "settingsDescriptions", "showTracker", "slotUpgrades", "soloQuestsOnly",
-    "suffixLine", "tooltipLine", "tooltipShift", "upgradeChat",
+    "suffixLine", "swapAtDoors", "tooltipLine", "tooltipShift", "upgradeChat",
     "upgradeQuest", "upgradeQuestBiggest", "upgradeQuestStepOnly",
     "upgradeQuestStyle", "upgradeQuestZoneOnly", "upgradeQuestZoneSwap",
     "upgradeToast", "useTomTom",
@@ -783,6 +783,11 @@ function SettingsUI:BuildShowGrid()
         { "autoEquip", L["Put On Upgrades:"],
           L["Puts an upgrade on as soon as you get it. Gear that would bind waits for your click."],
           Plain("autoEquip", false) },
+        -- Switch Gear's dungeon door card (Logic/SwitchGear.lua); off
+        -- unless ticked.
+        { "swapAtDoors", L["Ask at Dungeon Doors:"],
+          L["At a dungeon's door, a card offers to put on your Off Spec gear."],
+          Plain("swapAtDoors", false) },
     }
 
     local width = pages.opts.columnWidth
@@ -1188,6 +1193,7 @@ function SettingsUI:Refresh()
     controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
     controls.autoEquip:SetChecked(ns.db.autoEquip == true)
+    controls.swapAtDoors:SetChecked(ns.db.swapAtDoors == true)
     controls.bestArmorOnly:SetChecked(ns.Compare.BestArmorOnly())
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:Sync()
