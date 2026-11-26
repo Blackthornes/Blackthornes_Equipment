@@ -497,10 +497,16 @@ function Tooltip:BlockLines(tooltip, data, section)
         if ((line.key == "drops") and "source" or "advice") == section then
             if line.key and shift and not shift:Shows(line.key) then
                 held = true
-            elseif line.label and line.answer then
-                out[#out + 1] = { line.label, line.answer, rightColor = AnswerColor(line[2]) }
             else
-                out[#out + 1] = { line[1], leftColor = AnswerColor(line[2]) or { 1, 1, 1 }, wrap = line[3] and true }
+                -- A line on Shift shows only while Shift is held, so it
+                -- goes at the bottom of the block (2026-11-26).
+                local onShift = line.key and shift and shift.Read and shift.Read(line.key) and true or nil
+                if line.label and line.answer then
+                    out[#out + 1] = { line.label, line.answer, rightColor = AnswerColor(line[2]), shift = onShift }
+                else
+                    out[#out + 1] = { line[1], leftColor = AnswerColor(line[2]) or { 1, 1, 1 },
+                        wrap = line[3] and true, shift = onShift }
+                end
             end
         end
     end
