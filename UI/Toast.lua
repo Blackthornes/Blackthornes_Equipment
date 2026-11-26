@@ -208,8 +208,11 @@ function Toast:ResetSpot()
 end
 
 --- Show a banner: { title, link, text }. Waits behind one already showing.
+--- `line` puts words in the item's place, `icon` shows an item's icon
+--- without its link, and `always` shows it even with the banner switched
+--- off (Switch Gear's dungeon door card has a switch of its own).
 function Toast:Show(banner)
-    if not self:IsEnabled() or type(banner) ~= "table" then return false end
+    if type(banner) ~= "table" or not (banner.always or self:IsEnabled()) then return false end
     self.queue = self.queue or {}
     if self.frame and self.frame:IsShown() then
         if #self.queue < QUEUE_MOST then self.queue[#self.queue + 1] = banner end
@@ -227,9 +230,9 @@ function Toast:Present(banner)
     -- The mouse left with the last banner, even if the client said nothing.
     self.hovered = false
     self.title:SetText(banner.title or "")
-    self.item:SetText(ns.Items.ShowLink(banner.link) or "")
+    self.item:SetText(banner.line or ns.Items.ShowLink(banner.link) or "")
     self.text:SetText(banner.text or "")
-    Theme.SetItemIcon(self.icon, banner.link)
+    Theme.SetItemIcon(self.icon, banner.link or banner.icon)
     local actions = type(banner.actions) == "table" and banner.actions or {}
     local wears = #actions == 0 and banner.wear == true and banner.link ~= nil and ns.Wear ~= nil
         and (ns.Wear:Can(banner.link)) == true

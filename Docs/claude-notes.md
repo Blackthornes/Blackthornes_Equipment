@@ -2050,6 +2050,14 @@ has no probe). None has a Settings button (the owner, 2026-10-23: checks and deb
 check that players run for a report goes through `ns.KeepCheck` too, and a
 fix to it belongs in all four.
 
+`/beq probe looks` (2026-11-26, before Try It On and Another Player's
+Gear are built): makes a hidden DressUpModel, PlayerModel and ModelScene
+actor once, dresses them with a worn item, asks to inspect the target,
+waits `Probe.LOOKS_WAIT` (2) seconds and saves the report as `probe looks`.
+"model file" with a number means a body loaded; "links after" counts the
+target's gear links. Target a player of your class first. Tested in
+`tools/test_probe.lua`.
+
 When the owner says "read the probe": he has run the check and typed
 `/reload` (or logged out). Read the addon's account save, read only, from
 `WTF\Account\<account>\SavedVariables\` (`Blackthornes_TS.lua`,
@@ -3318,3 +3326,133 @@ reads "in your bags" or "in your bank"; a quest reward you own says the
 same. A bank whose gear changed marks the finder stale. New word "in your
 bags" (six languages) waits for the owner's OK. Tested in
 `tools/test_dungeonstab.lua` section 9.
+
+## Gear Road (My Gear's third view, 2026-11-26)
+
+The owner said build it from the mockup `equipment-improve-4-gear-road`
+(2026-11-26; his yes covers the mockup's words). My Gear's View row has
+Figure, List and Road; `myGearView` (never rename) now also takes "road".
+
+- **The view** (`UI/GearRoad.lua`, `ns.GearRoad`): built into My Gear's
+  body under the View row. In Road the cards and the slot side step aside
+  and the road takes the whole body. Levels ahead sit on one gold line:
+  Now, at most `GearRoad.MIDDLE` (4) stops, then the goal at 60. Each card
+  shows its best two pieces and "%d more pieces"; a click lists every piece
+  under the line in dark glass rows with a gain bar and Make It My Quest
+  (dimmed for gear that waits, with "Not a quest yet: ..." in chat). The
+  goal card says "Best gear before raids", "%d of %d slots done" and a bar.
+  Alt-click on a sheet slot (`MyGear:Ask`) goes back to the figure.
+- **The scan**: one `Finder:Build(nil, 60 - level, pause, true)` on the
+  frame worker. The new `wide` argument keeps the candidate floor at today's
+  level (`Finder:CandidateIDs(player, from)`), so gear from now to 60 is
+  seen, not only gear near 60. Kept by `GearRoad:Key` (the key Plan Ahead
+  uses) until gear, level or a setting changes. Verdicts are the finder's
+  kept ones; the gear list passes by what the class can never use.
+- **Reading** (`GearRoad.Read`, pure): per slot, pieces lowest level first,
+  kept only when they beat every piece before them (`GearRoad.Steps`). The
+  middle stops are the levels whose steps add up to the most percent, the
+  level a heavier armor opens always among them when it has steps
+  (`GearRoad.ArmorAhead` from `Weights:CanUse`). A step joins the first
+  stop at or after its level, one per slot. Heads: "NOW", "%s OPENS" (the
+  armor), the dungeon of the best piece, else "LEVEL %d", and "YOUR GOAL".
+  A slot with no step at all counts as done. A level 60 character sees Now
+  alone.
+- **Filters**: only Find Upgrades' From boxes (`FinderUI:KindFilter`, new);
+  Only What I Can Get Now and This Zone Only don't apply, since the road is
+  gear for later. Ignored pieces (`UpgradeQuest:Skipped`) stay out. Main
+  Spec only.
+- Gear that would be plate or mail for a class that learns it later is
+  still "cantuse" until two levels before (see "Mail and plate from 38"),
+  so a "PLATE OPENS" stop shows only once that gear counts.
+- Tested in `tools/test_gearroad.lua`. Not seen in game: the look, card
+  heights, wide-scan time on a real data set.
+
+## First Time Setup (2026-11-26)
+
+The owner said build it, from the mockup
+`Docs/mockups/equipment-improve-6-first-time.html` (project files); his yes
+covers its words. `UI/Welcome.lua` (`ns.Welcome`): the first time a new
+player opens the Equipment window, a card lies over its page area
+(`Welcome:Offer`, called at the end of `Gear:ShowTab`, so it shows over any
+tab and inside the one window too). Three parts: the Main Spec and Off Spec
+drop-downs every page shows (`FinderUI.MainSpecChoice`, they set the spec at
+once), then Upgrade Quest, Quest Arrow and Put On Upgrades (unticked, as they
+start), then Green Arrows (`bagArrows`) and Tooltip Lines (`tooltipLine`,
+ticked, as they start). The boxes change nothing until Done; Done sets each
+box that moved through the same calls Settings uses (`UpgradeQuest:TurnOn`
+or `SetEnabled`, `QuestArrow:SetOn`, `SettingsUI.RedrawArrows`,
+`TooltipShift:Apply`, which keeps the Shift or Always choice). Skip changes
+nothing more. Both set `welcomeSeen`.
+
+- **Saved key**: `welcomeSeen`, account wide (never rename). Set in
+  `LoadSavedVariables` before the defaults: false for an empty save (a new
+  player), true for any save that already held something, so current players
+  never see it. Not in `SETTING_KEYS`, so Set Default leaves it.
+  `tools/testenv.lua` sets it true so other suites see their pages bare.
+- Closing the window without Skip or Done leaves it for the next open.
+- `/beq welcome` opens it again (typed only).
+- Tested in `tools/test_welcome.lua`. Not yet seen in game.
+
+## Switch Gear (2026-11-26)
+
+The owner said build it from the mockup (`equipment-improve-2-switch-gear`).
+One button on My Gear puts the Off Spec's gear on and the Main Spec's back.
+`Logic/SwitchGear.lua` (new file, so a full restart).
+
+- Shows only while an Off Spec is picked (Off Spec starts on None). The row
+  sits above My Gear's cards (`MyGear:BuildSwitch`, `PaintSwitch`,
+  `SwitchRoom`): "Wearing:" with both specs, the count of pieces and the
+  button. The list of pieces is the button's tooltip, since the page has no
+  room for it under the cards and the figure.
+- The Off Spec's pieces are `OffSpec:Outfit()`. On the way there what came
+  off is noted per character in `charDB.swapBack` (`{ [slot] = link }`,
+  never rename it); the way back puts those on again and lets the note go.
+  Without a note the way back is `OffSpec:MainOutfit()` (the same outfit
+  maker, judged as the Main Spec; outfits are now kept by spec).
+- Which gear is on is worked out, never saved (`SwitchGear:State`).
+- One piece at a time through EquipItemByName, `SETTLE` seconds apart. In a
+  fight nothing is tried: it waits for PLAYER_REGEN_ENABLED, and a fight
+  that starts mid-swap holds the rest (`waiting`, `FightOver`). A slot is
+  never emptied; rings and trinkets count as pairs; a fishing pole keeps the
+  hands. Only the carried bags, never the bank or the game's gear sets.
+- Also `/beq swap` and a key (`BLACKTHORNESEQUIPMENT_SWITCHGEAR` in
+  Bindings.xml).
+- The dungeon door card: "Ask at Dungeon Doors:" (`swapAtDoors`, account
+  wide, off unless ticked; never rename it). `DungeonDoors:Note` hands each
+  spot outside to `SwitchGear:NoteSpot`; within `DOOR_NEAR` of a door with
+  the Main Spec's gear on, a banner asks once (Put It On, Not Now; Not Now
+  keeps that door quiet `QUIET` seconds). The banner takes `line`, `icon`
+  and `always` (shows with the upgrade banner switched off).
+- Tested in `tools/test_switchgear.lua`. Not yet seen in game.
+
+## The Level Up card (2026-11-26)
+
+The owner said build it from the mockup `equipment-improve-5-level-up`
+(2026-11-26; his yes covers the mockup's words).
+
+- `UI/LevelUpCard.lua` (`ns.LevelUpCard`): once per level, after the fight
+  ends, one card: "LEVEL UP", "Level %d", "You can wear %s now." when a
+  heavier armor opens (`Weights:CanUse`'s level), then numbered lines, each
+  only when it has something to say: bag upgrades (`MyGear:Read`'s ready,
+  Put It On / Put Them On through `Wear:PutOnAll`), the upgrades the new
+  level opened ("%d new upgrades to go and get.", "Best: %s", Show Me opens
+  Find Upgrades), and spells to train (the Training tab's plan, Show the
+  Way). Nothing to say, no card.
+- New upgrades are picks you can wear now whose required level
+  (`FinderUI.LevelOf`) is in the levels just gained, through Find Upgrades'
+  filters and never an ignored piece. Best is an empty slot first, then
+  the biggest percent.
+- Waits: `PLAYER_LEVEL_UP` sets `pending` (levels gained before it shows
+  add up), looks after `Card.SETTLE` (1 s), and in a fight waits for
+  `PLAYER_REGEN_ENABLED`. Reads `Finder:Fresh`, else `ScanInBackground`.
+- Saved: `levelUpCard` (account, on unless switched off; "Level Up Card:"
+  on the Gear page's grid, in `SETTING_KEYS`), `levelUpCardShown` (per
+  character, the last level it looked at; never shows twice, even after a
+  reload), and its spot `windowSpots["equipment.levelup"]` via
+  `SharedWindow.KeepSpot`. Until dragged it stands on the top shelf as
+  "upgrade.levelup". Never rename these.
+- A click anywhere else fades it (`GLOBAL_MOUSE_DOWN`, asked only while it
+  shows); the red close gem shuts it. No sound. Effects: Full fades in
+  slower, Subtle quicker, Off just shows.
+- Tested in `tools/test_levelupcard.lua` and `tools/test_settings.lua`.
+  Not seen in game: the look, the drag, and the event on Forever.
