@@ -3305,3 +3305,35 @@ reads "in your bags" or "in your bank"; a quest reward you own says the
 same. A bank whose gear changed marks the finder stale. New word "in your
 bags" (six languages) waits for the owner's OK. Tested in
 `tools/test_dungeonstab.lua` section 9.
+
+## More in Find Upgrades (2026-11-26)
+
+The owner said "build 1-9" on the improvement mockups (2026-11-26); this is
+#1, `equipment-improve-1-find-upgrades`. His yes covers the mockup's words.
+
+- **Reputation box** (FROM, after Crafted): ticked until unticked, saved
+  as `finderSourcesOff.rep` (`FinderUI.REP`; the same table as the source
+  boxes, nothing renamed). It is a kind of gear, not of place, so it hides
+  whole rows (`pick.rep`). Its count is the rows a faction sells. While it
+  hides any, a strip under the list says "N upgrades from reputation
+  vendors are hidden." with "Show them" (`Find:PaintRepStrip`,
+  `Find:ShowReputation`). `FinderUI:SourceFilter`,
+  `UpgradeQuest.WindowAllows` and `UpgradeQuest:Choose` leave such gear out
+  too, so the old list, the character sheet and the upgrade quest agree.
+  Show All ticks it again (it clears `finderSourcesOff`).
+- **Gear only a crafter can wear** (goggles): `Crafting:SourceFor` used to
+  drop it when the skill was short. Now it stays, and every pick carries
+  `wear = { profession, rank, have, met }` (`Crafting:Wear`, from
+  `Data/Crafts.lua`'s `w`). The row and sheet say "Needs Engineering 245 to
+  wear" (`Crafting.WearText`), amber while `Crafting.WearWaits(pick)`,
+  muted once met. Waiting gear is amber gear: not a quest yet
+  (`UpgradeQuest.CanFollow` gives the same words), hidden by Only What I
+  Can Get Now (`FinderUI.GetsNow`), skipped by `Choose` and My Gear's
+  "later". A bind on pickup piece still needs the profession to be listed.
+- **Find on the Dungeons tab**: a search box after Off Spec. It narrows the
+  picked dungeon's lines (`Dungeons.Match`: a drop's item, slot and boss, a
+  quest's title and reward; a boss's name keeps all its drops; notes drop
+  out) and the foot adds "N of M shown." Typing reads the kept lines
+  (`allLines`), so it judges nothing. Session only; it stays while another
+  dungeon is picked.
+- Tested in `tools/test_findmore.lua`. Not yet seen in game.

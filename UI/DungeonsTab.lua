@@ -56,6 +56,7 @@ local GAIN_WIDTH = 104
 local DROPS_WIDTH = 50
 local SLOT_WIDTH = 120
 local GAP = 8
+local FIND_WIDTH = 150
 
 local BOSS_ICON = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01"
 local DONE_ICON = [[Interface\RaidFrame\ReadyCheck-Ready]]
@@ -371,6 +372,50 @@ function Dungeons:Lines(dungeon)
     return lines, data.upgrades or 0, data.waiting or 0
 end
 
+--- A line's words in small letters for the Find box: a drop's item, slot
+--- and boss, a quest's title and what it gives. Made once a line.
+function Dungeons.Hay(line, boss)
+    if line.hay then return line.hay end
+    local parts = { line.name, line.slot, boss, line.sub }
+    local words = {}
+    for _, part in pairs(parts) do
+        if type(part) == "string" and part ~= "" then words[#words + 1] = part end
+    end
+    line.hay = table.concat(words, "\n"):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|c[%w_]+:", "")
+        :gsub("|r", ""):lower()
+    return line.hay
+end
+
+--- The lines the Find box lets through: drops and quests whose words hold
+--- what was typed, each under its heading. A boss whose name matches
+--- keeps all its drops. Notes are left out while something is typed.
+-- @return lines, then how many drops and quests match and how many there
+-- are (nil and nil with nothing typed)
+function Dungeons.Match(lines, find)
+    lines = lines or {}
+    if type(find) ~= "string" or find == "" then return lines, nil, nil end
+    local out, matched, total = {}, 0, 0
+    local heading, headingShown, bossHit
+    for _, line in ipairs(lines) do
+        if line.kind == "boss" then
+            heading, headingShown = line, false
+            bossHit = type(line.text) == "string" and line.text:lower():find(find, 1, true) ~= nil
+        elseif line.kind == "drop" or line.kind == "quest" then
+            total = total + 1
+            local boss = line.kind == "drop" and heading and heading.text or nil
+            if bossHit or Dungeons.Hay(line, boss):find(find, 1, true) then
+                if heading and not headingShown then
+                    out[#out + 1] = heading
+                    headingShown = true
+                end
+                out[#out + 1] = line
+                matched = matched + 1
+            end
+        end
+    end
+    return out, matched, total
+end
+
 --- The foot's left line: "Scarlet Monastery: 7 upgrades for you, 3 quests
 --- left."
 function Dungeons.FootText(dungeon, upgrades)
@@ -460,6 +505,21 @@ function Dungeons:BuildBar(page)
     only:SetPoint("RIGHT", hide, "LEFT", -Theme.TextWidth("small", L["Upgrades Only"]) - 30, 0)
     Tip(only, L["Upgrades Only"], L["Shows only the drops that are better than what you wear."])
     self.onlyBox = only
+
+    -- Find: narrows the dungeon picked to the drops and quests that
+    -- match, as you type.
+    local findLabel = Theme.CreateLabel(page, "small", "muted")
+    findLabel:SetPoint("LEFT", off, "RIGHT", 16, 0)
+    findLabel:SetText(L["Find:"])
+    local box = Widgets.CreateSearchBox(page, L["Item or place"], function(text)
+        local find = type(text) == "string" and text:lower():gsub("^%s+", ""):gsub("%s+$", "") or nil
+        Dungeons.find = find ~= "" and find or nil
+        Dungeons.offset = 0
+        if Dungeons.page and Dungeons.allLines then Dungeons:PaintLines(true) end
+    end)
+    box:SetWidth(FIND_WIDTH)
+    box:SetPoint("LEFT", findLabel, "RIGHT", 8, 0)
+    self.findBox = box
 
     local rule = Theme.CreateDivider(page, "border")
     rule:SetPoint("TOPLEFT", PAD, -44)
@@ -880,11 +940,14 @@ end
 --- laid out again from a new place and nothing is read.
 function Dungeons:PaintLines(keep)
     local dungeon = self:Picked()
-    local lines, upgrades, waiting = self.lines, self.lineUpgrades, self.waiting
-    if not (keep and lines) then
-        lines, upgrades, waiting = self:Lines(dungeon)
-        self.lines, self.lineUpgrades, self.waiting = lines, upgrades, waiting
+    local all, upgrades, waiting = self.allLines, self.lineUpgrades, self.waiting
+    if not (keep and all) then
+        all, upgrades, waiting = self:Lines(dungeon)
+        self.allLines, self.lineUpgrades, self.waiting = all, upgrades, waiting
     end
+    -- The Find box: only the drops and quests that match (no judging).
+    local lines, matched, total = Dungeons.Match(all, self.find)
+    self.lines = lines
     -- The dungeon looked at shows what its own list counts.
     if dungeon and not dungeon.later and waiting == 0 then
         dungeon.upgrades = upgrades
@@ -925,6 +988,7 @@ function Dungeons:PaintLines(keep)
     end
     self.linesShown = shown
     local foot = Dungeons.FootText(dungeon, dungeon and dungeon.upgrades or 0)
+    if matched then foot = foot .. " " .. L.Format("%d of %d shown", matched, total) .. "." end
     if #lines > shown and shown > 0 then
         foot = foot .. " " .. L.Format("%d to %d of %d. Scroll for more.", offset + 1, offset + shown, #lines)
     end

@@ -62,6 +62,9 @@ local WHEEL = 3
 local SHEET_SOURCES = 12
 
 local MAIN_HAND = 16
+-- The Reputation box's key in `finderSourcesOff` (FinderUI.REP).
+local REP = "rep"
+local HIDDEN_STRIP = 28
 
 local function Colored(key, text)
     local r, g, b = Theme.Unpack(key)
@@ -284,6 +287,10 @@ function Find:Filtered(state)
         on[entry[1]] = FinderUI:SourceOn(entry[1])
         counts[entry[1]] = 0
     end
+    local repOn = FinderUI:SourceOn(REP)
+    counts[REP] = 0
+    -- Rows the Reputation box hides, for the line under the list.
+    self.repHidden = 0
 
     local shown = {}
     for _, line in ipairs(state.lines) do
@@ -301,12 +308,18 @@ function Find:Filtered(state)
             end
         end
         line.sources = sources
+        if pick.rep and next(kinds) then counts[REP] = counts[REP] + 1 end
+        if pick.rep and not repOn then sources = {} end
         local which = self:ShowWhich()
         local wanted = which == "both" or (which == "main" and line.main ~= nil)
             or (which == "off" and line.off ~= nil)
-        if wanted and #sources > 0 and (not slot or line.group == slot)
+        if wanted and (not slot or line.group == slot)
             and (not find or Find.Hay(line):find(find, 1, true)) then
-            shown[#shown + 1] = line
+            if #sources > 0 then
+                shown[#shown + 1] = line
+            elseif pick.rep and not repOn and #line.sources > 0 then
+                self.repHidden = self.repHidden + 1
+            end
         end
     end
     return shown, counts
@@ -428,6 +441,7 @@ local function LeftWidth()
         widest = math.max(widest, Theme.TextWidth(size, text) + extra)
     end
     for _, entry in ipairs(FinderUI.SOURCE_BOXES) do Take("small", entry[2], 24 + 40) end
+    Take("small", L["Reputation"], 24 + 40)
     for _, text in ipairs({ L["This Zone Only"], L["Solo Quests Only"], L["Only What I Can Get Now"] }) do
         Take("small", text, 24)
     end
@@ -466,6 +480,21 @@ function Find:BuildFilters(width)
         self.sourceCounts[kind] = count
         y = y - 22
     end
+    -- Reputation: gear a faction's quartermaster sells. Not a kind of
+    -- place but a kind of gear, so it hides whole rows; ticked until
+    -- unticked, like the rest (`finderSourcesOff.rep`).
+    local rep = Widgets.CreateCheckbox(panel, L["Reputation"], function(checked)
+        FinderUI:SetSource(REP, checked)
+        Find.offset = 0
+        Find:Narrow()
+    end, FinderUI:SourceOn(REP))
+    rep.kind = REP
+    rep:SetPoint("TOPLEFT", 12, y)
+    local repCount = Theme.CreateLabel(panel, "small", "muted", "RIGHT")
+    repCount:SetPoint("TOPRIGHT", -12, y - 3)
+    self.sourceBoxes[#self.sourceBoxes + 1] = rep
+    self.sourceCounts[REP] = repCount
+    y = y - 22
 
     -- SLOT: every slot, or one.
     y = y - 8
@@ -766,7 +795,7 @@ function Find.GainText(pick)
         or result.percent and ("%+d%%"):format(math.floor(result.percent + 0.5)) or L["better"]
     local train = ns.WeaponSkills and ns.WeaponSkills:NeedsTraining(pick.link)
     if train then return L.Format("Train: %s", gain), "loss" end
-    local later = pick.needs or pick.at or pick.remote
+    local later = pick.needs or pick.at or pick.remote or ns.Crafting.WearWaits(pick)
     return gain, later and "warn" or "good"
 end
 
@@ -795,6 +824,12 @@ function Find:FillRow(row, line)
         elseif line.off and not line.main then
             name = name .. "\n" .. Colored("offSpec", L["Off only"])
         end
+    end
+    -- Gear only a crafter can wear says the skill, in amber while you
+    -- lack it.
+    local wear = ns.Crafting.WearText(pick)
+    if wear then
+        name = name .. "\n" .. Colored(ns.Crafting.WearWaits(pick) and "warn" or "muted", wear)
     end
     row.item:SetText(name)
     row.slot:SetText(line.slotName or "")
@@ -955,6 +990,37 @@ function Find:BuildList(left, width)
         Find:ScrollBy(delta > 0 and -WHEEL or WHEEL)
     end)
 
+    -- Under the rows, while the Reputation box hides some: how many, and
+    -- a word that ticks it again.
+    local hidden = CreateFrame("Frame", nil, list)
+    hidden:SetPoint("BOTTOMLEFT", 1, 1)
+    hidden:SetPoint("BOTTOMRIGHT", -1, 1)
+    hidden:SetHeight(HIDDEN_STRIP)
+    local hiddenRule = hidden:CreateTexture(nil, "ARTWORK")
+    hiddenRule:SetPoint("TOPLEFT")
+    hiddenRule:SetPoint("TOPRIGHT")
+    hiddenRule:SetHeight(1)
+    hiddenRule:SetColorTexture(Theme.Unpack("border", 0.6))
+    local hiddenText = Theme.CreateLabel(hidden, "small", "muted")
+    hiddenText:SetPoint("LEFT", 12, 0)
+    hidden.text = hiddenText
+    local showThem = CreateFrame("Button", nil, hidden)
+    local showLabel = Theme.CreateLabel(showThem, "small", "accent")
+    showLabel:SetPoint("LEFT")
+    showLabel:SetText(L["Show them"])
+    showThem.label = showLabel
+    local underline = showThem:CreateTexture(nil, "ARTWORK")
+    underline:SetPoint("BOTTOMLEFT", showLabel, "BOTTOMLEFT", 0, -2)
+    underline:SetPoint("BOTTOMRIGHT", showLabel, "BOTTOMRIGHT", 0, -2)
+    underline:SetHeight(1)
+    underline:SetColorTexture(Theme.Unpack("accent", 0.8))
+    showThem:SetSize(Theme.TextWidth("small", L["Show them"]) + 4, HIDDEN_STRIP - 6)
+    showThem:SetPoint("LEFT", hiddenText, "RIGHT", 10, 0)
+    showThem:SetScript("OnClick", function() Find:ShowReputation() end)
+    hidden.button = showThem
+    hidden:Hide()
+    self.repStrip = hidden
+
     local empty = Widgets.CreateEmpty(list, { width = width - 60 })
     empty:SetPoint("TOP", list, "TOP", 0, -(HEAD + 60))
     empty:Hide()
@@ -966,7 +1032,34 @@ function Find:MeasureList()
     local ok, height = pcall(self.list.GetHeight, self.list)
     if ok and type(height) == "number" and height > HEAD + ROW_MIN then
         self.listArea = height - HEAD - 2
+        if self.repStrip and self.repStrip:IsShown() then self.listArea = self.listArea - HIDDEN_STRIP end
     end
+end
+
+--- "3 upgrades from reputation vendors are hidden. Show them", while the
+--- Reputation box hides any of the rows the other filters let through.
+function Find.RepHiddenText(count)
+    if (count or 0) <= 0 then return nil end
+    if count == 1 then return L["1 upgrade from a reputation vendor is hidden."] end
+    return L.Format("%d upgrades from reputation vendors are hidden.", count)
+end
+
+function Find:PaintRepStrip()
+    local strip = self.repStrip
+    if not strip then return end
+    local words = Find.RepHiddenText(self.repHidden)
+    strip.text:SetText(words or "")
+    strip:SetShown(words ~= nil)
+end
+
+--- "Show them": tick the Reputation box again.
+function Find:ShowReputation()
+    local FinderUI = ns.FinderUI
+    if not FinderUI then return end
+    FinderUI:SetSource(REP, true)
+    self.offset = 0
+    self:SyncFilters()
+    self:Narrow()
 end
 
 --------------------------------------------------------------------------------
@@ -1312,6 +1405,8 @@ function Find:PaintSheet()
     if quest and quest:IsFollowing(pick.itemID) then notes[#notes + 1] = Colored("good", L["Following"]) end
     if pick.needs then notes[#notes + 1] = Colored("warn", Finder.NeedsText(pick.needs)) end
     if pick.at then notes[#notes + 1] = Colored("warn", L.Format("You can wear it from level %d", pick.at)) end
+    local wear = ns.Crafting.WearText(pick)
+    if wear then notes[#notes + 1] = Colored(ns.Crafting.WearWaits(pick) and "warn" or "muted", wear) end
     local roll = Finder.RollText(pick)
     if roll then notes[#notes + 1] = Colored("good", roll) end
     self.sheetNotes:SetText(table.concat(notes, "\n"))
@@ -1568,6 +1663,7 @@ function Find:Narrow()
     self.shown = self:Sorted(shown)
     self:PaintCounts(state.found and counts or nil)
     self:PaintHeads()
+    self:PaintRepStrip()
     self:MeasureList()
 
     -- The row picked stays picked while it shows; else the top row is.
@@ -1578,7 +1674,7 @@ function Find:Narrow()
     local amber = false
     for _, line in ipairs(self.shown) do
         local pick = line.pick
-        if pick.needs or pick.at or pick.remote then
+        if pick.needs or pick.at or pick.remote or ns.Crafting.WearWaits(pick) then
             amber = true
             break
         end

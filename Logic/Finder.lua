@@ -722,6 +722,7 @@ function Finder:Candidate(itemID, player, only)
     if #sources == 0 then return nil end
     return {
         itemID = itemID, sources = sources, needs = self:Needs(itemID), rep = Finder.Rep(itemID),
+        wear = ns.Crafting and ns.Crafting.Wear and ns.Crafting:Wear(itemID) or nil,
         -- Found a moment ago, so the scan need not ask again.
         -- Only a yes is kept: an item still loading is asked
         -- about again when the scan reaches it.
@@ -1315,6 +1316,7 @@ function Finder:Build(only, ahead, pause)
                             result = result,
                             gain = (result.score or 0) - (result.against or 0),
                             sources = candidate.sources, needs = candidate.needs, rep = candidate.rep,
+                            wear = candidate.wear,
                             roll = best, at = result.level, remote = Remote(candidate.sources),
                         }
                         -- A one-hander that beats the off hand may beat the

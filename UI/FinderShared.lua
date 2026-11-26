@@ -37,6 +37,9 @@ local SOURCE_BOXES = {
     { "raid", L["Raids"] }, { "craft", L["Crafted"] },
 }
 FinderUI.SOURCE_BOXES = SOURCE_BOXES
+-- The Reputation box (Find Upgrades): gear a faction's quartermaster
+-- sells, hidden while `finderSourcesOff.rep` is set.
+FinderUI.REP = "rep"
 
 -- The slots down the left, in character sheet order: { slot, name, the
 -- second slot }. Both rings are one line, and both trinkets.
@@ -548,6 +551,7 @@ end
 --- yet (one still to learn, or someone else's).
 function FinderUI.GetsNow(source, pick)
     if pick.needs then return false end
+    if ns.Crafting and ns.Crafting.WearWaits(pick) then return false end
     if source.kind == "craft" then return source.state == "known" or source.state == "alt" end
     return true
 end
@@ -641,8 +645,10 @@ function FinderUI:SourceFilter(found)
     local getNow = self:GetNowOnly()
     local on = {}
     for _, entry in ipairs(SOURCE_BOXES) do on[entry[1]] = self:SourceOn(entry[1]) end
+    local repOn = self:SourceOn(FinderUI.REP)
     return function(pick)
         local sources = {}
+        if pick.rep and not repOn then return sources end
         for _, source in ipairs(pick.sources or {}) do
             local kind = FinderUI.SourceKind(source)
             if on[kind] ~= false and (not getNow or FinderUI.GetsNow(source, pick))
