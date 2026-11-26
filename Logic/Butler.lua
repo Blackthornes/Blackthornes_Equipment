@@ -110,3 +110,29 @@ function Butler:Advise(item, bag, slot)
     if ok then return advice end
     return nil
 end
+
+--- What each of the player's characters wears, for Butler's search
+--- (2026-11-26): counted in All Characters as "worn". Read from the notes
+--- each character keeps of itself (Alts, `characterGear`), as last played.
+-- @return { { key (GUID), worn = { [itemID] = count }, at } }, one per
+--   character with a note; Butler keeps only those on its realm and side.
+--   Fresh tables each time. Never raises; nil when anything goes wrong.
+function Butler:Worn()
+    local ok, list = pcall(function()
+        local out = {}
+        local notes = ns.Alts and ns.Alts:Notes() or {}
+        for key, note in pairs(notes) do
+            if type(key) == "string" and type(note) == "table" and type(note.worn) == "table" then
+                local worn = {}
+                for _, link in pairs(note.worn) do
+                    local id = type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil
+                    if id then worn[id] = (worn[id] or 0) + 1 end
+                end
+                out[#out + 1] = { key = key, worn = worn, at = type(note.at) == "number" and note.at or nil }
+            end
+        end
+        return out
+    end)
+    if ok then return list end
+    return nil
+end

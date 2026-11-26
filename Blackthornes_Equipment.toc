@@ -77,6 +77,7 @@ Logic\QuestLog.lua
 Logic\DungeonQuests.lua
 Logic\DungeonLoot.lua
 Logic\DungeonDoors.lua
+Logic\SwitchGear.lua
 Logic\TomTom.lua
 Logic\Contribute.lua
 
@@ -103,6 +104,8 @@ UI\Minimap.lua
 UI\MainWindow.lua
 UI\FinderShared.lua
 UI\GearWindow.lua
+UI\GearRoad.lua
+UI\Welcome.lua
 UI\MyGear.lua
 UI\FindUpgrades.lua
 UI\UpgradeQuestTab.lua
@@ -123,6 +126,7 @@ UI\SlotUpgrades.lua
 UI\InspectGear.lua
 UI\MoreMarks.lua
 UI\UpgradeDone.lua
+UI\LevelUpCard.lua
 UI\QuestLogTab.lua
 UI\SmallPanel.lua
 UI\QuestArrow.lua

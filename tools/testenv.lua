@@ -340,6 +340,9 @@ function env.Load(locale)
     -- "One Window:" is on unless unticked; suites test Equipment's own windows
     -- unless they tick it (test_onewindow.lua checks the default).
     if ns.db then ns.db.oneWindow = false end
+    -- The welcome card shows only for a new save; suites test the windows
+    -- under it unless they clear this (test_welcome.lua checks the card).
+    if ns.db then ns.db.welcomeSeen = true end
     env.ns = ns
     return ns
 end

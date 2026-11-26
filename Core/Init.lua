@@ -534,6 +534,8 @@ local DEFAULTS = {
     -- tooltips. All on unless switched off. What is tracked is kept per
     -- character (`tracked`, `trackedDone`; Logic/Tracking.lua).
     upgradeToast = true,
+    -- The Level Up card after each level (UI/LevelUpCard.lua).
+    levelUpCard = true,
     showTracker = true,
     mapPins = true,
     slotUpgrades = true,
@@ -597,6 +599,13 @@ local function LoadSavedVariables()
     end
     if type(BlackthornesEquipmentCharDB) ~= "table" then
         BlackthornesEquipmentCharDB = {}
+    end
+
+    -- First Time Setup (UI/Welcome.lua): only a save with nothing in it
+    -- yet is a new player. Anyone who already used the addon is marked as
+    -- having seen the card, so it never shows for them. Never rename it.
+    if BlackthornesEquipmentDB.welcomeSeen == nil then
+        BlackthornesEquipmentDB.welcomeSeen = next(BlackthornesEquipmentDB) ~= nil
     end
 
     ApplyDefaults(BlackthornesEquipmentDB, DEFAULTS)
