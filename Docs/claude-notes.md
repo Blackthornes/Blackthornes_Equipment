@@ -3339,6 +3339,46 @@ an item is better; this says why.
   worth line (`Find:BuildWhy`, `Find:PaintWhy`). My Gear shows it through the
   row tooltip. The mockup's stacked worth bar was left out for room.
 - Tested in `tools/test_whybetter.lua`. Not yet seen in game.
+## Gear Road (My Gear's third view, 2026-11-26)
+
+The owner said build it from the mockup `equipment-improve-4-gear-road`
+(2026-11-26; his yes covers the mockup's words). My Gear's View row has
+Figure, List and Road; `myGearView` (never rename) now also takes "road".
+
+- **The view** (`UI/GearRoad.lua`, `ns.GearRoad`): built into My Gear's
+  body under the View row. In Road the cards and the slot side step aside
+  and the road takes the whole body. Levels ahead sit on one gold line:
+  Now, at most `GearRoad.MIDDLE` (4) stops, then the goal at 60. Each card
+  shows its best two pieces and "%d more pieces"; a click lists every piece
+  under the line in dark glass rows with a gain bar and Make It My Quest
+  (dimmed for gear that waits, with "Not a quest yet: ..." in chat). The
+  goal card says "Best gear before raids", "%d of %d slots done" and a bar.
+  Alt-click on a sheet slot (`MyGear:Ask`) goes back to the figure.
+- **The scan**: one `Finder:Build(nil, 60 - level, pause, true)` on the
+  frame worker. The new `wide` argument keeps the candidate floor at today's
+  level (`Finder:CandidateIDs(player, from)`), so gear from now to 60 is
+  seen, not only gear near 60. Kept by `GearRoad:Key` (the key Plan Ahead
+  uses) until gear, level or a setting changes. Verdicts are the finder's
+  kept ones; the gear list passes by what the class can never use.
+- **Reading** (`GearRoad.Read`, pure): per slot, pieces lowest level first,
+  kept only when they beat every piece before them (`GearRoad.Steps`). The
+  middle stops are the levels whose steps add up to the most percent, the
+  level a heavier armor opens always among them when it has steps
+  (`GearRoad.ArmorAhead` from `Weights:CanUse`). A step joins the first
+  stop at or after its level, one per slot. Heads: "NOW", "%s OPENS" (the
+  armor), the dungeon of the best piece, else "LEVEL %d", and "YOUR GOAL".
+  A slot with no step at all counts as done. A level 60 character sees Now
+  alone.
+- **Filters**: only Find Upgrades' From boxes (`FinderUI:KindFilter`, new);
+  Only What I Can Get Now and This Zone Only don't apply, since the road is
+  gear for later. Ignored pieces (`UpgradeQuest:Skipped`) stay out. Main
+  Spec only.
+- Gear that would be plate or mail for a class that learns it later is
+  still "cantuse" until two levels before (see "Mail and plate from 38"),
+  so a "PLATE OPENS" stop shows only once that gear counts.
+- Tested in `tools/test_gearroad.lua`. Not seen in game: the look, card
+  heights, wide-scan time on a real data set.
+
 ## First Time Setup (2026-11-26)
 
 The owner said build it, from the mockup
