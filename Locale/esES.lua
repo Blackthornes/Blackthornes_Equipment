@@ -1268,6 +1268,19 @@ L["Pick None to turn it off. Starts on None."] = "Elige Ninguna para apagarla. E
 L["%d upgrades for %s, %d for %s."] = "%d mejoras para %s, %d para %s."
 L["no upgrade"] = "no es una mejora"
 
+-- Gear Road (My Gear, 2026-11-26)
+L["Road"] = "Ruta"
+L["NOW"] = "AHORA"
+L["YOUR GOAL"] = "TU META"
+L["%s OPENS"] = "%s DISPONIBLE"
+L["%d more pieces"] = "%d piezas más"
+L["Best gear before raids"] = "El mejor equipo antes de las bandas"
+L["%d of %d slots done"] = "%d de %d huecos listos"
+L["Click a stop to see every piece it opens."] = "Haz clic en una parada para ver cada pieza que abre."
+L["Amber gear is for later. The road only lists gear your class can wear."] = "El equipo ámbar es para más tarde. La ruta solo muestra equipo que tu clase puede llevar."
+L["Plate"] = "Placas"
+L["Mail"] = "Malla"
+
 -- First Time Setup (UI/Welcome.lua, 2026-11-26)
 L["Welcome to Equipment"] = "Bienvenido a Equipment"
 L["Three quick picks and you are set. You can change them later in Settings."] = "Tres elecciones rápidas y listo. Puedes cambiarlas luego en la Configuración."

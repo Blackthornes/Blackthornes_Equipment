@@ -1268,6 +1268,19 @@ L["Pick None to turn it off. Starts on None."] = "选“没有”就关掉。一
 L["%d upgrades for %s, %d for %s."] = "%d个升级给%s，%d个给%s。"
 L["no upgrade"] = "不是升级"
 
+-- Gear Road (My Gear, 2026-11-26)
+L["Road"] = "路线"
+L["NOW"] = "现在"
+L["YOUR GOAL"] = "你的目标"
+L["%s OPENS"] = "%s 解锁"
+L["%d more pieces"] = "还有 %d 件"
+L["Best gear before raids"] = "团队副本前的最佳装备"
+L["%d of %d slots done"] = "已完成 %d / %d 个部位"
+L["Click a stop to see every piece it opens."] = "点击一站，查看它解锁的每件装备。"
+L["Amber gear is for later. The road only lists gear your class can wear."] = "琥珀色的装备留到以后。路线只列出你的职业能穿的装备。"
+L["Plate"] = "板甲"
+L["Mail"] = "锁甲"
+
 -- First Time Setup (UI/Welcome.lua, 2026-11-26)
 L["Welcome to Equipment"] = "欢迎使用 Equipment"
 L["Three quick picks and you are set. You can change them later in Settings."] = "三个简单选择就好。之后可以在设置里更改。"

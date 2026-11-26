@@ -1267,6 +1267,19 @@ L["Pick None to turn it off. Starts on None."] = "Выбери «Нет», чт�
 L["%d upgrades for %s, %d for %s."] = "Улучшений для %2$s: %1$d, для %4$s: %3$d."
 L["no upgrade"] = "не улучшение"
 
+-- Gear Road (My Gear, 2026-11-26)
+L["Road"] = "Путь"
+L["NOW"] = "СЕЙЧАС"
+L["YOUR GOAL"] = "ТВОЯ ЦЕЛЬ"
+L["%s OPENS"] = "ОТКРЫТО: %s"
+L["%d more pieces"] = "Ещё предметов: %d"
+L["Best gear before raids"] = "Лучшая экипировка до рейдов"
+L["%d of %d slots done"] = "Готово ячеек: %d из %d"
+L["Click a stop to see every piece it opens."] = "Нажми на остановку, чтобы увидеть все предметы, которые она открывает."
+L["Amber gear is for later. The road only lists gear your class can wear."] = "Янтарная экипировка на потом. Путь показывает только то, что может носить твой класс."
+L["Plate"] = "Латы"
+L["Mail"] = "Кольчуга"
+
 -- First Time Setup (UI/Welcome.lua, 2026-11-26)
 L["Welcome to Equipment"] = "Добро пожаловать в Equipment"
 L["Three quick picks and you are set. You can change them later in Settings."] = "Три быстрых выбора, и всё готово. Позже их можно изменить в настройках."
