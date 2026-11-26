@@ -2813,6 +2813,21 @@ The mockup the owner approved is the plan's `my-gear.html`.
   again. The scan after that asks for nothing, so it stops. Tested in
   `tools/test_speed.lua`.
 
+
+### Try It On (2026-11-26)
+
+The owner said build it (improvement 7, from the mockup). "Show My
+Character:" on the Gear page (`showMyCharacter`, off unless ticked; never
+rename it) puts a `DressUpModel` of the player in the middle of My Gear in
+place of the big ring (`MyGear:BuildModel`, `PlaceMiddle`). Under it Now
+and With Upgrade, and "Drag to turn" (OnUpdate only while the mouse is
+held). The rating moves to a small ring under the level, and the colour
+key moves to the top row in place of "Click a slot". With Upgrade puts on
+`MyGear:TryLink()`: the side row last clicked (a click still follows or
+puts on as before), else the slot's bag piece, else its best pick.
+`DressModel` dresses only when the scan or the link changed, never while
+hidden or in List. `/beq probe looks` found the model works on Forever.
+Tested in `tools/test_mygear.lua` (10).
 ## Find Upgrades (rework step 3, 2026-11-23)
 
 Step 3 of the rework: the Find Upgrades tab and its side sheet. The mockup

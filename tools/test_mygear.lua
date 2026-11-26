@@ -303,4 +303,72 @@ do
     MyGear:Refresh()
 end
 
+-- 10. Try It On (2026-11-26): the character stands in the middle and puts
+-- on the slot's upgrade; Now shows what is worn; unticked, the ring is back.
+do
+    MyGear:SetView("figure")
+    ns.db.finderSourcesOff = nil
+    local model = MyGear.model
+    suite.check("a dress-up model is made", model ~= nil)
+    local calls = {}
+    model.SetUnit = function(_, unit) calls[#calls + 1] = "unit " .. unit end
+    model.TryOn = function(_, link) calls[#calls + 1] = "try " .. link end
+    suite.check("it is off by default, as big new features start", ns.DEFAULTS.showMyCharacter == false
+        and not MyGear:CharacterOn() and not model:IsShown() and MyGear.dots[1]:IsShown())
+    local box = ns.SettingsUI.controls.showMyCharacter
+    box:SetChecked(false)
+    box:GetScript("OnClick")(box)
+    suite.check("ticking Show My Character saves it", ns.db.showMyCharacter == true)
+    MyGear.dressed = nil
+    MyGear:Refresh()
+    suite.check("the character shows and the big ring hides", model:IsShown() and not MyGear.dots[1]:IsShown()
+        and not MyGear.ratingLabel:IsShown())
+    suite.check("the colour key takes the hint's place", not MyGear.hint:IsShown())
+    MyGear:PickSlot(5)
+    suite.check("picking the chest tries on the bag piece", calls[#calls] == "try item:901", calls[#calls])
+    suite.check("on the player", calls[#calls - 1] == "unit player", calls[#calls - 1])
+    local count = #calls
+    MyGear:PickSlot(5)
+    suite.check("the same slot again dresses nothing", #calls == count, #calls)
+    MyGear:SetFigureMode("now")
+    suite.check("Now shows what is worn", calls[#calls] == "unit player" and #calls == count + 1, calls[#calls])
+    suite.check("and lights Now", MyGear.nowButton.label ~= nil)
+    MyGear:PickSlot(1)
+    MyGear:SetFigureMode("upgrade")
+    suite.check("With Upgrade on the head tries its best pick", calls[#calls]:find("item:1102", 1, true) ~= nil, calls[#calls])
+    -- A click on another row of the side puts that one on.
+    local third
+    for _, row in ipairs(MyGear.rows) do
+        local pick = rawget(row, "pick")
+        if row:IsShown() and pick and pick.itemID == 1101 then third = row end
+    end
+    local follow = ns.FinderUI.Follow
+    ns.FinderUI.Follow = function() end
+    third:GetScript("OnClick")(third, "LeftButton")
+    ns.FinderUI.Follow = follow
+    suite.check("a click on a side row tries that piece on", calls[#calls]:find("item:1101", 1, true) ~= nil, calls[#calls])
+    judges = 0
+    MyGear:PickSlot(5)
+    suite.check("trying on judges no gear", judges == 0, judges)
+
+    count = #calls
+    MyGear:Hide()
+    MyGear.dressed = nil
+    MyGear:DressModel()
+    suite.check("a hidden page dresses nothing", #calls == count, #calls)
+    MyGear:Show()
+
+    box:SetChecked(true)
+    box:GetScript("OnClick")(box)
+    suite.check("unticking Show My Character saves it", ns.db.showMyCharacter == false)
+    suite.check("and brings the ring back", not model:IsShown() and MyGear.dots[1]:IsShown()
+        and MyGear.ratingLabel:IsShown() and MyGear.hint:IsShown())
+    count = #calls
+    MyGear:PickSlot(1)
+    suite.check("with it off nothing is dressed", #calls == count, #calls)
+    ns.db.showMyCharacter = true
+    MyGear:CharacterChanged()
+    suite.check("ticked again the character is back", model:IsShown())
+end
+
 suite.done()

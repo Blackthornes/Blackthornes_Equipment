@@ -138,10 +138,10 @@ suite.check("with the gear rows showing", pages.pages.gear.content:IsShown()
 suite.check("no Upgrade Hunts page", pages.pages.hunts == nil)
 suite.check("the grid heads the Gear page", pages.pages.gear.items[1][1] ~= nil
     and SettingsUI.showGrid[1] == pages.pages.gear.items[1][2].frame)
-suite.check("six lines of two", #SettingsUI.showGrid == 6, #SettingsUI.showGrid)
+suite.check("seven lines of two", #SettingsUI.showGrid == 7, #SettingsUI.showGrid)
 local gridKeys = { arrows = "bagArrows", sellCoins = "bagSellCoins", rewardButton = "rewardButton",
     upgradeChat = "upgradeChat", slotUpgrades = "slotUpgrades", upgradeToast = "upgradeToast",
-    showTracker = "showTracker", mapPins = "mapPins" }
+    showTracker = "showTracker", mapPins = "mapPins", }
 for control, key in pairs(gridKeys) do
     local box = controls[control]
     suite.check(control .. " sits in the grid", box ~= nil and box.gridName ~= nil
