@@ -141,7 +141,7 @@ suite.check("the grid heads the Gear page", pages.pages.gear.items[1][1] ~= nil
 suite.check("seven lines of two", #SettingsUI.showGrid == 7, #SettingsUI.showGrid)
 local gridKeys = { arrows = "bagArrows", sellCoins = "bagSellCoins", rewardButton = "rewardButton",
     upgradeChat = "upgradeChat", slotUpgrades = "slotUpgrades", upgradeToast = "upgradeToast",
-    showTracker = "showTracker", mapPins = "mapPins" }
+    showTracker = "showTracker", mapPins = "mapPins", levelUpCard = "levelUpCard" }
 for control, key in pairs(gridKeys) do
     local box = controls[control]
     suite.check(control .. " sits in the grid", box ~= nil and box.gridName ~= nil
