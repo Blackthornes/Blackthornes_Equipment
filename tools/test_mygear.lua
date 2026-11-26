@@ -324,6 +324,18 @@ do
     suite.check("the character shows and the big ring hides", model:IsShown() and not MyGear.dots[1]:IsShown()
         and not MyGear.ratingLabel:IsShown())
     suite.check("the colour key takes the hint's place", not MyGear.hint:IsShown())
+    -- The rating ring stays big and clear with the character (the owner,
+    -- 2026-11-26: an 11 pixel ring was too small to read).
+    local low, high = math.huge, -math.huge
+    for _, dot in ipairs(MyGear.smallDots) do
+        local point = rawget(dot, "_point")
+        local x = point and point[4] or 0
+        low, high = math.min(low, x), math.max(high, x)
+    end
+    suite.check("the rating ring is big with the character", high - low >= 60, high - low)
+    suite.check("with the rating word inside it", rawget(MyGear.smallRating, "_point")
+        and rawget(MyGear.smallRating, "_point")[1] == "CENTER", rawget(MyGear.smallRating, "_point")
+        and rawget(MyGear.smallRating, "_point")[1])
     -- The figure takes the middle's height; the spec choices move under the
     -- foot slots, side by side (the owner, 2026-11-26: it was too small).
     local judgePoint = rawget(MyGear.judgeLabel, "_point")

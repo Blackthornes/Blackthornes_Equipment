@@ -2858,6 +2858,11 @@ with the character on, the name, level and rating (large word in an
 past the middle on each side under the slot buttons (`MODEL_REACH`,
 frame level of the figure), and Main Spec and Off Spec sit side by side
 on a row under the foot slots. Unticked, everything goes back.
+Still too small (the owner, same day, "it used to be very clear"): the
+ring is back to a big one, 34 across the radius with the rating word
+inside in the title font and the upgrade count under it, at the top of
+the middle. The name and level sit under the ring, over the empty top of
+the figure (`MODEL_TOP` 96, 234 high).
 
 ### Another Player's Gear (2026-11-26)
 
