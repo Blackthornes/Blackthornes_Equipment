@@ -1268,6 +1268,17 @@ L["Pick None to turn it off. Starts on None."] = "选“没有”就关掉。一
 L["%d upgrades for %s, %d for %s."] = "%d个升级给%s，%d个给%s。"
 L["no upgrade"] = "不是升级"
 
+-- Why It's Better (2026-11-26)
+L["More %s and %s."] = "%s和%s更高。"
+L["More %s."] = "%s更高。"
+L["A little less %s and %s."] = "%s和%s略低。"
+L["A little less %s."] = "%s略低。"
+L["Less %s and %s."] = "%s和%s更低。"
+L["Less %s."] = "%s更低。"
+L["Most of the gain is %s."] = "收益主要来自%s。"
+L["%s takes a little back."] = "%s略有抵消。"
+L["WHAT CHANGES"] = "有何变化"
+L["Why It's Better:"] = "为何更好："
 -- Gear Road (My Gear, 2026-11-26)
 L["Road"] = "路线"
 L["NOW"] = "现在"

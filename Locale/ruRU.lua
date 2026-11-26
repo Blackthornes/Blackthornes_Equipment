@@ -1267,6 +1267,17 @@ L["Pick None to turn it off. Starts on None."] = "Выбери «Нет», чт�
 L["%d upgrades for %s, %d for %s."] = "Улучшений для %2$s: %1$d, для %4$s: %3$d."
 L["no upgrade"] = "не улучшение"
 
+-- Why It's Better (2026-11-26)
+L["More %s and %s."] = "Больше: %s и %s."
+L["More %s."] = "Больше: %s."
+L["A little less %s and %s."] = "Немного меньше: %s и %s."
+L["A little less %s."] = "Немного меньше: %s."
+L["Less %s and %s."] = "Меньше: %s и %s."
+L["Less %s."] = "Меньше: %s."
+L["Most of the gain is %s."] = "Больше всего даёт: %s."
+L["%s takes a little back."] = "%s немного отнимает."
+L["WHAT CHANGES"] = "ЧТО МЕНЯЕТСЯ"
+L["Why It's Better:"] = "Почему лучше:"
 -- Gear Road (My Gear, 2026-11-26)
 L["Road"] = "Путь"
 L["NOW"] = "СЕЙЧАС"

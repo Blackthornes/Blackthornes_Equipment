@@ -1268,6 +1268,17 @@ L["Pick None to turn it off. Starts on None."] = "Elige Ninguna para apagarla. E
 L["%d upgrades for %s, %d for %s."] = "%d mejoras para %s, %d para %s."
 L["no upgrade"] = "no es una mejora"
 
+-- Why It's Better (2026-11-26)
+L["More %s and %s."] = "Más %s y %s."
+L["More %s."] = "Más %s."
+L["A little less %s and %s."] = "Un poco menos de %s y %s."
+L["A little less %s."] = "Un poco menos de %s."
+L["Less %s and %s."] = "Menos %s y %s."
+L["Less %s."] = "Menos %s."
+L["Most of the gain is %s."] = "La mayor parte de la mejora es %s."
+L["%s takes a little back."] = "%s quita un poco."
+L["WHAT CHANGES"] = "QUÉ CAMBIA"
+L["Why It's Better:"] = "Por qué es mejor:"
 -- Gear Road (My Gear, 2026-11-26)
 L["Road"] = "Ruta"
 L["NOW"] = "AHORA"

@@ -60,6 +60,12 @@ local WHEEL = 3
 
 -- The sheet lists this many places at most, then "and N more".
 local SHEET_SOURCES = 12
+-- Why It's Better on the sheet: this many stat bars at most, each this
+-- tall, with the stat's name and its number this wide.
+local WHY_ROWS = 5
+local WHY_ROW = 16
+local WHY_NAME = 92
+local WHY_AMOUNT = 46
 
 local MAIN_HAND = 16
 
@@ -1140,6 +1146,8 @@ function Find:BuildSheet(left, width)
     notes:SetWordWrap(true)
     self.sheetNotes = notes
 
+    self:BuildWhy(hold, inner)
+
     local rule = Theme.CreateDivider(hold, "border")
     self.sheetRule = rule
     local heading = Theme.CreateLabel(hold, "tiny", "gilt")
@@ -1184,6 +1192,134 @@ function Find:BuildSheet(left, width)
         button:Hide()
         self.sheetButtons[index] = button
     end
+end
+
+--- Why It's Better: the plain line, a bar for each stat that goes up or
+--- down (gains to the right of the middle, losses to the left), and what
+--- the gain is worth to the spec.
+function Find:BuildWhy(hold, inner)
+    local line = Theme.CreateLabel(hold, "normal", "text")
+    line:SetWidth(inner)
+    line:SetWordWrap(true)
+    line:Hide()
+    self.whyLine = line
+    local heading = Theme.CreateLabel(hold, "tiny", "gilt")
+    heading:SetText(L["WHAT CHANGES"])
+    heading:Hide()
+    self.whyHeading = heading
+    self.whyRows = {}
+    for index = 1, WHY_ROWS do
+        local row = CreateFrame("Frame", nil, hold)
+        row:SetHeight(WHY_ROW)
+        local name = Theme.CreateLabel(row, "small", "muted")
+        name:SetPoint("LEFT", 0, 0)
+        name:SetWidth(WHY_NAME - 4)
+        name:SetWordWrap(false)
+        row.name = name
+        local amount = Theme.CreateLabel(row, "small", "good", "RIGHT")
+        amount:SetPoint("RIGHT", 0, 0)
+        amount:SetWidth(WHY_AMOUNT)
+        row.amount = amount
+        -- The track: a dark well with a line down its middle.
+        local track = CreateFrame("Frame", nil, row)
+        track:SetPoint("LEFT", WHY_NAME, 0)
+        track:SetPoint("RIGHT", -(WHY_AMOUNT + 6), 0)
+        track:SetHeight(8)
+        local well = track:CreateTexture(nil, "BACKGROUND")
+        well:SetAllPoints(track)
+        well:SetColorTexture(Theme.Unpack("well"))
+        local edge = track:CreateTexture(nil, "BORDER")
+        edge:SetPoint("TOPLEFT", -1, 1)
+        edge:SetPoint("BOTTOMRIGHT", 1, -1)
+        edge:SetColorTexture(Theme.Unpack("border"))
+        local middle = track:CreateTexture(nil, "OVERLAY")
+        middle:SetPoint("TOP", 0, 2)
+        middle:SetPoint("BOTTOM", 0, -2)
+        middle:SetWidth(1)
+        middle:SetColorTexture(Theme.Unpack("borderLit"))
+        local bar = track:CreateTexture(nil, "ARTWORK")
+        bar:SetPoint("TOP", 0, 0)
+        bar:SetPoint("BOTTOM", 0, 0)
+        row.track, row.bar = track, bar
+        row:Hide()
+        self.whyRows[index] = row
+    end
+    local worth = Theme.CreateLabel(hold, "small", "muted")
+    worth:SetWidth(inner)
+    worth:SetWordWrap(true)
+    worth:Hide()
+    self.whyWorth = worth
+end
+
+--- Lay Why It's Better out from `y` down, for the gain shown.
+-- @return the y under it
+function Find:PaintWhy(link, result, y, inner)
+    local hold = self.sheetHold
+    local Compare = ns.Compare
+    local okWhy, changes = pcall(Compare.Why, Compare, link, result)
+    if not okWhy then changes = nil end
+    local words = changes and Compare.WhyLine(changes)
+    for _, row in ipairs(self.whyRows) do row:Hide() end
+    self.whyHeading:Hide()
+    self.whyWorth:Hide()
+    if not words then
+        self.whyLine:Hide()
+        return y
+    end
+    self.whyLine:SetText(words)
+    self.whyLine:SetWidth(inner)
+    self.whyLine:ClearAllPoints()
+    self.whyLine:SetPoint("TOPLEFT", hold, "TOPLEFT", 12, -y)
+    self.whyLine:Show()
+    y = y + TextHeight(self.whyLine, "normal", inner) + 8
+
+    self.whyHeading:ClearAllPoints()
+    self.whyHeading:SetPoint("TOPLEFT", hold, "TOPLEFT", 12, -y)
+    self.whyHeading:Show()
+    y = y + 16
+
+    -- Bars by what each change is worth, the biggest reaching the end.
+    local biggest = 0
+    for index = 1, math.min(#changes, WHY_ROWS) do
+        biggest = math.max(biggest, math.abs(changes[index].worth))
+    end
+    local half = math.max(10, (inner - WHY_NAME - WHY_AMOUNT - 6) / 2)
+    for index, row in ipairs(self.whyRows) do
+        local change = changes[index]
+        if change then
+            local tone = change.worth > 0 and "good" or "loss"
+            row.name:SetText(change.name)
+            row.amount:SetText(Compare.WhyAmount(change))
+            row.amount:SetTextColor(Theme.Unpack(tone))
+            local width = math.max(2, half * math.abs(change.worth) / math.max(biggest, 1e-6))
+            row.bar:ClearAllPoints()
+            row.bar:SetPoint("TOP", row.track, "TOP", 0, 0)
+            row.bar:SetPoint("BOTTOM", row.track, "BOTTOM", 0, 0)
+            if change.worth > 0 then
+                row.bar:SetPoint("LEFT", row.track, "CENTER", 0, 0)
+            else
+                row.bar:SetPoint("RIGHT", row.track, "CENTER", 0, 0)
+            end
+            row.bar:SetWidth(width)
+            row.bar:SetColorTexture(Theme.Unpack(tone))
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", hold, "TOPLEFT", 12, -y)
+            row:SetWidth(inner)
+            row:Show()
+            y = y + WHY_ROW + 2
+        end
+    end
+
+    local worth = Compare.WhyWorth(changes)
+    if worth then
+        self.whyWorth:SetText(worth)
+        self.whyWorth:SetWidth(inner)
+        self.whyWorth:ClearAllPoints()
+        self.whyWorth:SetPoint("TOPLEFT", hold, "TOPLEFT", 12, -(y + 2))
+        self.whyWorth:Show()
+        y = y + 2 + TextHeight(self.whyWorth, "small", inner)
+    end
+    return y + 10
 end
 
 --- The sheet's words wrap at its width as it stands now.
@@ -1318,6 +1454,8 @@ function Find:PaintSheet()
     self.sheetNotes:ClearAllPoints()
     self.sheetNotes:SetPoint("TOPLEFT", hold, "TOPLEFT", 12, -y)
     y = y + TextHeight(self.sheetNotes, "small", inner) + 10
+    -- Why It's Better, for the gain shown first.
+    y = self:PaintWhy(gainPick.link or pick.link, gainPick.result, y, inner)
 
     self.sheetRule:ClearAllPoints()
     self.sheetRule:SetPoint("TOPLEFT", hold, "TOPLEFT", 1, -y)
