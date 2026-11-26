@@ -56,17 +56,18 @@ local ICON = 38
 -- The ring of dots in the middle.
 local RING = 54
 local DOTS = 48
--- Try It On: the character in the middle, and the small ring under its
--- name that the rating moves to.
--- The name, level and rating sit above the figure (MODEL_TOP), Now and
--- With Upgrade under it, and the spec choices go on a row under the
--- foot slots. The figure reaches a little behind the slots on each side
+-- Try It On: the character in the middle, and the ring the rating moves
+-- to. The ring sits at the top with the rating word inside, the name and
+-- level under it over the empty top of the figure (MODEL_TOP), Now and With Upgrade
+-- under the figure, and the spec choices on a row under the foot slots.
+-- The figure reaches a little behind the slots on each side
 -- (MODEL_REACH), under them so their clicks still work.
-local MODEL_TOP = 66
-local MODEL_HEIGHT = 262
+local SMALL_RING = 34
+local SMALL_DOTS = 40
+local SMALL_CENTER = -(SMALL_RING + 4)
+local MODEL_TOP = 96
+local MODEL_HEIGHT = 234
 local MODEL_REACH = 24
-local SMALL_RING = 11
-local SMALL_DOTS = 28
 
 -- One line of the list view, and its columns.
 local LIST_HEAD = 22
@@ -866,16 +867,20 @@ function MyGear:BuildModel(middle)
     drag:SetText(L["Drag to turn"])
     self.dragLabel = drag
 
-    -- The rating in its gold ring, under the name.
-    local rating = Theme.CreateLabel(middle, "large", "gilt", "LEFT")
+    -- The rating word inside its gold ring, at the top.
+    local rating = Theme.CreateLabel(middle, "title", "text", "CENTER")
+    rating:SetPoint("CENTER", middle, "TOP", 0, SMALL_CENTER + 6)
     self.smallRating = rating
+    local count = Theme.CreateLabel(middle, "tiny", "good", "CENTER")
+    count:SetPoint("CENTER", middle, "TOP", 0, SMALL_CENTER - 14)
+    self.smallCount = count
     local dots = {}
     for index = 1, SMALL_DOTS do
         local angle = (index - 0.5) / SMALL_DOTS * 2 * math.pi
         local dot = middle:CreateTexture(nil, "ARTWORK")
         dot:SetSize(3, 3)
-        dot:SetPoint("CENTER", rating, "LEFT", -(SMALL_RING + 6) + math.sin(angle) * SMALL_RING,
-            math.cos(angle) * SMALL_RING)
+        dot:SetPoint("CENTER", middle, "TOP", math.sin(angle) * SMALL_RING,
+            SMALL_CENTER + math.cos(angle) * SMALL_RING)
         dots[index] = dot
     end
     self.smallDots = dots
@@ -901,7 +906,7 @@ function MyGear:PlaceMiddle()
     self.ringHead:SetShown(not on)
     self.ratingLabel:SetShown(not on)
     self.countLabel:SetShown(not on)
-    for _, part in ipairs({ self.model, self.nowButton, self.withButton, self.dragLabel, self.smallRating }) do
+    for _, part in ipairs({ self.model, self.nowButton, self.withButton, self.dragLabel, self.smallRating, self.smallCount }) do
         part:SetShown(on)
     end
     for _, dot in ipairs(self.smallDots) do dot:SetShown(on) end
@@ -912,10 +917,7 @@ function MyGear:PlaceMiddle()
     self.offLabel:ClearAllPoints()
     self.offChoice:ClearAllPoints()
     if on then
-        self.whoLabel:SetPoint("TOP", middle, "TOP", 0, 0)
-        -- The ring sits left of the rating word, the pair centred.
-        self.smallRating:ClearAllPoints()
-        self.smallRating:SetPoint("TOP", self.levelLabel, "BOTTOM", SMALL_RING + 6, -8)
+        self.whoLabel:SetPoint("TOP", middle, "TOP", 0, SMALL_CENTER - SMALL_RING - 6)
         -- Main Spec and Off Spec side by side, under the foot slots.
         local footBottom = -(#LEFT_SLOTS * SLOT_HEIGHT + 8 + SLOT_HEIGHT + 12)
         self.judgeLabel:SetPoint("TOPLEFT", self.figure, "TOPLEFT", 4, footBottom - 4)
@@ -1066,6 +1068,7 @@ function MyGear:PaintFigure(state)
         self:PlaceMiddle()
         local label = rating and rating.rating and rating.rating.label or ""
         self.smallRating:SetText(label)
+        self.smallCount:SetText(self.countLabel:GetText() or "")
         PaintRing(self.smallDots, label ~= "" and (rating.score or 0) / 100 or 0)
         self:DressModel()
     end
