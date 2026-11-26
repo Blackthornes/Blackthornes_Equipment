@@ -458,7 +458,8 @@ function Crafting:SourceFor(itemID, player, band)
     end
 
     local professions = self:Professions()
-    if craft.w and (professions[craft.w[1]] or 0) < craft.w[2] then return nil end
+    -- Gear only a crafter can wear (goggles, say) stays listed; the row
+    -- says the skill it needs (Crafting:Wear).
 
     local line, spellID = craft[1], craft[3]
     local skill = self:Skill(spellID, craft[2])
@@ -509,6 +510,32 @@ function Crafting:SourceFor(itemID, player, band)
     source.cost, source.partial = self:MaterialCost(itemID)
     if not source.bop then source.auction = self:AuctionPrice(itemID) end
     return source
+end
+
+--- The crafting skill an item asks of its wearer: { profession, rank,
+--- have, met }, or nil when it asks none. `met` is true once this
+--- character's skill reaches it.
+function Crafting:Wear(itemID)
+    local craft = ns.Crafts and ns.Crafts.ITEMS[itemID]
+    local wear = craft and craft.w
+    if type(wear) ~= "table" or not tonumber(wear[2]) then return nil end
+    local have = self:Professions()[wear[1]]
+    return {
+        profession = ns.Crafts.PROFESSIONS[wear[1]] or L["the profession"],
+        rank = wear[2], have = have, met = (have or 0) >= wear[2],
+    }
+end
+
+--- Does a pick wait on a crafting skill to wear it?
+function Crafting.WearWaits(pick)
+    return type(pick) == "table" and type(pick.wear) == "table" and not pick.wear.met
+end
+
+--- "Needs Engineering 245 to wear", or nil.
+function Crafting.WearText(pick)
+    local wear = type(pick) == "table" and pick.wear
+    if type(wear) ~= "table" then return nil end
+    return L.Format("Needs %s %d to wear", wear.profession, wear.rank)
 end
 
 --------------------------------------------------------------------------------

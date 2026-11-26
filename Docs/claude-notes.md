@@ -272,8 +272,16 @@ ts.LearnNext:WhereFor(recipeID)       -- { kind, name, zone, x, y, price }, or n
 ts.LearnNext:ShowTheWayFor(recipeID)  -- the Level Up tab's pin and chat line; true when set
 ```
 
-If these change in Tradeskills, change `Logic/Enchants.lua` too. Nothing
-else here calls the other addons, apart from the shared arrow table (see
+If these change in Tradeskills, change `Logic/Enchants.lua` too.
+
+Auction house upgrades (2026-11-26, see "More in Find Upgrades"):
+`Logic/AuctionGear.lua` reads, inside a pcall and read only,
+`ts.Prices:OnSale()` (`{ [itemID] = { price, count, seen, rolls } }` and
+the last scan's time) and listens with `ts.Prices:WatchScans(fn)`; Find
+Upgrades' Search the Auction House calls the existing
+`ts.Butler:SearchAuctions({ { itemID, count } })`. If these change in
+Tradeskills, change `Logic/AuctionGear.lua` and `UI/FindUpgrades.lua` too.
+Nothing else here calls the other addons, apart from the shared arrow table (see
 the quest arrow below) and the whispers of "Sending vendors and quests to
 Blackthornes", which only talk to Equipment.
 
@@ -2650,9 +2658,11 @@ Old records (a player's report, 2026-11-22): a player's save held notes from the
 
 ## The tooltip block (shared item tooltip lines)
 
-The owner said build it (2026-11-21, from the UI pass mockup), in Farmer, Tradeskills, Equipment and Butler. Every Blackthornes line on an item tooltip goes on in one block: a blank row with a thin gold line of our own on it (a texture, hidden when the tooltip clears), then each line as a yellow name ending ":" on the left and a white answer on the right, no blank rows between addons, "Hold Shift for more." last and once. `UI/TooltipBlock.lua` is the same file in the four (FILE_VERSION 1; a fix belongs in all four). `_G.BlackthornesTooltipBlock` holds the parts and the one hook (the item post call, else OnTooltipSetItem on GameTooltip, ItemRefTooltip and the shopping tooltips); the newest copy's writer wins. Each addon works out its own lines and hands them over with `TooltipBlock:Provide(part, section, order, fn)`, `fn(tooltip, data)` returning lines and whether one was held for Shift; it no longer writes item lines itself.
+The owner said build it (2026-11-21, from the UI pass mockup), in Farmer, Tradeskills, Equipment and Butler. Every Blackthornes line on an item tooltip goes on in one block: a blank row with a thin gold line of our own on it (a texture, hidden when the tooltip clears), then each line as a yellow name ending ":" on the left and a white answer on the right, no blank rows between addons, "Hold Shift for more." last and once. `UI/TooltipBlock.lua` is the same file in the four (FILE_VERSION 2; a fix belongs in all four). `_G.BlackthornesTooltipBlock` holds the parts and the one hook (the item post call, else OnTooltipSetItem on GameTooltip, ItemRefTooltip and the shopping tooltips); the newest copy's writer wins. Each addon works out its own lines and hands them over with `TooltipBlock:Provide(part, section, order, fn)`, `fn(tooltip, data)` returning lines and whether one was held for Shift; it no longer writes item lines itself.
 
 Order: price (Tradeskills `Tradeskills:price` 1, Butler vendor prices `Butler:price` 2), source (Farmer `Farmer:source` 1 "Farm At:", Equipment `Equipment:source` 2 "Drops From:"), advice (Equipment `Equipment:advice` 1 "For <spec>:", "For <alt>:", "Best Enchant:", "Weapon Master:", the suffix name or "Random Roll:", "Crafting:"; Butler `Butler:advice` 2 "Butler Says:"), holders (Butler `Butler:holders` 1 "You Have:", "Your Characters:"). Tradeskills maps its line names to the block's at write time (`ItemTooltip.BLOCK_LABELS`), so other windows keep "Demand" and the like; the stack count is read from the tooltip owner's bag slot. Pets' taming lines, Farmer's kill lines and Tradeskills' enchant spell lines are not item tooltips and are left alone. Tested in each addon's `tools/test_tooltipblock.lua`.
+
+Shift lines open at the bottom (the owner said build it, 2026-11-26, Tradeskills idea 8, a player asked). A line that shows only because Shift is held carries `shift = true`; the board writes every other line first, then a second blank row with its own thin gold line (`shared.shiftRules`, hidden on clear and at each write), then the Shift lines, each group in the block's order. Holding Shift adds to the bottom and nothing above moves. Each line keeps its Off, Shift or Always choice; a line on Always never gets `shift`. Detail lines that show only while Shift is held whatever the choice (Tradeskills' crate extras, Average Paid, Used In recipes) are always `shift`. The hook on OnTooltipCleared calls the newest copy's `Forget` (`shared.handlers.Forget`). No setting of its own: the hint shows only while a line is on Shift, so setting every line to Off or Always on the Tooltips page takes it away.
 ## The window key (2026-11-21)
 
 The owner said build it (UI pass, keys and Options line): every addon has
@@ -3360,6 +3370,31 @@ same. A bank whose gear changed marks the finder stale. New word "in your
 bags" (six languages) waits for the owner's OK. Tested in
 `tools/test_dungeonstab.lua` section 9.
 
+## Look choices (Font, Colors, Fold Gem, 2026-11-26)
+
+The owner said build it (Equipment improvement idea 9, words from its
+mockup). Three rows on the All Addons page of every addon, picked once for
+all five: "Font:" House (the game's own, as before), Game (the game's plain
+chat font) or Clear (Liberation Sans, SIL Open Font License 1.1, shipped
+unchanged in `Media/Fonts` with its license; Chinese and Korean clients
+draw the house font for it, since it has no such letters); "Colors:" Warm
+(as before) or Darker (the warm tint taken out of the glass, gold kept);
+"Fold Gem:" Round Button (as before) or Small Bar (badge, title and the
+window's small number, along the window's top right corner).
+
+The logic is in `UI/SharedChoices.lua` (the same in all five): `Look`,
+`SetLook`, `Drawn`, `NeedsReload`, `FontPath`, `Recolor`. Picks are kept in
+every loaded addon's save as `lookChoices = { font, colors, fold, at }`
+(never rename it), the newest `at` winning, and Restore Defaults leaves it.
+Font and Colors are read once, the first time the addon draws after its
+save is in, so they wait for /reload (Settings shows Reload). `Theme.FONT`
+is looked up as read (`Theme.Font()`), and `Theme.Unpack`/`Theme.Font` put
+Darker into the palette in place, once. The fold pick counts from the next
+fold (`FoldWindow.Style`, `FoldWindow.Bar`, `FoldWindow.FitBar`). Font names
+use the keys `House##font`, `Game##font`, `Clear##font`, since "Clear" is a
+button's word elsewhere. Tested in `tools/test_housekit.lua` and
+`tools/test_foldwindow.lua`. Not yet seen in game.
+
 ## Why It's Better (2026-11-26)
 
 The owner said build it (mockup equipment-improve-3-why-better). A percent says
@@ -3514,3 +3549,73 @@ The owner said build it from the mockup `equipment-improve-5-level-up`
   slower, Subtle quicker, Off just shows.
 - Tested in `tools/test_levelupcard.lua` and `tools/test_settings.lua`.
   Not seen in game: the look, the drag, and the event on Forever.
+## More in Find Upgrades (2026-11-26)
+
+The owner said "build 1-9" on the improvement mockups (2026-11-26); this is
+#1, `equipment-improve-1-find-upgrades`. His yes covers the mockup's words.
+
+- **Reputation box** (FROM, after Crafted): ticked until unticked, saved
+  as `finderSourcesOff.rep` (`FinderUI.REP`; the same table as the source
+  boxes, nothing renamed). It is a kind of gear, not of place, so it hides
+  whole rows (`pick.rep`). Its count is the rows a faction sells. While it
+  hides any, a strip under the list says "N upgrades from reputation
+  vendors are hidden." with "Show them" (`Find:PaintRepStrip`,
+  `Find:ShowReputation`). `FinderUI:SourceFilter`,
+  `UpgradeQuest.WindowAllows` and `UpgradeQuest:Choose` leave such gear out
+  too, so the old list, the character sheet and the upgrade quest agree.
+  Show All ticks it again (it clears `finderSourcesOff`).
+- **Gear only a crafter can wear** (goggles): `Crafting:SourceFor` used to
+  drop it when the skill was short. Now it stays, and every pick carries
+  `wear = { profession, rank, have, met }` (`Crafting:Wear`, from
+  `Data/Crafts.lua`'s `w`). The row and sheet say "Needs Engineering 245 to
+  wear" (`Crafting.WearText`), amber while `Crafting.WearWaits(pick)`,
+  muted once met. Waiting gear is amber gear: not a quest yet
+  (`UpgradeQuest.CanFollow` gives the same words), hidden by Only What I
+  Can Get Now (`FinderUI.GetsNow`), skipped by `Choose` and My Gear's
+  "later". A bind on pickup piece still needs the profession to be listed.
+- **Find on the Dungeons tab**: a search box after Off Spec. It narrows the
+  picked dungeon's lines (`Dungeons.Match`: a drop's item, slot and boss, a
+  quest's title and reward; a boss's name keeps all its drops; notes drop
+  out) and the foot adds "N of M shown." Typing reads the kept lines
+  (`allLines`), so it judges nothing. Session only; it stays while another
+  dungeon is picked.
+- **A pair against a worn two-hander**: before, only a two-hander was
+  weighed against both hands. Now, while the main hand holds a two-hander,
+  the Main Spec's scan of today notes every one-hander and off-hand piece
+  it judges (`Finder.NotePair`; main: one-hand and main-hand weapons; off:
+  shields, held items, off-hand weapons, and one-handers for a class that
+  dual wields) and `Finder:MakePairs` keeps up to `PAIRS_KEPT` (3): each
+  strong main hand with its best partner, each item in one pair at most,
+  only when the two scores beat the two-hander's by 1% or more. Pieces that
+  wait on a level, training or a weapon skill, and gear owned or ignored,
+  are left out. Sources are worked out for those few only. `found.pairs`
+  holds them (a pick of the main hand with `pair = { itemID, link,
+  sources, result }`); nothing else reads it, so the upgrade quest, My
+  Gear and the small panel are unchanged. Find Upgrades shows each as one
+  line, "A + B", tagged Pair, slot Both Hands, under the Main Hand slot
+  filter, with where each comes from; the partner needs a source the
+  filters let through too. The sheet lists both items' places; its buttons
+  act on the main hand. Off-hand weapons count at their full score, as the
+  two-hander check already did.
+- **Auction house gear** (`Logic/AuctionGear.lua`, a new file): read from
+  Tradeskills' recent scans, never a scan of its own (see "What this addon
+  calls in Tradeskills"). Kept until Tradeskills says a scan finished,
+  which marks the finder stale and refreshes the page. `CandidateIDs` adds
+  gear on sale that no other place offers (client class 2 or 4, a worn
+  slot); `SourcesFor` adds `{ kind = "auction", price, count, seen, at }`.
+  Random suffix gear is left out: the best roll the finder judges is not
+  the roll on sale. The upgrade quest never picks an auction source
+  (`UpgradeQuest.BestSource` skips it), so a piece only on sale has no
+  Make It My Quest; Search the Auction House leads its sheet. FROM gets
+  an Auction House box (`finderSourcesOff.auction`; only while Tradeskills
+  answers), and AUCTION PRICE a stepper (Any, Up to 1g, 5g, 20g; saved as
+  `findAuctionMost`, copper, nil for Any; Show All clears it) with "Prices
+  are from your last scan, N ago." A source shows only within that price
+  and the gold carried (`AuctionGear:Affords`). The sheet says the lowest
+  price, how many and when, and the gold you have. The footer adds "N are
+  on the auction house."
+- **Gain bars**: a thin bar under each row's gain, its length the gain
+  against the biggest shown (`Find.BarShare`; an empty slot fills it).
+- Tested in `tools/test_findmore.lua`, `tools/test_finderpairs.lua` and
+  `tools/test_auctiongear.lua`. Not yet seen in game. Full restart (a new
+  file and the TOC).

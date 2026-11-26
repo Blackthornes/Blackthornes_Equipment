@@ -45,6 +45,12 @@
 local _, ns = ...
 local L = ns.L
 
+-- Gear that waits on a crafting skill to wear it (Crafting.WearWaits).
+local function WearWaits(pick)
+    local crafting = ns.Crafting
+    return crafting ~= nil and crafting.WearWaits ~= nil and crafting.WearWaits(pick)
+end
+
 local UpgradeQuest = ns.NewModule("UpgradeQuest")
 
 -- Upgrades a level up offered that the player chose not to switch to, this
@@ -417,6 +423,8 @@ function UpgradeQuest.WindowAllows(source, pick)
     if source.kind == "dungeon" and UpgradeQuest:Sets("noDungeon") then return false end
     local off = db.finderSourcesOff
     if type(off) == "table" and kind and off[kind] == true then return false end
+    -- The Reputation box unticked: no gear a faction sells.
+    if type(off) == "table" and off.rep == true and type(pick) == "table" and pick.rep then return false end
     if db.finderGetNow == true then
         if type(pick) == "table" and pick.needs then return false end
         if source.kind == "craft" and source.state ~= "known" and source.state ~= "alt" then return false end
@@ -495,7 +503,8 @@ end
 function UpgradeQuest.BestSource(sources, zone, tab, here, filtered)
     local best, bestEase
     for _, source in ipairs(sources or {}) do
-        if (not tab or source.kind == tab) and UpgradeQuest.InZone(source, here)
+        -- The auction house is no quest: it shows on Find Upgrades only.
+        if source.kind ~= "auction" and (not tab or source.kind == tab) and UpgradeQuest.InZone(source, here)
             and (not filtered or UpgradeQuest.WindowAllows(source)) then
             local ease = UpgradeQuest.Ease(source, zone)
             if not best or ease > bestEase then best, bestEase = source, ease end
@@ -577,11 +586,15 @@ function UpgradeQuest:Choose(found, except, tab)
     local mostRep = { gain = 0, ease = 0 }
     -- The slots whose short list holds reputation gear.
     local crowded = {}
+    local off = ns.db and ns.db.finderSourcesOff
+    local repOff = type(off) == "table" and off.rep == true
     local function Look(slot, list, repToo)
         for _, pick in ipairs(list) do
             if pick.rep then crowded[slot] = true end
-            if not pick.needs and not pick.remote and not pick.at and not skipped[pick.itemID]
-                and not (except and except[pick.itemID]) and (repToo or not pick.rep) then
+            if not pick.needs and not pick.remote and not pick.at and not WearWaits(pick)
+                and not skipped[pick.itemID]
+                and not (except and except[pick.itemID]) and (repToo or not pick.rep)
+                and not (repOff and pick.rep) then
                 local source, ease = self.BestSource(pick.sources, zone, tab, here, true)
                 if source then
                     local worth = Worth(pick.result, pick.gain or 0, ease)
@@ -660,6 +673,7 @@ function UpgradeQuest.CanFollow(pick)
             tostring(pick.needs.faction))
     end
     if pick.at then return nil, L.Format("you can wear it from level %d", pick.at) end
+    if WearWaits(pick) then return nil, ns.Crafting.WearText(pick) end
     local usable = {}
     for _, source in ipairs(pick.sources or {}) do
         if not (source.kind == "craft" and source.state == "other") then usable[#usable + 1] = source end
@@ -2192,7 +2206,8 @@ function UpgradeQuest:WindowFiltersChanged()
     for _, tab in ipairs(TABS) do
         local quest = Valid(quests[tab.key])
         if quest and not quest.followed
-            and ((quest.here and not keeps) or not self.WindowAllows(quest.source)) then
+            and ((quest.here and not keeps) or not self.WindowAllows(quest.source,
+                { rep = ns.Finder and ns.Finder.Rep(quest.itemID) or nil })) then
             quests[tab.key] = nil
         end
     end
@@ -2777,6 +2792,7 @@ end
 --- Is a pick one the quest could go after now (not waiting, not ignored)?
 local function Eligible(pick, skipped)
     return type(pick) == "table" and not pick.needs and not pick.remote and not pick.at
+        and not WearWaits(pick)
         and not skipped[pick.itemID]
 end
 
@@ -2862,7 +2878,8 @@ function UpgradeQuest:RewardMark(questID)
         local marks = {}
         for slot, list in pairs(found.all) do
             for _, pick in ipairs(list) do
-                if not pick.needs and not pick.remote and not pick.at and pick.result then
+                if not pick.needs and not pick.remote and not pick.at and not WearWaits(pick)
+                    and pick.result then
                     for _, source in ipairs(pick.sources or {}) do
                         if source.kind == "quest" and source.questID then
                             local percent = tonumber(pick.result.percent) or 0
