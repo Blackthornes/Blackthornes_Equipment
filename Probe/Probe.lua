@@ -661,7 +661,7 @@ function Probe:Looks()
         end
         target.linksBefore = { CountLinks("target") }
         if Has("NotifyInspect") then
-            self:RegisterEvent("INSPECT_READY", function(_, _, guid)
+            ns.RegisterEvent(self, "INSPECT_READY", function(_, _, guid)
                 found.inspectReady = Text(true, guid)
             end)
             target.notify = Text(pcall(NotifyInspect, "target"))
@@ -749,7 +749,7 @@ function Probe:LooksReport()
         if Has("GetInspectSpecialization") then
             Line("  their spec", Text(pcall(GetInspectSpecialization, "target")))
         end
-        self:UnregisterEvent("INSPECT_READY")
+        ns.UnregisterEvent(self, "INSPECT_READY")
         -- Let go of the inspect, unless the game's own inspect window is open.
         local inspect = rawget(_G, "InspectFrame")
         local shown = inspect and select(2, pcall(inspect.IsShown, inspect))
