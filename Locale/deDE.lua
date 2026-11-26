@@ -1268,6 +1268,21 @@ L["Pick None to turn it off. Starts on None."] = "Wähl Keine, um sie auszuschal
 L["%d upgrades for %s, %d for %s."] = "%d Verbesserungen für %s, %d für %s."
 L["no upgrade"] = "keine Verbesserung"
 
+-- Look choices (All Addons page)
+L["Font:"] = "Schrift:"
+L["House##font"] = "Haus"
+L["Game##font"] = "Spiel"
+L["Clear##font"] = "Klar"
+L["Colors:"] = "Farben:"
+L["Warm"] = "Warm"
+L["Darker"] = "Dunkler"
+L["Fold Gem:"] = "Einklappen:"
+L["Round Button"] = "Runder Knopf"
+L["Small Bar"] = "Kleine Leiste"
+L["House, Game or Clear. Clear is plain and easy to read, and it has Russian letters."] = "Haus, Spiel oder Klar. Klar ist schlicht und gut zu lesen, und es hat russische Buchstaben."
+L["Warm is the look today. Darker takes the warm tint out of the glass."] = "Warm ist das Aussehen wie bisher. Dunkler nimmt den warmen Ton aus dem Glas."
+L["What a folded window turns into: the round button, or a small bar with its title."] = "Was aus einem eingeklappten Fenster wird: der runde Knopf oder eine kleine Leiste mit seinem Namen."
+
 -- Why It's Better (2026-11-26)
 L["More %s and %s."] = "Mehr %s und %s."
 L["More %s."] = "Mehr %s."

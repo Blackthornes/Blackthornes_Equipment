@@ -1011,6 +1011,21 @@ function SettingsUI:BuildGeneral()
     local textRow = pages:Row("all", 1, L["Text Size:"], "")
     controls.textSize = ns.SettingsPages.TextSizeControl(textRow, CONTROL_X, function() return ns.db end)
 
+    -- Look choices (the owner said build it, 2026-11-26): the same three
+    -- rows in every Blackthornes addon, picked once for all of them. See
+    -- UI/SharedChoices.lua.
+    if ns.SharedChoices and ns.SharedChoices.LOOKS then
+        local fontRow = pages:Row("all", 1, L["Font:"],
+            L["House, Game or Clear. Clear is plain and easy to read, and it has Russian letters."])
+        controls.lookFont = ns.SettingsPages.LookControl(fontRow, CONTROL_X, "font")
+        local colorsRow = pages:Row("all", 1, L["Colors:"],
+            L["Warm is the look today. Darker takes the warm tint out of the glass."])
+        controls.lookColors = ns.SettingsPages.LookControl(colorsRow, CONTROL_X, "colors")
+        local foldRow = pages:Row("all", 1, L["Fold Gem:"],
+            L["What a folded window turns into: the round button, or a small bar with its title."])
+        controls.lookFold = ns.SettingsPages.LookControl(foldRow, CONTROL_X, "fold")
+    end
+
     -- The Equipment window's size, the one its grip saves.
     local sizeRow = pages:Row("general", 1, L["Window Size:"], nil)
     controls.windowScale = ns.SettingsPages.WindowSizeControl(sizeRow, CONTROL_X,
@@ -1253,6 +1268,11 @@ function SettingsUI:Refresh()
     if controls.offSpec then controls.offSpec:SetValue(self:OffSpecIndex(), true) end
 
     controls.textSize:Sync()
+    if controls.lookFont then
+        controls.lookFont:Sync()
+        controls.lookColors:Sync()
+        controls.lookFold:Sync()
+    end
     controls.windowStyle:Sync()
     controls.combineButtons:SetChecked(not ns.SharedMinimap or ns.SharedMinimap.Combined())
     local One = ns.GearWindow and ns.GearWindow.One()
