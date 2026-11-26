@@ -41,6 +41,9 @@ local CARD_GAP = 10
 local CARD_WIDTH = math.floor((WIDTH - PAD * 2 - CARD_GAP * 2) / 3)
 
 local FOOTER = 30
+-- Switch Gear's row above the cards (Logic/SwitchGear.lua), only while an
+-- Off Spec is picked.
+local SWITCH = 34
 -- The figure's side, and the gap before the slot's side.
 local LEFT = 566
 local GAP = 12
@@ -431,12 +434,124 @@ function MyGear:PaintCards(state)
     for _, card in pairs(cards) do card:Hide() end
     for index, card in ipairs(shown) do
         card:ClearAllPoints()
-        card:SetPoint("TOPLEFT", self.page, "TOPLEFT", PAD + (index - 1) * (CARD_WIDTH + CARD_GAP), -CARDS_TOP)
+        card:SetPoint("TOPLEFT", self.page, "TOPLEFT", PAD + (index - 1) * (CARD_WIDTH + CARD_GAP),
+            -(CARDS_TOP + self:SwitchRoom()))
         card.number:SetText(tostring(index))
         card:Show()
     end
     self.cardsShown = #shown
     return #shown
+end
+
+--------------------------------------------------------------------------------
+-- Switch Gear (Logic/SwitchGear.lua): which spec's gear is on, and one
+-- button that puts the other's on. Shows only while an Off Spec is picked.
+--------------------------------------------------------------------------------
+
+local function SpecButton(parent, which)
+    return Widgets.CreateButton(parent, "", function()
+        local state = MyGear.switchState
+        if state and state.go == which and ns.SwitchGear then ns.SwitchGear:Go(which) end
+    end, { width = 120, height = 22 })
+end
+
+function MyGear:BuildSwitch()
+    local bar = CreateFrame("Frame", nil, self.page)
+    bar:SetPoint("TOPLEFT", self.page, "TOPLEFT", PAD, -CARDS_TOP)
+    bar:SetPoint("TOPRIGHT", self.page, "TOPRIGHT", -PAD, -CARDS_TOP)
+    bar:SetHeight(SWITCH - 8)
+    bar:Hide()
+    self.switchBar = bar
+
+    local wearing = Theme.CreateLabel(bar, "small", "gilt")
+    wearing:SetPoint("LEFT", 2, 0)
+    wearing:SetText(L["Wearing:"])
+    local main = SpecButton(bar, "main")
+    main:SetPoint("LEFT", wearing, "RIGHT", 8, 0)
+    local off = SpecButton(bar, "off")
+    off:SetPoint("LEFT", main, "RIGHT", 4, 0)
+    self.switchMain, self.switchOff = main, off
+
+    local go = Widgets.CreateButton(bar, "", function()
+        if ns.SwitchGear then ns.SwitchGear:Go() end
+    end, { width = 150, height = 24, primary = true })
+    go:SetPoint("RIGHT", 0, 0)
+    go:SetScript("OnEnter", function(self) MyGear:SwitchTooltip(self) end)
+    go:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    self.switchGo = go
+
+    local count = Theme.CreateLabel(bar, "small", "muted", "RIGHT")
+    count:SetPoint("RIGHT", go, "LEFT", -12, 0)
+    self.switchCount = count
+end
+
+--- The room the row takes above the cards: none while it is hidden.
+function MyGear:SwitchRoom()
+    return Shown(self.switchBar) and SWITCH or 0
+end
+
+--- Every piece that will change, in a tooltip: "Head: Green Iron Helm ->
+--- Helm of Sample Guarding".
+function MyGear:SwitchTooltip(owner)
+    local state = self.switchState
+    if not (state and GameTooltip) then return end
+    GameTooltip:SetOwner(owner, "ANCHOR_BOTTOMLEFT")
+    local count = #state.steps
+    GameTooltip:AddLine(count == 1 and L["1 piece will change"] or L.Format("%d pieces will change", count),
+        Theme.Unpack("gilt"))
+    local names = {}
+    for _, entry in ipairs(Slots()) do names[entry[1]] = entry[2] end
+    local twoHander = false
+    pcall(function()
+        local held = ns.Items:Info(ns.Items:WornNow(MAIN_HAND))
+        twoHander = held and held.equipLoc == "INVTYPE_2HWEAPON" or false
+    end)
+    local show = ns.Items.ShowLink
+    for _, step in ipairs(state.steps) do
+        local from = step.from and show(step.from)
+            or (step.slot == OFF_HAND and twoHander and L["Held by your two-hander"]) or L["Empty"]
+        GameTooltip:AddDoubleLine(names[step.slot] or "", (from or "") .. "  >  " .. (show(step.to) or ""),
+            Theme.Unpack("muted"))
+    end
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine(L["Equipment picks the best pieces you carry for each spec. There is nothing to save or set up."],
+        Theme.Unpack("muted"))
+    GameTooltip:Show()
+end
+
+--- Fill the row from where things stand. A row that comes or goes moves
+--- the cards and the slots under it.
+function MyGear:PaintSwitch()
+    if not self.switchBar then return end
+    local SwitchGear = ns.SwitchGear
+    local state = SwitchGear and self:IsShown() and SwitchGear:State() or nil
+    self.switchState = state
+    local was = Shown(self.switchBar)
+    self.switchBar:SetShown(state ~= nil)
+    if state then
+        local mainName = Weights:SpecName(Weights:PlayerClass(), (Weights:MainSpec())) or ""
+        local offName = ns.OffSpec:Name() or ""
+        self.switchMain:SetText(L.Format("Main Spec (%s)", mainName))
+        self.switchOff:SetText(L.Format("Off Spec (%s)", offName))
+        self.switchMain:SetLabelColor(state.on == "main" and "good" or "gilt")
+        self.switchOff:SetLabelColor(state.on == "off" and "good" or "gilt")
+        local count = #state.steps
+        local busy = SwitchGear:Busy()
+        self.switchGo:SetShown(state.go ~= nil and not busy)
+        if state.go then
+            self.switchGo:SetText(L.Format("Put On %s Gear", state.go == "off" and offName or mainName))
+        end
+        if busy then
+            self.switchCount:SetText(L["They go on after the fight."])
+        elseif state.go then
+            self.switchCount:SetText(count == 1 and L["1 piece will change"] or L.Format("%d pieces will change", count))
+        else
+            self.switchCount:SetText("")
+        end
+    end
+    if was ~= (state ~= nil) and self.state and not self.painting then
+        self:PlaceBody(self:PaintCards(self.state))
+    end
 end
 
 --- Put on every upgrade in the bags that needs no training, one after the
@@ -1360,6 +1475,7 @@ function MyGear:Build(area)
     self.page = page
 
     self:BuildCards()
+    self:BuildSwitch()
 
     -- Everything under the cards: it moves up when no card shows.
     local body = CreateFrame("Frame", nil, page)
@@ -1416,7 +1532,7 @@ end
 
 --- The body sits under the cards, or at the top when none shows.
 function MyGear:PlaceBody(cards)
-    local top = cards > 0 and (CARDS_TOP + CARD_HEIGHT + 10) or CARDS_TOP
+    local top = (cards > 0 and (CARDS_TOP + CARD_HEIGHT + 10) or CARDS_TOP) + self:SwitchRoom()
     if self.bodyTop == top then return end
     self.bodyTop = top
     self.body:ClearAllPoints()
@@ -1455,6 +1571,9 @@ function MyGear:Present(found)
     local state = self:Read(found, off)
     self.state = state
     self.slot = self:ChooseSlot(state)
+    self.painting = true
+    pcall(self.PaintSwitch, self)
+    self.painting = false
     -- Gear Road draws from its own scan (UI/GearRoad.lua).
     if self:View() == "road" then return state end
     self:PlaceBody(self:PaintCards(state))

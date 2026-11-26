@@ -90,6 +90,9 @@ function Doors:Note()
     spot.at = Now()
     self.outside = spot
     self.lastNoteWhy = nil
+    -- Switch Gear's dungeon door card (Logic/SwitchGear.lua).
+    local switch = ns.SwitchGear
+    if switch and switch.NoteSpot then pcall(switch.NoteSpot, switch, spot) end
     return true
 end
 

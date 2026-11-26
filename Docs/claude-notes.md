@@ -2037,6 +2037,14 @@ has no probe). None has a Settings button (the owner, 2026-10-23: checks and deb
 check that players run for a report goes through `ns.KeepCheck` too, and a
 fix to it belongs in all four.
 
+`/beq probe looks` (2026-11-26, before Try It On and Another Player's
+Gear are built): makes a hidden DressUpModel, PlayerModel and ModelScene
+actor once, dresses them with a worn item, asks to inspect the target,
+waits `Probe.LOOKS_WAIT` (2) seconds and saves the report as `probe looks`.
+"model file" with a number means a body loaded; "links after" counts the
+target's gear links. Target a player of your class first. Tested in
+`tools/test_probe.lua`.
+
 When the owner says "read the probe": he has run the check and typed
 `/reload` (or logged out). Read the addon's account save, read only, from
 `WTF\Account\<account>\SavedVariables\` (`Blackthornes_TS.lua`,
@@ -3345,3 +3353,61 @@ Figure, List and Road; `myGearView` (never rename) now also takes "road".
   so a "PLATE OPENS" stop shows only once that gear counts.
 - Tested in `tools/test_gearroad.lua`. Not seen in game: the look, card
   heights, wide-scan time on a real data set.
+
+## First Time Setup (2026-11-26)
+
+The owner said build it, from the mockup
+`Docs/mockups/equipment-improve-6-first-time.html` (project files); his yes
+covers its words. `UI/Welcome.lua` (`ns.Welcome`): the first time a new
+player opens the Equipment window, a card lies over its page area
+(`Welcome:Offer`, called at the end of `Gear:ShowTab`, so it shows over any
+tab and inside the one window too). Three parts: the Main Spec and Off Spec
+drop-downs every page shows (`FinderUI.MainSpecChoice`, they set the spec at
+once), then Upgrade Quest, Quest Arrow and Put On Upgrades (unticked, as they
+start), then Green Arrows (`bagArrows`) and Tooltip Lines (`tooltipLine`,
+ticked, as they start). The boxes change nothing until Done; Done sets each
+box that moved through the same calls Settings uses (`UpgradeQuest:TurnOn`
+or `SetEnabled`, `QuestArrow:SetOn`, `SettingsUI.RedrawArrows`,
+`TooltipShift:Apply`, which keeps the Shift or Always choice). Skip changes
+nothing more. Both set `welcomeSeen`.
+
+- **Saved key**: `welcomeSeen`, account wide (never rename). Set in
+  `LoadSavedVariables` before the defaults: false for an empty save (a new
+  player), true for any save that already held something, so current players
+  never see it. Not in `SETTING_KEYS`, so Set Default leaves it.
+  `tools/testenv.lua` sets it true so other suites see their pages bare.
+- Closing the window without Skip or Done leaves it for the next open.
+- `/beq welcome` opens it again (typed only).
+- Tested in `tools/test_welcome.lua`. Not yet seen in game.
+
+## Switch Gear (2026-11-26)
+
+The owner said build it from the mockup (`equipment-improve-2-switch-gear`).
+One button on My Gear puts the Off Spec's gear on and the Main Spec's back.
+`Logic/SwitchGear.lua` (new file, so a full restart).
+
+- Shows only while an Off Spec is picked (Off Spec starts on None). The row
+  sits above My Gear's cards (`MyGear:BuildSwitch`, `PaintSwitch`,
+  `SwitchRoom`): "Wearing:" with both specs, the count of pieces and the
+  button. The list of pieces is the button's tooltip, since the page has no
+  room for it under the cards and the figure.
+- The Off Spec's pieces are `OffSpec:Outfit()`. On the way there what came
+  off is noted per character in `charDB.swapBack` (`{ [slot] = link }`,
+  never rename it); the way back puts those on again and lets the note go.
+  Without a note the way back is `OffSpec:MainOutfit()` (the same outfit
+  maker, judged as the Main Spec; outfits are now kept by spec).
+- Which gear is on is worked out, never saved (`SwitchGear:State`).
+- One piece at a time through EquipItemByName, `SETTLE` seconds apart. In a
+  fight nothing is tried: it waits for PLAYER_REGEN_ENABLED, and a fight
+  that starts mid-swap holds the rest (`waiting`, `FightOver`). A slot is
+  never emptied; rings and trinkets count as pairs; a fishing pole keeps the
+  hands. Only the carried bags, never the bank or the game's gear sets.
+- Also `/beq swap` and a key (`BLACKTHORNESEQUIPMENT_SWITCHGEAR` in
+  Bindings.xml).
+- The dungeon door card: "Ask at Dungeon Doors:" (`swapAtDoors`, account
+  wide, off unless ticked; never rename it). `DungeonDoors:Note` hands each
+  spot outside to `SwitchGear:NoteSpot`; within `DOOR_NEAR` of a door with
+  the Main Spec's gear on, a banner asks once (Put It On, Not Now; Not Now
+  keeps that door quiet `QUIET` seconds). The banner takes `line`, `icon`
+  and `always` (shows with the upgrade banner switched off).
+- Tested in `tools/test_switchgear.lua`. Not yet seen in game.
