@@ -135,8 +135,9 @@ suite.check("says a frame type it could not make", text:find("PlayerModel|r  cou
 suite.check("checks the scene actor", text:find("ModelScene|r  made, actor has SetModelByUnit", 1, true), text)
 suite.check("names the target's class", text:find("class WARRIOR, same class as you", 1, true), text)
 suite.check("hears the inspect answer", text:find("inspect ready|r  Player-1-ABC", 1, true), text)
-suite.check("counts their links after", text:find("links after|r  2 of 19, first Helm of the Mountain, 1 raised", 1, true), text)
-suite.check("and none before", text:find("links before|r  0 of 19", 1, true), text)
+suite.check("counts their links after", text:find("gear after|r  links 2, item IDs 0, icons 0 of 19; first link Helm of the Mountain, first ID none, 1 raised", 1, true), text)
+suite.check("and none before", text:find("gear before|r  links 0,", 1, true), text)
+suite.check("reads them when the inspect answers", text:find("gear at ready|r  links 2,", 1, true), text)
 suite.check("lets go of the inspect", cleared)
 suite.check("saves it for Claude", ns.db.lastProbe.check == "probe looks")
 
