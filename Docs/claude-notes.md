@@ -3313,3 +3313,35 @@ reads "in your bags" or "in your bank"; a quest reward you own says the
 same. A bank whose gear changed marks the finder stale. New word "in your
 bags" (six languages) waits for the owner's OK. Tested in
 `tools/test_dungeonstab.lua` section 9.
+
+## Switch Gear (2026-11-26)
+
+The owner said build it from the mockup (`equipment-improve-2-switch-gear`).
+One button on My Gear puts the Off Spec's gear on and the Main Spec's back.
+`Logic/SwitchGear.lua` (new file, so a full restart).
+
+- Shows only while an Off Spec is picked (Off Spec starts on None). The row
+  sits above My Gear's cards (`MyGear:BuildSwitch`, `PaintSwitch`,
+  `SwitchRoom`): "Wearing:" with both specs, the count of pieces and the
+  button. The list of pieces is the button's tooltip, since the page has no
+  room for it under the cards and the figure.
+- The Off Spec's pieces are `OffSpec:Outfit()`. On the way there what came
+  off is noted per character in `charDB.swapBack` (`{ [slot] = link }`,
+  never rename it); the way back puts those on again and lets the note go.
+  Without a note the way back is `OffSpec:MainOutfit()` (the same outfit
+  maker, judged as the Main Spec; outfits are now kept by spec).
+- Which gear is on is worked out, never saved (`SwitchGear:State`).
+- One piece at a time through EquipItemByName, `SETTLE` seconds apart. In a
+  fight nothing is tried: it waits for PLAYER_REGEN_ENABLED, and a fight
+  that starts mid-swap holds the rest (`waiting`, `FightOver`). A slot is
+  never emptied; rings and trinkets count as pairs; a fishing pole keeps the
+  hands. Only the carried bags, never the bank or the game's gear sets.
+- Also `/beq swap` and a key (`BLACKTHORNESEQUIPMENT_SWITCHGEAR` in
+  Bindings.xml).
+- The dungeon door card: "Ask at Dungeon Doors:" (`swapAtDoors`, account
+  wide, off unless ticked; never rename it). `DungeonDoors:Note` hands each
+  spot outside to `SwitchGear:NoteSpot`; within `DOOR_NEAR` of a door with
+  the Main Spec's gear on, a banner asks once (Put It On, Not Now; Not Now
+  keeps that door quiet `QUIET` seconds). The banner takes `line`, `icon`
+  and `always` (shows with the upgrade banner switched off).
+- Tested in `tools/test_switchgear.lua`. Not yet seen in game.

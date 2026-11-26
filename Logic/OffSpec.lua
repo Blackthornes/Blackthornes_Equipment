@@ -40,7 +40,10 @@ local PARTIAL_WAIT = 2
 
 local depth = 0
 local saved = {}
-local outfit -- { key, slots = { [slot] = link or false }, owned = { [link] = true }, partial, at }
+-- Kept outfits by spec, the Off Spec's and the Main Spec's (for Switch
+-- Gear, Logic/SwitchGear.lua):
+-- [spec] = { key, slots = { [slot] = link or false }, owned = { [link] = true }, partial, at }
+local outfits = {}
 
 local function Now()
     local clock = rawget(_G, "GetTime")
@@ -97,7 +100,7 @@ end
 
 --- Forget the outfit (bags, gear worn, level or weights changed).
 function OffSpec:Forget()
-    outfit = nil
+    outfits = {}
 end
 
 local function Score(link, weights)
@@ -125,7 +128,8 @@ end
 local function MakeOutfit(weights)
     local Compare = ns.Compare
     local SLOTS = Compare.SLOTS
-    local shieldTank = Weights:ShieldTank(Weights:PlayerClass(), Weights.judgeAs)
+    -- The spec judged as now: the Off Spec inside Enter, else the Main.
+    local shieldTank = Weights:ShieldTank(Weights:PlayerClass(), (Weights:CurrentSpec()))
     local canDual = Weights:CanDualWield(Weights:PlayerClass(), Items:PlayerLevel())
     local slots, owned, partial = {}, {}, false
 
@@ -246,6 +250,7 @@ end
 --- The outfit for the spec judged as now (Weights.judgeAs set), kept until
 --- something it was made from changes.
 local function Outfit(spec)
+    local outfit = outfits[spec]
     local now = Now()
     -- With no clock (the tests) every call checks the key; in the game one
     -- frame's calls share one check.
@@ -260,6 +265,7 @@ local function Outfit(spec)
     local slots, owned, partial = MakeOutfit(weights)
     outfit = { spec = spec, key = OutfitKey(spec), slots = slots, owned = owned, partial = partial,
         at = now, checkedAt = now }
+    outfits[spec] = outfit
     return outfit
 end
 
@@ -269,8 +275,27 @@ function OffSpec:Outfit()
     local key = self:Key()
     if not key then return nil end
     local made
-    self:Run(function() made = outfit and outfit.slots end)
+    self:Run(function() made = outfits[key] and outfits[key].slots end)
     return made
+end
+
+--- The Main Spec's outfit, made the same way: the best piece owned for the
+--- Main Spec in each slot, worn or in the bags. For Switch Gear's way back
+--- when it kept no note of what was worn. Nil while judging for the Off
+--- Spec, or for a class with no weights.
+function OffSpec:MainOutfit()
+    if depth > 0 then return nil end
+    local main = Weights:MainSpec()
+    if not main then return nil end
+    local keptJudge, keptWorn = Weights.judgeAs, Items.wornAs
+    Weights.judgeAs, Items.wornAs = nil, nil
+    local ok, made = pcall(Outfit, "main:" .. main)
+    Weights.judgeAs, Items.wornAs = keptJudge, keptWorn
+    if not ok then
+        ns.Debug("offspec:", tostring(made))
+        return nil
+    end
+    return made and made.slots or nil
 end
 
 --- Is this carried link one of the outfit's pieces?
@@ -278,6 +303,7 @@ function OffSpec:InOutfit(link)
     if not (link and self:On()) then return false end
     self:Run(function() end)
     local plain = Items.PlainLink(link)
+    local outfit = outfits[self:Key()]
     return outfit ~= nil and outfit.owned ~= nil and plain ~= nil and outfit.owned[plain] == true
 end
 
