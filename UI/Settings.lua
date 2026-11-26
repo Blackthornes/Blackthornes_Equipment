@@ -226,13 +226,13 @@ SettingsUI.SETTING_KEYS = {
     "altTooltipLine", "arrowRoute", "autoEquip", "bagArrows", "bagSellCoins",
     "classTraining", "dropsTooltip", "enchantTooltip", "finderAhead",
     "finderGetNow", "finderScale", "finderShow", "finderZoneOnly",
-    "hideQuestTracker", "mapPins", "questArrow", "questArrowSize",
+    "hideQuestTracker", "levelUpCard", "mapPins", "questArrow", "questArrowSize",
     "questLevelsAbove", "questLogTrackedOnly", "questScale", "rewardButton",
     "settingsDescriptions", "showTracker", "slotUpgrades", "soloQuestsOnly",
-    "suffixLine", "tooltipLine", "tooltipShift", "upgradeChat",
+    "suffixLine", "swapAtDoors", "tooltipLine", "tooltipShift", "upgradeChat",
     "upgradeQuest", "upgradeQuestBiggest", "upgradeQuestStepOnly",
     "upgradeQuestStyle", "upgradeQuestZoneOnly", "upgradeQuestZoneSwap",
-    "upgradeToast", "useTomTom",
+    "upgradeToast", "useTomTom", "whyTooltip",
 }
 
 --- The same, for keys saved for one character.
@@ -653,6 +653,10 @@ function SettingsUI:BuildTooltips()
         L["Says if gear beats what you wear."])
     controls.tooltip = ShiftStepper(tooltipRow, "tooltipLine", "upgrade")
 
+    -- Why It's Better (2026-11-26): the plain line under the percent.
+    local whyRow = pages:Row("tooltips", 1, L["Why It's Better:"], nil)
+    controls.whyTooltip = ShiftStepper(whyRow, "whyTooltip", "why")
+
     local suffixRow = pages:Row("tooltips", 1, L["Random Roll Names:"],
         L["Adds a green's roll, like of the Monkey, to its tooltip."])
     controls.suffixLine = ShiftStepper(suffixRow, "suffixLine", "suffix")
@@ -696,6 +700,19 @@ local HUNTING = {
         L["Shows where each tracked upgrade comes from."], L["Show"], "MapPins" },
 }
 
+--- "Upgrade Arrows:" changed: redraw every arrow it covers, in the bags,
+--- on quest rewards, loot rolls, vendors and loot. The welcome card's Green
+--- Arrows box calls it too (UI/Welcome.lua).
+function SettingsUI.RedrawArrows()
+    if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
+    if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
+    if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
+    if ns.MoreMarks then
+        pcall(ns.MoreMarks.RefreshMerchant, ns.MoreMarks)
+        pcall(ns.MoreMarks.RefreshLoot, ns.MoreMarks)
+    end
+end
+
 --- A box's name in the grid: its Settings label without the colon.
 function SettingsUI.GridName(label)
     local name = tostring(label or ""):gsub("%s*\239\188\154%s*$", "")  -- the wide colon
@@ -731,15 +748,7 @@ function SettingsUI:BuildShowGrid()
     -- column top to bottom, then the right.
     local cells = {
         { "arrows", L["Upgrade Arrows:"], L["A green arrow on upgrades you can wear now."],
-          Plain("bagArrows", true, function()
-              if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
-              if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
-              if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
-              if ns.MoreMarks then
-                  pcall(ns.MoreMarks.RefreshMerchant, ns.MoreMarks)
-                  pcall(ns.MoreMarks.RefreshLoot, ns.MoreMarks)
-              end
-          end) },
+          Plain("bagArrows", true, SettingsUI.RedrawArrows) },
         { "sellCoins", L["Sell Coins:"], L["A gold coin on bag gear that's no upgrade and sells to a vendor."],
           Plain("bagSellCoins", true, function()
               if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
@@ -750,6 +759,10 @@ function SettingsUI:BuildShowGrid()
           end) },
         { "upgradeChat", L["Upgrades in Chat:"], L["A chat line when an upgrade lands in your bags."],
           Plain("upgradeChat", true) },
+        { "levelUpCard", L["Level Up Card:"], L["After a new level, a card shows new gear and spells to train."],
+          Plain("levelUpCard", true, function(checked)
+              if not checked and ns.LevelUpCard then ns.LevelUpCard:Hide() end
+          end) },
         Hunt(HUNTING[1]),
         Hunt(HUNTING[2]),
         Hunt(HUNTING[3]),
@@ -778,6 +791,11 @@ function SettingsUI:BuildShowGrid()
         { "autoEquip", L["Put On Upgrades:"],
           L["Puts an upgrade on as soon as you get it. Gear that would bind waits for your click."],
           Plain("autoEquip", false) },
+        -- Switch Gear's dungeon door card (Logic/SwitchGear.lua); off
+        -- unless ticked.
+        { "swapAtDoors", L["Ask at Dungeon Doors:"],
+          L["At a dungeon's door, a card offers to put on your Off Spec gear."],
+          Plain("swapAtDoors", false) },
     }
 
     local width = pages.opts.columnWidth
@@ -993,6 +1011,21 @@ function SettingsUI:BuildGeneral()
     local textRow = pages:Row("all", 1, L["Text Size:"], "")
     controls.textSize = ns.SettingsPages.TextSizeControl(textRow, CONTROL_X, function() return ns.db end)
 
+    -- Look choices (the owner said build it, 2026-11-26): the same three
+    -- rows in every Blackthornes addon, picked once for all of them. See
+    -- UI/SharedChoices.lua.
+    if ns.SharedChoices and ns.SharedChoices.LOOKS then
+        local fontRow = pages:Row("all", 1, L["Font:"],
+            L["House, Game or Clear. Clear is plain and easy to read, and it has Russian letters."])
+        controls.lookFont = ns.SettingsPages.LookControl(fontRow, CONTROL_X, "font")
+        local colorsRow = pages:Row("all", 1, L["Colors:"],
+            L["Warm is the look today. Darker takes the warm tint out of the glass."])
+        controls.lookColors = ns.SettingsPages.LookControl(colorsRow, CONTROL_X, "colors")
+        local foldRow = pages:Row("all", 1, L["Fold Gem:"],
+            L["What a folded window turns into: the round button, or a small bar with its title."])
+        controls.lookFold = ns.SettingsPages.LookControl(foldRow, CONTROL_X, "fold")
+    end
+
     -- The Equipment window's size, the one its grip saves.
     local sizeRow = pages:Row("general", 1, L["Window Size:"], nil)
     controls.windowScale = ns.SettingsPages.WindowSizeControl(sizeRow, CONTROL_X,
@@ -1183,9 +1216,11 @@ function SettingsUI:Refresh()
     controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
     controls.autoEquip:SetChecked(ns.db.autoEquip == true)
+    controls.swapAtDoors:SetChecked(ns.db.swapAtDoors == true)
     controls.bestArmorOnly:SetChecked(ns.Compare.BestArmorOnly())
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:Sync()
+    controls.whyTooltip:Sync()
     controls.altTooltipLine:Sync()
     controls.enchantTooltip:Sync()
     controls.dropsTooltip:Sync()
@@ -1233,6 +1268,11 @@ function SettingsUI:Refresh()
     if controls.offSpec then controls.offSpec:SetValue(self:OffSpecIndex(), true) end
 
     controls.textSize:Sync()
+    if controls.lookFont then
+        controls.lookFont:Sync()
+        controls.lookColors:Sync()
+        controls.lookFold:Sync()
+    end
     controls.windowStyle:Sync()
     controls.combineButtons:SetChecked(not ns.SharedMinimap or ns.SharedMinimap.Combined())
     local One = ns.GearWindow and ns.GearWindow.One()

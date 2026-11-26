@@ -92,6 +92,8 @@ _G.GameTooltip.AddLine = function(self, text, _, _, _, wrap)
     wraps[#self._lines] = wrap
 end
 ns.Tooltip:OnEnable()
+-- Why It's Better is tested in tools/test_whybetter.lua.
+ns.db.whyTooltip = false
 postCall(_G.GameTooltip, { id = 2, hyperlink = "item:2" })
 local lines = _G.GameTooltip._lines
 suite.check("a blank row and two lines on the tooltip", #lines == 3, #lines)

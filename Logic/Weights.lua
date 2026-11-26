@@ -1781,22 +1781,27 @@ end
 -- `ranged` says whether weapon dps counts as a ranged or a melee weapon.
 -- The second return is how much hit, in percent, counts toward the hit the
 -- spec cares about (HitKind), so Compare can stop counting it at the cap.
+--- What one point of a stat is worth to these weights, as Score counts
+--- it (nil when they don't weigh it).
+function Weights.WeightOf(name, weights, ranged)
+    if name == "dps" then
+        -- Not `ranged and rangedDps or meleeDps`: a spec with no ranged
+        -- weight would then count a bow's damage as melee damage.
+        if ranged then return weights.rangedDps end
+        return weights.meleeDps
+    elseif EITHER[name] then
+        local pair = EITHER[name]
+        return math.max(weights[pair[1]] or 0, weights[pair[2]] or 0)
+    elseif name == "spellPower" then
+        return Weights.SpellPowerWeight(weights)
+    end
+    return weights[name]
+end
+
 function Weights:Score(stats, weights, ranged)
     local score = 0
     for name, value in pairs(stats or {}) do
-        local weight
-        if name == "dps" then
-            -- Not `ranged and rangedDps or meleeDps`: a spec with no ranged
-            -- weight would then count a bow's damage as melee damage.
-            if ranged then weight = weights.rangedDps else weight = weights.meleeDps end
-        elseif EITHER[name] then
-            local pair = EITHER[name]
-            weight = math.max(weights[pair[1]] or 0, weights[pair[2]] or 0)
-        elseif name == "spellPower" then
-            weight = Weights.SpellPowerWeight(weights)
-        else
-            weight = weights[name]
-        end
+        local weight = Weights.WeightOf(name, weights, ranged)
         if weight then
             score = score + value * weight
         end

@@ -662,6 +662,21 @@ function FinderUI:SourceFilter(found)
     end
 end
 
+--- The From boxes alone, for My Gear's Gear Road (UI/GearRoad.lua): it
+--- shows gear for later on purpose, so Only What I Can Get Now and This
+--- Zone Only don't apply there.
+function FinderUI:KindFilter()
+    local on = {}
+    for _, entry in ipairs(SOURCE_BOXES) do on[entry[1]] = self:SourceOn(entry[1]) end
+    return function(pick)
+        local sources = {}
+        for _, source in ipairs(pick.sources or {}) do
+            if on[FinderUI.SourceKind(source)] ~= false then sources[#sources + 1] = source end
+        end
+        return sources
+    end
+end
+
 --- An item's name in its rarity colour, from its link: plain text, so it
 --- can be cut to fit. Forever writes the colour by name ("|cnIQ2:"), not
 --- as "|cff1eff00": then the colour comes from the item's quality, and if
