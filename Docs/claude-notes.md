@@ -2037,6 +2037,14 @@ has no probe). None has a Settings button (the owner, 2026-10-23: checks and deb
 check that players run for a report goes through `ns.KeepCheck` too, and a
 fix to it belongs in all four.
 
+`/beq probe looks` (2026-11-26, before Try It On and Another Player's
+Gear are built): makes a hidden DressUpModel, PlayerModel and ModelScene
+actor once, dresses them with a worn item, asks to inspect the target,
+waits `Probe.LOOKS_WAIT` (2) seconds and saves the report as `probe looks`.
+"model file" with a number means a body loaded; "links after" counts the
+target's gear links. Target a player of your class first. Tested in
+`tools/test_probe.lua`.
+
 When the owner says "read the probe": he has run the check and typed
 `/reload` (or logged out). Read the addon's account save, read only, from
 `WTF\Account\<account>\SavedVariables\` (`Blackthornes_TS.lua`,

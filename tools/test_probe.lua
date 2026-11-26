@@ -82,4 +82,62 @@ suite.check("a tree that raises is still listed",
 suite.check("says which bag windows there are", text:find("bag windows|r  none found", 1, true), text)
 suite.check("and what the arrows are hooked to", text:find("bag hooks|r  none", 1, true), text)
 
+-- /beq probe looks: on a client with none of it, it still reports.
+ns = env.Load()
+ns.HandleSlash("probe looks")
+text = env.ChatText()
+suite.check("looks runs on a bare client", text:find("looks missing|r  DressUpItemLink", 1, true), text)
+suite.check("says when no player is targeted", text:find("no player targeted", 1, true), text)
+suite.check("and saves the report", ns.db.lastProbe and ns.db.lastProbe.check == "probe looks",
+    ns.db.lastProbe and ns.db.lastProbe.check)
+
+-- A client with model frames and a warrior targeted. The report waits for
+-- the timer, and the inspect answers before it fires.
+ns = env.Load()
+local waiting
+_G.C_Timer = { After = function(_, fn) waiting = fn end }
+local tried, cleared
+_G.CreateFrame = function(kind, name, parent)
+    local frame = env.Stub({ _parent = parent })
+    if kind == "DressUpModel" then
+        frame.SetUnit = function() end
+        frame.TryOn = function(_, link) tried = link; return 0 end
+        frame.GetModelFileID = function() return 1100258 end
+    elseif kind == "PlayerModel" then
+        error("unknown frame type")
+    elseif kind == "ModelScene" then
+        frame.CreateActor = function() return { SetModelByUnit = function() return true end } end
+    end
+    if name then _G[name] = frame end
+    return frame
+end
+_G.UnitIsPlayer = function(unit) return unit == "target" end
+_G.UnitClass = function() return "Warrior", "WARRIOR" end
+_G.CanInspect = function() return true end
+local ready = false
+_G.NotifyInspect = function() end
+_G.ClearInspectPlayer = function() cleared = true end
+_G.GetInventoryItemLink = function(unit, slot)
+    if unit == "player" and slot == 5 then return "|Hitem:6731|h[Ironforge Breastplate]|h" end
+    if unit == "target" and ready and (slot == 1 or slot == 3) then return "|Hitem:9|h[Helm of the Mountain]|h" end
+    if unit == "target" and slot == 2 then error("secret value") end
+end
+ns.HandleSlash("probe looks")
+suite.check("waits before it reports", waiting ~= nil and not env.ChatText():find("DressUpModel|r", 1, true))
+suite.check("tries on a worn item", tried and tried:find("Ironforge Breastplate", 1, true), tried)
+ready = true
+ns.eventFrame:GetScript("OnEvent")(ns.eventFrame, "INSPECT_READY", "Player-1-ABC")
+waiting()
+text = env.ChatText()
+suite.check("says the dress up model was made", text:find("DressUpModel|r  made; has SetUnit, TryOn", 1, true), text)
+suite.check("reads its model file", text:find("model file|r  1100258", 1, true), text)
+suite.check("says a frame type it could not make", text:find("PlayerModel|r  could not be made", 1, true), text)
+suite.check("checks the scene actor", text:find("ModelScene|r  made, actor has SetModelByUnit", 1, true), text)
+suite.check("names the target's class", text:find("class WARRIOR, same class as you", 1, true), text)
+suite.check("hears the inspect answer", text:find("inspect ready|r  Player-1-ABC", 1, true), text)
+suite.check("counts their links after", text:find("links after|r  2 of 19, first Helm of the Mountain, 1 raised", 1, true), text)
+suite.check("and none before", text:find("links before|r  0 of 19", 1, true), text)
+suite.check("lets go of the inspect", cleared)
+suite.check("saves it for Claude", ns.db.lastProbe.check == "probe looks")
+
 suite.done()

@@ -511,6 +511,257 @@ function Probe:Upgrades()
     end
 end
 
-ns.RegisterHiddenCommand("probe", function()
+--------------------------------------------------------------------------------
+-- /beq probe looks: can Try It On and Another Player's Gear be built?
+--------------------------------------------------------------------------------
+-- Try It On wants a frame that draws the player and dresses it, inside our own
+-- window. Another Player's Gear wants the item links of an inspected player.
+-- This makes the model frames once, hidden and see-through, asks to inspect
+-- the target, waits LOOKS_WAIT seconds for the model to load and the inspect
+-- to answer, then reports. Nothing is saved but the report, nothing is sent.
+
+Probe.LOOKS_WAIT = 2
+
+Probe.LOOKS_CALLS = {
+    "DressUpItemLink", "DressUpLink", "DressUpFrame_Show", "C_ModelInfo.GetModelSceneInfoByID",
+    "CanInspect", "NotifyInspect", "ClearInspectPlayer", "InspectUnit", "UnitIsPlayer",
+    "GetInspectSpecialization", "C_PaperDollInfo.GetInspectItemLevel", "C_Timer.After",
+}
+Probe.LOOKS_FRAMES = { "DressUpFrame", "InspectFrame", "CharacterModelScene", "CharacterModelFrame" }
+Probe.MODEL_METHODS = { "SetUnit", "TryOn", "Undress", "Dress", "SetRotation", "GetModelFileID",
+    "SetPortraitZoom", "SetCamDistanceScale", "SetSheathed", "SetAnimation", "RefreshUnit" }
+Probe.ACTOR_METHODS = { "SetModelByUnit", "TryOn", "Dress", "Undress", "SetYaw", "GetModelFileID" }
+
+local function Call(object, method, ...)
+    if type(object) ~= "table" and type(object) ~= "userdata" then return false, "no object" end
+    local ok, fn = pcall(function() return object[method] end)
+    if not ok or type(fn) ~= "function" then return false, "no " .. method end
+    return pcall(fn, object, ...)
+end
+
+local function Methods(object, names)
+    local has, lacks = {}, {}
+    for _, name in ipairs(names) do
+        local ok, fn = pcall(function() return object[name] end)
+        if ok and type(fn) == "function" then has[#has + 1] = name else lacks[#lacks + 1] = name end
+    end
+    return ("has %s; lacks %s"):format(#has > 0 and table.concat(has, ", ") or "none",
+        #lacks > 0 and table.concat(lacks, ", ") or "nothing")
+end
+
+local function Text(ok, ...)
+    if not ok then return "raised: " .. tostring((...)) end
+    local parts = {}
+    for i = 1, select("#", ...) do
+        local okText, text = pcall(tostring, (select(i, ...)))
+        parts[i] = okText and text or "(secret)"
+    end
+    return #parts > 0 and table.concat(parts, ", ") or "nothing"
+end
+
+--- A worn item to try on: chest, then legs, main hand, head.
+local function WornLink()
+    if not Has("GetInventoryItemLink") then return nil end
+    for _, slot in ipairs({ 5, 7, 16, 1 }) do
+        local ok, link = pcall(GetInventoryItemLink, "player", slot)
+        if ok and type(link) == "string" then return link end
+    end
+end
+
+--- How many of the unit's 19 gear slots give a link, and the first one.
+local function CountLinks(unit)
+    if not Has("GetInventoryItemLink") then return 0, nil, "no GetInventoryItemLink" end
+    local count, first, raised = 0, nil, 0
+    for slot = 1, 19 do
+        local ok, link = pcall(GetInventoryItemLink, unit, slot)
+        if not ok then
+            raised = raised + 1
+        elseif type(link) == "string" then
+            count = count + 1
+            first = first or link
+        end
+    end
+    return count, first, raised > 0 and (raised .. " raised") or nil
+end
+
+local function Plain(link)
+    return type(link) == "string" and (link:match("%[(.-)%]") or link) or "none"
+end
+
+--- Makes a model frame once and keeps it, so running the probe again does
+--- not leave more frames behind. Hidden from sight: 1 pixel and see-through.
+function Probe:LooksFrame(kind)
+    self.looksFrames = self.looksFrames or {}
+    local made = self.looksFrames[kind]
+    if made then return true, made end
+    local ok, frame = pcall(CreateFrame, kind, nil, UIParent)
+    if not ok or not frame then return false, frame end
+    pcall(frame.SetSize, frame, 1, 1)
+    pcall(frame.SetAlpha, frame, 0)
+    pcall(frame.SetPoint, frame, "TOPLEFT", UIParent, "TOPLEFT", -10, 10)
+    self.looksFrames[kind] = frame
+    return true, frame
+end
+
+--- Starts the check: makes and dresses the models, asks to inspect the
+--- target, then reports after LOOKS_WAIT seconds.
+function Probe:Looks()
+    local found = { started = {} }
+    self.looks = found
+    local link = WornLink()
+    found.link = link
+
+    for _, kind in ipairs({ "DressUpModel", "PlayerModel" }) do
+        local ok, frame = self:LooksFrame(kind)
+        local entry = { made = ok, frame = ok and frame or nil, err = not ok and tostring(frame) or nil }
+        if ok then
+            pcall(frame.Show, frame)
+            entry.methods = Methods(frame, self.MODEL_METHODS)
+            entry.setUnit = Text(Call(frame, "SetUnit", "player"))
+            if kind == "DressUpModel" then
+                entry.undress = Text(Call(frame, "Undress"))
+                entry.tryOn = link and Text(Call(frame, "TryOn", link)) or "no worn item to try"
+            end
+        end
+        found[kind] = entry
+    end
+
+    local okScene, scene = self:LooksFrame("ModelScene")
+    local sceneEntry = { made = okScene, err = not okScene and tostring(scene) or nil }
+    if okScene then
+        pcall(scene.Show, scene)
+        local okActor, actor = Call(scene, "CreateActor")
+        if okActor and actor then
+            sceneEntry.actor = actor
+            sceneEntry.methods = Methods(actor, self.ACTOR_METHODS)
+            sceneEntry.setUnit = Text(Call(actor, "SetModelByUnit", "player"))
+            sceneEntry.tryOn = link and Text(Call(actor, "TryOn", link)) or "no worn item to try"
+        else
+            sceneEntry.actorErr = Text(okActor, actor)
+        end
+    end
+    found.ModelScene = sceneEntry
+
+    -- The target: a player, which class, and can we inspect them.
+    local target = {}
+    if Has("UnitIsPlayer") then
+        local ok, isPlayer = pcall(UnitIsPlayer, "target")
+        target.isPlayer = ok and isPlayer == true
+        target.read = ok
+    end
+    if target.isPlayer then
+        if Has("UnitClass") then
+            local okMine, mineFile = pcall(function() return select(2, UnitClass("player")) end)
+            local okTheirs, theirFile = pcall(function() return select(2, UnitClass("target")) end)
+            target.sameClass = okMine and okTheirs and mineFile ~= nil and mineFile == theirFile
+            target.class = okTheirs and tostring(theirFile) or "unreadable"
+        end
+        if Has("CanInspect") then
+            target.canInspect = Text(pcall(CanInspect, "target"))
+        end
+        target.linksBefore = { CountLinks("target") }
+        if Has("NotifyInspect") then
+            ns.RegisterEvent(self, "INSPECT_READY", function(_, _, guid)
+                found.inspectReady = Text(true, guid)
+            end)
+            target.notify = Text(pcall(NotifyInspect, "target"))
+        end
+    end
+    found.target = target
+    if Has("IsInInstance") then found.instance = Text(pcall(IsInInstance)) end
+
+    ns.Print("probe looks: checking, the report comes in a moment.")
+    local function Report() ns.KeepCheck("probe looks", Probe.LooksReport, Probe) end
+    if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+        C_Timer.After(self.LOOKS_WAIT, Report)
+    else
+        Report()
+    end
+end
+
+--- The report, once the models had time to load and the inspect to answer.
+function Probe:LooksReport()
+    local found = self.looks or {}
+    ns.Print("probe looks: Try It On and Another Player's Gear")
+
+    local present, missing = {}, {}
+    for _, name in ipairs(self.LOOKS_CALLS) do
+        if Has(name) then present[#present + 1] = name else missing[#missing + 1] = name end
+    end
+    Line("looks has", #present > 0 and table.concat(present, ", ") or "none of them")
+    Line("looks missing", #missing > 0 and table.concat(missing, ", ") or "nothing")
+    local frames = {}
+    for _, name in ipairs(self.LOOKS_FRAMES) do
+        frames[#frames + 1] = name .. (rawget(_G, name) ~= nil and " yes" or " no")
+    end
+    Line("game frames", table.concat(frames, ", "))
+    Line("worn item tried", Plain(found.link))
+
+    for _, kind in ipairs({ "DressUpModel", "PlayerModel" }) do
+        local entry = found[kind] or {}
+        if not entry.made then
+            Line(kind, "could not be made: " .. tostring(entry.err))
+        else
+            Line(kind, "made; " .. entry.methods)
+            Line("  SetUnit player", entry.setUnit)
+            if entry.undress then Line("  Undress", entry.undress) end
+            if entry.tryOn then Line("  TryOn", entry.tryOn) end
+            -- A model file means a body loaded; 0 or nil means nothing drew.
+            Line("  model file", Text(Call(entry.frame, "GetModelFileID")))
+            pcall(entry.frame.Hide, entry.frame)
+        end
+    end
+
+    local scene = found.ModelScene or {}
+    if not scene.made then
+        Line("ModelScene", "could not be made: " .. tostring(scene.err))
+    elseif not scene.actor then
+        Line("ModelScene", "made, but no actor: " .. tostring(scene.actorErr))
+    else
+        Line("ModelScene", "made, actor " .. scene.methods)
+        Line("  SetModelByUnit", scene.setUnit)
+        Line("  TryOn", scene.tryOn)
+        Line("  model file", Text(Call(scene.actor, "GetModelFileID")))
+    end
+    if self.looksFrames and self.looksFrames.ModelScene then
+        pcall(self.looksFrames.ModelScene.Hide, self.looksFrames.ModelScene)
+    end
+
+    local target = found.target or {}
+    if not target.isPlayer then
+        Line("inspect", target.read == false and "target not readable"
+            or "no player targeted (target a player of your class and run it again)")
+    else
+        Line("target", ("player, class %s, %s"):format(tostring(target.class),
+            target.sameClass and "same class as you" or "not your class"))
+        Line("  CanInspect", target.canInspect or "no CanInspect")
+        Line("  NotifyInspect", target.notify or "no NotifyInspect")
+        Line("  inspect ready", found.inspectReady or "no answer in " .. self.LOOKS_WAIT .. " seconds")
+        local before = target.linksBefore or {}
+        Line("  links before", ("%d of 19, first %s%s"):format(before[1] or 0, Plain(before[2]),
+            before[3] and (", " .. before[3]) or ""))
+        local count, first, note = CountLinks("target")
+        Line("  links after", ("%d of 19, first %s%s"):format(count, Plain(first), note and (", " .. note) or ""))
+        if first then
+            local stats = self:ItemStats(first)
+            Line("  their stats read", stats and next(stats) and "yes" or "no")
+        end
+        if Has("GetInspectSpecialization") then
+            Line("  their spec", Text(pcall(GetInspectSpecialization, "target")))
+        end
+        ns.UnregisterEvent(self, "INSPECT_READY")
+        -- Let go of the inspect, unless the game's own inspect window is open.
+        local inspect = rawget(_G, "InspectFrame")
+        local shown = inspect and select(2, pcall(inspect.IsShown, inspect))
+        if not shown and Has("ClearInspectPlayer") then pcall(ClearInspectPlayer) end
+    end
+    Line("in instance", found.instance or "unknown")
+end
+
+ns.RegisterHiddenCommand("probe", function(rest)
+    if (rest or ""):lower():match("^%s*looks") then
+        Probe:Looks()
+        return
+    end
     ns.KeepCheck("probe", Probe.Run, Probe)
 end)
