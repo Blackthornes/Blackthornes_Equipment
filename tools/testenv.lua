@@ -178,6 +178,14 @@ function env.InstallClient()
     _G.GetNumTalentTabs = nil
     _G.GetTalentTabInfo = nil
     _G.GetInventoryItemLink = nil
+    _G.GetInventoryItemID = nil
+    _G.UnitIsPlayer = nil
+    _G.GetUnitName = nil
+    _G.InspectFrame = nil
+    for _, name in ipairs({ "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs",
+        "Feet", "Finger0", "Finger1", "Trinket0", "Trinket1", "MainHand", "SecondaryHand", "Ranged" }) do
+        _G["Inspect" .. name .. "Slot"] = nil
+    end
     _G.GetItemStats = nil
     _G.C_Item = nil
     _G.UnitLevel = nil

@@ -120,6 +120,7 @@ UI\Toast.lua
 UI\SeeThrough.lua
 UI\MapPins.lua
 UI\SlotUpgrades.lua
+UI\InspectGear.lua
 UI\MoreMarks.lua
 UI\UpgradeDone.lua
 UI\QuestLogTab.lua
