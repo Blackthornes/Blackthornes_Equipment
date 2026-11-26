@@ -157,4 +157,25 @@ local ok, answer = pcall(Butler.Advise, Butler, "item:2", 0, 2)
 suite.check("an error inside says nothing, and does not raise", ok and answer == nil)
 ns.Compare.JudgeCarried = judge
 
+-- What each character wears, for Butler's search.
+local savedNotes = ns.db.characterGear
+ns.db.characterGear = {
+    ["Player-1-A"] = { worn = { [1] = "item:5::::", [11] = "item:7", [12] = "item:7" }, at = 100 },
+    ["Player-1-B"] = { worn = {} },
+    ["Player-1-C"] = "not a note",
+}
+local worn = Butler:Worn()
+local byKey = {}
+for _, entry in ipairs(worn or {}) do byKey[entry.key] = entry end
+suite.check("one entry per note", worn and #worn == 2, worn and #worn)
+suite.check("a worn piece counts", byKey["Player-1-A"] and byKey["Player-1-A"].worn[5] == 1)
+suite.check("two rings of one kind count two", byKey["Player-1-A"] and byKey["Player-1-A"].worn[7] == 2)
+suite.check("when it was read", byKey["Player-1-A"] and byKey["Player-1-A"].at == 100)
+suite.check("nothing worn is empty", byKey["Player-1-B"] and next(byKey["Player-1-B"].worn) == nil)
+local savedAlts = ns.Alts
+ns.Alts = { Notes = function() error("boom") end }
+suite.check("an error says nil, and does not raise", Butler:Worn() == nil)
+ns.Alts = savedAlts
+ns.db.characterGear = savedNotes
+
 suite.done()
