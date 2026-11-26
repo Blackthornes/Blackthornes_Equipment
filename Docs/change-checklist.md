@@ -154,3 +154,12 @@ Check: A box hung under a window's bottom edge, as wide as it, covers a
   size grip hung under its bottom right corner. Hang the grip beside the
   corner (`CreateSizeGrip(frame, { beside = true })`) or leave room for it.
 Why: The step box hid the small panel's size grip (2026-11-25).
+
+## A reason to keep gear
+Files: ^UI/BagIcons\.lua$
+Lines: Sells|sell =
+Check: A reason to keep gear goes in `BagIcons:Sells`, not only where the
+  coin is drawn (`BagIcons:UpdateButton`). Butler asks `Sells` through
+  `Butler:Advise` and must give the same answer as the bags.
+Why: Butler said to sell the Off Spec's pieces while the bags kept them
+  (2026-11-26).
