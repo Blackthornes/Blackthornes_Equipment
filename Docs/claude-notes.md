@@ -3619,3 +3619,12 @@ The owner said "build 1-9" on the improvement mockups (2026-11-26); this is
 - Tested in `tools/test_findmore.lua`, `tools/test_finderpairs.lua` and
   `tools/test_auctiongear.lua`. Not yet seen in game. Full restart (a new
   file and the TOC).
+
+## The note stack's own spot (2026-11-26)
+
+`UI/Notice.lua` (shared by all five) reads `windowSpots["shared.notice"]`
+through `Notice.Spot`: the middle of the stack's top, in screen pixels.
+Farmer's Move Windows writes it when the player drags the Notes box. While
+it is set, every addon's notes stack there and leave the top shelf free.
+Window Locations: Set Default clears it with the other window spots. Never
+rename it.
