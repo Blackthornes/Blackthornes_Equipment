@@ -95,6 +95,51 @@ result = ns.Compare:Judge("item:2")
 suite.check("a secret value means no cap, not an error",
     result and math.abs(result.score - (10 * agi + 2 * hit)) < 1e-6)
 
+-- The hit cap for the Off Spec (Logic/OffSpec.lua). Its gains are measured
+-- against the outfit, the best pieces owned for it, so the hit that counts
+-- toward the cap is the outfit's. The client only says the hit of the gear
+-- really worn: here 5%, 2% of it from the worn chest. The outfit takes the
+-- chest in the bags, which has no hit, so the outfit stands at 3% and a new
+-- chest's 2% hit counts in full.
+ITEMS["item:5"] = { loc = "INVTYPE_CHEST", class = ARMOR, subclass = LEATHER,
+    stats = { ITEM_MOD_AGILITY_SHORT = 40 } }
+ITEMS["item:6"] = { loc = "INVTYPE_CHEST", class = ARMOR, subclass = LEATHER,
+    stats = { ITEM_MOD_AGILITY_SHORT = 40, ITEM_MOD_HIT_RATING_SHORT = 20 } }
+ns = env.Load()
+_G.UnitClass = function() return "HUNTER", "HUNTER" end
+env.InstallItems(ITEMS, { [5] = "item:2" }, { [0] = { [1] = "item:5" } }, 60)
+_G.GetSpellHitModifier, _G.GetCombatRatingBonus = nil, nil
+_G.GetHitModifier = function() return 5 end
+ns.charDB.spec, ns.charDB.offSpec = "beast", "marks"
+local outfit = ns.OffSpec:Outfit()
+suite.check("the Off Spec outfit takes the chest in the bags", outfit and outfit[5] == "item:5",
+    outfit and tostring(outfit[5]))
+local marks = ns.Weights:Get("HUNTER", "marks")
+result = ns.OffSpec:Judge("item:6")
+suite.check("the Off Spec counts hit against the outfit's hit, not the worn gear's",
+    result and result.score and math.abs(result.score - (40 * marks.agility + 2 * marks.hit)) < 1e-6,
+    result and result.score)
+suite.check("so the chest with hit is an Off Spec upgrade", result and result.verdict == "upgrade",
+    result and result.verdict)
+-- The Main Spec is judged against the gear worn, as before: the worn
+-- chest's 2% goes with it, so the new 2% counts.
+local beast = ns.Weights:ForPlayer()
+result = ns.Compare:Judge("item:6")
+suite.check("the Main Spec still counts hit against the gear worn",
+    result and result.score and math.abs(result.score - (40 * beast.agility + 2 * beast.hit)) < 1e-6
+    and math.abs(result.against - (10 * beast.agility + 2 * beast.hit)) < 1e-6,
+    result and result.score)
+-- An outfit already at the cap: more hit counts for nothing.
+_G.GetHitModifier = function() return 7 end
+ns = env.Load()
+_G.UnitClass = function() return "HUNTER", "HUNTER" end
+env.InstallItems(ITEMS, { [5] = "item:2" }, { [0] = { [1] = "item:5" } }, 60)
+ns.charDB.spec, ns.charDB.offSpec = "beast", "marks"
+result = ns.OffSpec:Judge("item:6")
+suite.check("with the outfit at the cap, more hit counts for nothing",
+    result and result.score and math.abs(result.score - 40 * marks.agility) < 1e-6, result and result.score)
+ITEMS["item:5"], ITEMS["item:6"] = nil, nil
+
 -- Racials.
 ns = LoadAs("HUNTER", {})
 _G.UnitRace = function() return "Tauren", "Tauren", 6 end

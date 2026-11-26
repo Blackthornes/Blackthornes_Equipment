@@ -225,6 +225,24 @@ suite.check("no spec lines when neither gains", ns.Tooltip.SpecLines("item:10", 
 
 -- 11. The tank set in the bags gets the blue arrow, not a sell coin.
 suite.check("the shield in the bags gets the blue arrow", OffSpec:OnlyUpgrade("item:4", true) ~= nil)
+-- Butler asks the same sell rule the bags use (Butler:Advise), so it must
+-- not say Sell for the tank set either. White gear a vendor pays for:
+local oldInfo, oldTip = _G.C_Container.GetContainerItemInfo, _G.C_TooltipInfo
+_G.C_Container.GetContainerItemInfo = function() return { quality = 1, isBound = false, stackCount = 1 } end
+_G.C_TooltipInfo = { GetHyperlink = function() return { lines = { { type = 11, price = 50 } } } end }
+local mainOnShield = Compare:JudgeCarried("item:4")
+suite.check("the Main Spec has no use for the shield in the bags", Verdict(mainOnShield) ~= "upgrade",
+    Verdict(mainOnShield))
+suite.check("the sell rule leaves an Off Spec piece alone", ns.BagIcons:Sells(0, 2, "item:4", mainOnShield) == false)
+local advice = ns.Butler:Advise("item:4", 0, 2)
+suite.check("Butler is not told to sell an Off Spec piece", advice ~= nil and advice.sell == false,
+    advice and tostring(advice.sell))
+ns.charDB.offSpec = nil
+OffSpec:Forget()
+suite.check("with None the same shield sells as before", ns.BagIcons:Sells(0, 2, "item:4", mainOnShield) == true)
+ns.charDB.offSpec = "prot"
+OffSpec:Forget()
+_G.C_Container.GetContainerItemInfo, _G.C_TooltipInfo = oldInfo, oldTip
 
 -- 8.
 ns.HandleSlash("spec off none")
@@ -255,5 +273,70 @@ Find.offChoice:Pick(protIndex)
 suite.check("picking it on Find Upgrades saves it", ns.charDB.offSpec == "prot")
 suite.check("the Main Spec drop-down names what Auto follows", ns.FinderUI.SpecText(1):find("^Auto %(") ~= nil,
     ns.FinderUI.SpecText(1))
+
+-- 13. Make It My Quest on an Off only row (Find Upgrades): the quest is
+-- kept, though the Main Spec has no use for the piece. Before, it was
+-- dropped at once with "you're already wearing something as good".
+local Quest = ns.UpgradeQuest
+local function OnATab(itemID)
+    for _, quest in pairs(Quest:Quests()) do
+        if type(quest) == "table" and quest.itemID == itemID then return quest end
+    end
+end
+ns.charDB.spec = "ret"
+OffSpec:Forget()
+Finder:MarkStale()
+Finder:Scan()
+local offNow
+Finder:ScanOff(0, function(found) offNow = found end)
+local shieldPick = offNow and offNow.all[17] and offNow.all[17][1]
+suite.check("the better shield is an Off Spec pick the Main Spec does not want",
+    shieldPick and shieldPick.itemID == 11 and Verdict(Compare:Judge("item:11")) == "downgrade")
+local followed = Quest:Follow(shieldPick)
+suite.check("Make It My Quest takes an Off only pick", followed ~= nil and followed.itemID == 11)
+Quest:Update()
+Quest:Update()
+suite.check("and the quest is kept on later looks", OnATab(11) ~= nil, env.ChatText())
+suite.check("with the Off Spec's gain", OnATab(11) and tostring(OnATab(11).howMuch):find("^%+%d+%%$") ~= nil,
+    OnATab(11) and tostring(OnATab(11).howMuch))
+-- Bought: it waits in the bags for the Off Spec, so the quest stays until
+-- it is put on.
+env.bags[0][3] = "item:11"
+OffSpec:Forget()
+Finder:MarkStale()
+Quest:Update()
+suite.check("carried and not yet worn, the quest still stands", OnATab(11) ~= nil)
+env.bags[0][3] = nil
+OffSpec:Forget()
+Finder:MarkStale()
+-- With the Off Spec back on None the Main Spec's answer stands again.
+ns.charDB.offSpec = nil
+OffSpec:Forget()
+Quest:Update()
+suite.check("with None a followed piece the Main Spec does not want is let go", OnATab(11) == nil)
+-- The other way round: Protection as Main, and a two-hander followed for
+-- a Retribution Off Spec is not let go as "a two-hander for a tank".
+ns.charDB.spec, ns.charDB.offSpec = "prot", "ret"
+OffSpec:Forget()
+ns.Weights:Changed()
+Finder:Scan()
+offNow = nil
+Finder:ScanOff(0, function(found) offNow = found end)
+local bigPick
+for _, pick in ipairs(offNow and offNow.all[16] or {}) do
+    if pick.itemID == 2 then bigPick = pick end
+end
+suite.check("the big two-hander is an Off Spec pick for Retribution", bigPick ~= nil
+    and Compare:Judge("item:2").tankTwoHand == true)
+Quest:Follow(bigPick)
+Quest:Update()
+Quest:Update()
+suite.check("a two-hander followed for the Off Spec is kept", OnATab(2) ~= nil)
+ns.charDB.offSpec = nil
+OffSpec:Forget()
+Quest:Update()
+suite.check("and let go once the Off Spec is None", OnATab(2) == nil)
+ns.charDB.spec = "ret"
+ns.Weights:Changed()
 
 suite.done()

@@ -1606,9 +1606,34 @@ end
 function UpgradeQuest:StillWanted(quest)
     local ok, result = self:JudgeQuest(quest)
     if not ok or not result then return true end
-    if result.verdict == "downgrade" or result.verdict == "same" then return false end
+    if result.verdict == "downgrade" or result.verdict == "same" then
+        -- No use to the Main Spec, but followed for the Off Spec.
+        local wanted, off = self:OffWanted(quest)
+        if not wanted then return false end
+        local how = type(off) == "table" and ns.Compare:HowMuch(off)
+        if how then quest.howMuch = how end
+        return true
+    end
     self:FreshGain(quest, result)
     return true
+end
+
+--- Is the quest one the player followed for the Off Spec (Make It My
+--- Quest on an Off only row of Find Upgrades, Logic/OffSpec.lua)? True
+--- while its item is an upgrade for the Off Spec, or is carried as the Off
+--- Spec's piece and not put on yet. Only a quest followed by hand: one the
+--- upgrade quest picked by itself stays the Main Spec's. The second return
+--- is the Off Spec's verdict, when it was judged.
+function UpgradeQuest:OffWanted(quest)
+    local OffSpec = ns.OffSpec
+    if not (type(quest) == "table" and quest.followed and OffSpec and OffSpec:On()) then return false end
+    local okOutfit, outfit = pcall(OffSpec.Outfit, OffSpec)
+    for _, link in pairs(okOutfit and type(outfit) == "table" and outfit or {}) do
+        if type(link) == "string" and tonumber(link:match("item:(%d+)")) == quest.itemID then return true end
+    end
+    local ok, result = pcall(OffSpec.Judge, OffSpec, quest.link)
+    if ok and type(result) == "table" and result.verdict == "upgrade" then return true, result end
+    return false
 end
 
 --- Keep the quest's "+N% over what you wear" true to the gear worn now. It
@@ -1640,7 +1665,8 @@ end
 --- Is the quest's item a two-hander, while judged as a shield tank spec?
 function UpgradeQuest:TankTwoHand(quest)
     local ok, result = self:JudgeQuest(quest)
-    return ok and type(result) == "table" and result.tankTwoHand == true
+    -- Not one followed for an Off Spec that swings it (OffWanted).
+    return ok and type(result) == "table" and result.tankTwoHand == true and not self:OffWanted(quest)
 end
 
 --- Is the quest's item a weapon this character hides until trained

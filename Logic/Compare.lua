@@ -193,6 +193,34 @@ function Compare.HitThatCounts(hit, base, cap, dualCap, past)
     return Worth(base + hit) - Worth(base)
 end
 
+-- While gear is judged for the Off Spec (Logic/OffSpec.lua), Items:Equipped
+-- answers with its outfit, but the client's hit is that of the gear really
+-- worn. How much more hit (less, when negative) the outfit has than that
+-- gear, for these weights; 0 when the Off Spec is not being judged. Kept
+-- for the outfit, the weights and the hit the client gave.
+local outfitHit = setmetatable({}, { __mode = "k" })
+
+local function OutfitHit(self, weights, current)
+    local as = Items.wornAs
+    if type(as) ~= "table" then return 0 end
+    local kept = outfitHit[as]
+    if kept and kept.weights == weights and kept.current == current then return kept.more end
+    local more, whole = 0, true
+    for slot = 1, 19 do
+        local stand = as[slot]
+        local real = Items:WornNow(slot)
+        if stand ~= nil and (stand or nil) ~= real then
+            for sign, link in pairs({ [1] = stand or nil, [-1] = real }) do
+                local score, hit = self:ScoreOf(link, weights)
+                if score then more = more + sign * (hit or 0) else whole = false end
+            end
+        end
+    end
+    -- Only once every piece could be read.
+    if whole then outfitHit[as] = { weights = weights, current = current, more = more } end
+    return more
+end
+
 --- The hit cap, worked out for these weights: a function that takes an
 --- item's hit (percent) and what that hit added to its score, and the worn
 --- hit it would replace, and gives back how much to take off its score.
@@ -202,6 +230,7 @@ function Compare:HitCapFor(weights, wornHit)
     if not kind then return nil end
     local current = self:CurrentHit(kind)
     if not current then return nil end
+    current = math.max(0, current + OutfitHit(self, weights, current))
     local cap = self.HIT_CAP[kind]
     local dualCap = kind == "melee" and DualWielding() and self.DUAL_WIELD_CAP or nil
     local base = current - (wornHit or 0)

@@ -3246,7 +3246,22 @@ lists show upgrades for both.
   quest, the small panel, Upgrade Done!, the character sheet's green
   arrows, quest reward arrows, Tradeskills and Butler (`Logic/Butler.lua`).
   Make It My Quest on an Off only row follows it like any pick.
-- Tested in `tools/test_offspec.lua`. Not yet seen in game.
+- **Fixed 2026-11-26** (a bug pass):
+  - The sell rule itself (`BagIcons:Sells`) leaves an outfit piece alone,
+    so `Butler:Advise` never says `sell` for it. Before, only the bag coin
+    skipped it and Butler said Sell for the tank set.
+  - The hit cap for the Off Spec counts the outfit's hit
+    (`OutfitHit` in Logic/Compare.lua): the client gives the hit of the
+    gear really worn, so the difference between that gear and the outfit
+    is added before the cap.
+  - A quest followed by hand for the Off Spec is kept
+    (`UpgradeQuest:OffWanted`, asked by `StillWanted` and `TankTwoHand`):
+    while its item is an Off Spec upgrade, or is carried as the outfit's
+    piece and not put on. Before, the next look dropped it with "you're
+    already wearing something as good", since the Main Spec had no use for
+    it. A quest the upgrade quest picks by itself is still the Main Spec's.
+- Tested in `tools/test_offspec.lua` and `tools/test_ratingsandcap.lua`.
+  Not yet seen in game.
 
 ## Quests needed first (2026-11-25)
 
