@@ -56,6 +56,11 @@ local ICON = 38
 -- The ring of dots in the middle.
 local RING = 54
 local DOTS = 48
+-- Try It On: the character in the middle, and the small ring under its
+-- name that the rating moves to.
+local MODEL_HEIGHT = 150
+local SMALL_RING = 6
+local SMALL_DOTS = 16
 
 -- One line of the list view, and its columns.
 local LIST_HEAD = 22
@@ -752,6 +757,7 @@ function MyGear:BuildFigure()
     local ringHead = Theme.CreateLabel(middle, "tiny", "muted", "CENTER")
     ringHead:SetPoint("CENTER", middle, "TOP", 0, centerY + 22)
     ringHead:SetText(L["YOUR GEAR"])
+    self.ringHead = ringHead
     local rating = Theme.CreateLabel(middle, "title", "text", "CENTER")
     rating:SetPoint("CENTER", middle, "TOP", 0, centerY)
     self.ratingLabel = rating
@@ -771,6 +777,7 @@ function MyGear:BuildFigure()
     local judge = Theme.CreateLabel(middle, "small", "gilt", "CENTER")
     judge:SetPoint("TOP", level, "BOTTOM", 0, -16)
     judge:SetText(L["Main Spec:"])
+    self.judgeLabel = judge
     local FinderUI = ns.FinderUI
     local spec = FinderUI.MainSpecChoice(middle, 150)
     spec:SetPoint("TOP", judge, "BOTTOM", 0, -6)
@@ -797,6 +804,189 @@ function MyGear:BuildFigure()
         self.keyWords[key[1]] = { words = words, arrow = arrow }
         anchor = words
     end
+    self.keyOrder = keys
+
+    self:BuildModel(middle)
+end
+
+--------------------------------------------------------------------------------
+-- Try It On (the owner said build it, 2026-11-26, from the mockup): the
+-- character stands in the middle in the gear worn, and puts on the slot's
+-- best upgrade. Now and With Upgrade flip between the two; drag to turn.
+-- The figure is the game's dress-up model (`/beq probe looks` found it on
+-- Forever). It draws only while My Gear shows, and is dressed again only
+-- when what it wears would change. "Show My Character:" on the Gear page
+-- (`showMyCharacter`, off unless ticked, as big new features start;
+-- never rename it) swaps the ring for the character.
+--------------------------------------------------------------------------------
+
+function MyGear:BuildModel(middle)
+    local ok, model = pcall(CreateFrame, "DressUpModel", nil, middle)
+    if not ok or not model then return end
+    local width = LEFT - SLOT_WIDTH * 2
+    model:SetPoint("TOP", middle, "TOP", 0, 0)
+    model:SetSize(width, MODEL_HEIGHT)
+    pcall(model.EnableMouse, model, true)
+    model:SetScript("OnMouseDown", function() MyGear:StartTurn() end)
+    model:SetScript("OnMouseUp", function() MyGear:StopTurn() end)
+    model:SetScript("OnHide", function() MyGear:StopTurn() end)
+    model:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(L["Drag to turn"])
+        GameTooltip:AddLine(L["The figure wears it so you can see how it looks before you put it on."], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    model:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    model:Hide()
+    self.model = model
+    self.turn = 0
+
+    local nowWidth = math.max(52, Theme.TextWidth("normal", L["Now"]) + 20)
+    local withWidth = math.max(90, Theme.TextWidth("normal", L["With Upgrade"]) + 20)
+    local now = Widgets.CreateButton(middle, L["Now"], function() MyGear:SetFigureMode("now") end,
+        { width = nowWidth, height = 20 })
+    now:SetPoint("TOPLEFT", middle, "TOP", -math.floor((nowWidth + withWidth + 4) / 2), -(MODEL_HEIGHT + 4))
+    local with = Widgets.CreateButton(middle, L["With Upgrade"], function() MyGear:SetFigureMode("upgrade") end,
+        { width = withWidth, height = 20 })
+    with:SetPoint("LEFT", now, "RIGHT", 4, 0)
+    self.nowButton, self.withButton = now, with
+    local drag = Theme.CreateLabel(middle, "tiny", "muted", "CENTER")
+    drag:SetPoint("TOP", middle, "TOP", 0, -(MODEL_HEIGHT + 28))
+    drag:SetText(L["Drag to turn"])
+    self.dragLabel = drag
+
+    -- The rating's small ring, under the name.
+    local rating = Theme.CreateLabel(middle, "small", "gilt", "LEFT")
+    self.smallRating = rating
+    local dots = {}
+    for index = 1, SMALL_DOTS do
+        local angle = (index - 0.5) / SMALL_DOTS * 2 * math.pi
+        local dot = middle:CreateTexture(nil, "ARTWORK")
+        dot:SetSize(2, 2)
+        dot:SetPoint("CENTER", rating, "LEFT", -(SMALL_RING + 4) + math.sin(angle) * SMALL_RING,
+            math.cos(angle) * SMALL_RING)
+        dots[index] = dot
+    end
+    self.smallDots = dots
+    self:PlaceMiddle()
+end
+
+--- Is the character shown in the middle? Not when unticked, nor on a
+--- client with no dress-up model.
+function MyGear:CharacterOn()
+    return self.model ~= nil and ns.db ~= nil and ns.db.showMyCharacter == true
+end
+
+--- Lay out the middle for the character or for the ring, and the colour
+--- key: under the spec choices with the ring, along the top with the
+--- character.
+function MyGear:PlaceMiddle()
+    if not self.middle then return end
+    local on = self:CharacterOn()
+    if self.placedFor == on then return end
+    self.placedFor = on
+    local middle = self.middle
+    for _, dot in ipairs(self.dots) do dot:SetShown(not on) end
+    self.ringHead:SetShown(not on)
+    self.ratingLabel:SetShown(not on)
+    self.countLabel:SetShown(not on)
+    for _, part in ipairs({ self.model, self.nowButton, self.withButton, self.dragLabel, self.smallRating }) do
+        part:SetShown(on)
+    end
+    for _, dot in ipairs(self.smallDots) do dot:SetShown(on) end
+
+    self.whoLabel:ClearAllPoints()
+    self.judgeLabel:ClearAllPoints()
+    if on then
+        self.whoLabel:SetPoint("TOP", middle, "TOP", 0, -(MODEL_HEIGHT + 42))
+        -- The small ring sits left of the rating word, the pair centred.
+        self.smallRating:ClearAllPoints()
+        self.smallRating:SetPoint("TOP", self.levelLabel, "BOTTOM", SMALL_RING + 4, -4)
+        self.judgeLabel:SetPoint("TOP", self.smallRating, "BOTTOM", -(SMALL_RING + 4), -8)
+    else
+        self.whoLabel:SetPoint("TOP", middle, "TOP", 0, -(RING + 14) - RING - 16)
+        self.judgeLabel:SetPoint("TOP", self.levelLabel, "BOTTOM", 0, -16)
+    end
+
+    -- The key: three lines under the spec choices, or one line along the
+    -- top beside View, in place of "Click a slot".
+    local keys, anchor = self.keyOrder, self.offChoice
+    for index = 1, #keys do
+        local key = self.keyWords[keys[on and (#keys - index + 1) or index][1]]
+        key.words:ClearAllPoints()
+        if on then
+            if index == 1 then
+                key.words:SetPoint("TOPRIGHT", self.left, "TOPRIGHT", -4, -7)
+            else
+                key.words:SetPoint("RIGHT", anchor, "LEFT", -12, 0)
+            end
+            anchor = key.arrow
+        else
+            key.words:SetPoint("TOP", anchor, "BOTTOM", 6, index == 1 and -16 or -6)
+            anchor = key.words
+        end
+    end
+    if self.hint then self.hint:SetShown(not on) end
+    self.dressed = nil
+end
+
+--- The upgrade the figure tries on: the row last clicked on the slot's
+--- side, else what is in the bags for the slot, else its best pick.
+function MyGear:TryLink()
+    if self.tryLink then return self.tryLink end
+    local info = self.state and self.state.slots[self.slot]
+    if not info then return nil end
+    local owned, pick = info.owned[1], info.picks[1]
+    return owned and owned.link or pick and pick.link or nil
+end
+
+--- Now or With Upgrade (`figureMode`, this session only; With Upgrade
+--- unless Now was picked).
+function MyGear:SetFigureMode(mode)
+    self.figureMode = mode == "now" and "now" or "upgrade"
+    self:DressModel()
+end
+
+--- Put the figure in the gear worn and, With Upgrade, the upgrade. Done
+--- only when what it wears would change, and never while hidden.
+function MyGear:DressModel()
+    local model = self.model
+    if not (model and self:CharacterOn() and self:View() ~= "list" and self:IsShown()) then return end
+    local link = self:TryLink()
+    local upgrade = self.figureMode ~= "now" and link or nil
+    self.nowButton:SetLabelColor(upgrade and "gilt" or "good")
+    self.withButton:SetLabelColor(upgrade and "good" or (link and "gilt" or "muted"))
+    local key = tostring(self.state) .. "|" .. tostring(upgrade)
+    if self.dressed == key then return end
+    self.dressed = key
+    pcall(model.SetUnit, model, "player")
+    pcall(model.SetRotation, model, self.turn or 0)
+    if upgrade then pcall(model.TryOn, model, upgrade) end
+end
+
+--- Drag to turn: the figure follows the mouse while the button is held.
+function MyGear:StartTurn()
+    local model = self.model
+    if not model or type(GetCursorPosition) ~= "function" then return end
+    local ok, x = pcall(GetCursorPosition)
+    if not ok or type(x) ~= "number" then return end
+    local from, start = x, self.turn or 0
+    model:SetScript("OnUpdate", function(frame)
+        local okNow, now = pcall(GetCursorPosition)
+        if not okNow or type(now) ~= "number" then return end
+        MyGear.turn = start + (now - from) * 0.012
+        pcall(frame.SetRotation, frame, MyGear.turn)
+    end)
+end
+
+function MyGear:StopTurn()
+    if self.model then self.model:SetScript("OnUpdate", nil) end
+end
+
+--- "Show My Character:" ticked or unticked on the Gear page.
+function MyGear:CharacterChanged()
+    self:PlaceMiddle()
+    if self.state and self:View() ~= "list" then self:PaintFigure(self.state) end
 end
 
 --- The spec drop-down as the character's choice stands (the old header's
@@ -850,6 +1040,13 @@ function MyGear:PaintFigure(state)
     self.whoLabel:SetText(name)
     self.levelLabel:SetText(line)
     self:SyncSpec()
+    if self.model then
+        self:PlaceMiddle()
+        local label = rating and rating.rating and rating.rating.label or ""
+        self.smallRating:SetText(label)
+        PaintRing(self.smallDots, label ~= "" and (rating.score or 0) / 100 or 0)
+        self:DressModel()
+    end
 end
 
 --------------------------------------------------------------------------------
@@ -1109,6 +1306,8 @@ function MyGear:PaintView()
     self.figureButton:SetLabelColor(view == "figure" and "good" or "gilt")
     self.listButton:SetLabelColor(view == "list" and "good" or "gilt")
     if self.roadButton then self.roadButton:SetLabelColor(road and "good" or "gilt") end
+    -- With the character shown the colour key takes the hint's place.
+    self.hint:SetShown(view ~= "figure" or not self:CharacterOn())
 end
 
 --------------------------------------------------------------------------------
@@ -1195,6 +1394,13 @@ function MyGear:BuildRow(index)
     -- The clicks the old list's rows take: follow, put on, link, try on,
     -- and the right-click menu.
     row:SetScript("OnClick", function(self, mouse)
+        -- A click on a piece puts it on the figure too (Try It On).
+        local piece = mouse ~= "RightButton" and (rawget(self, "pick") or rawget(self, "owned")) or nil
+        if piece and type(piece.link) == "string" then
+            MyGear.tryLink = piece.link
+            MyGear.figureMode = "upgrade"
+            MyGear:DressModel()
+        end
         if ns.FinderUI then ns.FinderUI.RowClicked(self, mouse) end
     end)
     if row.RegisterForClicks then row:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
@@ -1450,12 +1656,14 @@ function MyGear:PickSlot(slot)
     local state = self.state
     if not (state and state.slots[slot]) then return end
     self.slot = slot
+    self.tryLink = nil
     if self:View() == "list" then
         for _, row in ipairs(self.listRows) do
             if Shown(row) then self:PaintListRow(row) end
         end
     else
         for _, button in pairs(self.slotButtons) do self:PaintSlotLight(button) end
+        self:DressModel()
     end
     self:PaintSide(state)
 end

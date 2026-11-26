@@ -405,3 +405,9 @@ INSPECT_READY came with the GUID and GetInspectSpecialization read 1490,
 yet `GetInventoryItemLink("target", 1..19)` gave 0 of 19, 2 seconds after.
 The probe now also reads item IDs and icons, and reads at INSPECT_READY
 itself, in case another addon lets go of the inspect first.
+
+Second run (same day, same warlock): inspect gives gear. At INSPECT_READY
+`GetInventoryItemID` and `GetInventoryItemTexture` gave 17 of 19 but no
+links; 2 seconds later `GetInventoryItemLink` gave all 17, their stats
+read, and `C_PaperDollInfo.GetInspectItemLevel` gave 61. So read IDs at
+INSPECT_READY and wait for links (or ask the item data to load).

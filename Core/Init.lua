@@ -467,6 +467,12 @@ local DEFAULTS = {
 
     -- A line in chat when an upgrade you can wear now lands in the bags.
     upgradeChat = true,
+    -- Try It On: your character in the middle of My Gear (UI/MyGear.lua).
+    -- Off unless ticked; never rename it.
+    showMyCharacter = false,
+    -- Another Player's Gear: upgrades in an inspected player's gear
+    -- (UI/InspectGear.lua). Off unless ticked; never rename it.
+    otherPlayersGear = false,
     -- Put an upgrade on by itself when it lands in the bags
     -- (Logic/Wear.lua, asked 2026-10-15). Off unless ticked.
     autoEquip = false,

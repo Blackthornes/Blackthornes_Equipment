@@ -2836,6 +2836,39 @@ The mockup the owner approved is the plan's `my-gear.html`.
   again. The scan after that asks for nothing, so it stops. Tested in
   `tools/test_speed.lua`.
 
+
+### Try It On (2026-11-26)
+
+The owner said build it (improvement 7, from the mockup). "Show My
+Character:" on the Gear page (`showMyCharacter`, off unless ticked; never
+rename it) puts a `DressUpModel` of the player in the middle of My Gear in
+place of the big ring (`MyGear:BuildModel`, `PlaceMiddle`). Under it Now
+and With Upgrade, and "Drag to turn" (OnUpdate only while the mouse is
+held). The rating moves to a small ring under the level, and the colour
+key moves to the top row in place of "Click a slot". With Upgrade puts on
+`MyGear:TryLink()`: the side row last clicked (a click still follows or
+puts on as before), else the slot's bag piece, else its best pick.
+`DressModel` dresses only when the scan or the link changed, never while
+hidden or in List. `/beq probe looks` found the model works on Forever.
+Tested in `tools/test_mygear.lua` (10).
+
+### Another Player's Gear (2026-11-26)
+
+The owner said build it (improvement 8, from the mockup). `UI/InspectGear.lua`:
+inspect a player of your class and a house window beside `InspectFrame`
+(hooked on `ADDON_LOADED` Blizzard_InspectUI) lists what they wear that
+`Compare:Judge` calls an upgrade for you and that you can get (the
+finder's scan pick, else `Finder:SourcesFor`; none means left out, so
+other faction quest gear goes), biggest gain first, with the source line
+and Track (`FinderUI:Follow`). Green arrows (`BagIcons:Arrow`) on those
+`Inspect*Slot` buttons. The foot puts their rating
+(`InspectGear.TheirRating`, your weights, each slot against the best you
+know of) beside yours. Forever sends item IDs at INSPECT_READY and links
+about a second later, so `Look` reads again up to `TRIES` (6) times,
+`WAIT` (1) second apart, while an ID has no link. Nothing about the other
+player is saved; all goes when the inspect window shuts. "Other Players'
+Gear:" on the Gear page (`otherPlayersGear`, off unless ticked; never
+rename it). Tested in `tools/test_inspectgear.lua`.
 ## Find Upgrades (rework step 3, 2026-11-23)
 
 Step 3 of the rework: the Find Upgrades tab and its side sheet. The mockup

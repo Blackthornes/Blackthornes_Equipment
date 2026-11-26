@@ -226,9 +226,9 @@ SettingsUI.SETTING_KEYS = {
     "altTooltipLine", "arrowRoute", "autoEquip", "bagArrows", "bagSellCoins",
     "classTraining", "dropsTooltip", "enchantTooltip", "finderAhead",
     "finderGetNow", "finderScale", "finderShow", "finderZoneOnly",
-    "hideQuestTracker", "levelUpCard", "mapPins", "questArrow", "questArrowSize",
+    "hideQuestTracker", "levelUpCard", "mapPins", "otherPlayersGear", "questArrow", "questArrowSize",
     "questLevelsAbove", "questLogTrackedOnly", "questScale", "rewardButton",
-    "settingsDescriptions", "showTracker", "slotUpgrades", "soloQuestsOnly",
+    "settingsDescriptions", "showMyCharacter", "showTracker", "slotUpgrades", "soloQuestsOnly",
     "suffixLine", "swapAtDoors", "tooltipLine", "tooltipShift", "upgradeChat",
     "upgradeQuest", "upgradeQuestBiggest", "upgradeQuestStepOnly",
     "upgradeQuestStyle", "upgradeQuestZoneOnly", "upgradeQuestZoneSwap",
@@ -787,6 +787,18 @@ function SettingsUI:BuildShowGrid()
                   ns.ClassTraining:SetOn(checked)
               end, ns.ClassTraining:IsOn())
           end },
+        -- Try It On: the character in the middle of My Gear.
+        { "showMyCharacter", L["Show My Character:"],
+          L["The figure wears it so you can see how it looks before you put it on."],
+          Plain("showMyCharacter", false, function()
+              if ns.MyGear then pcall(ns.MyGear.CharacterChanged, ns.MyGear) end
+          end) },
+        -- Another Player's Gear: off unless ticked.
+        { "otherPlayersGear", L["Other Players' Gear:"],
+          L["When you inspect someone of your class, this marks what they wear that would be an upgrade for you."],
+          Plain("otherPlayersGear", false, function()
+              if ns.InspectGear then pcall(ns.InspectGear.Changed, ns.InspectGear) end
+          end) },
         -- Off unless ticked.
         { "autoEquip", L["Put On Upgrades:"],
           L["Puts an upgrade on as soon as you get it. Gear that would bind waits for your click."],
@@ -1215,6 +1227,8 @@ function SettingsUI:Refresh()
     controls.arrows:SetChecked(ns.db.bagArrows ~= false)
     controls.sellCoins:SetChecked(ns.db.bagSellCoins ~= false)
     controls.upgradeChat:SetChecked(ns.db.upgradeChat ~= false)
+    controls.showMyCharacter:SetChecked(ns.db.showMyCharacter == true)
+    controls.otherPlayersGear:SetChecked(ns.db.otherPlayersGear == true)
     controls.autoEquip:SetChecked(ns.db.autoEquip == true)
     controls.swapAtDoors:SetChecked(ns.db.swapAtDoors == true)
     controls.bestArmorOnly:SetChecked(ns.Compare.BestArmorOnly())
