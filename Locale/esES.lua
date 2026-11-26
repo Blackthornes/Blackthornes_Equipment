@@ -1283,6 +1283,17 @@ L["House, Game or Clear. Clear is plain and easy to read, and it has Russian let
 L["Warm is the look today. Darker takes the warm tint out of the glass."] = "Cálidos es el aspecto de siempre. Más oscuros quita el tono cálido del cristal."
 L["What a folded window turns into: the round button, or a small bar with its title."] = "En qué se convierte una ventana plegada: el botón redondo o una barra pequeña con su título."
 
+-- Why It's Better (2026-11-26)
+L["More %s and %s."] = "Más %s y %s."
+L["More %s."] = "Más %s."
+L["A little less %s and %s."] = "Un poco menos de %s y %s."
+L["A little less %s."] = "Un poco menos de %s."
+L["Less %s and %s."] = "Menos %s y %s."
+L["Less %s."] = "Menos %s."
+L["Most of the gain is %s."] = "La mayor parte de la mejora es %s."
+L["%s takes a little back."] = "%s quita un poco."
+L["WHAT CHANGES"] = "QUÉ CAMBIA"
+L["Why It's Better:"] = "Por qué es mejor:"
 -- Gear Road (My Gear, 2026-11-26)
 L["Road"] = "Ruta"
 L["NOW"] = "AHORA"

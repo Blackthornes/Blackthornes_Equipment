@@ -19,6 +19,9 @@ local function LoadWithProcessor()
         AddTooltipPostCall = function(_, fn) postCall = fn end,
     }
     ns.Tooltip:OnEnable()
+    -- Why It's Better has its own suite (tools/test_whybetter.lua); the
+    -- line counts here are the verdict's.
+    ns.db.whyTooltip = false
     return ns
 end
 
@@ -127,6 +130,7 @@ ns = env.Load()
 _G.UnitClass = function() return "HUNTER", "HUNTER" end
 env.InstallItems(ITEMS, { [5] = "item:1" })
 ns.Tooltip:OnEnable()
+ns.db.whyTooltip = false
 suite.check("no processor on this client", ns.TooltipBlock.shared.installed == "scripts")
 tip = _G.GameTooltip
 tip.GetItem = function() return "Item", "item:2" end

@@ -1283,6 +1283,17 @@ L["House, Game or Clear. Clear is plain and easy to read, and it has Russian let
 L["Warm is the look today. Darker takes the warm tint out of the glass."] = "暖色是以前的样子。更暗会去掉玻璃的暖色调。"
 L["What a folded window turns into: the round button, or a small bar with its title."] = "折叠后的窗口会变成：圆形按钮，或带标题的小条。"
 
+-- Why It's Better (2026-11-26)
+L["More %s and %s."] = "%s和%s更高。"
+L["More %s."] = "%s更高。"
+L["A little less %s and %s."] = "%s和%s略低。"
+L["A little less %s."] = "%s略低。"
+L["Less %s and %s."] = "%s和%s更低。"
+L["Less %s."] = "%s更低。"
+L["Most of the gain is %s."] = "收益主要来自%s。"
+L["%s takes a little back."] = "%s略有抵消。"
+L["WHAT CHANGES"] = "有何变化"
+L["Why It's Better:"] = "为何更好："
 -- Gear Road (My Gear, 2026-11-26)
 L["Road"] = "路线"
 L["NOW"] = "现在"

@@ -174,6 +174,19 @@ asks a hundred times in a burst. Keep the global, `Butler:Advise` and these
 fields stable; if one has to change, change Butler's `Logic/Sisters.lua`
 too.
 
+
+Butler's search that knows words (2026-11-26) also asks, once each time
+its All Characters list is built, inside a pcall and read only:
+
+```lua
+_G.BlackthornesEquipment.Butler:Worn()
+  -- { { key (GUID), worn = { [itemID] = count }, at } } from each
+  --   character's note (Alts, characterGear), or nil on an error
+```
+
+Butler keeps only the characters on its realm and side and counts the
+pieces as "worn". Tested in `tools/test_butler.lua`. Keep it stable; if
+it changes, change Butler's `Logic/Everyone.lua` too.
 ## What this addon calls in Tradeskills
 
 When a player changes a stat weight or picks a spec (`Weights:Changed` in
@@ -3339,6 +3352,31 @@ use the keys `House##font`, `Game##font`, `Clear##font`, since "Clear" is a
 button's word elsewhere. Tested in `tools/test_housekit.lua` and
 `tools/test_foldwindow.lua`. Not yet seen in game.
 
+## Why It's Better (2026-11-26)
+
+The owner said build it (mockup equipment-improve-3-why-better). A percent says
+an item is better; this says why.
+
+- `Compare:Judge` keeps `result.weights` and `result.replaced` (links of what
+  the swap takes off, `Compare.WornLinks`), so nothing extra runs until the
+  answer is shown. `JudgeCarried` keeps them too.
+- `Compare:Why(link, result)` lists each stat the judged spec weighs that
+  changes: `{ key, name, amount, worth, per }`, gains first, biggest first.
+  Plain crit and hit rating fold into crit and hit. It does not count the
+  hit cap or set bonuses, so the bars can differ a little from the percent.
+- `Compare.WhyLine` ("More %s and %s. A little less %s.") and
+  `Compare.WhyWorth` ("Most of the gain is %s. %s takes a little back.").
+  Losses at or under half the gains read "a little less", else "less".
+  `Weights.WeightOf` is the one place a stat's weight is read (Score uses it).
+- The tooltip line sits under the verdict, key `why`, saved `whyTooltip`
+  (never rename), Settings "Why It's Better:" on the Tooltips page, Always by
+  default. Only on better or worse gear; with an Off Spec it speaks for the
+  Main Spec unless only the Off Spec gains.
+- The Find Upgrades sheet shows the line, WHAT CHANGES with up to five bars
+  (gains right of the middle, losses left, the biggest the longest) and the
+  worth line (`Find:BuildWhy`, `Find:PaintWhy`). My Gear shows it through the
+  row tooltip. The mockup's stacked worth bar was left out for room.
+- Tested in `tools/test_whybetter.lua`. Not yet seen in game.
 ## Gear Road (My Gear's third view, 2026-11-26)
 
 The owner said build it from the mockup `equipment-improve-4-gear-road`

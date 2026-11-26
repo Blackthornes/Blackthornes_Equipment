@@ -232,7 +232,7 @@ SettingsUI.SETTING_KEYS = {
     "suffixLine", "swapAtDoors", "tooltipLine", "tooltipShift", "upgradeChat",
     "upgradeQuest", "upgradeQuestBiggest", "upgradeQuestStepOnly",
     "upgradeQuestStyle", "upgradeQuestZoneOnly", "upgradeQuestZoneSwap",
-    "upgradeToast", "useTomTom",
+    "upgradeToast", "useTomTom", "whyTooltip",
 }
 
 --- The same, for keys saved for one character.
@@ -652,6 +652,10 @@ function SettingsUI:BuildTooltips()
     local tooltipRow = pages:Row("tooltips", 1, L["Tooltip Line:"],
         L["Says if gear beats what you wear."])
     controls.tooltip = ShiftStepper(tooltipRow, "tooltipLine", "upgrade")
+
+    -- Why It's Better (2026-11-26): the plain line under the percent.
+    local whyRow = pages:Row("tooltips", 1, L["Why It's Better:"], nil)
+    controls.whyTooltip = ShiftStepper(whyRow, "whyTooltip", "why")
 
     local suffixRow = pages:Row("tooltips", 1, L["Random Roll Names:"],
         L["Adds a green's roll, like of the Monkey, to its tooltip."])
@@ -1216,6 +1220,7 @@ function SettingsUI:Refresh()
     controls.bestArmorOnly:SetChecked(ns.Compare.BestArmorOnly())
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:Sync()
+    controls.whyTooltip:Sync()
     controls.altTooltipLine:Sync()
     controls.enchantTooltip:Sync()
     controls.dropsTooltip:Sync()

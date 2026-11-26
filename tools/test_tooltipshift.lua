@@ -20,10 +20,12 @@ env.InstallItems(ITEMS, { [5] = "item:1" })
 _G.Enum = { TooltipDataType = { Item = 0 } }
 _G.TooltipDataProcessor = { AddTooltipPostCall = function(_, fn) postCall = fn end }
 ns.Tooltip:OnEnable()
+-- Why It's Better is tested in tools/test_whybetter.lua.
+ns.db.whyTooltip = false
 
 local Shift = ns.TooltipShift
 suite.check("the shared file is loaded", type(Shift) == "table")
-suite.check("with this addon's lines", #Shift.KEYS == 5, #Shift.KEYS)
+suite.check("with this addon's lines", #Shift.KEYS == 6, #Shift.KEYS)
 
 -- A player who never touches it: every line reads as it does today.
 suite.check("an on line reads Always", Shift:Mode(ns.db.tooltipLine ~= false, "upgrade") == Shift.ALWAYS)
