@@ -174,6 +174,19 @@ asks a hundred times in a burst. Keep the global, `Butler:Advise` and these
 fields stable; if one has to change, change Butler's `Logic/Sisters.lua`
 too.
 
+
+Butler's search that knows words (2026-11-26) also asks, once each time
+its All Characters list is built, inside a pcall and read only:
+
+```lua
+_G.BlackthornesEquipment.Butler:Worn()
+  -- { { key (GUID), worn = { [itemID] = count }, at } } from each
+  --   character's note (Alts, characterGear), or nil on an error
+```
+
+Butler keeps only the characters on its realm and side and counts the
+pieces as "worn". Tested in `tools/test_butler.lua`. Keep it stable; if
+it changes, change Butler's `Logic/Everyone.lua` too.
 ## What this addon calls in Tradeskills
 
 When a player changes a stat weight or picks a spec (`Weights:Changed` in
