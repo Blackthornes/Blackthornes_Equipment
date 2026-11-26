@@ -5,4 +5,7 @@
     <Binding name="BLACKTHORNESEQUIPMENT_TOGGLE" header="BLACKTHORNESEQUIPMENT" category="ADDONS">
         if BlackthornesEquipment and BlackthornesEquipment.UI then BlackthornesEquipment.UI:Toggle() end
     </Binding>
+    <Binding name="BLACKTHORNESEQUIPMENT_SWITCHGEAR" category="ADDONS">
+        if BlackthornesEquipment and BlackthornesEquipment.SwitchGear then BlackthornesEquipment.SwitchGear:Go() end
+    </Binding>
 </Bindings>

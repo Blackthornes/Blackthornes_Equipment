@@ -138,10 +138,10 @@ suite.check("with the gear rows showing", pages.pages.gear.content:IsShown()
 suite.check("no Upgrade Hunts page", pages.pages.hunts == nil)
 suite.check("the grid heads the Gear page", pages.pages.gear.items[1][1] ~= nil
     and SettingsUI.showGrid[1] == pages.pages.gear.items[1][2].frame)
-suite.check("six lines of two", #SettingsUI.showGrid == 6, #SettingsUI.showGrid)
+suite.check("seven lines of two", #SettingsUI.showGrid == 7, #SettingsUI.showGrid)
 local gridKeys = { arrows = "bagArrows", sellCoins = "bagSellCoins", rewardButton = "rewardButton",
     upgradeChat = "upgradeChat", slotUpgrades = "slotUpgrades", upgradeToast = "upgradeToast",
-    showTracker = "showTracker", mapPins = "mapPins" }
+    showTracker = "showTracker", mapPins = "mapPins", levelUpCard = "levelUpCard" }
 for control, key in pairs(gridKeys) do
     local box = controls[control]
     suite.check(control .. " sits in the grid", box ~= nil and box.gridName ~= nil
@@ -293,8 +293,10 @@ local covered = { sisters = true, whatsnew = true,
     spec = true, weights = true,
     settings = true, weapons = true, training = true, skip = true, autoequip = true,
     dungeons = true, loot = true, mute = true, windows = true,
+    -- My Gear's Switch Gear button (Logic/SwitchGear.lua).
+    swap = true,
 }
-local typedOnly = { bags = true, tracked = true, help = true }
+local typedOnly = { bags = true, tracked = true, help = true, welcome = true }
 for _, name in ipairs(ns.commandOrder) do
     suite.check("/beq " .. name .. " has a button or a tab, or is typed only",
         covered[name] == true or typedOnly[name] == true)
