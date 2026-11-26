@@ -1315,3 +1315,13 @@ L["At a dungeon's door, a card offers to put on your Off Spec gear."] = "在副�
 L["Pick an Off Spec first, on the My Gear tab."] = "先在“我的装备”页选一个副专精。"
 L["Switch Gear"] = "切换装备"
 L["put on your Off Spec gear, or your Main Spec gear again"] = "穿上副专精的装备，或者换回主专精的装备"
+
+-- Level Up card (2026-11-26)
+L["LEVEL UP"] = "升级"
+L["You can wear %s now."] = "你现在可以穿%s了。"
+L["1 new upgrade to go and get."] = "有 1 件新升级可以去拿。"
+L["%d new upgrades to go and get."] = "有 %d 件新升级可以去拿。"
+L["Best: %s"] = "最好的：%s"
+L["Show Me"] = "给我看"
+L["Level Up Card:"] = "升级卡片："
+L["After a new level, a card shows new gear and spells to train."] = "升到新等级后，一张卡片会显示新装备和要学的法术。"

@@ -226,7 +226,7 @@ SettingsUI.SETTING_KEYS = {
     "altTooltipLine", "arrowRoute", "autoEquip", "bagArrows", "bagSellCoins",
     "classTraining", "dropsTooltip", "enchantTooltip", "finderAhead",
     "finderGetNow", "finderScale", "finderShow", "finderZoneOnly",
-    "hideQuestTracker", "mapPins", "questArrow", "questArrowSize",
+    "hideQuestTracker", "levelUpCard", "mapPins", "questArrow", "questArrowSize",
     "questLevelsAbove", "questLogTrackedOnly", "questScale", "rewardButton",
     "settingsDescriptions", "showTracker", "slotUpgrades", "soloQuestsOnly",
     "suffixLine", "swapAtDoors", "tooltipLine", "tooltipShift", "upgradeChat",
@@ -755,6 +755,10 @@ function SettingsUI:BuildShowGrid()
           end) },
         { "upgradeChat", L["Upgrades in Chat:"], L["A chat line when an upgrade lands in your bags."],
           Plain("upgradeChat", true) },
+        { "levelUpCard", L["Level Up Card:"], L["After a new level, a card shows new gear and spells to train."],
+          Plain("levelUpCard", true, function(checked)
+              if not checked and ns.LevelUpCard then ns.LevelUpCard:Hide() end
+          end) },
         Hunt(HUNTING[1]),
         Hunt(HUNTING[2]),
         Hunt(HUNTING[3]),

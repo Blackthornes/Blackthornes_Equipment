@@ -1315,3 +1315,13 @@ L["At a dungeon's door, a card offers to put on your Off Spec gear."] = "À la p
 L["Pick an Off Spec first, on the My Gear tab."] = "Choisis d'abord une spé secondaire, dans l'onglet Mon équipement."
 L["Switch Gear"] = "Changer d'équipement"
 L["put on your Off Spec gear, or your Main Spec gear again"] = "met ton équipement de spé secondaire, ou à nouveau celui de ta spé principale"
+
+-- Level Up card (2026-11-26)
+L["LEVEL UP"] = "NIVEAU SUPÉRIEUR"
+L["You can wear %s now."] = "Tu peux porter des %s maintenant."
+L["1 new upgrade to go and get."] = "1 nouvelle amélioration à aller chercher."
+L["%d new upgrades to go and get."] = "%d nouvelles améliorations à aller chercher."
+L["Best: %s"] = "La meilleure : %s"
+L["Show Me"] = "Montre-moi"
+L["Level Up Card:"] = "Carte de niveau :"
+L["After a new level, a card shows new gear and spells to train."] = "Après un nouveau niveau, une carte montre le nouvel équipement et les sorts à apprendre."

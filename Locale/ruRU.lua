@@ -1314,3 +1314,13 @@ L["At a dungeon's door, a card offers to put on your Off Spec gear."] = "У вх
 L["Pick an Off Spec first, on the My Gear tab."] = "Сначала выбери второй спек на вкладке «Моя экипировка»."
 L["Switch Gear"] = "Сменить экипировку"
 L["put on your Off Spec gear, or your Main Spec gear again"] = "надеть вещи второго спека или снова основного"
+
+-- Level Up card (2026-11-26)
+L["LEVEL UP"] = "НОВЫЙ УРОВЕНЬ"
+L["You can wear %s now."] = "Теперь ты можешь носить: %s."
+L["1 new upgrade to go and get."] = "1 новое улучшение, за которым стоит сходить."
+L["%d new upgrades to go and get."] = "Новых улучшений, за которыми стоит сходить: %d."
+L["Best: %s"] = "Лучшее: %s"
+L["Show Me"] = "Показать"
+L["Level Up Card:"] = "Карточка уровня:"
+L["After a new level, a card shows new gear and spells to train."] = "После нового уровня карточка показывает новую экипировку и заклинания для изучения."

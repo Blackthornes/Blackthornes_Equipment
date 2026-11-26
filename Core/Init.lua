@@ -528,6 +528,8 @@ local DEFAULTS = {
     -- tooltips. All on unless switched off. What is tracked is kept per
     -- character (`tracked`, `trackedDone`; Logic/Tracking.lua).
     upgradeToast = true,
+    -- The Level Up card after each level (UI/LevelUpCard.lua).
+    levelUpCard = true,
     showTracker = true,
     mapPins = true,
     slotUpgrades = true,

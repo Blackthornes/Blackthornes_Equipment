@@ -3411,3 +3411,35 @@ One button on My Gear puts the Off Spec's gear on and the Main Spec's back.
   keeps that door quiet `QUIET` seconds). The banner takes `line`, `icon`
   and `always` (shows with the upgrade banner switched off).
 - Tested in `tools/test_switchgear.lua`. Not yet seen in game.
+
+## The Level Up card (2026-11-26)
+
+The owner said build it from the mockup `equipment-improve-5-level-up`
+(2026-11-26; his yes covers the mockup's words).
+
+- `UI/LevelUpCard.lua` (`ns.LevelUpCard`): once per level, after the fight
+  ends, one card: "LEVEL UP", "Level %d", "You can wear %s now." when a
+  heavier armor opens (`Weights:CanUse`'s level), then numbered lines, each
+  only when it has something to say: bag upgrades (`MyGear:Read`'s ready,
+  Put It On / Put Them On through `Wear:PutOnAll`), the upgrades the new
+  level opened ("%d new upgrades to go and get.", "Best: %s", Show Me opens
+  Find Upgrades), and spells to train (the Training tab's plan, Show the
+  Way). Nothing to say, no card.
+- New upgrades are picks you can wear now whose required level
+  (`FinderUI.LevelOf`) is in the levels just gained, through Find Upgrades'
+  filters and never an ignored piece. Best is an empty slot first, then
+  the biggest percent.
+- Waits: `PLAYER_LEVEL_UP` sets `pending` (levels gained before it shows
+  add up), looks after `Card.SETTLE` (1 s), and in a fight waits for
+  `PLAYER_REGEN_ENABLED`. Reads `Finder:Fresh`, else `ScanInBackground`.
+- Saved: `levelUpCard` (account, on unless switched off; "Level Up Card:"
+  on the Gear page's grid, in `SETTING_KEYS`), `levelUpCardShown` (per
+  character, the last level it looked at; never shows twice, even after a
+  reload), and its spot `windowSpots["equipment.levelup"]` via
+  `SharedWindow.KeepSpot`. Until dragged it stands on the top shelf as
+  "upgrade.levelup". Never rename these.
+- A click anywhere else fades it (`GLOBAL_MOUSE_DOWN`, asked only while it
+  shows); the red close gem shuts it. No sound. Effects: Full fades in
+  slower, Subtle quicker, Off just shows.
+- Tested in `tools/test_levelupcard.lua` and `tools/test_settings.lua`.
+  Not seen in game: the look, the drag, and the event on Forever.
