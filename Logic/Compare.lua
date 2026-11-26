@@ -350,6 +350,16 @@ local function ReplacedSlots(equipLoc, slot, shieldTank)
 end
 Compare.ReplacedSlots = ReplacedSlots
 
+--- What is worn in those slots now, as links (an empty slot leaves none).
+function Compare.WornLinks(slots)
+    local links = {}
+    for _, slot in ipairs(slots or {}) do
+        local worn = Items:Equipped(slot)
+        if worn then links[#links + 1] = worn end
+    end
+    return links
+end
+
 --- Fold in what the worn sets' bonuses gain or lose by the swap
 --- (Logic/ItemSets.lua). Nothing changes when no set is touched.
 local function WithSets(link, slots, weights, score, against, result)
@@ -572,8 +582,11 @@ function Compare:Judge(link, only)
     score, against, result.hitCapped = Capped(self, weights, score, hit, hitValue, against, wornHit, wornValue)
     -- A set bonus the swap would finish counts for it, one it would break
     -- counts against it.
-    score, against = WithSets(link, ReplacedSlots(info.equipLoc, slot, shieldTank), weights, score, against, result)
+    local replaced = ReplacedSlots(info.equipLoc, slot, shieldTank)
+    score, against = WithSets(link, replaced, weights, score, against, result)
     result.score, result.against, result.empty = score, against, empty
+    -- Kept for Why It's Better (Compare:Why), worked out only when shown.
+    result.weights, result.replaced = weights, Compare.WornLinks(replaced)
 
     if empty then
         result.verdict = "upgrade"
@@ -669,6 +682,7 @@ function Compare:JudgeCarried(link)
     local judged = {
         className = result.className, specName = result.specName, slot = other,
         score = score, against = against, empty = not worn,
+        weights = weights, replaced = { worn },
     }
     if not worn then
         judged.verdict = "upgrade"
@@ -822,6 +836,156 @@ local CLASS_NAMES = {
     PRIEST = L["Priests"], SHAMAN = L["Shamans"], MAGE = L["Mages"], WARLOCK = L["Warlocks"],
     DRUID = L["Druids"],
 }
+
+--------------------------------------------------------------------------------
+-- Why It's Better (the owner said build it, 2026-11-26)
+--------------------------------------------------------------------------------
+
+-- Plain crit and hit rating count with crit and hit, so each shows as one row.
+local WHY_SAME = { anyCrit = "crit", anyHit = "hit" }
+-- Stats counted per 1%, shown with a percent sign.
+local WHY_PER = { crit = true, hit = true, haste = true, spellCrit = true, spellHit = true,
+    dodge = true, parry = true, block = true }
+-- A stat worth less than this share of the biggest change is left out of
+-- the plain line (it still gets its bar).
+local WHY_SMALL = 0.1
+-- Losses no more than this share of the gains read "a little less".
+local WHY_LITTLE = 0.5
+-- The gain one stat must hold to be "most of the gain".
+local WHY_MOST = 0.5
+
+local whyNames
+local function WhyName(key, ranged)
+    if key == "dps" then return Weights.Label(ranged and "Ranged weapon dps" or "Melee weapon dps") end
+    if not whyNames then
+        whyNames = {}
+        for _, entry in ipairs(Weights.STAT_ORDER or {}) do whyNames[entry.key] = entry.name end
+    end
+    return Weights.Label(whyNames[key] or key)
+end
+
+local function StatsOf(link)
+    local raw = Items:Stats(link)
+    if not raw then return nil end
+    local stats = Weights:Normalize(raw)
+    Weights:AddSchools(stats, Items:SchoolDamage(link))
+    return stats
+end
+
+--- What changes when the item goes on, for the spec it was judged for:
+--- each stat that spec weighs and that goes up or down, with what the
+--- change is worth to it. Gains first, then losses, each biggest first.
+--- Read from the verdict's kept weights and the pieces it replaces, so it
+--- costs nothing until it is shown. Nil when it can't be told yet.
+-- Each change: { key, name, amount, worth, per }
+function Compare:Why(link, result)
+    if type(result) ~= "table" or type(result.weights) ~= "table" or type(link) ~= "string" then return nil end
+    local mine = StatsOf(link)
+    if not mine then return nil end
+    local info = Items:Info(link)
+    local ranged = info and RANGED[info.equipLoc] or false
+    local weights = result.weights
+    local by = {}
+    local function Add(stats, sign)
+        for name, value in pairs(stats) do
+            local weight = type(value) == "number" and Weights.WeightOf(name, weights, ranged)
+            if type(weight) == "number" and weight > 0 then
+                local key = WHY_SAME[name] or name
+                local change = by[key] or { key = key, amount = 0, worth = 0 }
+                change.amount = change.amount + sign * value
+                change.worth = change.worth + sign * value * weight
+                by[key] = change
+            end
+        end
+    end
+    Add(mine, 1)
+    for _, worn in ipairs(result.replaced or {}) do
+        local stats = StatsOf(worn)
+        if not stats then return nil end
+        Add(stats, -1)
+    end
+    local changes = {}
+    for key, change in pairs(by) do
+        if math.abs(change.amount) > 1e-6 and math.abs(change.worth) > 1e-6 then
+            change.name = WhyName(key, ranged)
+            change.per = WHY_PER[key] or false
+            changes[#changes + 1] = change
+        end
+    end
+    table.sort(changes, function(a, b)
+        if (a.worth > 0) ~= (b.worth > 0) then return a.worth > 0 end
+        if math.abs(a.worth) ~= math.abs(b.worth) then return math.abs(a.worth) > math.abs(b.worth) end
+        return a.key < b.key
+    end)
+    return changes
+end
+
+--- "+7", "+1%", "-0.5%": a change as its bar's number.
+function Compare.WhyAmount(change)
+    local amount = change.amount
+    local text
+    if math.abs(amount) >= 1 then
+        text = ("%+d"):format(amount >= 0 and math.floor(amount + 0.5) or -math.floor(-amount + 0.5))
+    else
+        text = ("%+.1f"):format(amount)
+    end
+    if change.per then text = text .. "%" end
+    return text
+end
+
+-- The gains and losses that count for the words, and what all of each add to.
+local function WhySides(changes)
+    local gains, losses, gainTotal, lossTotal, biggest = {}, {}, 0, 0, 0
+    for _, change in ipairs(changes or {}) do
+        biggest = math.max(biggest, math.abs(change.worth))
+        if change.worth > 0 then gainTotal = gainTotal + change.worth
+        else lossTotal = lossTotal - change.worth end
+    end
+    for _, change in ipairs(changes or {}) do
+        if math.abs(change.worth) >= biggest * WHY_SMALL then
+            local side = change.worth > 0 and gains or losses
+            side[#side + 1] = change
+        end
+    end
+    return gains, losses, gainTotal, lossTotal
+end
+
+--- The plain line: "More Strength and Crit. A little less Agility." Two
+--- gains and two losses at most. Nil when nothing changes.
+function Compare.WhyLine(changes)
+    local gains, losses, gainTotal, lossTotal = WhySides(changes)
+    local parts = {}
+    if #gains >= 2 then
+        parts[#parts + 1] = L.Format("More %s and %s.", gains[1].name, gains[2].name)
+    elseif #gains == 1 then
+        parts[#parts + 1] = L.Format("More %s.", gains[1].name)
+    end
+    local little = gainTotal > 0 and lossTotal <= gainTotal * WHY_LITTLE
+    if #losses >= 2 then
+        parts[#parts + 1] = little and L.Format("A little less %s and %s.", losses[1].name, losses[2].name)
+            or L.Format("Less %s and %s.", losses[1].name, losses[2].name)
+    elseif #losses == 1 then
+        parts[#parts + 1] = little and L.Format("A little less %s.", losses[1].name)
+            or L.Format("Less %s.", losses[1].name)
+    end
+    if #parts == 0 then return nil end
+    return table.concat(parts, " ")
+end
+
+--- What the gain is worth, said plainly: "Most of the gain is Strength.
+--- Agility takes a little back." Nil when there is nothing to say.
+function Compare.WhyWorth(changes)
+    local gains, losses, gainTotal, lossTotal = WhySides(changes)
+    local parts = {}
+    if gains[1] and gainTotal > 0 and gains[1].worth >= gainTotal * WHY_MOST then
+        parts[#parts + 1] = L.Format("Most of the gain is %s.", gains[1].name)
+    end
+    if losses[1] and gainTotal > 0 and lossTotal <= gainTotal * WHY_LITTLE then
+        parts[#parts + 1] = L.Format("%s takes a little back.", losses[1].name)
+    end
+    if #parts == 0 then return nil end
+    return table.concat(parts, " ")
+end
 
 --- The line a tooltip shows for a verdict, and the colour to show it in, or
 --- nil when there is nothing worth saying (the item is the one worn).

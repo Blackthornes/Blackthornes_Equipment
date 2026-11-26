@@ -3305,3 +3305,29 @@ reads "in your bags" or "in your bank"; a quest reward you own says the
 same. A bank whose gear changed marks the finder stale. New word "in your
 bags" (six languages) waits for the owner's OK. Tested in
 `tools/test_dungeonstab.lua` section 9.
+
+## Why It's Better (2026-11-26)
+
+The owner said build it (mockup equipment-improve-3-why-better). A percent says
+an item is better; this says why.
+
+- `Compare:Judge` keeps `result.weights` and `result.replaced` (links of what
+  the swap takes off, `Compare.WornLinks`), so nothing extra runs until the
+  answer is shown. `JudgeCarried` keeps them too.
+- `Compare:Why(link, result)` lists each stat the judged spec weighs that
+  changes: `{ key, name, amount, worth, per }`, gains first, biggest first.
+  Plain crit and hit rating fold into crit and hit. It does not count the
+  hit cap or set bonuses, so the bars can differ a little from the percent.
+- `Compare.WhyLine` ("More %s and %s. A little less %s.") and
+  `Compare.WhyWorth` ("Most of the gain is %s. %s takes a little back.").
+  Losses at or under half the gains read "a little less", else "less".
+  `Weights.WeightOf` is the one place a stat's weight is read (Score uses it).
+- The tooltip line sits under the verdict, key `why`, saved `whyTooltip`
+  (never rename), Settings "Why It's Better:" on the Tooltips page, Always by
+  default. Only on better or worse gear; with an Off Spec it speaks for the
+  Main Spec unless only the Off Spec gains.
+- The Find Upgrades sheet shows the line, WHAT CHANGES with up to five bars
+  (gains right of the middle, losses left, the biggest the longest) and the
+  worth line (`Find:BuildWhy`, `Find:PaintWhy`). My Gear shows it through the
+  row tooltip. The mockup's stacked worth bar was left out for room.
+- Tested in `tools/test_whybetter.lua`. Not yet seen in game.
