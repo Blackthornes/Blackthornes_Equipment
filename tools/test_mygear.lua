@@ -324,6 +324,13 @@ do
     suite.check("the character shows and the big ring hides", model:IsShown() and not MyGear.dots[1]:IsShown()
         and not MyGear.ratingLabel:IsShown())
     suite.check("the colour key takes the hint's place", not MyGear.hint:IsShown())
+    -- The figure takes the middle's height; the spec choices move under the
+    -- foot slots, side by side (the owner, 2026-11-26: it was too small).
+    local judgePoint = rawget(MyGear.judgeLabel, "_point")
+    suite.check("Main Spec moves under the foot slots", judgePoint and judgePoint[2] == MyGear.figure
+        and judgePoint[5] < -400, judgePoint and judgePoint[5])
+    local offPoint = rawget(MyGear.offLabel, "_point")
+    suite.check("with Off Spec beside it", offPoint and offPoint[1] == "LEFT" and offPoint[2] == MyGear.specChoice)
     MyGear:PickSlot(5)
     suite.check("picking the chest tries on the bag piece", calls[#calls] == "try item:901", calls[#calls])
     suite.check("on the player", calls[#calls - 1] == "unit player", calls[#calls - 1])
@@ -363,6 +370,8 @@ do
     suite.check("unticking Show My Character saves it", ns.db.showMyCharacter == false)
     suite.check("and brings the ring back", not model:IsShown() and MyGear.dots[1]:IsShown()
         and MyGear.ratingLabel:IsShown() and MyGear.hint:IsShown())
+    local back = rawget(MyGear.offLabel, "_point")
+    suite.check("and the spec choices back under the ring", back and back[1] == "TOP" and back[2] == MyGear.specChoice)
     count = #calls
     MyGear:PickSlot(1)
     suite.check("with it off nothing is dressed", #calls == count, #calls)

@@ -58,9 +58,15 @@ local RING = 54
 local DOTS = 48
 -- Try It On: the character in the middle, and the small ring under its
 -- name that the rating moves to.
-local MODEL_HEIGHT = 150
-local SMALL_RING = 6
-local SMALL_DOTS = 16
+-- The name, level and rating sit above the figure (MODEL_TOP), Now and
+-- With Upgrade under it, and the spec choices go on a row under the
+-- foot slots. The figure reaches a little behind the slots on each side
+-- (MODEL_REACH), under them so their clicks still work.
+local MODEL_TOP = 66
+local MODEL_HEIGHT = 262
+local MODEL_REACH = 24
+local SMALL_RING = 11
+local SMALL_DOTS = 28
 
 -- One line of the list view, and its columns.
 local LIST_HEAD = 22
@@ -785,6 +791,7 @@ function MyGear:BuildFigure()
     local offLabel = Theme.CreateLabel(middle, "small", "gilt", "CENTER")
     offLabel:SetPoint("TOP", spec, "BOTTOM", 0, -10)
     offLabel:SetText(L["Off Spec:"])
+    self.offLabel = offLabel
     local off = FinderUI.OffSpecChoice(middle, 150)
     off:SetPoint("TOP", offLabel, "BOTTOM", 0, -6)
     self.offChoice = off
@@ -823,9 +830,12 @@ end
 function MyGear:BuildModel(middle)
     local ok, model = pcall(CreateFrame, "DressUpModel", nil, middle)
     if not ok or not model then return end
-    local width = LEFT - SLOT_WIDTH * 2
-    model:SetPoint("TOP", middle, "TOP", 0, 0)
+    local width = LEFT - SLOT_WIDTH * 2 + MODEL_REACH * 2
+    model:SetPoint("TOP", middle, "TOP", 0, -MODEL_TOP)
     model:SetSize(width, MODEL_HEIGHT)
+    -- Under the slot buttons where it reaches behind them.
+    local okLevel, level = pcall(self.figure.GetFrameLevel, self.figure)
+    if okLevel and type(level) == "number" then pcall(model.SetFrameLevel, model, level) end
     pcall(model.EnableMouse, model, true)
     model:SetScript("OnMouseDown", function() MyGear:StartTurn() end)
     model:SetScript("OnMouseUp", function() MyGear:StopTurn() end)
@@ -845,25 +855,26 @@ function MyGear:BuildModel(middle)
     local withWidth = math.max(90, Theme.TextWidth("normal", L["With Upgrade"]) + 20)
     local now = Widgets.CreateButton(middle, L["Now"], function() MyGear:SetFigureMode("now") end,
         { width = nowWidth, height = 20 })
-    now:SetPoint("TOPLEFT", middle, "TOP", -math.floor((nowWidth + withWidth + 4) / 2), -(MODEL_HEIGHT + 4))
+    now:SetPoint("TOPLEFT", middle, "TOP", -math.floor((nowWidth + withWidth + 4) / 2), -(MODEL_TOP + MODEL_HEIGHT + 4))
     local with = Widgets.CreateButton(middle, L["With Upgrade"], function() MyGear:SetFigureMode("upgrade") end,
         { width = withWidth, height = 20 })
     with:SetPoint("LEFT", now, "RIGHT", 4, 0)
     self.nowButton, self.withButton = now, with
+    -- On the figure's feet, as the room under it holds the buttons.
     local drag = Theme.CreateLabel(middle, "tiny", "muted", "CENTER")
-    drag:SetPoint("TOP", middle, "TOP", 0, -(MODEL_HEIGHT + 28))
+    drag:SetPoint("BOTTOM", model, "BOTTOM", 0, 2)
     drag:SetText(L["Drag to turn"])
     self.dragLabel = drag
 
-    -- The rating's small ring, under the name.
-    local rating = Theme.CreateLabel(middle, "small", "gilt", "LEFT")
+    -- The rating in its gold ring, under the name.
+    local rating = Theme.CreateLabel(middle, "large", "gilt", "LEFT")
     self.smallRating = rating
     local dots = {}
     for index = 1, SMALL_DOTS do
         local angle = (index - 0.5) / SMALL_DOTS * 2 * math.pi
         local dot = middle:CreateTexture(nil, "ARTWORK")
-        dot:SetSize(2, 2)
-        dot:SetPoint("CENTER", rating, "LEFT", -(SMALL_RING + 4) + math.sin(angle) * SMALL_RING,
+        dot:SetSize(3, 3)
+        dot:SetPoint("CENTER", rating, "LEFT", -(SMALL_RING + 6) + math.sin(angle) * SMALL_RING,
             math.cos(angle) * SMALL_RING)
         dots[index] = dot
     end
@@ -897,15 +908,26 @@ function MyGear:PlaceMiddle()
 
     self.whoLabel:ClearAllPoints()
     self.judgeLabel:ClearAllPoints()
+    self.specChoice:ClearAllPoints()
+    self.offLabel:ClearAllPoints()
+    self.offChoice:ClearAllPoints()
     if on then
-        self.whoLabel:SetPoint("TOP", middle, "TOP", 0, -(MODEL_HEIGHT + 42))
-        -- The small ring sits left of the rating word, the pair centred.
+        self.whoLabel:SetPoint("TOP", middle, "TOP", 0, 0)
+        -- The ring sits left of the rating word, the pair centred.
         self.smallRating:ClearAllPoints()
-        self.smallRating:SetPoint("TOP", self.levelLabel, "BOTTOM", SMALL_RING + 4, -4)
-        self.judgeLabel:SetPoint("TOP", self.smallRating, "BOTTOM", -(SMALL_RING + 4), -8)
+        self.smallRating:SetPoint("TOP", self.levelLabel, "BOTTOM", SMALL_RING + 6, -8)
+        -- Main Spec and Off Spec side by side, under the foot slots.
+        local footBottom = -(#LEFT_SLOTS * SLOT_HEIGHT + 8 + SLOT_HEIGHT + 12)
+        self.judgeLabel:SetPoint("TOPLEFT", self.figure, "TOPLEFT", 4, footBottom - 4)
+        self.specChoice:SetPoint("LEFT", self.judgeLabel, "RIGHT", 6, 0)
+        self.offLabel:SetPoint("LEFT", self.specChoice, "RIGHT", 18, 0)
+        self.offChoice:SetPoint("LEFT", self.offLabel, "RIGHT", 6, 0)
     else
         self.whoLabel:SetPoint("TOP", middle, "TOP", 0, -(RING + 14) - RING - 16)
         self.judgeLabel:SetPoint("TOP", self.levelLabel, "BOTTOM", 0, -16)
+        self.specChoice:SetPoint("TOP", self.judgeLabel, "BOTTOM", 0, -6)
+        self.offLabel:SetPoint("TOP", self.specChoice, "BOTTOM", 0, -10)
+        self.offChoice:SetPoint("TOP", self.offLabel, "BOTTOM", 0, -6)
     end
 
     -- The key: three lines under the spec choices, or one line along the
