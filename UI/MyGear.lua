@@ -944,25 +944,56 @@ function MyGear:PaintList(state)
     end
 end
 
---- Figure or List (`myGearView`, account wide; Figure unless List was picked).
+local VIEWS = { figure = true, list = true, road = true }
+
+--- Figure, List or Road (`myGearView`, account wide; Figure unless another
+--- was picked).
 function MyGear:View()
-    return ns.db and ns.db.myGearView == "list" and "list" or "figure"
+    local view = ns.db and ns.db.myGearView
+    if view == "road" and not ns.GearRoad then return "figure" end
+    return VIEWS[view] and view or "figure"
 end
 
 function MyGear:SetView(view)
-    if ns.db then ns.db.myGearView = view == "list" and "list" or "figure" end
+    if ns.db then ns.db.myGearView = VIEWS[view] and view or "figure" end
     self:PaintView()
+    if self:View() == "road" then
+        ns.GearRoad:Show()
+        self.footer:SetText(L["Amber gear is for later. The road only lists gear your class can wear."])
+        return
+    end
     if self.state then
+        self:PlaceBody(self:PaintCards(self.state))
         if self:View() == "list" then self:PaintList(self.state) else self:PaintFigure(self.state) end
+        self:PaintSide(self.state)
+        self.footer:SetText(MyGear.FooterText(self.state))
+    else
+        self:Refresh()
     end
 end
 
+--- Gear Road takes the whole body: no cards, no slot side.
 function MyGear:PaintView()
-    local list = self:View() == "list"
-    self.figure:SetShown(not list)
-    self.list:SetShown(list)
-    self.figureButton:SetLabelColor(list and "gilt" or "good")
-    self.listButton:SetLabelColor(list and "good" or "gilt")
+    local view = self:View()
+    local road = view == "road"
+    self.figure:SetShown(view == "figure")
+    self.list:SetShown(view == "list")
+    self.side:SetShown(not road)
+    self.hint:SetText(road and L["Click a stop to see every piece it opens."] or L["Click a slot"])
+    self.hint:ClearAllPoints()
+    if road then
+        self.hint:SetPoint("TOPRIGHT", self.body, "TOPRIGHT", -4, -7)
+        for _, card in pairs(self.cards) do card:Hide() end
+        self:PlaceBody(0)
+    else
+        self.hint:SetPoint("TOPRIGHT", self.left, "TOPRIGHT", -4, -7)
+    end
+    if ns.GearRoad then
+        if road then ns.GearRoad.frame:Show() else ns.GearRoad:Hide() end
+    end
+    self.figureButton:SetLabelColor(view == "figure" and "good" or "gilt")
+    self.listButton:SetLabelColor(view == "list" and "good" or "gilt")
+    if self.roadButton then self.roadButton:SetLabelColor(road and "good" or "gilt") end
 end
 
 --------------------------------------------------------------------------------
@@ -1351,13 +1382,21 @@ function MyGear:Build(area)
         { width = math.max(52, Theme.TextWidth("normal", L["List"]) + 24), height = 20 })
     listButton:SetPoint("LEFT", figureButton, "RIGHT", 6, 0)
     self.figureButton, self.listButton = figureButton, listButton
+    if ns.GearRoad then
+        local roadButton = Widgets.CreateButton(left, L["Road"], function() MyGear:SetView("road") end,
+            { width = math.max(52, Theme.TextWidth("normal", L["Road"]) + 24), height = 20 })
+        roadButton:SetPoint("LEFT", listButton, "RIGHT", 6, 0)
+        self.roadButton = roadButton
+    end
     local hint = Theme.CreateLabel(left, "tiny", "muted", "RIGHT")
     hint:SetPoint("TOPRIGHT", -4, -7)
     hint:SetText(L["Click a slot"])
+    self.hint = hint
 
     self:BuildFigure()
     self:BuildList()
     self:BuildSide()
+    if ns.GearRoad then ns.GearRoad:Build(body, VIEW_ROW) end
 
     -- The footer: how much waits on the left, the version on the right.
     local rule = Theme.CreateDivider(page, "border")
@@ -1416,6 +1455,8 @@ function MyGear:Present(found)
     local state = self:Read(found, off)
     self.state = state
     self.slot = self:ChooseSlot(state)
+    -- Gear Road draws from its own scan (UI/GearRoad.lua).
+    if self:View() == "road" then return state end
     self:PlaceBody(self:PaintCards(state))
     if self:View() == "list" then self:PaintList(state) else self:PaintFigure(state) end
     self:PaintSide(state)
@@ -1447,6 +1488,10 @@ end
 
 function MyGear:Refresh()
     if not self:IsShown() then return nil end
+    if self:View() == "road" then
+        self.footer:SetText(L["Amber gear is for later. The road only lists gear your class can wear."])
+        return ns.GearRoad:Refresh()
+    end
     self:LookOff()
     local found = Finder:Fresh()
     if found then return self:Present(found) end
@@ -1504,6 +1549,8 @@ end
 --- already on My Gear, or about to be: the next draw starts on this slot.
 function MyGear:Ask(slot)
     self.asked = slot
+    -- A slot shows on the figure or the list, not on the road.
+    if self:View() == "road" and self.page then self:SetView("figure") end
     if self:IsShown() and self.state and self.state.slots[slot] then
         self.asked = nil
         self:PickSlot(slot)

@@ -672,10 +672,12 @@ end
 
 --- The item IDs a scan looks at for this character: in level range, lowest
 --- first. Gear the gear list has already found is never for them
---- (Logic/GearList.lua) is passed by with one lookup.
-function Finder:CandidateIDs(player)
+--- (Logic/GearList.lua) is passed by with one lookup. `from`, when given,
+--- is the level the range starts from (My Gear's Gear Road looks from
+--- today's level all the way to 60).
+function Finder:CandidateIDs(player, from)
     local list = ns.GearList
-    local floor = player.level - LEVELS_BELOW
+    local floor = (tonumber(from) or player.level) - LEVELS_BELOW
     local ids = {}
     for itemID, item in pairs(ns.Sources.ITEMS) do
         if item[2] >= floor and item[1] <= player.level and not (list and list:Out(itemID)) then
@@ -1214,7 +1216,9 @@ end
 
 --- The scan itself. `pause`, when given, is called between items: the
 --- background scan hands one in that yields once a frame's share is used.
-function Finder:Build(only, ahead, pause)
+--- With `wide` a scan ahead keeps the gear from today's level up too, not
+--- only gear near the level planned for (UI/GearRoad.lua).
+function Finder:Build(only, ahead, pause, wide)
     local player = self:Player()
     if not player then return nil, "nolevel" end
     -- What had changed when this scan began. A sliced scan runs over many
@@ -1266,7 +1270,7 @@ function Finder:Build(only, ahead, pause)
     for slot, yes in pairs(self.toLook or {}) do
         if yes then looking[slot] = (self.slotLooks or {})[slot] or 0 end
     end
-    for _, itemID in ipairs(self:CandidateIDs(plan)) do
+    for _, itemID in ipairs(self:CandidateIDs(plan, wide and level or nil)) do
         if pause then pause() end
         -- An item judged before keeps its verdict, even when the client has
         -- let go of its details since: asking again would start the scans
