@@ -899,6 +899,12 @@ function Compare:Why(link, result)
         end
     end
     Add(mine, 1)
+    -- A partner it is weighed with goes on too (Logic/BackupWeapons.lua).
+    for _, other in ipairs(result.added or {}) do
+        local stats = StatsOf(other)
+        if not stats then return nil end
+        Add(stats, 1)
+    end
     for _, worn in ipairs(result.replaced or {}) do
         local stats = StatsOf(worn)
         if not stats then return nil end

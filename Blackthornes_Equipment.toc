@@ -79,6 +79,7 @@ Logic\DungeonQuests.lua
 Logic\DungeonLoot.lua
 Logic\DungeonDoors.lua
 Logic\SwitchGear.lua
+Logic\BackupWeapons.lua
 Logic\TomTom.lua
 Logic\Contribute.lua
 

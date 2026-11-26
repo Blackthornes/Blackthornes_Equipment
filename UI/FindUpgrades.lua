@@ -242,7 +242,20 @@ function Find:Read(found, off)
     end
     for _, pick in ipairs(type(found.pairs) == "table" and found.pairs or {}) do
         local partner = pick.pair
-        if partner and not skipped[pick.itemID] and not skipped[partner.itemID] then
+        if partner and partner.owned and not skipped[pick.itemID] then
+            -- A new piece with a partner you own (Logic/BackupWeapons.lua):
+            -- listed under the new piece's own hand.
+            local slot = pick.result and pick.result.slot or MAIN_HAND
+            local order, name = mainOrder, L["Both Hands"]
+            for index, group in ipairs(Groups()) do
+                if group[1] == slot then order, name = index, group[2] end
+            end
+            state.lines[#state.lines + 1] = {
+                pick = pick, main = pick, pair = partner, group = slot, slotName = name,
+                order = order, key = "pair:" .. pick.itemID .. ":" .. tostring(partner.itemID),
+                index = #state.lines + 1,
+            }
+        elseif partner and not skipped[pick.itemID] and not skipped[partner.itemID] then
             state.lines[#state.lines + 1] = {
                 pick = pick, main = pick, pair = partner, group = MAIN_HAND, slotName = L["Both Hands"],
                 order = mainOrder, key = "pair:" .. pick.itemID .. ":" .. partner.itemID,
@@ -354,7 +367,7 @@ function Find:Filtered(state)
                 end
             end
         end
-        if line.pair and #line.pairSources == 0 then sources = {} end
+        if line.pair and not line.pair.owned and #line.pairSources == 0 then sources = {} end
         line.sources = sources
         if pick.rep and next(kinds) then counts[REP] = counts[REP] + 1 end
         if pick.rep and not repOn then sources = {} end
@@ -946,7 +959,7 @@ function Find:FillRow(row, line)
     Theme.SetItemIcon(row.icon, pick.link)
 
     local name = ns.Items.ShowLink(pick.link)
-    if line.pair then name = name .. " + " .. ns.Items.ShowLink(line.pair.link) end
+    if line.pair and not line.pair.owned then name = name .. " + " .. ns.Items.ShowLink(line.pair.link) end
     if quest and quest:IsFollowing(pick.itemID) then name = name .. "  " .. Colored("good", L["Following"]) end
     if ns.Tracking and ns.Tracking:IsTracked(pick.itemID) then
         name = name .. "  " .. Colored("accent", L["Tracking"])
@@ -959,7 +972,15 @@ function Find:FillRow(row, line)
             name = name .. "\n" .. Colored("offSpec", L["Off only"])
         end
     end
-    if line.pair then name = name .. "\n" .. Colored("accent", L["Pair"]) end
+    if line.pair and line.pair.owned then
+        -- "with Sample Dagger, in your bags": the partner you own.
+        local partner = ns.Items.ShowLink(line.pair.link) or ""
+        local words = line.pair.owned == "bank" and L.Format("with %s, in your bank", partner)
+            or L.Format("with %s, in your bags", partner)
+        name = name .. "  " .. Colored("accent", L["Pair"]) .. "\n" .. Colored("muted", words)
+    elseif line.pair then
+        name = name .. "\n" .. Colored("accent", L["Pair"])
+    end
     -- Gear only a crafter can wear says the skill, in amber while you
     -- lack it.
     local wear = ns.Crafting.WearText(pick)
