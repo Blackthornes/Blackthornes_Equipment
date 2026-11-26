@@ -503,7 +503,8 @@ end
 function UpgradeQuest.BestSource(sources, zone, tab, here, filtered)
     local best, bestEase
     for _, source in ipairs(sources or {}) do
-        if (not tab or source.kind == tab) and UpgradeQuest.InZone(source, here)
+        -- The auction house is no quest: it shows on Find Upgrades only.
+        if source.kind ~= "auction" and (not tab or source.kind == tab) and UpgradeQuest.InZone(source, here)
             and (not filtered or UpgradeQuest.WindowAllows(source)) then
             local ease = UpgradeQuest.Ease(source, zone)
             if not best or ease > bestEase then best, bestEase = source, ease end

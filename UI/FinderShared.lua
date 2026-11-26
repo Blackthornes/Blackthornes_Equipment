@@ -27,7 +27,7 @@ local Weights = ns.Weights
 local TOOLTIP_SOURCES = 8
 
 -- The tag in front of a source, in its own colour.
-local KIND_COLORS = { vendor = "accent", quest = "quest", dungeon = "dungeon", craft = "craft" }
+local KIND_COLORS = { vendor = "accent", quest = "quest", dungeon = "dungeon", craft = "craft", auction = "gilt" }
 FinderUI.KIND_COLORS = KIND_COLORS
 
 -- A tick box for each kind of source, in this order. Raids are dungeon
@@ -35,6 +35,8 @@ FinderUI.KIND_COLORS = KIND_COLORS
 local SOURCE_BOXES = {
     { "vendor", L["Vendor"] }, { "quest", L["Quest"] }, { "dungeon", L["Dungeons"] },
     { "raid", L["Raids"] }, { "craft", L["Crafted"] },
+    -- Shown only while Tradeskills can say what is on sale (Logic/AuctionGear.lua).
+    { "auction", L["Auction House"] },
 }
 FinderUI.SOURCE_BOXES = SOURCE_BOXES
 -- The Reputation box (Find Upgrades): gear a faction's quartermaster
@@ -708,6 +710,7 @@ function FinderUI.WhereOf(line)
     if not source then return nil end
     if source.kind == "dungeon" then return Finder.ShownZone(source.dungeon or source.zone) end
     if source.kind == "craft" then return source.profession end
+    if source.kind == "auction" then return Finder.Money(source.price) end
     return Finder.ShownZone(source.zone)
 end
 

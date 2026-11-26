@@ -551,7 +551,14 @@ function Finder:SourcesFor(itemID, player)
     -- Gear players make: whoever on the account can make it, or where to
     -- learn it (Logic/Crafting.lua).
     local craft = ns.Crafting and ns.Crafting:SourceFor(itemID, player, Band)
-    if not S.ITEMS[itemID] and not seen then return { craft } end
+    -- On the auction house at Tradeskills' last scan (Logic/AuctionGear.lua).
+    local auction = ns.AuctionGear and ns.AuctionGear:Source(itemID)
+    if not S.ITEMS[itemID] and not seen then
+        local only = {}
+        only[#only + 1] = craft
+        only[#only + 1] = auction
+        return only
+    end
 
     local found = {}
     if item[1] > player.level or not Allows(item[3], player.classBit)
@@ -646,6 +653,7 @@ function Finder:SourcesFor(itemID, player)
     end
 
     found[#found + 1] = craft
+    found[#found + 1] = auction
 
     -- Somewhere in the zone the character is standing in comes first: a
     -- vendor down the road beats the same item across the world.
@@ -691,6 +699,18 @@ function Finder:CandidateIDs(player)
         if not ns.Sources.ITEMS[itemID] and not (ns.Sources.FOREVER or {})[itemID]
             and craft[5] >= floor and craft[4] <= player.level and not (list and list:Out(itemID)) then
             ids[#ids + 1] = itemID
+        end
+    end
+    -- Gear on the auction house at Tradeskills' last scan
+    -- (Logic/AuctionGear.lua) that no other place offers.
+    local auction = ns.AuctionGear
+    if auction and auction:On() then
+        local crafts = ns.Crafts and ns.Crafts.ITEMS or {}
+        for _, itemID in ipairs(auction:IDs()) do
+            if not ns.Sources.ITEMS[itemID] and not (ns.Sources.FOREVER or {})[itemID] and not crafts[itemID]
+                and not (list and list:Out(itemID)) then
+                ids[#ids + 1] = itemID
+            end
         end
     end
     table.sort(ids)
@@ -2063,6 +2083,7 @@ end
 --- coloured "Vendor", "Quest" or "Dungeon" tag. `plain` leaves item names
 --- uncoloured, for text that is saved.
 function Finder:Describe(source, plain)
+    if source.kind == "auction" then return self.Money(source.price) or "" end
     if source.kind == "vendor" then
         local text = source.name
         local where = Place(source, plain)
@@ -2113,7 +2134,8 @@ function Finder:Describe(source, plain)
     return ""
 end
 
-Finder.LABELS = { vendor = L["Vendor"], quest = L["Quest"], dungeon = L["Dungeon"], craft = L["Crafted"] }
+Finder.LABELS = { vendor = L["Vendor"], quest = L["Quest"], dungeon = L["Dungeon"], craft = L["Crafted"],
+    auction = L["Auction House"] }
 
 --- The tag a source shows: "Vendor", "Quest", "Dungeon", "Raid" or
 --- "Crafted".
