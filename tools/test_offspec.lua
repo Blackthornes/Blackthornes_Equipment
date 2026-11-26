@@ -225,6 +225,24 @@ suite.check("no spec lines when neither gains", ns.Tooltip.SpecLines("item:10", 
 
 -- 11. The tank set in the bags gets the blue arrow, not a sell coin.
 suite.check("the shield in the bags gets the blue arrow", OffSpec:OnlyUpgrade("item:4", true) ~= nil)
+-- Butler asks the same sell rule the bags use (Butler:Advise), so it must
+-- not say Sell for the tank set either. White gear a vendor pays for:
+local oldInfo, oldTip = _G.C_Container.GetContainerItemInfo, _G.C_TooltipInfo
+_G.C_Container.GetContainerItemInfo = function() return { quality = 1, isBound = false, stackCount = 1 } end
+_G.C_TooltipInfo = { GetHyperlink = function() return { lines = { { type = 11, price = 50 } } } end }
+local mainOnShield = Compare:JudgeCarried("item:4")
+suite.check("the Main Spec has no use for the shield in the bags", Verdict(mainOnShield) ~= "upgrade",
+    Verdict(mainOnShield))
+suite.check("the sell rule leaves an Off Spec piece alone", ns.BagIcons:Sells(0, 2, "item:4", mainOnShield) == false)
+local advice = ns.Butler:Advise("item:4", 0, 2)
+suite.check("Butler is not told to sell an Off Spec piece", advice ~= nil and advice.sell == false,
+    advice and tostring(advice.sell))
+ns.charDB.offSpec = nil
+OffSpec:Forget()
+suite.check("with None the same shield sells as before", ns.BagIcons:Sells(0, 2, "item:4", mainOnShield) == true)
+ns.charDB.offSpec = "prot"
+OffSpec:Forget()
+_G.C_Container.GetContainerItemInfo, _G.C_TooltipInfo = oldInfo, oldTip
 
 -- 8.
 ns.HandleSlash("spec off none")

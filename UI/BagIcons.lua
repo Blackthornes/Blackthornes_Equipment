@@ -422,6 +422,11 @@ end
 function BagIcons:Sells(bag, slot, link, result)
     if not self:CoinsEnabled() then return false end
     if type(result) ~= "table" or result.verdict == "upgrade" then return false end
+    -- A piece of the Off Spec's outfit (Logic/OffSpec.lua) is kept to wear.
+    -- Asked here, not only where the coin is drawn, so Butler, which asks
+    -- this rule too (Logic/Butler.lua), never says Sell for it.
+    local OffSpec = ns.OffSpec
+    if OffSpec and OffSpec:On() and OffSpec:InOutfit(link) then return false end
     -- On a character skipped for upgrades, gear one of the others would
     -- wear is kept for them, not sold (a crafting alt making gear for a main).
     -- The slot goes too, so a soulbound copy, which can't be mailed, still sells.
