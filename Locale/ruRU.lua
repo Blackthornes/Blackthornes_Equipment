@@ -1267,6 +1267,23 @@ L["Pick None to turn it off. Starts on None."] = "Выбери «Нет», чт�
 L["%d upgrades for %s, %d for %s."] = "Улучшений для %2$s: %1$d, для %4$s: %3$d."
 L["no upgrade"] = "не улучшение"
 
+-- First Time Setup (UI/Welcome.lua, 2026-11-26)
+L["Welcome to Equipment"] = "Добро пожаловать в Equipment"
+L["Three quick picks and you are set. You can change them later in Settings."] = "Три быстрых выбора, и всё готово. Позже их можно изменить в настройках."
+L["1. HOW DO YOU PLAY"] = "1. КАК ТЫ ИГРАЕШЬ"
+L["2. HOW MUCH HELP DO YOU WANT"] = "2. СКОЛЬКО ПОМОЩИ НУЖНО"
+L["3. WHERE TO SHOW UPGRADES"] = "3. ГДЕ ПОКАЗЫВАТЬ УЛУЧШЕНИЯ"
+L["Picks your next upgrade and walks you to it, one step at a time."] = "Выбирает следующее улучшение и ведёт к нему шаг за шагом."
+L["Quest Arrow"] = "Стрелка задания"
+L["An arrow on your screen that points to the next step."] = "Стрелка на экране, которая показывает следующий шаг."
+L["Put On Upgrades"] = "Надевать улучшения"
+L["Puts on better gear from your bags for you. It never touches gear that would bind."] = "Надевает лучшие вещи из сумок за тебя. Вещи, которые станут персональными, не трогает."
+L["Green Arrows"] = "Зелёные стрелки"
+L["On bags, vendors, loot and quest rewards."] = "В сумках, у торговцев, в добыче и в наградах за задания."
+L["Tooltip Lines"] = "Строки в подсказке"
+L["A line on each item that says how much better it is."] = "Строка на каждой вещи о том, насколько она лучше."
+L["Skip"] = "Пропустить"
+L["open the welcome card again"] = "снова открыть приветственную карточку"
 -- Switch Gear (Logic/SwitchGear.lua, UI/MyGear.lua)
 L["Wearing:"] = "Надето:"
 L["Main Spec (%s)"] = "Основной спек (%s)"

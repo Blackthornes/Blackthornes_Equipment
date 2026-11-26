@@ -1268,6 +1268,23 @@ L["Pick None to turn it off. Starts on None."] = "选“没有”就关掉。一
 L["%d upgrades for %s, %d for %s."] = "%d个升级给%s，%d个给%s。"
 L["no upgrade"] = "不是升级"
 
+-- First Time Setup (UI/Welcome.lua, 2026-11-26)
+L["Welcome to Equipment"] = "欢迎使用 Equipment"
+L["Three quick picks and you are set. You can change them later in Settings."] = "三个简单选择就好。之后可以在设置里更改。"
+L["1. HOW DO YOU PLAY"] = "1. 你怎么玩"
+L["2. HOW MUCH HELP DO YOU WANT"] = "2. 你想要多少帮助"
+L["3. WHERE TO SHOW UPGRADES"] = "3. 在哪里显示升级"
+L["Picks your next upgrade and walks you to it, one step at a time."] = "选出你的下一件升级，一步一步带你去拿。"
+L["Quest Arrow"] = "任务箭头"
+L["An arrow on your screen that points to the next step."] = "屏幕上的箭头，指向下一步。"
+L["Put On Upgrades"] = "穿上升级"
+L["Puts on better gear from your bags for you. It never touches gear that would bind."] = "帮你穿上背包里更好的装备。会绑定的装备它从不碰。"
+L["Green Arrows"] = "绿色箭头"
+L["On bags, vendors, loot and quest rewards."] = "在背包、商人、拾取和任务奖励上。"
+L["Tooltip Lines"] = "提示行"
+L["A line on each item that says how much better it is."] = "每件物品上的一行，说明它好多少。"
+L["Skip"] = "跳过"
+L["open the welcome card again"] = "再次打开欢迎卡片"
 -- Switch Gear (Logic/SwitchGear.lua, UI/MyGear.lua)
 L["Wearing:"] = "正在穿："
 L["Main Spec (%s)"] = "主专精（%s）"

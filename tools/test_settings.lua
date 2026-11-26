@@ -296,7 +296,7 @@ local covered = { sisters = true, whatsnew = true,
     -- My Gear's Switch Gear button (Logic/SwitchGear.lua).
     swap = true,
 }
-local typedOnly = { bags = true, tracked = true, help = true }
+local typedOnly = { bags = true, tracked = true, help = true, welcome = true }
 for _, name in ipairs(ns.commandOrder) do
     suite.check("/beq " .. name .. " has a button or a tab, or is typed only",
         covered[name] == true or typedOnly[name] == true)

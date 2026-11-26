@@ -3314,6 +3314,32 @@ same. A bank whose gear changed marks the finder stale. New word "in your
 bags" (six languages) waits for the owner's OK. Tested in
 `tools/test_dungeonstab.lua` section 9.
 
+## First Time Setup (2026-11-26)
+
+The owner said build it, from the mockup
+`Docs/mockups/equipment-improve-6-first-time.html` (project files); his yes
+covers its words. `UI/Welcome.lua` (`ns.Welcome`): the first time a new
+player opens the Equipment window, a card lies over its page area
+(`Welcome:Offer`, called at the end of `Gear:ShowTab`, so it shows over any
+tab and inside the one window too). Three parts: the Main Spec and Off Spec
+drop-downs every page shows (`FinderUI.MainSpecChoice`, they set the spec at
+once), then Upgrade Quest, Quest Arrow and Put On Upgrades (unticked, as they
+start), then Green Arrows (`bagArrows`) and Tooltip Lines (`tooltipLine`,
+ticked, as they start). The boxes change nothing until Done; Done sets each
+box that moved through the same calls Settings uses (`UpgradeQuest:TurnOn`
+or `SetEnabled`, `QuestArrow:SetOn`, `SettingsUI.RedrawArrows`,
+`TooltipShift:Apply`, which keeps the Shift or Always choice). Skip changes
+nothing more. Both set `welcomeSeen`.
+
+- **Saved key**: `welcomeSeen`, account wide (never rename). Set in
+  `LoadSavedVariables` before the defaults: false for an empty save (a new
+  player), true for any save that already held something, so current players
+  never see it. Not in `SETTING_KEYS`, so Set Default leaves it.
+  `tools/testenv.lua` sets it true so other suites see their pages bare.
+- Closing the window without Skip or Done leaves it for the next open.
+- `/beq welcome` opens it again (typed only).
+- Tested in `tools/test_welcome.lua`. Not yet seen in game.
+
 ## Switch Gear (2026-11-26)
 
 The owner said build it from the mockup (`equipment-improve-2-switch-gear`).

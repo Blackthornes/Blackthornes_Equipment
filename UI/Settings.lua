@@ -696,6 +696,19 @@ local HUNTING = {
         L["Shows where each tracked upgrade comes from."], L["Show"], "MapPins" },
 }
 
+--- "Upgrade Arrows:" changed: redraw every arrow it covers, in the bags,
+--- on quest rewards, loot rolls, vendors and loot. The welcome card's Green
+--- Arrows box calls it too (UI/Welcome.lua).
+function SettingsUI.RedrawArrows()
+    if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
+    if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
+    if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
+    if ns.MoreMarks then
+        pcall(ns.MoreMarks.RefreshMerchant, ns.MoreMarks)
+        pcall(ns.MoreMarks.RefreshLoot, ns.MoreMarks)
+    end
+end
+
 --- A box's name in the grid: its Settings label without the colon.
 function SettingsUI.GridName(label)
     local name = tostring(label or ""):gsub("%s*\239\188\154%s*$", "")  -- the wide colon
@@ -731,15 +744,7 @@ function SettingsUI:BuildShowGrid()
     -- column top to bottom, then the right.
     local cells = {
         { "arrows", L["Upgrade Arrows:"], L["A green arrow on upgrades you can wear now."],
-          Plain("bagArrows", true, function()
-              if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end
-              if ns.QuestRewards then pcall(ns.QuestRewards.Refresh, ns.QuestRewards) end
-              if ns.LootRolls then pcall(ns.LootRolls.Refresh, ns.LootRolls) end
-              if ns.MoreMarks then
-                  pcall(ns.MoreMarks.RefreshMerchant, ns.MoreMarks)
-                  pcall(ns.MoreMarks.RefreshLoot, ns.MoreMarks)
-              end
-          end) },
+          Plain("bagArrows", true, SettingsUI.RedrawArrows) },
         { "sellCoins", L["Sell Coins:"], L["A gold coin on bag gear that's no upgrade and sells to a vendor."],
           Plain("bagSellCoins", true, function()
               if ns.BagIcons then pcall(ns.BagIcons.Refresh, ns.BagIcons) end

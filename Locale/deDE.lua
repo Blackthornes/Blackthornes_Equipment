@@ -1268,6 +1268,23 @@ L["Pick None to turn it off. Starts on None."] = "Wähl Keine, um sie auszuschal
 L["%d upgrades for %s, %d for %s."] = "%d Verbesserungen für %s, %d für %s."
 L["no upgrade"] = "keine Verbesserung"
 
+-- First Time Setup (UI/Welcome.lua, 2026-11-26)
+L["Welcome to Equipment"] = "Willkommen bei Equipment"
+L["Three quick picks and you are set. You can change them later in Settings."] = "Drei kurze Wahlen und du bist bereit. Du kannst sie später in den Einstellungen ändern."
+L["1. HOW DO YOU PLAY"] = "1. WIE DU SPIELST"
+L["2. HOW MUCH HELP DO YOU WANT"] = "2. WIE VIEL HILFE DU WILLST"
+L["3. WHERE TO SHOW UPGRADES"] = "3. WO VERBESSERUNGEN ZU SEHEN SIND"
+L["Picks your next upgrade and walks you to it, one step at a time."] = "Sucht deine nächste Verbesserung aus und führt dich Schritt für Schritt hin."
+L["Quest Arrow"] = "Questpfeil"
+L["An arrow on your screen that points to the next step."] = "Ein Pfeil auf deinem Bildschirm, der zum nächsten Schritt zeigt."
+L["Put On Upgrades"] = "Verbesserungen anlegen"
+L["Puts on better gear from your bags for you. It never touches gear that would bind."] = "Legt bessere Ausrüstung aus deinen Taschen für dich an. Ausrüstung, die sich binden würde, fasst es nie an."
+L["Green Arrows"] = "Grüne Pfeile"
+L["On bags, vendors, loot and quest rewards."] = "In Taschen, bei Händlern, in der Beute und bei Questbelohnungen."
+L["Tooltip Lines"] = "Tooltipzeilen"
+L["A line on each item that says how much better it is."] = "Eine Zeile auf jedem Gegenstand, die sagt, wie viel besser er ist."
+L["Skip"] = "Überspringen"
+L["open the welcome card again"] = "öffnet die Willkommenskarte wieder"
 -- Switch Gear (Logic/SwitchGear.lua, UI/MyGear.lua)
 L["Wearing:"] = "Ausrüstung an:"
 L["Main Spec (%s)"] = "Hauptskillung (%s)"
