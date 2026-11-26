@@ -138,7 +138,7 @@ suite.check("with the gear rows showing", pages.pages.gear.content:IsShown()
 suite.check("no Upgrade Hunts page", pages.pages.hunts == nil)
 suite.check("the grid heads the Gear page", pages.pages.gear.items[1][1] ~= nil
     and SettingsUI.showGrid[1] == pages.pages.gear.items[1][2].frame)
-suite.check("eight lines of two", #SettingsUI.showGrid == 8, #SettingsUI.showGrid)
+suite.check("nine lines of two", #SettingsUI.showGrid == 9, #SettingsUI.showGrid)
 local gridKeys = { arrows = "bagArrows", sellCoins = "bagSellCoins", rewardButton = "rewardButton",
     upgradeChat = "upgradeChat", slotUpgrades = "slotUpgrades", upgradeToast = "upgradeToast",
     showTracker = "showTracker", mapPins = "mapPins", levelUpCard = "levelUpCard" }

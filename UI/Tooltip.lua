@@ -246,16 +246,31 @@ function Tooltip:WorkOutLines(link, carried, bag, slot)
     -- worn ring is judged against the other ring, as its bag arrow is.
     local judge = carried and Compare.JudgeCarried or Compare.Judge
     local result = judge(Compare, link)
+    -- A main hand or off hand while a two-hander is worn: weighed with the
+    -- best partner you own (Logic/BackupWeapons.lua), not on its own.
+    local okPair, paired = pcall(Tooltip.Paired, link, result)
+    if okPair and paired then result = paired end
     local text, color = Compare:Describe(result)
     -- With an Off Spec (Logic/OffSpec.lua): a line for each spec when either
     -- gains, "Main Spec: +97%" and "Off Spec: +42%".
     local specLines, off = Tooltip.SpecLines(link, carried, result)
+    local partnerLine = Tooltip.PartnerLine(result)
     if specLines then
+        if partnerLine then specLines[1] = partnerLine end
         for _, line in ipairs(specLines) do lines[#lines + 1] = line end
+    elseif partnerLine then
+        lines[#lines + 1] = partnerLine
     elseif text then
         local label, answer = Tooltip.VerdictPair(result)
         lines[#lines + 1] = { text, color, key = "upgrade", label = label, answer = answer }
     end
+    if partnerLine and result.verdict == "upgrade" then
+        lines[#lines + 1] = { L["Your backup set beats your two-hander."], "muted", true, key = "upgrade" }
+    end
+    -- Better than the backup set's piece for its hand, with Backup Weapon
+    -- Set on: "Backup Set: +12% over Sample Ritual Dagger".
+    local okBeats, beatsLine = pcall(Tooltip.BackupLine, link)
+    if okBeats and beatsLine then lines[#lines + 1] = beatsLine end
     -- Why It's Better: "More Strength and Crit. A little less Agility."
     -- With an Off Spec, it speaks for the spec the item helps.
     local okWhy, why = pcall(Tooltip.WhyLine, link, result, off)
@@ -435,6 +450,43 @@ function Tooltip.VerdictPair(result)
         return label, L.Format("Worse, %s", percent or "")
     end
     return label, L["About the same"]
+end
+
+--- The verdict weighed with a partner (Logic/BackupWeapons.lua), or nil.
+function Tooltip.Paired(link, result)
+    local Backup = ns.BackupWeapons
+    return Backup and Backup:WithPartner(link, result) or nil
+end
+
+--- "Main Spec: +5% with Sample Ritual Dagger", for a verdict weighed with
+--- a partner; nil for any other.
+function Tooltip.PartnerLine(result)
+    local partner = type(result) == "table" and result.partner
+    if not partner then return nil end
+    local how, tone
+    if result.verdict == "upgrade" then
+        how, tone = Compare:HowMuch(result), "upgrade"
+        if result.level or result.train or result.skill then tone = "warn" end
+    elseif result.verdict == "downgrade" then
+        how, tone = ("%+d%%"):format(math.floor((result.percent or 0) + 0.5)), "downgrade"
+    else
+        how, tone = L["About the same"], "muted"
+    end
+    local answer = L.Format("%s with %s", how, ns.Items.ShowLink(partner.link) or "")
+    local label = L["Main Spec:"]
+    return { label .. " " .. answer, tone, key = "upgrade", label = label, answer = answer }
+end
+
+--- "Backup Set: +12% over Sample Ritual Dagger", or nil.
+function Tooltip.BackupLine(link)
+    local Backup = ns.BackupWeapons
+    if not Backup then return nil end
+    local percent, piece = Backup:BeatsPiece(link)
+    if not percent then return nil end
+    local label = L["Backup Set:"]
+    local answer = L.Format("%s over %s", ("%+d%%"):format(math.floor(percent + 0.5)),
+        ns.Items.ShowLink(piece.link) or "")
+    return { label .. " " .. answer, "upgrade", key = "upgrade", label = label, answer = answer }
 end
 
 --- One spec's answer on the tooltip: "+97%", "Upgrade at level 30, +5%",

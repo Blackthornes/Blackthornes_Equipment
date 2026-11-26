@@ -1610,6 +1610,186 @@ function MyGear:FillRow(row, line, width)
     return height
 end
 
+
+--------------------------------------------------------------------------------
+-- The backup weapon set (Logic/BackupWeapons.lua), at the foot of the
+-- slot's side while a hand is picked and "Backup Weapon Set:" is ticked
+--------------------------------------------------------------------------------
+
+local BACKUP_HEIGHT = 262
+local BACKUP_ROW = 40
+MyGear.BACKUP_HEIGHT = BACKUP_HEIGHT
+
+local function BackupRow(parent, index)
+    local row = CreateFrame("Frame", nil, parent)
+    row:SetHeight(BACKUP_ROW)
+    row.background = Theme.Fill(row, index % 2 == 0 and "glassAlt" or "glass")
+    local line = row:CreateTexture(nil, "BACKGROUND", nil, 1)
+    line:SetPoint("BOTTOMLEFT")
+    line:SetPoint("BOTTOMRIGHT")
+    line:SetHeight(1)
+    line:SetColorTexture(Theme.Unpack("border", 0.6))
+    local icon = Theme.CreateItemIcon(row, 24)
+    icon:SetPoint("LEFT", 10, 0)
+    row.icon = icon
+    local slot = Theme.CreateLabel(row, "tiny", "gilt")
+    slot:SetPoint("TOPLEFT", 42, -5)
+    row.slot = slot
+    local name = Theme.CreateLabel(row, "small", "text")
+    name:SetPoint("TOPLEFT", slot, "BOTTOMLEFT", 0, -3)
+    name:SetPoint("RIGHT", row, "RIGHT", -56, 0)
+    name:SetWordWrap(true)
+    row.name = name
+    local score = Theme.CreateLabel(row, "small", "muted", "RIGHT")
+    score:SetPoint("RIGHT", -10, 0)
+    row.score = score
+    return row
+end
+
+local function BackupBar(parent)
+    local bar = CreateFrame("Frame", nil, parent)
+    bar:SetHeight(18)
+    local label = Theme.CreateLabel(bar, "small", "muted")
+    label:SetPoint("LEFT", 0, 0)
+    bar.label = label
+    local track = bar:CreateTexture(nil, "BACKGROUND")
+    track:SetPoint("LEFT", 110, 0)
+    track:SetPoint("RIGHT", -44, 0)
+    track:SetHeight(8)
+    track:SetColorTexture(Theme.Unpack("border", 0.6))
+    bar.track = track
+    local fill = bar:CreateTexture(nil, "ARTWORK")
+    fill:SetPoint("LEFT", track, "LEFT", 0, 0)
+    fill:SetHeight(8)
+    bar.fill = fill
+    local number = Theme.CreateLabel(bar, "small", "text", "RIGHT")
+    number:SetPoint("RIGHT", 0, 0)
+    bar.number = number
+    return bar
+end
+
+function MyGear:BuildBackup()
+    local side = self.side
+    local card = CreateFrame("Frame", nil, side)
+    card:SetPoint("BOTTOMLEFT", 1, 1)
+    card:SetPoint("BOTTOMRIGHT", -1, 1)
+    card:SetHeight(BACKUP_HEIGHT)
+    Theme.Fill(card, "panel")
+    local rule = Theme.CreateDivider(card, "border")
+    rule:SetPoint("TOPLEFT", 0, 0)
+    rule:SetPoint("TOPRIGHT", 0, 0)
+    local heading = Theme.CreateLabel(card, "tiny", "gilt")
+    heading:SetPoint("TOPLEFT", 12, -10)
+    heading:SetText(L["BACKUP WEAPON SET"])
+    card.heading = heading
+
+    card.rows = { BackupRow(card, 1), BackupRow(card, 2) }
+    card.rows[1]:SetPoint("TOPLEFT", 0, -28)
+    card.rows[1]:SetPoint("TOPRIGHT", 0, -28)
+    card.rows[2]:SetPoint("TOPLEFT", card.rows[1], "BOTTOMLEFT", 0, 0)
+    card.rows[2]:SetPoint("TOPRIGHT", card.rows[1], "BOTTOMRIGHT", 0, 0)
+
+    card.wornBar, card.backupBar = BackupBar(card), BackupBar(card)
+    card.wornBar:SetPoint("TOPLEFT", 12, -(28 + BACKUP_ROW * 2 + 10))
+    card.wornBar:SetPoint("RIGHT", card, "RIGHT", -12, 0)
+    card.backupBar:SetPoint("TOPLEFT", card.wornBar, "BOTTOMLEFT", 0, -4)
+    card.backupBar:SetPoint("RIGHT", card, "RIGHT", -12, 0)
+
+    local line = Theme.CreateLabel(card, "small", "good")
+    line:SetPoint("TOPLEFT", card.backupBar, "BOTTOMLEFT", 0, -8)
+    line:SetPoint("RIGHT", card, "RIGHT", -12, 0)
+    line:SetWordWrap(true)
+    card.line = line
+
+    local label = L["Put Them On"]
+    local button = Widgets.CreateButton(card, label, function()
+        if ns.BackupWeapons then ns.BackupWeapons:PutOn() end
+    end, { width = math.max(100, Theme.TextWidth("normal", label) + 28), height = 22, primary = true })
+    button:SetPoint("TOPLEFT", line, "BOTTOMLEFT", 0, -8)
+    card.button = button
+
+    local foot = Theme.CreateLabel(card, "tiny", "muted")
+    foot:SetPoint("BOTTOMLEFT", 12, 10)
+    foot:SetPoint("RIGHT", card, "RIGHT", -12, 0)
+    foot:SetWordWrap(true)
+    foot:SetText(L["Equipment picks the best main hand and off hand you carry. There is nothing to set up."])
+    card.foot = foot
+
+    card:Hide()
+    self.backupCard = card
+    return card
+end
+
+--- The backup set to show, or nil: the switch on, a hand picked, a set.
+function MyGear:BackupSet()
+    local Backup = ns.BackupWeapons
+    if not (Backup and Backup.On()) then return nil end
+    if self.slot ~= MAIN_HAND and self.slot ~= OFF_HAND then return nil end
+    if self:View() == "road" then return nil end
+    local ok, set = pcall(Backup.Set, Backup)
+    return ok and set or nil
+end
+
+--- Fill the card; nil (and hidden) when there is nothing to show.
+function MyGear:PaintBackup()
+    local card = self.backupCard
+    if not card then return nil end
+    local set = self:BackupSet()
+    if not set then
+        card:Hide()
+        return nil
+    end
+    local Backup = ns.BackupWeapons
+    local names = {}
+    for _, entry in ipairs(Slots()) do names[entry[1]] = entry[2] end
+    local pieces = set.mode == "pair" and { { MAIN_HAND, set.main }, { OFF_HAND, set.off } }
+        or { { MAIN_HAND, set.two } }
+    for index, row in ipairs(card.rows) do
+        local entry = pieces[index]
+        if entry then
+            local piece = entry[2]
+            Theme.SetItemIcon(row.icon, piece.link)
+            row.slot:SetText((names[entry[1]] or ""):upper())
+            row.name:SetText((ns.Items.ShowLink(piece.link) or "") .. "  "
+                .. Colored("muted", Backup.WhereWords(piece.where)))
+            row.score:SetText(tostring(math.floor(piece.score + 0.5)))
+            row:Show()
+        else
+            row:Hide()
+        end
+    end
+    local top = 28 + BACKUP_ROW * #pieces + 10
+    card.wornBar:ClearAllPoints()
+    card.wornBar:SetPoint("TOPLEFT", 12, -top)
+    card.wornBar:SetPoint("RIGHT", card, "RIGHT", -12, 0)
+
+    local most = math.max(set.score, set.against, 1)
+    for _, entry in ipairs({ { card.wornBar, set.against, "accent",
+        set.mode == "pair" and L["Your two-hander:"] or L["Your pair:"] },
+        { card.backupBar, set.score, "good", L["Backup set:"] } }) do
+        local bar, value = entry[1], entry[2]
+        bar.label:SetText(entry[4])
+        bar.number:SetText(tostring(math.floor(value + 0.5)))
+        local okWidth, width = pcall(bar.track.GetWidth, bar.track)
+        if not (okWidth and type(width) == "number" and width > 0) then width = 120 end
+        bar.fill:SetWidth(math.max(1, width * value / most))
+        bar.fill:SetColorTexture(Theme.Unpack(entry[3]))
+    end
+
+    if set.beats then
+        local how = set.percent and ("%+d%%"):format(math.floor(set.percent + 0.5)) or L["better stats"]
+        card.line:SetText(set.mode == "pair" and L.Format("Your backup set now beats your two-hander by %s", how)
+            or L.Format("Your backup set now beats your pair by %s", how))
+        card.line:Show()
+    else
+        card.line:SetText("")
+        card.line:Hide()
+    end
+    card.button:SetShown(set.beats and Backup.Carried(set) and true or false)
+    card:Show()
+    return set
+end
+
 --- The slot picked, on the right: what is worn, then its lines.
 function MyGear:PaintSide(state)
     local info = state.slots[self.slot]
@@ -1629,9 +1809,21 @@ function MyGear:PaintSide(state)
     local lines = MyGear.Lines(info)
     self.lines = lines
     local used = HEAD + 1
+    -- The backup weapon set's card takes the foot of the side; the rows
+    -- stop above it.
+    local backup = self:PaintBackup()
+    local room = math.huge
+    if backup then
+        local okHeight, height = pcall(side.GetHeight, side)
+        if okHeight and type(height) == "number" and height > 0 then
+            room = height - BACKUP_HEIGHT - 40
+        end
+    end
     for index, row in ipairs(self.rows) do
-        local height = self:FillRow(row, lines[index], width - 2)
-        if lines[index] then
+        local line = lines[index]
+        if line and used + ROW_MIN > room then line = nil end
+        local height = self:FillRow(row, line, width - 2)
+        if line then
             row:ClearAllPoints()
             row:SetPoint("TOPLEFT", side, "TOPLEFT", 1, -used)
             row:SetPoint("TOPRIGHT", side, "TOPRIGHT", -1, -used)
@@ -1745,6 +1937,7 @@ function MyGear:Build(area)
     self:BuildFigure()
     self:BuildList()
     self:BuildSide()
+    self:BuildBackup()
     if ns.GearRoad then ns.GearRoad:Build(body, VIEW_ROW) end
 
     -- The footer: how much waits on the left, the version on the right.
