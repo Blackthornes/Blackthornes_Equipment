@@ -3339,6 +3339,7 @@ nothing more. Both set `welcomeSeen`.
 - Closing the window without Skip or Done leaves it for the next open.
 - `/beq welcome` opens it again (typed only).
 - Tested in `tools/test_welcome.lua`. Not yet seen in game.
+
 ## Switch Gear (2026-11-26)
 
 The owner said build it from the mockup (`equipment-improve-2-switch-gear`).
