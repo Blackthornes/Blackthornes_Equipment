@@ -1272,3 +1272,5 @@ L["1 upgrade from a reputation vendor is hidden."] = "1 улучшение от 
 L["%d upgrades from reputation vendors are hidden."] = "Улучшений от торговцев за репутацию скрыто: %d."
 L["Needs %s %d to wear"] = "Нужно %s %d, чтобы надеть"
 L["%d of %d shown"] = "Показано %d из %d"
+L["Both Hands"] = "Обе руки"
+L["Pair"] = "Пара"

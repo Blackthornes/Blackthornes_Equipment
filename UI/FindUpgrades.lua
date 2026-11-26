@@ -227,6 +227,22 @@ function Find:Read(found, off)
             end
         end
     end
+    -- Two one-handers (or one and a shield) that beat the two-hander worn
+    -- (Finder:MakePairs): one line each, under the main hand.
+    local mainOrder = 0
+    for order, group in ipairs(Groups()) do
+        if group[1] == MAIN_HAND then mainOrder = order end
+    end
+    for _, pick in ipairs(type(found.pairs) == "table" and found.pairs or {}) do
+        local partner = pick.pair
+        if partner and not skipped[pick.itemID] and not skipped[partner.itemID] then
+            state.lines[#state.lines + 1] = {
+                pick = pick, main = pick, pair = partner, group = MAIN_HAND, slotName = L["Both Hands"],
+                order = mainOrder, key = "pair:" .. pick.itemID .. ":" .. partner.itemID,
+                index = #state.lines + 1,
+            }
+        end
+    end
     return state
 end
 
@@ -256,7 +272,13 @@ function Find.Hay(line)
     if line.hay then return line.hay end
     local FinderUI = ns.FinderUI
     local parts = { FinderUI.ItemName(line.pick) }
-    for _, source in ipairs(line.pick.sources or {}) do
+    local all = {}
+    for _, source in ipairs(line.pick.sources or {}) do all[#all + 1] = source end
+    if line.pair then
+        parts[#parts + 1] = FinderUI.ItemName(line.pair)
+        for _, source in ipairs(line.pair.sources or {}) do all[#all + 1] = source end
+    end
+    for _, source in ipairs(all) do
         for _, key in ipairs({ "name", "dungeon", "zone", "title", "profession" }) do
             local value = source[key]
             if type(value) == "string" then
@@ -293,9 +315,22 @@ function Find:Filtered(state)
     self.repHidden = 0
 
     local shown = {}
+    -- A pair's partner needs a place the filters let through too.
+    local function Passes(source, pick)
+        return (not getNow or FinderUI.GetsNow(source, pick))
+            and (not here or not inZone or inZone(source, here))
+            and on[FinderUI.SourceKind(source)] ~= false
+    end
     for _, line in ipairs(state.lines) do
         local pick = line.pick
         local sources, kinds = {}, {}
+        if line.pair then
+            local partner = {}
+            for _, source in ipairs(line.pair.sources or {}) do
+                if Passes(source, pick) then partner[#partner + 1] = source end
+            end
+            line.pairSources = partner
+        end
         for _, source in ipairs(pick.sources or {}) do
             if (not getNow or FinderUI.GetsNow(source, pick))
                 and (not here or not inZone or inZone(source, here)) then
@@ -307,6 +342,7 @@ function Find:Filtered(state)
                 if on[kind] ~= false then sources[#sources + 1] = source end
             end
         end
+        if line.pair and #line.pairSources == 0 then sources = {} end
         line.sources = sources
         if pick.rep and next(kinds) then counts[REP] = counts[REP] + 1 end
         if pick.rep and not repOn then sources = {} end
@@ -813,6 +849,7 @@ function Find:FillRow(row, line)
     Theme.SetItemIcon(row.icon, pick.link)
 
     local name = ns.Items.ShowLink(pick.link)
+    if line.pair then name = name .. " + " .. ns.Items.ShowLink(line.pair.link) end
     if quest and quest:IsFollowing(pick.itemID) then name = name .. "  " .. Colored("good", L["Following"]) end
     if ns.Tracking and ns.Tracking:IsTracked(pick.itemID) then
         name = name .. "  " .. Colored("accent", L["Tracking"])
@@ -825,6 +862,7 @@ function Find:FillRow(row, line)
             name = name .. "\n" .. Colored("offSpec", L["Off only"])
         end
     end
+    if line.pair then name = name .. "\n" .. Colored("accent", L["Pair"]) end
     -- Gear only a crafter can wear says the skill, in amber while you
     -- lack it.
     local wear = ns.Crafting.WearText(pick)
@@ -841,6 +879,14 @@ function Find:FillRow(row, line)
     local where = source and FinderUI.WhereOf(line) or ""
     where = FinderUI.MarkZone(where or "", quest and quest.Zone())
     if source then where = Colored(FinderUI.KIND_COLORS[source.kind] or "text", Finder.Label(source)) .. "  " .. where end
+    -- A pair: where each of the two comes from.
+    local partner = line.pair and line.pairSources and line.pairSources[1]
+    if partner then
+        local other = FinderUI.WhereOf({ sources = line.pairSources }) or ""
+        other = FinderUI.MarkZone(other, quest and quest.Zone())
+        where = where .. "\n+ " .. Colored(FinderUI.KIND_COLORS[partner.kind] or "text", Finder.Label(partner))
+            .. "  " .. other
+    end
     if pick.needs then
         where = Colored("warn", L.Format("Needs %s with %s", pick.needs.standing, pick.needs.faction))
     end
@@ -1357,7 +1403,9 @@ function Find:PaintSheet()
     local zone = quest and quest.Zone() or nil
 
     Theme.SetItemIcon(self.sheetIcon, pick.link)
-    self.sheetName:SetText(Items.ShowLink(pick.link))
+    local sheetName = Items.ShowLink(pick.link)
+    if line.pair then sheetName = sheetName .. " + " .. Items.ShowLink(line.pair.link) end
+    self.sheetName:SetText(sheetName)
     local kind = line.slotName or ""
     local okInfo, _, _, _, _, _, _, subType = pcall(function()
         local info = (_G.C_Item and _G.C_Item.GetItemInfo) or _G.GetItemInfo
@@ -1441,13 +1489,25 @@ function Find:PaintSheet()
     if not (okHeight and type(height) == "number" and height > 200) then height = 560 end
     local room = height - foot - 18
     local places = Find.Places(pick, zone)
+    -- A pair: the main hand's places, then its partner's.
+    local whose = {}
+    if line.pair then
+        for index = 1, #places do whose[index] = pick end
+        for _, source in ipairs(Find.Places(line.pair, zone)) do
+            places[#places + 1] = source
+            whose[#places] = line.pair
+        end
+    end
     self.places = places
     local shown = 0
     for index, label in ipairs(self.sheetPlaces) do
         local source = places[index]
         label:Hide()
         if source and shown == index - 1 then
-            label:SetText(Find.PlaceText(pick, source, zone))
+            local owner = whose[index] or pick
+            local text = Find.PlaceText(owner, source, zone)
+            if line.pair then text = Items.ShowLink(owner.link) .. "\n" .. text end
+            label:SetText(text)
             local tall = TextHeight(label, "small", inner)
             if index == 1 or y + tall <= room then
                 label:ClearAllPoints()

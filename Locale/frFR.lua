@@ -1273,3 +1273,5 @@ L["1 upgrade from a reputation vendor is hidden."] = "1 amélioration d'un march
 L["%d upgrades from reputation vendors are hidden."] = "%d améliorations de marchands de réputation sont masquées."
 L["Needs %s %d to wear"] = "Demande %s %d pour le porter"
 L["%d of %d shown"] = "%d sur %d affichés"
+L["Both Hands"] = "Deux mains"
+L["Pair"] = "Paire"

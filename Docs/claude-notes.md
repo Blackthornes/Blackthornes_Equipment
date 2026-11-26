@@ -3336,4 +3336,23 @@ The owner said "build 1-9" on the improvement mockups (2026-11-26); this is
   out) and the foot adds "N of M shown." Typing reads the kept lines
   (`allLines`), so it judges nothing. Session only; it stays while another
   dungeon is picked.
-- Tested in `tools/test_findmore.lua`. Not yet seen in game.
+- **A pair against a worn two-hander**: before, only a two-hander was
+  weighed against both hands. Now, while the main hand holds a two-hander,
+  the Main Spec's scan of today notes every one-hander and off-hand piece
+  it judges (`Finder.NotePair`; main: one-hand and main-hand weapons; off:
+  shields, held items, off-hand weapons, and one-handers for a class that
+  dual wields) and `Finder:MakePairs` keeps up to `PAIRS_KEPT` (3): each
+  strong main hand with its best partner, each item in one pair at most,
+  only when the two scores beat the two-hander's by 1% or more. Pieces that
+  wait on a level, training or a weapon skill, and gear owned or ignored,
+  are left out. Sources are worked out for those few only. `found.pairs`
+  holds them (a pick of the main hand with `pair = { itemID, link,
+  sources, result }`); nothing else reads it, so the upgrade quest, My
+  Gear and the small panel are unchanged. Find Upgrades shows each as one
+  line, "A + B", tagged Pair, slot Both Hands, under the Main Hand slot
+  filter, with where each comes from; the partner needs a source the
+  filters let through too. The sheet lists both items' places; its buttons
+  act on the main hand. Off-hand weapons count at their full score, as the
+  two-hander check already did.
+- Tested in `tools/test_findmore.lua` and `tools/test_finderpairs.lua`. Not
+  yet seen in game.

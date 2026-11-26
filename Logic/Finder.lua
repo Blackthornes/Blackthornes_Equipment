@@ -1213,6 +1213,110 @@ function Finder:Scan(only, ahead)
     return self:Build(only, ahead)
 end
 
+--------------------------------------------------------------------------------
+-- A pair of one-handers against a worn two-hander
+--------------------------------------------------------------------------------
+
+-- How many pairs a scan keeps: the best partner for each of the strongest
+-- main hands.
+Finder.PAIRS_KEPT = 3
+local MAIN_LOCS = { INVTYPE_WEAPON = true, INVTYPE_WEAPONMAINHAND = true }
+local OFF_LOCS = { INVTYPE_SHIELD = true, INVTYPE_HOLDABLE = true, INVTYPE_WEAPONOFFHAND = true }
+
+--- The worn two-hander's score, when the main hand holds one: a pair of
+--- one-handers is weighed against it. Nil otherwise.
+function Finder:PairAgainst(weights)
+    local link = Items:Equipped(16)
+    local info = link and Items:Info(link)
+    if not (info and info.equipLoc == "INVTYPE_2HWEAPON") then return nil end
+    local score = Compare:ScoreOf(link, weights)
+    if type(score) ~= "number" or score <= 0 then return nil end
+    return score
+end
+
+--- Can a verdict go in a pair? Wearable now (no level, training or skill
+--- to wait on) and judged for the hands.
+local function Pairable(result)
+    if type(result) ~= "table" or type(result.score) ~= "number" then return false end
+    local verdict = result.verdict
+    if verdict ~= "upgrade" and verdict ~= "same" and verdict ~= "downgrade" then return false end
+    if result.level or result.train or result.skill then return false end
+    return result.slot == 16 or result.slot == 17
+end
+
+--- Note an item judged in a scan as a main hand or off hand for a pair.
+function Finder.NotePair(notes, itemID, best, result, dualWield)
+    if not (notes and Pairable(result)) then return end
+    local link = best and best.link and RolledLink(best.link, itemID) or LinkFor(itemID)
+    local info = Items:Info(link)
+    local loc = info and info.equipLoc
+    if not loc then return end
+    local entry = { itemID = itemID, link = link, result = result, score = result.score }
+    if MAIN_LOCS[loc] then notes.mains[#notes.mains + 1] = entry end
+    if OFF_LOCS[loc] or (loc == "INVTYPE_WEAPON" and dualWield) then notes.offs[#notes.offs + 1] = entry end
+end
+
+local function ByScore(a, b)
+    if a.score ~= b.score then return a.score > b.score end
+    return a.itemID < b.itemID
+end
+
+--- The best pairs from what a scan noted: each of the strongest main hands
+--- with its best partner, kept only when the two beat the two-hander.
+--- Where each comes from is worked out for these few only.
+function Finder:MakePairs(notes, plan, only, skip)
+    local out = {}
+    if not (notes and notes.against) then return out end
+    table.sort(notes.mains, ByScore)
+    table.sort(notes.offs, ByScore)
+    local sources = {}
+    local function Sources(itemID)
+        if sources[itemID] == nil then
+            local candidate = self:Candidate(itemID, plan, only)
+            sources[itemID] = candidate or false
+        end
+        return sources[itemID] or nil
+    end
+    -- Each item goes in one pair at most, the best it makes.
+    local used = {}
+    for _, main in ipairs(notes.mains) do
+        if #out >= Finder.PAIRS_KEPT then break end
+        local mainFrom = not used[main.itemID] and not (skip and skip[main.itemID]) and Sources(main.itemID) or nil
+        if mainFrom then
+            for _, off in ipairs(notes.offs) do
+                if off.itemID ~= main.itemID and not used[off.itemID] and not (skip and skip[off.itemID]) then
+                    local total = main.score + off.score
+                    if (total - notes.against) / notes.against * 100 < 1 then break end
+                    local offFrom = Sources(off.itemID)
+                    if offFrom then
+                        out[#out + 1] = {
+                            itemID = main.itemID, link = main.link, sources = mainFrom.sources,
+                            needs = mainFrom.needs or offFrom.needs, rep = mainFrom.rep or offFrom.rep,
+                            wear = mainFrom.wear, remote = Remote(mainFrom.sources) or Remote(offFrom.sources),
+                            gain = total - notes.against,
+                            result = {
+                                verdict = "upgrade", slot = 16, score = total, against = notes.against,
+                                percent = (total - notes.against) / notes.against * 100, pair = true,
+                            },
+                            pair = {
+                                itemID = off.itemID, link = off.link, sources = offFrom.sources,
+                                result = off.result,
+                            },
+                        }
+                        used[main.itemID], used[off.itemID] = true, true
+                        break
+                    end
+                end
+            end
+        end
+    end
+    table.sort(out, function(a, b)
+        if a.gain ~= b.gain then return a.gain > b.gain end
+        return a.itemID < b.itemID
+    end)
+    return out
+end
+
 --- The scan itself. `pause`, when given, is called between items: the
 --- background scan hands one in that yields once a frame's share is used.
 function Finder:Build(only, ahead, pause)
@@ -1267,6 +1371,17 @@ function Finder:Build(only, ahead, pause)
     for slot, yes in pairs(self.toLook or {}) do
         if yes then looking[slot] = (self.slotLooks or {})[slot] or 0 end
     end
+    -- A worn two-hander: one-handers and off hands are noted as they are
+    -- judged, to weigh pairs of them against it (Finder:MakePairs). The
+    -- Main Spec's own scan of today only.
+    local pairNotes
+    if not self.offPass and reach == level then
+        local against = self:PairAgainst(weights)
+        if against then
+            pairNotes = { against = against, mains = {}, offs = {},
+                dual = Weights:CanDualWield(Weights:PlayerClass(), level) }
+        end
+    end
     for _, itemID in ipairs(self:CandidateIDs(plan)) do
         if pause then pause() end
         -- An item judged before keeps its verdict, even when the client has
@@ -1279,6 +1394,9 @@ function Finder:Build(only, ahead, pause)
         local candidate
         if entry and not (Counts(entry.result, reach, level) and entry.result.slot) then
             checked = checked + 1
+            if pairNotes and not carried[itemID] and not worn[itemID] then
+                Finder.NotePair(pairNotes, itemID, entry.best, entry.result, pairNotes.dual)
+            end
         else
             candidate = self:Candidate(itemID, plan, only)
             if candidate and pause then pause() end
@@ -1306,6 +1424,9 @@ function Finder:Build(only, ahead, pause)
                 waiting = waiting + 1
             elseif not worn[itemID] then
                 local best, ok, result = self:JudgeOnce(judged, itemID)
+                if ok and result and pairNotes then
+                    Finder.NotePair(pairNotes, itemID, best, result, pairNotes.dual)
+                end
                 if ok and result then
                     checked = checked + 1
                     if Counts(result, reach, level) and result.slot then
@@ -1369,9 +1490,10 @@ function Finder:Build(only, ahead, pause)
         slots[slot] = list
     end
 
+    local skipped = ns.UpgradeQuest and ns.UpgradeQuest.Skipped and ns.UpgradeQuest:Skipped() or nil
     local found = {
         slots = slots, all = all, count = count, checked = checked, waiting = waiting, player = player,
-        reach = reach,
+        reach = reach, pairs = self:MakePairs(pairNotes, plan, only, skipped),
     }
     -- An Off Spec scan (Logic/OffSpec.lua) is kept apart: the shared scan
     -- the upgrade quest and the small panel read stays the Main Spec's.

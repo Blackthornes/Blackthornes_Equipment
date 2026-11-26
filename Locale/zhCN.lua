@@ -1273,3 +1273,5 @@ L["1 upgrade from a reputation vendor is hidden."] = "有 1 件声望商人的�
 L["%d upgrades from reputation vendors are hidden."] = "有 %d 件声望商人的提升已隐藏。"
 L["Needs %s %d to wear"] = "需要%s %d才能穿戴"
 L["%d of %d shown"] = "显示 %d / %d"
+L["Both Hands"] = "双手"
+L["Pair"] = "一对"
