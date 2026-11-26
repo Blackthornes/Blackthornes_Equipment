@@ -69,6 +69,8 @@ function Backup:SetOn(on)
     self:Forget()
     -- Ticked now: what wins already is not news, so no banner for it.
     self.seen = nil
+    -- Find Upgrades lists new pieces for the backup set only while it is on.
+    if ns.Finder and ns.Finder.MarkStale then pcall(ns.Finder.MarkStale, ns.Finder) end
     self:Changed()
 end
 
@@ -317,6 +319,28 @@ function Backup:WithPartner(link, result)
     return out
 end
 
+--- With the switch on and a two-hander worn: does this main hand or off
+--- hand beat the backup set's piece for that hand, even while the pair
+--- still loses? Returns the percent and that piece, or nil.
+function Backup:BeatsPiece(link)
+    if not Backup.On() or type(link) ~= "string" then return nil end
+    local info = Items:Info(link)
+    local loc = info and info.equipLoc
+    if not loc or not WearsNow(link) then return nil end
+    local set = self:Set()
+    if not (set and set.mode == "pair") then return nil end
+    local key = Key(link)
+    if key == set.main.key or key == set.off.key then return nil end
+    local piece
+    if MAIN_LOCS[loc] then piece = set.main elseif OFF_LOCS[loc] then piece = set.off end
+    if not piece or piece.score <= 0 then return nil end
+    local score = Compare:ScoreOf(link, (Weights:ForPlayer()))
+    if type(score) ~= "number" then return nil end
+    local percent = (score - piece.score) / piece.score * 100
+    if percent < SAME_WITHIN then return nil end
+    return percent, piece
+end
+
 --- The words a partner is shown with: "in your bags" or "in your bank".
 function Backup.WhereWords(where)
     return where == "bank" and L["in your bank"] or L["in your bags"]
@@ -473,7 +497,7 @@ end
 --- Draw My Gear's card again, if it shows.
 function Backup:Changed()
     local MyGear = ns.MyGear
-    if MyGear and MyGear.PaintBackup then pcall(MyGear.PaintBackup, MyGear) end
+    if MyGear and MyGear.Redraw then pcall(MyGear.Redraw, MyGear) end
 end
 
 function Backup:OnEnable()

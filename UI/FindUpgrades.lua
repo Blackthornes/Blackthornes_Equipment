@@ -263,6 +263,21 @@ function Find:Read(found, off)
             }
         end
     end
+    -- New pieces that beat a piece of your backup weapon set
+    -- (Finder:BackupUps, with Backup Weapon Set on): under their own hand.
+    for _, pick in ipairs(type(found.backup) == "table" and found.backup or {}) do
+        if not skipped[pick.itemID] then
+            local slot = pick.result and pick.result.slot or MAIN_HAND
+            local order, name = mainOrder, ""
+            for index, group in ipairs(Groups()) do
+                if group[1] == slot then order, name = index, group[2] end
+            end
+            state.lines[#state.lines + 1] = {
+                pick = pick, main = pick, backup = pick.backup, group = slot, slotName = name,
+                order = order, key = "backup:" .. pick.itemID, index = #state.lines + 1,
+            }
+        end
+    end
     return state
 end
 
@@ -980,6 +995,9 @@ function Find:FillRow(row, line)
         name = name .. "  " .. Colored("accent", L["Pair"]) .. "\n" .. Colored("muted", words)
     elseif line.pair then
         name = name .. "\n" .. Colored("accent", L["Pair"])
+    elseif line.backup then
+        name = name .. "  " .. Colored("accent", L["Backup"]) .. "\n"
+            .. Colored("muted", L.Format("Beats %s in your backup set", ns.Items.ShowLink(line.backup.link) or ""))
     end
     -- Gear only a crafter can wear says the skill, in amber while you
     -- lack it.

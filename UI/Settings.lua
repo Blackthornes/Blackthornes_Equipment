@@ -223,7 +223,7 @@ end
 --- purpose. tools/test_restoredefaults.lua clicks every control and fails
 --- if one writes a key missing here.
 SettingsUI.SETTING_KEYS = {
-    "altTooltipLine", "arrowRoute", "autoEquip", "bagArrows", "bagSellCoins",
+    "altTooltipLine", "arrowRoute", "autoEquip", "backupWeapons", "bagArrows", "bagSellCoins",
     "classTraining", "dropsTooltip", "enchantTooltip", "finderAhead",
     "finderGetNow", "finderScale", "finderShow", "finderZoneOnly",
     "hideQuestTracker", "levelUpCard", "mapPins", "otherPlayersGear", "questArrow", "questArrowSize",
@@ -808,6 +808,15 @@ function SettingsUI:BuildShowGrid()
         { "swapAtDoors", L["Ask at Dungeon Doors:"],
           L["At a dungeon's door, a card offers to put on your Off Spec gear."],
           Plain("swapAtDoors", false) },
+        -- The backup weapon set's card and banner
+        -- (Logic/BackupWeapons.lua); off unless ticked.
+        { "backupWeapons", L["Backup Weapon Set:"],
+          L["Keeps your best one-hander and off hand in mind while you use a two-hander, or your best two-hander while you use a pair. Shows a card on My Gear and tells you when the other set wins."],
+          function(parent, text)
+              return Widgets.CreateCheckbox(parent, text, function(checked)
+                  if ns.BackupWeapons then ns.BackupWeapons:SetOn(checked) end
+              end, false)
+          end },
     }
 
     local width = pages.opts.columnWidth
@@ -1231,6 +1240,7 @@ function SettingsUI:Refresh()
     controls.otherPlayersGear:SetChecked(ns.db.otherPlayersGear == true)
     controls.autoEquip:SetChecked(ns.db.autoEquip == true)
     controls.swapAtDoors:SetChecked(ns.db.swapAtDoors == true)
+    controls.backupWeapons:SetChecked(ns.db.backupWeapons == true)
     controls.bestArmorOnly:SetChecked(ns.Compare.BestArmorOnly())
     controls.rewardButton:SetChecked(ns.db.rewardButton ~= false)
     controls.suffixLine:Sync()

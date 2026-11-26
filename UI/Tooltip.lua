@@ -267,6 +267,10 @@ function Tooltip:WorkOutLines(link, carried, bag, slot)
     if partnerLine and result.verdict == "upgrade" then
         lines[#lines + 1] = { L["Your backup set beats your two-hander."], "muted", true, key = "upgrade" }
     end
+    -- Better than the backup set's piece for its hand, with Backup Weapon
+    -- Set on: "Backup Set: +12% over Sample Ritual Dagger".
+    local okBeats, beatsLine = pcall(Tooltip.BackupLine, link)
+    if okBeats and beatsLine then lines[#lines + 1] = beatsLine end
     -- Why It's Better: "More Strength and Crit. A little less Agility."
     -- With an Off Spec, it speaks for the spec the item helps.
     local okWhy, why = pcall(Tooltip.WhyLine, link, result, off)
@@ -471,6 +475,18 @@ function Tooltip.PartnerLine(result)
     local answer = L.Format("%s with %s", how, ns.Items.ShowLink(partner.link) or "")
     local label = L["Main Spec:"]
     return { label .. " " .. answer, tone, key = "upgrade", label = label, answer = answer }
+end
+
+--- "Backup Set: +12% over Sample Ritual Dagger", or nil.
+function Tooltip.BackupLine(link)
+    local Backup = ns.BackupWeapons
+    if not Backup then return nil end
+    local percent, piece = Backup:BeatsPiece(link)
+    if not percent then return nil end
+    local label = L["Backup Set:"]
+    local answer = L.Format("%s over %s", ("%+d%%"):format(math.floor(percent + 0.5)),
+        ns.Items.ShowLink(piece.link) or "")
+    return { label .. " " .. answer, "upgrade", key = "upgrade", label = label, answer = answer }
 end
 
 --- One spec's answer on the tooltip: "+97%", "Upgrade at level 30, +5%",

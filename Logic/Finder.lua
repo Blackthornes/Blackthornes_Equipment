@@ -1379,6 +1379,44 @@ function Finder:MakePairs(notes, plan, only, skip)
         if a.gain ~= b.gain then return a.gain > b.gain end
         return a.itemID < b.itemID
     end)
+    return out, self:BackupUps(notes, Sources, skip)
+end
+
+-- How many new pieces a scan keeps for each hand of the backup set.
+Finder.BACKUP_KEPT = 2
+
+--- New pieces that beat the backup set's main hand or off hand, even while
+--- the pair still loses to the two-hander (the owner asked, 2026-11-26).
+--- Each is a pick with `backup` = { link, where } (the piece it beats) and
+--- its gain against that piece. Main Spec only, with Backup Weapon Set on.
+function Finder:BackupUps(notes, Sources, skip)
+    local out = {}
+    local set = notes and notes.backup
+    if not set then return out end
+    for _, hand in ipairs({ { notes.mains, set.main, 16 }, { notes.offs, set.off, 17 } }) do
+        local list, piece, slot = hand[1], hand[2], hand[3]
+        local count = 0
+        for _, entry in ipairs(list) do
+            if count >= Finder.BACKUP_KEPT then break end
+            if piece.score <= 0 then break end
+            local percent = (entry.score - piece.score) / piece.score * 100
+            if percent < 1 then break end
+            local from = not (skip and skip[entry.itemID]) and Sources(entry.itemID) or nil
+            if from and entry.itemID ~= tonumber(piece.link:match("item:(%d+)")) then
+                count = count + 1
+                out[#out + 1] = {
+                    itemID = entry.itemID, link = entry.link, sources = from.sources,
+                    needs = from.needs, rep = from.rep, wear = from.wear, remote = Remote(from.sources),
+                    gain = entry.score - piece.score,
+                    result = {
+                        verdict = "upgrade", slot = slot, score = entry.score, against = piece.score,
+                        percent = percent, backup = true,
+                    },
+                    backup = { link = piece.link, where = piece.where },
+                }
+            end
+        end
+    end
     return out
 end
 
@@ -1452,6 +1490,12 @@ function Finder:Build(only, ahead, pause, wide)
             local Backup = ns.BackupWeapons
             local okOwned, owned = pcall(function() return Backup and Backup:Pieces(weights) end)
             if okOwned and owned then pairNotes.owned = owned end
+            -- With Backup Weapon Set on: the backup set itself, so a new
+            -- piece that beats its main hand or off hand is listed too.
+            if Backup and Backup.On() then
+                local okSet, set = pcall(Backup.Set, Backup)
+                if okSet and set and set.mode == "pair" then pairNotes.backup = set end
+            end
         end
     end
     for _, itemID in ipairs(self:CandidateIDs(plan, wide and level or nil)) do
@@ -1565,8 +1609,9 @@ function Finder:Build(only, ahead, pause, wide)
     local skipped = ns.UpgradeQuest and ns.UpgradeQuest.Skipped and ns.UpgradeQuest:Skipped() or nil
     local found = {
         slots = slots, all = all, count = count, checked = checked, waiting = waiting, player = player,
-        reach = reach, pairs = self:MakePairs(pairNotes, plan, only, skipped),
+        reach = reach,
     }
+    found.pairs, found.backup = self:MakePairs(pairNotes, plan, only, skipped)
     -- An Off Spec scan (Logic/OffSpec.lua) is kept apart: the shared scan
     -- the upgrade quest and the small panel read stays the Main Spec's.
     if not only and reach == level and not self.offPass then

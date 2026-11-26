@@ -3640,3 +3640,44 @@ Farmer's Move Windows writes it when the player drags the Notes box. While
 it is set, every addon's notes stack there and leave the top shelf free.
 Window Locations: Set Default clears it with the other window spots. Never
 rename it.
+
+## Backup Weapon Set (2026-11-26)
+
+The owner said build it from `equipment-weapon-set` (his tap covers the
+mockup's words). Casters keep a one-hander and off hand in case the pair
+beats their staff. `Logic/BackupWeapons.lua` (a new file, full restart).
+
+- **The backup set** is worked out, never saved: while a two-hander is worn,
+  the best main hand plus the best off hand owned (bags, and the bank as
+  last seen, `Alts:Notes()[guid].bank`); while a pair is worn, the best
+  two-hander owned. Only gear that can go on now (no level, training or
+  skill). Main Spec only; none for a shield tank or with a fishing pole in
+  hand. `Backup:Pieces(weights)` keeps the top three of each kind, dropped
+  by `Backup:Forget` on gear, bag, level and talent events.
+- **Fixed for everyone, no switch:** `Backup:WithPartner(link, result)`
+  weighs a new main hand or off hand with the best owned partner against
+  the two-hander. Only the tooltip uses it ("Main Spec: +5% with X", then
+  "Your backup set beats your two-hander."); `Compare:Judge` is unchanged,
+  so bag arrows, auto-equip, the upgrade quest and kept verdicts still act
+  on one piece. `Compare:Why` adds `result.added` (the partner's stats).
+  `Finder:MakePairs` pairs new pieces with owned ones first
+  (`pair.owned` = "bags" or "bank", up to `PAIRS_KEPT`), listed under the
+  new piece's hand with "with X, in your bags".
+- **Never sold:** `BagIcons:Sells` asks `Backup:InSet(link)`, true while
+  the switch is on or the set beats what is worn.
+- **Behind "Backup Weapon Set:"** (Gear page grid, `backupWeapons`, account
+  wide, off unless ticked; never rename it): My Gear's card at the foot of
+  the slot side while a hand is picked (`MyGear:PaintBackup`; the rows stop
+  above it), with both bars, the "now beats ... by" line and Put Them On
+  (both pieces carried, the set wins; waits for a fight's end); the banner
+  (`Backup:Check`, through `Toast:Show` with `always`) once when the set
+  starts to win, never on the first look after login, Not Now quiets that
+  set for the session; and the owner's follow-up (2026-11-26): a new main
+  hand or off hand that beats the backup set's piece for its hand, even
+  while the pair still loses (`Finder:BackupUps` into `found.backup`,
+  `BACKUP_KEPT` per hand, tagged Backup in Find Upgrades with "Beats X in
+  your backup set"; tooltip "Backup Set: +12% over X").
+- Words not on the mockup (need his yes): "Your pair:", "Your backup set
+  now beats your pair by %s", "Backup", "Beats %s in your backup set",
+  "Backup Set:", "%s over %s".
+- Tested in `tools/test_backupweapons.lua`. Not yet seen in game.
