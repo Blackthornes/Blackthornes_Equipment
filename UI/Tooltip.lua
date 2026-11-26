@@ -27,11 +27,12 @@ local TOOLTIP_NAMES = { "GameTooltip", "ItemRefTooltip" }
 -- verdict and the weapon master under it ("upgrade", tooltipLine), a random
 -- roll's name ("suffix", suffixLine), an alt's upgrade ("alt",
 -- altTooltipLine), the best enchant ("enchant", enchantTooltip) and the
--- boss that drops it ("drops", dropsTooltip). A line
+-- boss that drops it ("drops", dropsTooltip), and why it is better or
+-- worse ("why", whyTooltip, Compare:WhyLine). A line
 -- carries its key as `line.key`; the Shift answer is asked as the lines go
 -- on the tooltip, never kept with them.
 if ns.TooltipShift then
-    ns.TooltipShift.KEYS = { "upgrade", "suffix", "alt", "enchant", "drops" }
+    ns.TooltipShift.KEYS = { "upgrade", "suffix", "alt", "enchant", "drops", "why" }
 end
 
 local function Field(object, key)
@@ -248,13 +249,17 @@ function Tooltip:WorkOutLines(link, carried, bag, slot)
     local text, color = Compare:Describe(result)
     -- With an Off Spec (Logic/OffSpec.lua): a line for each spec when either
     -- gains, "Main Spec: +97%" and "Off Spec: +42%".
-    local specLines = Tooltip.SpecLines(link, carried, result)
+    local specLines, off = Tooltip.SpecLines(link, carried, result)
     if specLines then
         for _, line in ipairs(specLines) do lines[#lines + 1] = line end
     elseif text then
         local label, answer = Tooltip.VerdictPair(result)
         lines[#lines + 1] = { text, color, key = "upgrade", label = label, answer = answer }
     end
+    -- Why It's Better: "More Strength and Crit. A little less Agility."
+    -- With an Off Spec, it speaks for the spec the item helps.
+    local okWhy, why = pcall(Tooltip.WhyLine, link, result, off)
+    if okWhy and why then lines[#lines + 1] = { why, "muted", true, key = "why" } end
     -- No use to you, but an upgrade for another of your characters.
     local okAlt, altLine, altLabel, altAnswer = pcall(Tooltip.AltLine, Tooltip, link, result, bag, slot)
     if okAlt and altLine then
@@ -457,7 +462,23 @@ function Tooltip.SpecLines(link, carried, main)
         local answer, tone = Tooltip.SpecAnswer(entry[2], entry[3])
         out[#out + 1] = { entry[1] .. " " .. answer, tone, key = "upgrade", label = entry[1], answer = answer }
     end
-    return out
+    return out, off
+end
+
+--- The Why It's Better line for an item's verdict, or nil. Only for gear
+--- that is better or worse; with an Off Spec, for the Main Spec unless only
+--- the Off Spec gains.
+function Tooltip.WhyLine(link, main, off)
+    if ns.db and ns.db.whyTooltip == false then return nil end
+    local result = main
+    local mainMoves = type(main) == "table" and (main.verdict == "upgrade" or main.verdict == "downgrade")
+    if type(off) == "table" and off.verdict == "upgrade" and not (mainMoves and main.verdict == "upgrade") then
+        result = off
+    end
+    if type(result) ~= "table" or not (result.verdict == "upgrade" or result.verdict == "downgrade") then
+        return nil
+    end
+    return Compare.WhyLine(Compare:Why(link, result))
 end
 
 --- "Learn Maces in Orgrimmar" for the weapon master line, or nil.
