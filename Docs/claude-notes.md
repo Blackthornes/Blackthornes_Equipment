@@ -3707,3 +3707,19 @@ beats their staff. `Logic/BackupWeapons.lua` (a new file, full restart).
   now beats your pair by %s", "Backup", "Beats %s in your backup set",
   "Backup Set:", "%s over %s".
 - Tested in `tools/test_backupweapons.lua`. Not yet seen in game.
+- **Two weapons** (the owner said build it from `equipment-weapon-set-dual`,
+  2026-11-27). Hunters and warriors from level 20 already got the backup
+  set (`Weights:CanDualWield`); rogues can't use a two-hander, so have none.
+  A weapon in the off hand counts its damage at half
+  (`Compare.OFF_HAND_DAMAGE`, `Compare:OffHandCut`, `Compare:OffHandScore`),
+  wherever a pair meets a two-hander: `Backup:Pieces`' `offs`, the worn pair
+  (`Worn`), `Backup:WithPartner` (a one-hander goes in whichever hand makes
+  the better pair), `BeatsPiece`, `Finder.NotePair`'s `offs`
+  (`pairNotes.weights`), and `Compare:Against`'s two-hander against a worn
+  off hand. Its other stats count in full. `Backup:InSet` keeps the pair's
+  weapons for someone who swings two even with the switch off and the
+  two-hander winning (a shield still sells). Tooltip "Kept for your backup
+  set." (`Tooltip.KeptLine`, carried, no upgrade); card "Your two-hander
+  wins for now. The pair stays in your bags." Tested in
+  `tools/test_backupdual.lua`. Not yet seen in game; half is classic's rule,
+  not yet checked on Forever.

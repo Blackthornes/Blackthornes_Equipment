@@ -267,6 +267,9 @@ function Tooltip:WorkOutLines(link, carried, bag, slot)
     if partnerLine and result.verdict == "upgrade" then
         lines[#lines + 1] = { L["Your backup set beats your two-hander."], "muted", true, key = "upgrade" }
     end
+    -- A carried piece of the backup set is kept, never sold.
+    local okKept, kept = pcall(Tooltip.KeptLine, link, carried, result)
+    if okKept and kept then lines[#lines + 1] = kept end
     -- Better than the backup set's piece for its hand, with Backup Weapon
     -- Set on: "Backup Set: +12% over Sample Ritual Dagger".
     local okBeats, beatsLine = pcall(Tooltip.BackupLine, link)
@@ -475,6 +478,15 @@ function Tooltip.PartnerLine(result)
     local answer = L.Format("%s with %s", how, ns.Items.ShowLink(partner.link) or "")
     local label = L["Main Spec:"]
     return { label .. " " .. answer, tone, key = "upgrade", label = label, answer = answer }
+end
+
+--- "Kept for your backup set.", for a carried piece of the backup set
+--- that is no upgrade on its own; nil for any other.
+function Tooltip.KeptLine(link, carried, result)
+    if not carried or (type(result) == "table" and result.verdict == "upgrade") then return nil end
+    local Backup = ns.BackupWeapons
+    if not (Backup and Backup:InSet(link)) then return nil end
+    return { L["Kept for your backup set."], "accent", key = "kept" }
 end
 
 --- "Backup Set: +12% over Sample Ritual Dagger", or nil.
