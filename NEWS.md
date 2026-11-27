@@ -23,6 +23,12 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 2.2.0
+
+- My Gear shows your backup weapon set in a strip under the figure or the list. It is off unless ticked.
+- Backup set pieces wear blue crossed swords in your bags.
+- Butler keeps backup pieces and does not suggest selling them.
+
 ## 2.1.2
 
 Fixes and changes:

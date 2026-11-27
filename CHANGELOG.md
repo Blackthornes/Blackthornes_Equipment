@@ -4,6 +4,14 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 2.2.0
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Backup Set strip.** My Gear shows your backup weapon set in a strip under the figure or the list, whichever slot you pick. To turn it on: 1. Open Equipment. 2. Click Settings. 3. On the Gear page, tick Backup Weapon Set:. It is off unless ticked.
+- **Blue swords in your bags.** A piece of your backup set wears blue crossed swords on its bag square. They show when Backup Weapon Set is ticked. To turn it off, untick Backup Weapon Set: on the Gear page.
+- **Butler keeps backup pieces.** Butler no longer suggests selling, disenchanting or mailing a piece of your backup set.
+
 ## 2.1.2
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
