@@ -146,6 +146,7 @@ function Card.Read(found, from, to)
         level = to,
         armor = player and Card.ArmorOpened(player.class, from, to) or nil,
         ready = state.ready or {},
+        readState = state,
         new = new,
         best = best,
         training = state.training,
@@ -326,7 +327,13 @@ function Card:Fill(read)
         lines[#lines + 1] = {
             ready == 1 and L["1 upgrade in your bags."] or L.Format("%d upgrades in your bags.", ready), nil,
             ready == 1 and L["Put It On"] or L["Put Them On"],
-            function() if ns.Wear then ns.Wear:PutOnAll(read.ready) end end,
+            function()
+                if ns.MyGear and ns.MyGear.PutOnReady and read.readState then
+                    ns.MyGear.PutOnReady(read.readState)
+                elseif ns.Wear then
+                    ns.Wear:PutOnAll(read.ready)
+                end
+            end,
         }
     end
     if read.new > 0 then

@@ -235,13 +235,28 @@ function MyGear:GreenSlots(found)
     return green
 end
 
+--- Switch Gear's state while the Off Spec's gear counts as on, else nil.
+function MyGear.OffWorn()
+    local SwitchGear = ns.SwitchGear
+    if not SwitchGear then return nil end
+    local ok, state = pcall(SwitchGear.State, SwitchGear)
+    if ok and type(state) == "table" and state.on == "off" then return state end
+    return nil
+end
+
+--- The page from a scan. With the Off Spec's gear on (`MyGear.OffWorn`)
+--- the page follows it (a Discord report on 2.1.1): pass the Off Spec's
+--- scan as `found`; slots show what is worn, and Ready Now lists the Off
+--- Spec's pieces still in the bags (`offWorn`), never a Main Spec piece.
 function MyGear:Read(found, off)
     local Items, FinderUI = ns.Items, ns.FinderUI
     local quest = ns.UpgradeQuest
     local skipped = quest and quest:Skipped() or {}
+    local offWorn = MyGear.OffWorn()
+    if offWorn then off = nil end
     -- The bags are judged once for each scan: gear coming or going makes
     -- a new scan, so opening the page again judges nothing.
-    local owned = self:Owned(found)
+    local owned = offWorn and {} or self:Owned(found)
     local pass = MyGear.Filter(found)
 
     local state = { slots = {}, ready = {}, upgrades = 0, enchants = 0, found = found }
@@ -249,7 +264,9 @@ function MyGear:Read(found, off)
     local bestShown
     for _, entry in ipairs(Slots()) do
         local slot = entry[1]
-        local info = { slot = slot, name = entry[2], link = Items and Items:Equipped(slot) or nil,
+        local link
+        if Items then link = offWorn and Items:WornNow(slot) or (not offWorn and Items:Equipped(slot)) or nil end
+        local info = { slot = slot, name = entry[2], link = link,
             owned = owned[slot] or {}, picks = {} }
 
         -- The pieces to go and get: those you can wear now first, then
@@ -299,6 +316,16 @@ function MyGear:Read(found, off)
         end
 
         state.slots[slot] = info
+    end
+
+    if offWorn then
+        state.offWorn = true
+        for _, step in ipairs(offWorn.fill or {}) do
+            if step.to and not readySeen[step.to] then
+                readySeen[step.to] = true
+                state.ready[#state.ready + 1] = step.to
+            end
+        end
     end
 
     -- An empty off hand under a two-hander is no gap.
@@ -570,7 +597,18 @@ end
 --- other (Logic/Wear.lua). In a fight they wait for its end.
 function MyGear:PutThemOn()
     local state = self.state
-    if not (state and ns.Wear) then return 0 end
+    if not state then return 0 end
+    return MyGear.PutOnReady(state)
+end
+
+--- Put on Ready Now's pieces: the Off Spec's through Switch Gear while its
+--- gear is on, so they are judged for the Off Spec, else through Wear.
+function MyGear.PutOnReady(state)
+    if state.offWorn then
+        local SwitchGear = ns.SwitchGear
+        return SwitchGear and SwitchGear:Go("off") and #state.ready or 0
+    end
+    if not ns.Wear then return 0 end
     return ns.Wear:PutOnAll(state.ready)
 end
 
@@ -2173,6 +2211,8 @@ function MyGear:Present(found)
     if not self.page then return nil end
     self.lastFound = found
     local off = ns.OffSpec and ns.OffSpec:On() and self.offFound or nil
+    -- With the Off Spec's gear on, the page follows the Off Spec's scan.
+    if off and MyGear.OffWorn() then found, off = off, nil end
     local state = self:Read(found, off)
     self.state = state
     self.slot = self:ChooseSlot(state)

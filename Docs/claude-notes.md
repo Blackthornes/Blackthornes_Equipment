@@ -3366,6 +3366,26 @@ lists show upgrades for both.
     a better Main Spec piece that lands in the bags joins the Main Spec
     outfit and shows no arrow until the Main Spec's gear is back on.
   - Tested in `tools/test_offspecworn.lua`.
+- **Fixed 2026-11-27** (a Discord report on 2.1.1: a Feral druid in a
+  healing set put on by hand was told to swap the ring both sets share for
+  the Feral ring; that flipped the page to Feral and offered "Put On
+  Restoration Gear", which swapped it back, round and round; and My Gear
+  showed the Feral gear while the healing set was on):
+  - `Compare:JudgeCarried` no longer weighs a carried ring or one-hander
+    against the other ring or hand when it is only "equipped" as a stand-in
+    or outfit piece (not really worn in that slot): it is that piece, not a
+    second copy.
+  - `SwitchGear:State` calls the gear on the spec's whose gear is fewer
+    pieces away (a tie is the Main Spec's), so one piece swapped by hand
+    never flips it. With the Off Spec's gear on, `fill` holds the steps to
+    its last pieces, and `SwitchGear:Go("off")` puts them on.
+  - `OffSpec:MainStandIns` only stands in while the Off Spec's gear counts
+    as on. With the Main Spec's gear on, what is worn is what counts.
+  - My Gear follows the gear on (`MyGear.OffWorn`): with the Off Spec's on,
+    it reads the Off Spec's scan, slots show what is worn, no Main Spec
+    piece is offered, and Ready Now lists `fill`, put on through Switch
+    Gear (`MyGear.PutOnReady`, the Level Up card too).
+  - Tested in `tools/test_offspecloop.lua`.
 - Tested in `tools/test_offspec.lua` and `tools/test_ratingsandcap.lua`.
   Not yet seen in game.
 
