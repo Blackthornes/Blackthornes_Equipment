@@ -4,6 +4,15 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 2.2.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Fix.** With your Off Spec gear on, My Gear and Ready Now follow the Off Spec.
+- **Fix.** Ready Now no longer tells you to swap a ring that both specs share.
+- **Fix.** Wearing a piece of the Off Spec set by hand no longer flips Wearing: to Main Spec.
+- **Fix.** On the Dungeons tab, Upgrades Only no longer sits on top of Find. The top bar wraps to a new row when the window is narrow.
+
 ## 2.2.0
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
