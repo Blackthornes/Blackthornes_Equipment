@@ -421,10 +421,358 @@
   }
  },
  "needs": {
+  "1106": {
+   "first": [
+    1104,
+    1105
+   ]
+  },
+  "122": {
+   "first": [
+    119
+   ]
+  },
+  "124": {
+   "first": [
+    119
+   ]
+  },
+  "1364": {
+   "first": [
+    1363
+   ]
+  },
+  "1436": {
+   "first": [
+    1434,
+    1435
+   ]
+  },
   "1918": {
    "hold": 25,
    "title": "The Befouled Element",
    "why": "Tideress drops the Befouled Water Globe only while Stonetalon Standstill is in the log"
+  },
+  "1952": {
+   "first": [
+    1948
+   ]
+  },
+  "214": {
+   "first": [
+    153,
+    155
+   ]
+  },
+  "217": {
+   "first": [
+    263,
+    267
+   ]
+  },
+  "2204": {
+   "first": [
+    2201
+   ]
+  },
+  "2338": {
+   "first": [
+    2318
+   ]
+  },
+  "2744": {
+   "first": [
+    2743
+   ]
+  },
+  "28": {
+   "first": [
+    27
+   ]
+  },
+  "2846": {
+   "first": [
+    2861
+   ]
+  },
+  "29": {
+   "first": [
+    26
+   ]
+  },
+  "3903": {
+   "first": [
+    18
+   ]
+  },
+  "4122": {
+   "first": [
+    4082
+   ]
+  },
+  "425": {
+   "first": [
+    91921
+   ]
+  },
+  "443": {
+   "first": [
+    439
+   ]
+  },
+  "46": {
+   "first": [
+    39
+   ]
+  },
+  "473": {
+   "first": [
+    455
+   ]
+  },
+  "4882": {
+   "first": [
+    4741
+   ]
+  },
+  "4964": {
+   "first": [
+    4962,
+    4976
+   ]
+  },
+  "4975": {
+   "first": [
+    4963,
+    4976
+   ]
+  },
+  "501": {
+   "first": [
+    499
+   ]
+  },
+  "5081": {
+   "first": [
+    5002
+   ]
+  },
+  "509": {
+   "first": [
+    502
+   ]
+  },
+  "5124": {
+   "first": [
+    5103
+   ]
+  },
+  "5161": {
+   "first": [
+    5160
+   ]
+  },
+  "5206": {
+   "first": [
+    5154,
+    5168,
+    5181
+   ]
+  },
+  "5237": {
+   "first": [
+    5226
+   ]
+  },
+  "5238": {
+   "first": [
+    5236
+   ]
+  },
+  "5465": {
+   "first": [
+    5464
+   ]
+  },
+  "5522": {
+   "first": [
+    4735
+   ]
+  },
+  "566": {
+   "first": [
+    549
+   ]
+  },
+  "598": {
+   "first": [
+    596,
+    629
+   ]
+  },
+  "6135": {
+   "first": [
+    6022,
+    6042,
+    6133
+   ]
+  },
+  "6136": {
+   "first": [
+    6133
+   ]
+  },
+  "6144": {
+   "first": [
+    6135,
+    6136
+   ]
+  },
+  "6501": {
+   "first": [
+    6403
+   ]
+  },
+  "7201": {
+   "first": [
+    3906
+   ]
+  },
+  "786": {
+   "first": [
+    785
+   ]
+  },
+  "823": {
+   "first": [
+    805
+   ]
+  },
+  "826": {
+   "first": [
+    805
+   ]
+  },
+  "8421": {
+   "first": [
+    8420
+   ]
+  },
+  "8423": {
+   "first": [
+    8417
+   ]
+  },
+  "88813": {
+   "first": [
+    88809,
+    88812
+   ]
+  },
+  "8951": {
+   "first": [
+    9015
+   ]
+  },
+  "8952": {
+   "first": [
+    9015
+   ]
+  },
+  "8953": {
+   "first": [
+    9015
+   ]
+  },
+  "8954": {
+   "first": [
+    9015
+   ]
+  },
+  "8955": {
+   "first": [
+    9015
+   ]
+  },
+  "8956": {
+   "first": [
+    9015
+   ]
+  },
+  "8957": {
+   "first": [
+    9015
+   ]
+  },
+  "8958": {
+   "first": [
+    9015
+   ]
+  },
+  "8959": {
+   "first": [
+    9015
+   ]
+  },
+  "8997": {
+   "first": [
+    8996
+   ]
+  },
+  "8998": {
+   "first": [
+    8996
+   ]
+  },
+  "9016": {
+   "first": [
+    9015
+   ]
+  },
+  "9017": {
+   "first": [
+    9015
+   ]
+  },
+  "9018": {
+   "first": [
+    9015
+   ]
+  },
+  "9019": {
+   "first": [
+    9015
+   ]
+  },
+  "9020": {
+   "first": [
+    9015
+   ]
+  },
+  "9021": {
+   "first": [
+    9015
+   ]
+  },
+  "9022": {
+   "first": [
+    9015
+   ]
+  },
+  "919": {
+   "first": [
+    997
+   ]
+  },
+  "939": {
+   "first": [
+    4906
+   ]
+  },
+  "971": {
+   "first": [
+    968
+   ]
   }
  },
  "quests": {
@@ -2009,6 +2357,27 @@
    "y": 75.2,
    "zone": "The Hinterlands"
   },
+  "1806": {
+   "classes": 2,
+   "giver": "Jordan Stilwell",
+   "level": 22,
+   "min": 20,
+   "prev": 1654,
+   "races": 5,
+   "rewards": [
+    [
+     6953,
+     0,
+     31,
+     false
+    ]
+   ],
+   "side": "A",
+   "title": "The Test of Righteousness",
+   "x": 52.6,
+   "y": 36.8,
+   "zone": "Dun Morogh"
+  },
   "2040": {
    "level": 15,
    "min": 15,
@@ -2127,6 +2496,31 @@
    "y": 44.2,
    "zone": "Feralas"
   },
+  "3461": {
+   "giver": "Pilot Xiggs Fuselighter",
+   "level": 52,
+   "min": 45,
+   "prev": 3449,
+   "rewards": [
+    [
+     10707,
+     0,
+     52,
+     false
+    ],
+    [
+     10708,
+     0,
+     52,
+     false
+    ]
+   ],
+   "side": "A",
+   "title": "Return to Tymor",
+   "x": 77.8,
+   "y": 91.4,
+   "zone": "Azshara"
+  },
   "3528": {
    "level": 49,
    "min": 49,
@@ -2173,6 +2567,88 @@
    "y": 18.2,
    "zone": "Wetlands"
   },
+  "4201": {
+   "giver": "Mistress Nagmara",
+   "level": 54,
+   "min": 50,
+   "rewards": [
+    [
+     11962,
+     0,
+     0,
+     false
+    ],
+    [
+     11866,
+     0,
+     0,
+     false
+    ],
+    [
+     270120,
+     0,
+     0,
+     false
+    ]
+   ],
+   "title": "The Love Potion"
+  },
+  "4242": {
+   "giver": "Marshal Windsor",
+   "level": 54,
+   "min": 48,
+   "prev": 4241,
+   "rewards": [
+    [
+     12018,
+     0,
+     54,
+     false
+    ],
+    [
+     12021,
+     0,
+     54,
+     false
+    ],
+    [
+     12041,
+     0,
+     54,
+     false
+    ],
+    [
+     270118,
+     0,
+     54,
+     false
+    ]
+   ],
+   "side": "A",
+   "title": "Abandoned Hope"
+  },
+  "4322": {
+   "giver": "Marshal Windsor",
+   "level": 58,
+   "min": 50,
+   "prev": 4282,
+   "rewards": [
+    [
+     12061,
+     0,
+     0,
+     false
+    ],
+    [
+     12062,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "title": "Jail Break!"
+  },
   "464": {
    "prev": 473,
    "title": "War Banners"
@@ -2201,6 +2677,28 @@
    ],
    "title": "Defeat Nek'rosh"
   },
+  "4983": {
+   "giver": "Bijou",
+   "level": 59,
+   "min": 55,
+   "prev": 4982,
+   "rewards": [
+    [
+     15858,
+     0,
+     0,
+     false
+    ],
+    [
+     15859,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "title": "Bijou's Reconnaissance Report"
+  },
   "565": {
    "level": 29,
    "min": 29,
@@ -2213,6 +2711,41 @@
     ]
    ],
    "title": "Bartolo's Yeti Fur Cloak"
+  },
+  "5943": {
+   "giver": "Rigger Gizelton",
+   "level": 38,
+   "min": 32,
+   "rewards": [
+    [
+     15691,
+     0,
+     38,
+     false
+    ],
+    [
+     15692,
+     0,
+     38,
+     false
+    ],
+    [
+     15695,
+     0,
+     38,
+     false
+    ],
+    [
+     270065,
+     0,
+     38,
+     false
+    ]
+   ],
+   "title": "Gizelton Caravan",
+   "x": 40.4,
+   "y": 79.4,
+   "zone": "Desolace"
   },
   "6521": {
    "level": 28,
@@ -2314,6 +2847,183 @@
    ],
    "title": "Pusillin and the Elder Azj'Tordin"
   },
+  "7509": {
+   "classes": 3,
+   "giver": "Lorekeeper Lydros",
+   "level": 60,
+   "min": 60,
+   "prev": 7508,
+   "rewards": [
+    [
+     18348,
+     0,
+     0,
+     false
+    ]
+   ],
+   "title": "The Forging of Quel'Serrar"
+  },
+  "7622": {
+   "classes": 16,
+   "giver": "Eris Havenfire",
+   "level": 60,
+   "min": 60,
+   "prev": 7621,
+   "rewards": [
+    [
+     18609,
+     60,
+     75,
+     false
+    ],
+    [
+     18608,
+     60,
+     75,
+     false
+    ]
+   ],
+   "title": "The Balance of Light and Shadow",
+   "x": 20.8,
+   "y": 18.4,
+   "zone": "Eastern Plaguelands"
+  },
+  "7636": {
+   "classes": 4,
+   "giver": "Vartrus the Ancient",
+   "level": 60,
+   "min": 60,
+   "rewards": [
+    [
+     18713,
+     60,
+     75,
+     false
+    ],
+    [
+     18715,
+     60,
+     75,
+     false
+    ]
+   ],
+   "title": "Stave of the Ancients",
+   "x": 47,
+   "y": 24.48,
+   "zone": "Felwood"
+  },
+  "7668": {
+   "classes": 64,
+   "giver": "Sagorne Creststrider",
+   "level": 60,
+   "min": 55,
+   "prev": 7667,
+   "rewards": [
+    [
+     18807,
+     0,
+     62,
+     false
+    ]
+   ],
+   "title": "The Darkreaver Menace",
+   "x": 38.7,
+   "y": 35.9,
+   "zone": "Orgrimmar"
+  },
+  "7703": {
+   "giver": "Captain Kromcrush",
+   "level": 60,
+   "min": 60,
+   "rewards": [
+    [
+     18367,
+     0,
+     0,
+     false
+    ],
+    [
+     18368,
+     0,
+     0,
+     false
+    ],
+    [
+     18366,
+     0,
+     0,
+     false
+    ],
+    [
+     18369,
+     0,
+     0,
+     false
+    ]
+   ],
+   "title": "Unfinished Gordok Business"
+  },
+  "7840": {
+   "giver": "Lard",
+   "level": 49,
+   "min": 44,
+   "rewards": [
+    [
+     287074,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "title": "Lard Lost His Lunch",
+   "x": 78.2,
+   "y": 81.2,
+   "zone": "The Hinterlands"
+  },
+  "7877": {
+   "giver": "Shen'dralar Ancient",
+   "level": 60,
+   "min": 57,
+   "prev": 7461,
+   "rewards": [
+    [
+     18421,
+     0,
+     0,
+     false
+    ],
+    [
+     18420,
+     0,
+     0,
+     false
+    ],
+    [
+     18424,
+     0,
+     0,
+     false
+    ]
+   ],
+   "title": "The Treasure of the Shen'dralar"
+  },
+  "78830": {
+   "giver": "Hemet Nesingwary",
+   "min": 26,
+   "prev": 78823,
+   "rewards": [
+    [
+     277207,
+     0,
+     40,
+     false
+    ]
+   ],
+   "x": 35.6,
+   "y": 10.8,
+   "zone": "Stranglethorn Vale"
+  },
   "79007": {
    "title": "... and that note you found",
    "x": 46.4,
@@ -2323,6 +3033,50 @@
   "79192": {
    "prev": 79007,
    "title": "Stepping Stones"
+  },
+  "79442": {
+   "classes": 64,
+   "giver": "Rau Cliffrunner",
+   "min": 30,
+   "prev": 79366,
+   "rewards": [
+    [
+     280607,
+     1,
+     40,
+     false
+    ],
+    [
+     280604,
+     1,
+     40,
+     false
+    ],
+    [
+     280605,
+     1,
+     40,
+     false
+    ]
+   ],
+   "x": 46,
+   "y": 51.6,
+   "zone": "Thousand Needles"
+  },
+  "79970": {
+   "classes": 2,
+   "min": 35,
+   "prev": 79963,
+   "races": 5,
+   "rewards": [
+    [
+     277236,
+     0,
+     45,
+     false
+    ]
+   ],
+   "side": "A"
   },
   "79980": {
    "level": 23,
@@ -2343,6 +3097,95 @@
     ]
    ],
    "title": "Scramble"
+  },
+  "81570": {
+   "giver": "\"Swamp Eye\" Jarl",
+   "min": 30,
+   "rewards": [
+    [
+     5016,
+     0,
+     35,
+     false
+    ]
+   ],
+   "x": 55.4,
+   "y": 26.2,
+   "zone": "Dustwallow Marsh"
+  },
+  "82135": {
+   "classes": 2,
+   "min": 44,
+   "prev": 81885,
+   "rewards": [
+    [
+     221518,
+     0,
+     53,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 45,
+   "y": 52,
+   "zone": "Felwood"
+  },
+  "8259": {
+   "classes": 64,
+   "giver": "Sagorne Creststrider",
+   "level": 60,
+   "min": 55,
+   "prev": 7668,
+   "rewards": [
+    [
+     20134,
+     0,
+     0,
+     false
+    ]
+   ],
+   "title": "A More Fitting Reward",
+   "x": 38.7,
+   "y": 35.9,
+   "zone": "Orgrimmar"
+  },
+  "8361": {
+   "giver": "Bor Wildmane",
+   "level": 60,
+   "min": 60,
+   "rewards": [
+    [
+     20694,
+     0,
+     0,
+     false
+    ],
+    [
+     20693,
+     0,
+     0,
+     false
+    ]
+   ],
+   "title": "Abyssal Contacts",
+   "x": 48.6,
+   "y": 37.8,
+   "zone": "Silithus"
+  },
+  "84213": {
+   "min": 58,
+   "prev": 84212,
+   "rewards": [
+    [
+     208424,
+     0,
+     0,
+     false
+    ]
+   ],
+   "x": 59.2,
+   "y": 99.6,
+   "zone": "Kalimdor"
   },
   "86777": {
    "title": "Master Feardred",
@@ -2366,6 +3209,27 @@
    "prev": 86797,
    "title": "Timbermaw Reinforcements"
   },
+  "86813": {
+   "min": 47,
+   "prev": 86812,
+   "rewards": [
+    [
+     260168,
+     0,
+     52,
+     false
+    ],
+    [
+     260169,
+     0,
+     52,
+     false
+    ]
+   ],
+   "x": 41.6,
+   "y": 19.6,
+   "zone": "Azshara"
+  },
   "86814": {
    "prev": 87346,
    "title": "Blackmaw Counter-Offensive"
@@ -2373,6 +3237,40 @@
   "87346": {
    "prev": 86798,
    "title": "Chieftain Bloodmaw"
+  },
+  "87451": {
+   "min": 45,
+   "rewards": [
+    [
+     281259,
+     0,
+     50,
+     false
+    ],
+    [
+     281260,
+     0,
+     50,
+     false
+    ]
+   ],
+   "side": "H"
+  },
+  "87494": {
+   "rewards": [
+    [
+     281261,
+     0,
+     55,
+     false
+    ],
+    [
+     281262,
+     0,
+     55,
+     false
+    ]
+   ]
   },
   "8801": {
    "giver": "Caelestrasz",
@@ -2407,6 +3305,119 @@
    ],
    "title": "The Savior of Kalimdor"
   },
+  "88813": {
+   "min": 47,
+   "rewards": [
+    [
+     260208,
+     0,
+     55,
+     false
+    ],
+    [
+     260209,
+     0,
+     55,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 11.8,
+   "y": 78.2,
+   "zone": "Azshara"
+  },
+  "89013": {
+   "min": 45,
+   "rewards": [
+    [
+     290333,
+     0,
+     48,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 12.4,
+   "y": 77.2,
+   "zone": "Azshara"
+  },
+  "89015": {
+   "min": 50,
+   "rewards": [
+    [
+     260210,
+     0,
+     56,
+     false
+    ],
+    [
+     260211,
+     0,
+     56,
+     false
+    ],
+    [
+     260212,
+     0,
+     56,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 12.6,
+   "y": 77.2,
+   "zone": "Azshara"
+  },
+  "89037": {
+   "min": 47,
+   "prev": 88884,
+   "rewards": [
+    [
+     260180,
+     0,
+     52,
+     false
+    ],
+    [
+     260181,
+     0,
+     52,
+     false
+    ],
+    [
+     260182,
+     0,
+     52,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 50.4,
+   "y": 42.6,
+   "zone": "Azshara"
+  },
+  "89053": {
+   "min": 47,
+   "prev": 89038,
+   "rewards": [
+    [
+     260201,
+     0,
+     55,
+     false
+    ],
+    [
+     260207,
+     0,
+     55,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 50.4,
+   "y": 42.6,
+   "zone": "Azshara"
+  },
   "898": {
    "giver": "Gilthares Firebough",
    "level": 20,
@@ -2423,6 +3434,259 @@
    "x": 61.2,
    "y": 53.6,
    "zone": "The Barrens"
+  },
+  "90854": {
+   "min": 54,
+   "rewards": [
+    [
+     274719,
+     0,
+     57,
+     false
+    ],
+    [
+     274720,
+     0,
+     57,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 14,
+   "y": 54.8,
+   "zone": "Mount Hyjal"
+  },
+  "91531": {
+   "giver": "Ag'tor Bloodfist",
+   "min": 44,
+   "prev": 91500,
+   "rewards": [
+    [
+     10709,
+     0,
+     55,
+     false
+    ],
+    [
+     11120,
+     0,
+     55,
+     false
+    ],
+    [
+     287075,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 22.2,
+   "y": 51.4,
+   "zone": "Azshara"
+  },
+  "91548": {
+   "giver": "Zevrost",
+   "min": 44,
+   "prev": 91547,
+   "rewards": [
+    [
+     260186,
+     0,
+     55,
+     false
+    ],
+    [
+     260195,
+     0,
+     55,
+     false
+    ],
+    [
+     260196,
+     0,
+     55,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 48.2,
+   "y": 45.6,
+   "zone": "Orgrimmar"
+  },
+  "91608": {
+   "giver": "Kurll",
+   "min": 45,
+   "rewards": [
+    [
+     290333,
+     0,
+     48,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 21.8,
+   "y": 52,
+   "zone": "Azshara"
+  },
+  "91610": {
+   "giver": "Kurll",
+   "min": 45,
+   "rewards": [
+    [
+     259890,
+     0,
+     48,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 21.8,
+   "y": 52,
+   "zone": "Azshara"
+  },
+  "91611": {
+   "giver": "Kurll",
+   "min": 50,
+   "rewards": [
+    [
+     260210,
+     0,
+     56,
+     false
+    ],
+    [
+     260211,
+     0,
+     56,
+     false
+    ],
+    [
+     260212,
+     0,
+     56,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 21.8,
+   "y": 52,
+   "zone": "Azshara"
+  },
+  "91685": {
+   "min": 45,
+   "rewards": [
+    [
+     260172,
+     0,
+     52,
+     false
+    ],
+    [
+     260178,
+     0,
+     52,
+     false
+    ],
+    [
+     260179,
+     0,
+     52,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 22.4,
+   "y": 51.8,
+   "zone": "Azshara"
+  },
+  "91777": {
+   "giver": "Marshal Dughan",
+   "prev": 91775,
+   "rewards": [
+    [
+     248008,
+     0,
+     12,
+     false
+    ],
+    [
+     248007,
+     0,
+     12,
+     false
+    ],
+    [
+     248006,
+     0,
+     12,
+     false
+    ],
+    [
+     248005,
+     0,
+     12,
+     false
+    ],
+    [
+     276685,
+     0,
+     14,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 42.2,
+   "y": 65.8,
+   "zone": "Elwynn Forest"
+  },
+  "91794": {
+   "min": 54,
+   "rewards": [
+    [
+     275742,
+     0,
+     59,
+     false
+    ],
+    [
+     287077,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 13.6,
+   "y": 53,
+   "zone": "Mount Hyjal"
+  },
+  "91923": {
+   "min": 54,
+   "rewards": [
+    [
+     274265,
+     0,
+     0,
+     false
+    ],
+    [
+     274270,
+     0,
+     0,
+     false
+    ],
+    [
+     274271,
+     0,
+     0,
+     false
+    ]
+   ],
+   "x": 55.8,
+   "y": 84.2,
+   "zone": "Mount Hyjal"
   },
   "92065": {
    "level": 47,
@@ -2456,11 +3720,183 @@
    ],
    "title": "Blackmaw Reclamation"
   },
+  "92066": {
+   "min": 47,
+   "rewards": [
+    [
+     279891,
+     0,
+     0,
+     false
+    ],
+    [
+     279892,
+     0,
+     0,
+     false
+    ]
+   ],
+   "x": 41.4,
+   "y": 20,
+   "zone": "Azshara"
+  },
+  "92069": {
+   "giver": "Ogtinc",
+   "min": 45,
+   "rewards": [
+    [
+     260213,
+     0,
+     0,
+     false
+    ],
+    [
+     260214,
+     0,
+     0,
+     false
+    ],
+    [
+     260215,
+     0,
+     0,
+     false
+    ]
+   ],
+   "x": 42.4,
+   "y": 42.6,
+   "zone": "Azshara"
+  },
+  "92189": {
+   "min": 54,
+   "rewards": [
+    [
+     274718,
+     0,
+     57,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 15.6,
+   "y": 50.4,
+   "zone": "Mount Hyjal"
+  },
+  "92329": {
+   "min": 54,
+   "prev": 92328,
+   "rewards": [
+    [
+     275701,
+     0,
+     58,
+     false
+    ],
+    [
+     275700,
+     0,
+     58,
+     false
+    ],
+    [
+     275698,
+     0,
+     58,
+     false
+    ]
+   ],
+   "x": 60.2,
+   "y": 61.4,
+   "zone": "Mount Hyjal"
+  },
   "92415": {
    "title": "Remember That I Love You",
    "x": 47.2,
    "y": 38.4,
    "zone": "Stormwind City"
+  },
+  "92446": {
+   "min": 54,
+   "rewards": [
+    [
+     281586,
+     1,
+     60,
+     false
+    ],
+    [
+     281587,
+     1,
+     60,
+     false
+    ],
+    [
+     281588,
+     1,
+     60,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 14,
+   "y": 54.8,
+   "zone": "Mount Hyjal"
+  },
+  "92449": {
+   "min": 54,
+   "rewards": [
+    [
+     275438,
+     0,
+     58,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 15.6,
+   "y": 54.6,
+   "zone": "Mount Hyjal"
+  },
+  "92533": {
+   "min": 56,
+   "rewards": [
+    [
+     275645,
+     0,
+     59,
+     false
+    ],
+    [
+     275647,
+     0,
+     59,
+     false
+    ],
+    [
+     275648,
+     0,
+     59,
+     false
+    ]
+   ],
+   "x": 69,
+   "y": 47.4,
+   "zone": "Mount Hyjal"
+  },
+  "92609": {
+   "min": 54,
+   "rewards": [
+    [
+     275441,
+     0,
+     57,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 14,
+   "y": 54.8,
+   "zone": "Mount Hyjal"
   },
   "92646": {
    "title": "Confront Lorthuna",
@@ -2468,9 +3904,122 @@
    "y": 50.4,
    "zone": "Zephras Isle"
   },
+  "92683": {
+   "min": 5,
+   "prev": 92679,
+   "rewards": [
+    [
+     263329,
+     0,
+     9,
+     false
+    ]
+   ],
+   "x": 46.6,
+   "y": 81.8,
+   "zone": "Zephras Isle"
+  },
+  "92684": {
+   "min": 5,
+   "prev": 92679,
+   "rewards": [
+    [
+     257340,
+     0,
+     10,
+     false
+    ],
+    [
+     257331,
+     0,
+     10,
+     false
+    ],
+    [
+     257334,
+     0,
+     10,
+     false
+    ]
+   ],
+   "x": 46.6,
+   "y": 81.8,
+   "zone": "Zephras Isle"
+  },
+  "92703": {
+   "min": 5,
+   "prev": 92693,
+   "rewards": [
+    [
+     263312,
+     0,
+     10,
+     false
+    ],
+    [
+     263314,
+     0,
+     10,
+     false
+    ],
+    [
+     263313,
+     0,
+     10,
+     false
+    ]
+   ],
+   "x": 46.6,
+   "y": 81.8,
+   "zone": "Zephras Isle"
+  },
   "92743": {
    "prev": 1369,
    "title": "A Conqueror's Crown"
+  },
+  "92834": {
+   "min": 6,
+   "prev": 92840,
+   "rewards": [
+    [
+     263401,
+     0,
+     11,
+     false
+    ],
+    [
+     263402,
+     0,
+     11,
+     false
+    ],
+    [
+     263403,
+     0,
+     11,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 66.6,
+   "y": 79.8,
+   "zone": "Zephras Isle"
+  },
+  "92840": {
+   "min": 5,
+   "prev": 99260,
+   "rewards": [
+    [
+     263404,
+     0,
+     13,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 66.6,
+   "y": 79.8,
+   "zone": "Zephras Isle"
   },
   "92841": {
    "prev": 92743,
@@ -2483,6 +4032,43 @@
   "92847": {
    "prev": 92844,
    "title": "Corrupting Tears"
+  },
+  "92858": {
+   "min": 39,
+   "rewards": [
+    [
+     277253,
+     0,
+     43,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 31.1,
+   "y": 43.9,
+   "zone": "Feralas"
+  },
+  "92867": {
+   "giver": "[UNUSED] Logan Mar",
+   "min": 32,
+   "rewards": [
+    [
+     280505,
+     0,
+     0,
+     false
+    ],
+    [
+     278567,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 27,
+   "y": 57.2,
+   "zone": "Arathi Highlands"
   },
   "92873": {
    "level": 35,
@@ -2510,9 +4096,51 @@
    ],
    "title": "Proof of Concept"
   },
+  "92878": {
+   "giver": "Blaise Montgomery",
+   "min": 36,
+   "rewards": [
+    [
+     277220,
+     0,
+     45,
+     false
+    ],
+    [
+     277216,
+     40,
+     45,
+     false
+    ],
+    [
+     277221,
+     0,
+     45,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 74.8,
+   "y": 44,
+   "zone": "Feralas"
+  },
   "92893": {
    "prev": 92873,
    "title": "No Mercy for the Weak"
+  },
+  "92959": {
+   "min": 55,
+   "rewards": [
+    [
+     276754,
+     0,
+     55,
+     false
+    ]
+   ],
+   "x": 53.6,
+   "y": 84.4,
+   "zone": "Mount Hyjal"
   },
   "93034": {
    "prev": 1373,
@@ -2572,6 +4200,26 @@
    "prev": 93058,
    "title": "Checking Things Out"
   },
+  "93127": {
+   "min": 54,
+   "rewards": [
+    [
+     275666,
+     0,
+     59,
+     false
+    ],
+    [
+     275668,
+     0,
+     59,
+     false
+    ]
+   ],
+   "x": 68.8,
+   "y": 50.4,
+   "zone": "Mount Hyjal"
+  },
   "93128": {
    "level": 35,
    "min": 35,
@@ -2597,6 +4245,60 @@
     ]
    ],
    "title": "Khan Jehn"
+  },
+  "93165": {
+   "min": 8,
+   "prev": 94484,
+   "rewards": [
+    [
+     263306,
+     0,
+     11,
+     false
+    ],
+    [
+     263307,
+     0,
+     11,
+     false
+    ],
+    [
+     263308,
+     0,
+     11,
+     false
+    ]
+   ],
+   "x": 63.8,
+   "y": 36,
+   "zone": "Zephras Isle"
+  },
+  "93172": {
+   "min": 8,
+   "prev": 93159,
+   "rewards": [
+    [
+     263309,
+     0,
+     11,
+     false
+    ],
+    [
+     263310,
+     0,
+     11,
+     false
+    ],
+    [
+     263311,
+     0,
+     11,
+     false
+    ]
+   ],
+   "x": 54,
+   "y": 39,
+   "zone": "Zephras Isle"
   },
   "93188": {
    "prev": 93072,
@@ -2635,6 +4337,160 @@
    "y": 56.8,
    "zone": "Teldrassil"
   },
+  "93320": {
+   "min": 6,
+   "rewards": [
+    [
+     263338,
+     0,
+     13,
+     false
+    ],
+    [
+     263339,
+     0,
+     13,
+     false
+    ],
+    [
+     263340,
+     0,
+     13,
+     false
+    ]
+   ],
+   "x": 66.2,
+   "y": 76.6,
+   "zone": "Zephras Isle"
+  },
+  "93383": {
+   "min": 54,
+   "prev": 96559,
+   "rewards": [
+    [
+     275715,
+     0,
+     57,
+     false
+    ],
+    [
+     275721,
+     0,
+     0,
+     false
+    ],
+    [
+     275729,
+     0,
+     57,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 25.4,
+   "y": 74.4,
+   "zone": "Mount Hyjal"
+  },
+  "93444": {
+   "min": 56,
+   "rewards": [
+    [
+     275708,
+     0,
+     61,
+     false
+    ],
+    [
+     275711,
+     0,
+     61,
+     false
+    ]
+   ],
+   "x": 68.6,
+   "y": 44,
+   "zone": "Mount Hyjal"
+  },
+  "93547": {
+   "min": 57,
+   "prev": 93407,
+   "rewards": [
+    [
+     275649,
+     0,
+     59,
+     false
+    ]
+   ],
+   "x": 68.8,
+   "y": 50.4,
+   "zone": "Mount Hyjal"
+  },
+  "93574": {
+   "min": 35,
+   "rewards": [
+    [
+     271810,
+     1,
+     43,
+     false
+    ],
+    [
+     271811,
+     1,
+     43,
+     false
+    ],
+    [
+     271812,
+     1,
+     43,
+     false
+    ]
+   ]
+  },
+  "93606": {
+   "min": 35,
+   "rewards": [
+    [
+     271618,
+     0,
+     1,
+     false
+    ]
+   ],
+   "x": 72.6,
+   "y": 31.4,
+   "zone": "Shen'dralas"
+  },
+  "93615": {
+   "min": 54,
+   "rewards": [
+    [
+     276338,
+     0,
+     57,
+     false
+    ]
+   ],
+   "x": 31.4,
+   "y": 50,
+   "zone": "Mount Hyjal"
+  },
+  "93617": {
+   "min": 54,
+   "rewards": [
+    [
+     276339,
+     0,
+     57,
+     false
+    ]
+   ],
+   "x": 28.6,
+   "y": 43.2,
+   "zone": "Mount Hyjal"
+  },
   "93739": {
    "level": 13,
    "min": 7,
@@ -2649,12 +4505,364 @@
    ],
    "title": "Exploring the Horde"
   },
+  "93746": {
+   "min": 4,
+   "prev": 93738,
+   "rewards": [
+    [
+     263305,
+     0,
+     10,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 59,
+   "y": 79.6,
+   "zone": "Zephras Isle"
+  },
+  "93797": {
+   "classes": 128,
+   "min": 10,
+   "prev": 93791,
+   "rewards": [
+    [
+     263430,
+     0,
+     10,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 62.8,
+   "y": 77.4,
+   "zone": "Zephras Isle"
+  },
+  "93835": {
+   "min": 7,
+   "prev": 93958,
+   "rewards": [
+    [
+     263405,
+     0,
+     15,
+     false
+    ],
+    [
+     263406,
+     0,
+     15,
+     false
+    ],
+    [
+     263407,
+     0,
+     15,
+     false
+    ],
+    [
+     273875,
+     0,
+     15,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 65.2,
+   "y": 50.4,
+   "zone": "Zephras Isle"
+  },
   "93836": {
    "prev": 92646,
    "title": "The Fate of Zephras"
   },
+  "93848": {
+   "min": 54,
+   "prev": 92833,
+   "rewards": [
+    [
+     275739,
+     0,
+     61,
+     false
+    ],
+    [
+     275741,
+     0,
+     61,
+     false
+    ],
+    [
+     275737,
+     0,
+     61,
+     false
+    ]
+   ],
+   "x": 68.8,
+   "y": 50.4,
+   "zone": "Mount Hyjal"
+  },
+  "93963": {
+   "giver": "Highlord Bolvar Fordragon",
+   "min": 7,
+   "prev": 94947,
+   "rewards": [
+    [
+     286427,
+     0,
+     15,
+     false
+    ]
+   ],
+   "x": 80.1,
+   "y": 38.4,
+   "zone": "Stormwind City"
+  },
+  "93971": {
+   "min": 36,
+   "rewards": [
+    [
+     275041,
+     0,
+     0,
+     false
+    ],
+    [
+     275040,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H"
+  },
+  "94003": {
+   "classes": 1,
+   "min": 10,
+   "rewards": [
+    [
+     275290,
+     0,
+     0,
+     false
+    ]
+   ],
+   "x": 59.8,
+   "y": 72.8,
+   "zone": "Zephras Isle"
+  },
+  "94413": {
+   "min": 4,
+   "prev": 92596,
+   "rewards": [
+    [
+     263428,
+     0,
+     6,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 45,
+   "y": 46.4,
+   "zone": "Zephras Isle"
+  },
+  "94679": {
+   "min": 36,
+   "rewards": [
+    [
+     274941,
+     0,
+     40,
+     false
+    ],
+    [
+     274938,
+     0,
+     40,
+     false
+    ],
+    [
+     274939,
+     0,
+     40,
+     false
+    ],
+    [
+     274940,
+     0,
+     40,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 39.5,
+   "y": 74.6,
+   "zone": "Riverglades"
+  },
+  "94861": {
+   "min": 36,
+   "rewards": [
+    [
+     274928,
+     0,
+     39,
+     false
+    ],
+    [
+     274929,
+     0,
+     39,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 41.4,
+   "y": 64.5,
+   "zone": "Riverglades"
+  },
+  "94877": {
+   "min": 36,
+   "rewards": [
+    [
+     274919,
+     0,
+     40,
+     false
+    ],
+    [
+     274920,
+     0,
+     40,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 66.6,
+   "y": 81,
+   "zone": "Riverglades"
+  },
+  "94890": {
+   "min": 38,
+   "rewards": [
+    [
+     275049,
+     0,
+     46,
+     false
+    ],
+    [
+     275046,
+     0,
+     46,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 30.7,
+   "y": 49.1,
+   "zone": "Riverglades"
+  },
+  "94891": {
+   "min": 38,
+   "prev": 94890,
+   "rewards": [
+    [
+     275042,
+     0,
+     20,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 30.7,
+   "y": 49.1,
+   "zone": "Riverglades"
+  },
   "94907": {
    "title": "A Small Favor"
+  },
+  "94926": {
+   "min": 38,
+   "rewards": [
+    [
+     275036,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A"
+  },
+  "94927": {
+   "min": 38,
+   "rewards": [
+    [
+     275023,
+     0,
+     0,
+     false
+    ],
+    [
+     275025,
+     0,
+     0,
+     false
+    ],
+    [
+     275021,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A"
+  },
+  "94969": {
+   "min": 40,
+   "rewards": [
+    [
+     279851,
+     0,
+     0,
+     false
+    ],
+    [
+     279929,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A"
+  },
+  "94982": {
+   "min": 40,
+   "rewards": [
+    [
+     279480,
+     0,
+     0,
+     false
+    ],
+    [
+     279852,
+     0,
+     0,
+     false
+    ],
+    [
+     279853,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 66.6,
+   "y": 81,
+   "zone": "Riverglades"
   },
   "94984": {
    "level": 39,
@@ -2676,6 +4884,147 @@
    ],
    "title": "Tome of Twilight"
   },
+  "95026": {
+   "min": 54,
+   "rewards": [
+    [
+     276341,
+     0,
+     58,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 14,
+   "y": 54.8,
+   "zone": "Mount Hyjal"
+  },
+  "95027": {
+   "min": 54,
+   "rewards": [
+    [
+     275439,
+     0,
+     57,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 15.6,
+   "y": 50.2,
+   "zone": "Mount Hyjal"
+  },
+  "95056": {
+   "min": 40,
+   "rewards": [
+    [
+     279861,
+     0,
+     0,
+     false
+    ],
+    [
+     279862,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H"
+  },
+  "95064": {
+   "min": 36,
+   "rewards": [
+    [
+     274959,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 59.5,
+   "y": 63.9,
+   "zone": "Riverglades"
+  },
+  "95066": {
+   "min": 36,
+   "rewards": [
+    [
+     275052,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 59.5,
+   "y": 63.9,
+   "zone": "Riverglades"
+  },
+  "95107": {
+   "min": 54,
+   "rewards": [
+    [
+     275291,
+     0,
+     58,
+     false
+    ],
+    [
+     275293,
+     0,
+     58,
+     false
+    ],
+    [
+     275296,
+     0,
+     58,
+     false
+    ]
+   ],
+   "x": 21.4,
+   "y": 79,
+   "zone": "Mount Hyjal"
+  },
+  "95126": {
+   "classes": 2,
+   "giver": "Ott",
+   "min": 20,
+   "prev": 95125,
+   "races": 16,
+   "rewards": [
+    [
+     268484,
+     0,
+     31,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 60.4,
+   "y": 26,
+   "zone": "Hillsbrad Foothills"
+  },
+  "95140": {
+   "classes": 2,
+   "min": 20,
+   "prev": 95126,
+   "races": 16,
+   "rewards": [
+    [
+     267369,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 43.2,
+   "y": 41,
+   "zone": "Silverpine Forest"
+  },
   "95161": {
    "level": 15,
    "min": 15,
@@ -2689,6 +5038,82 @@
     ]
    ],
    "title": "Remember That I Love You"
+  },
+  "95264": {
+   "min": 48,
+   "prev": 95263,
+   "rewards": [
+    [
+     279474,
+     0,
+     0,
+     false
+    ],
+    [
+     279831,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 63.4,
+   "y": 42.4,
+   "zone": "Dustwallow Marsh"
+  },
+  "95273": {
+   "min": 54,
+   "rewards": [
+    [
+     275390,
+     0,
+     59,
+     false
+    ],
+    [
+     275434,
+     0,
+     59,
+     false
+    ]
+   ],
+   "x": 20.2,
+   "y": 78.2,
+   "zone": "Mount Hyjal"
+  },
+  "95316": {
+   "min": 54,
+   "rewards": [
+    [
+     275832,
+     0,
+     57,
+     false
+    ],
+    [
+     275833,
+     0,
+     57,
+     false
+    ]
+   ],
+   "x": 48.2,
+   "y": 85.8,
+   "zone": "Mount Hyjal"
+  },
+  "95318": {
+   "min": 54,
+   "rewards": [
+    [
+     275836,
+     0,
+     57,
+     false
+    ]
+   ],
+   "x": 49.4,
+   "y": 77.2,
+   "zone": "Mount Hyjal"
   },
   "95349": {
    "prev": 93090,
@@ -2715,8 +5140,154 @@
    ],
    "title": "Death to the Executioner"
   },
+  "95483": {
+   "min": 48,
+   "prev": 96369,
+   "rewards": [
+    [
+     279831,
+     0,
+     0,
+     false
+    ],
+    [
+     279474,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H"
+  },
   "95561": {
    "title": "Apple of My Eye"
+  },
+  "95611": {
+   "min": 54,
+   "rewards": [
+    [
+     274035,
+     0,
+     57,
+     false
+    ]
+   ],
+   "x": 73.2,
+   "y": 81.8,
+   "zone": "Mount Hyjal"
+  },
+  "95615": {
+   "min": 36,
+   "rewards": [
+    [
+     274916,
+     0,
+     38,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 61.8,
+   "y": 83.2,
+   "zone": "Riverglades"
+  },
+  "95769": {
+   "min": 54,
+   "rewards": [
+    [
+     274721,
+     0,
+     57,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 13.6,
+   "y": 53,
+   "zone": "Mount Hyjal"
+  },
+  "95790": {
+   "min": 55,
+   "rewards": [
+    [
+     279931,
+     0,
+     0,
+     false
+    ],
+    [
+     279901,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A"
+  },
+  "95798": {
+   "giver": "Loremaster Dibbs",
+   "min": 30,
+   "rewards": [
+    [
+     279878,
+     0,
+     0,
+     false
+    ],
+    [
+     279879,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 50.6,
+   "y": 57.1,
+   "zone": "Hillsbrad Foothills"
+  },
+  "95799": {
+   "giver": "Loremaster Dibbs",
+   "min": 30,
+   "rewards": [
+    [
+     279880,
+     0,
+     0,
+     false
+    ],
+    [
+     279881,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 50.6,
+   "y": 57.1,
+   "zone": "Hillsbrad Foothills"
+  },
+  "95912": {
+   "min": 38,
+   "rewards": [
+    [
+     287072,
+     0,
+     0,
+     false
+    ],
+    [
+     276102,
+     0,
+     42,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 65.9,
+   "y": 81.1,
+   "zone": "Riverglades"
   },
   "95913": {
    "level": 36,
@@ -2737,6 +5308,292 @@
     ]
    ],
    "title": "Fit for a Princess"
+  },
+  "95924": {
+   "giver": "Curator Thorius",
+   "min": 55,
+   "rewards": [
+    [
+     279903,
+     0,
+     0,
+     false
+    ],
+    [
+     279905,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 71.4,
+   "y": 16.2,
+   "zone": "Ironforge"
+  },
+  "95925": {
+   "giver": "Curator Thorius",
+   "min": 55,
+   "rewards": [
+    [
+     279908,
+     0,
+     0,
+     false
+    ],
+    [
+     279910,
+     0,
+     0,
+     false
+    ],
+    [
+     279912,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 71.4,
+   "y": 16.2,
+   "zone": "Ironforge"
+  },
+  "95926": {
+   "giver": "Master Apothecary Faranell",
+   "min": 55,
+   "rewards": [
+    [
+     279908,
+     0,
+     0,
+     false
+    ],
+    [
+     279910,
+     0,
+     0,
+     false
+    ],
+    [
+     279912,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 48.4,
+   "y": 69.4,
+   "zone": "Undercity"
+  },
+  "95928": {
+   "min": 55,
+   "rewards": [
+    [
+     279904,
+     0,
+     0,
+     false
+    ],
+    [
+     279906,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 34.8,
+   "y": 22,
+   "zone": "Mulgore"
+  },
+  "95991": {
+   "min": 38,
+   "rewards": [
+    [
+     274962,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 65.6,
+   "y": 80.8,
+   "zone": "Riverglades"
+  },
+  "96003": {
+   "min": 54,
+   "prev": 92960,
+   "rewards": [
+    [
+     275630,
+     0,
+     58,
+     false
+    ]
+   ],
+   "x": 43.8,
+   "y": 32.2,
+   "zone": "Mount Hyjal"
+  },
+  "96009": {
+   "min": 36,
+   "rewards": [
+    [
+     274957,
+     0,
+     38,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 63.4,
+   "y": 80.4,
+   "zone": "Riverglades"
+  },
+  "96015": {
+   "min": 38,
+   "rewards": [
+    [
+     275028,
+     0,
+     45,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 30.7,
+   "y": 49.1,
+   "zone": "Riverglades"
+  },
+  "96016": {
+   "classes": 64,
+   "min": 30,
+   "prev": 96135,
+   "races": 4,
+   "rewards": [
+    [
+     280696,
+     1,
+     40,
+     false
+    ],
+    [
+     280607,
+     1,
+     40,
+     false
+    ],
+    [
+     280604,
+     1,
+     40,
+     false
+    ],
+    [
+     280605,
+     1,
+     40,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 59.8,
+   "y": 27.4,
+   "zone": "Arathi Highlands"
+  },
+  "96322": {
+   "min": 54,
+   "prev": 96255,
+   "rewards": [
+    [
+     275837,
+     0,
+     58,
+     false
+    ]
+   ],
+   "x": 49.4,
+   "y": 77.2,
+   "zone": "Mount Hyjal"
+  },
+  "96332": {
+   "min": 48,
+   "rewards": [
+    [
+     279824,
+     0,
+     0,
+     false
+    ],
+    [
+     279826,
+     0,
+     0,
+     false
+    ],
+    [
+     279829,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 70.3,
+   "y": 19.1,
+   "zone": "Dustwallow Marsh"
+  },
+  "96334": {
+   "min": 48,
+   "rewards": [
+    [
+     279448,
+     0,
+     0,
+     false
+    ],
+    [
+     279473,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 70.3,
+   "y": 19.1,
+   "zone": "Dustwallow Marsh"
+  },
+  "96381": {
+   "min": 48,
+   "prev": 95198,
+   "rewards": [
+    [
+     279826,
+     0,
+     0,
+     false
+    ],
+    [
+     279829,
+     0,
+     0,
+     false
+    ],
+    [
+     279825,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 63.4,
+   "y": 42.4,
+   "zone": "Dustwallow Marsh"
   },
   "96391": {
    "giver": "Earthseer Farsen",
@@ -2771,6 +5628,862 @@
    ],
    "title": "Old Ironforge Incursion"
   },
+  "96558": {
+   "min": 56,
+   "prev": 93567,
+   "rewards": [
+    [
+     274383,
+     0,
+     58,
+     false
+    ]
+   ],
+   "x": 27.6,
+   "y": 50.8,
+   "zone": "Mount Hyjal"
+  },
+  "96609": {
+   "min": 44,
+   "rewards": [
+    [
+     276903,
+     1,
+     52,
+     false
+    ],
+    [
+     276904,
+     1,
+     52,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 18.4,
+   "y": 65.8,
+   "zone": "Alterac Mountains"
+  },
+  "96674": {
+   "min": 54,
+   "rewards": [
+    [
+     275827,
+     0,
+     56,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 15.8,
+   "y": 52.6,
+   "zone": "Mount Hyjal"
+  },
+  "96676": {
+   "giver": "Master Mathias Shaw",
+   "min": 54,
+   "prev": 96529,
+   "rewards": [
+    [
+     275671,
+     0,
+     59,
+     false
+    ],
+    [
+     275669,
+     0,
+     59,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 75.8,
+   "y": 59.8,
+   "zone": "Stormwind City"
+  },
+  "96812": {
+   "min": 45,
+   "prev": 96799,
+   "rewards": [
+    [
+     276901,
+     1,
+     54,
+     false
+    ],
+    [
+     276902,
+     1,
+     54,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 65.2,
+   "y": 15.4,
+   "zone": "Blasted Lands"
+  },
+  "96983": {
+   "min": 56,
+   "prev": 96959,
+   "rewards": [
+    [
+     276335,
+     0,
+     60,
+     false
+    ],
+    [
+     276336,
+     0,
+     60,
+     false
+    ]
+   ],
+   "x": 49.3,
+   "y": 32.6,
+   "zone": "Mount Hyjal"
+  },
+  "96999": {
+   "min": 54,
+   "prev": 96998,
+   "rewards": [
+    [
+     277215,
+     0,
+     58,
+     false
+    ],
+    [
+     277222,
+     0,
+     58,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 14,
+   "y": 54.8,
+   "zone": "Mount Hyjal"
+  },
+  "97007": {
+   "giver": "Royal Overseer Bauhaus",
+   "min": 54,
+   "rewards": [
+    [
+     276332,
+     0,
+     57,
+     false
+    ],
+    [
+     276334,
+     0,
+     57,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 69.4,
+   "y": 43.4,
+   "zone": "Undercity"
+  },
+  "97029": {
+   "rewards": [
+    [
+     276188,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 65.8,
+   "y": 74.4,
+   "zone": "Zephras Isle"
+  },
+  "97049": {
+   "giver": "Chemist Fuely",
+   "min": 55,
+   "rewards": [
+    [
+     279932,
+     0,
+     0,
+     false
+    ],
+    [
+     279902,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 47.6,
+   "y": 73,
+   "zone": "Undercity"
+  },
+  "97169": {
+   "classes": 64,
+   "min": 58,
+   "prev": 97168,
+   "races": 4,
+   "rewards": [
+    [
+     20133,
+     0,
+     0,
+     false
+    ],
+    [
+     20134,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 47.4,
+   "y": 13.4,
+   "zone": "Ironforge"
+  },
+  "97378": {
+   "giver": "Melor Stonehoof",
+   "min": 45,
+   "rewards": [
+    [
+     281275,
+     0,
+     50,
+     false
+    ],
+    [
+     281276,
+     0,
+     50,
+     false
+    ],
+    [
+     281277,
+     0,
+     50,
+     false
+    ],
+    [
+     281278,
+     0,
+     50,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 61.4,
+   "y": 80.6,
+   "zone": "Thunder Bluff"
+  },
+  "97404": {
+   "giver": "Sar Browneye",
+   "min": 55,
+   "rewards": [
+    [
+     281539,
+     0,
+     59,
+     false
+    ],
+    [
+     281538,
+     0,
+     59,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 58.2,
+   "y": 12.8,
+   "zone": "Winterspring"
+  },
+  "97405": {
+   "giver": "Knaz Blunderflame",
+   "min": 38,
+   "rewards": [
+    [
+     277979,
+     1,
+     44,
+     false
+    ],
+    [
+     277980,
+     1,
+     44,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 51,
+   "y": 35.2,
+   "zone": "Stranglethorn Vale"
+  },
+  "97411": {
+   "min": 58,
+   "rewards": [
+    [
+     226985,
+     0,
+     0,
+     false
+    ],
+    [
+     226977,
+     0,
+     0,
+     false
+    ],
+    [
+     226970,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 35,
+   "y": 38,
+   "zone": "Orgrimmar"
+  },
+  "97412": {
+   "min": 58,
+   "rewards": [
+    [
+     226982,
+     0,
+     0,
+     false
+    ],
+    [
+     226978,
+     0,
+     0,
+     false
+    ],
+    [
+     226975,
+     0,
+     0,
+     false
+    ],
+    [
+     226971,
+     0,
+     0,
+     false
+    ],
+    [
+     226990,
+     0,
+     0,
+     false
+    ],
+    [
+     226986,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 35,
+   "y": 38,
+   "zone": "Orgrimmar"
+  },
+  "97413": {
+   "min": 58,
+   "rewards": [
+    [
+     226983,
+     0,
+     0,
+     false
+    ],
+    [
+     226980,
+     0,
+     0,
+     false
+    ],
+    [
+     226979,
+     0,
+     0,
+     false
+    ],
+    [
+     226974,
+     0,
+     0,
+     false
+    ],
+    [
+     226972,
+     0,
+     0,
+     false
+    ],
+    [
+     226969,
+     0,
+     0,
+     false
+    ],
+    [
+     226991,
+     0,
+     0,
+     false
+    ],
+    [
+     226988,
+     0,
+     0,
+     false
+    ],
+    [
+     226987,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 35,
+   "y": 38,
+   "zone": "Orgrimmar"
+  },
+  "97414": {
+   "min": 58,
+   "rewards": [
+    [
+     226981,
+     0,
+     0,
+     false
+    ],
+    [
+     226984,
+     0,
+     0,
+     false
+    ],
+    [
+     226976,
+     0,
+     0,
+     false
+    ],
+    [
+     226973,
+     0,
+     0,
+     false
+    ],
+    [
+     226989,
+     0,
+     0,
+     false
+    ],
+    [
+     226992,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 35,
+   "y": 38,
+   "zone": "Orgrimmar"
+  },
+  "97447": {
+   "min": 58,
+   "rewards": [
+    [
+     227001,
+     0,
+     0,
+     false
+    ],
+    [
+     227009,
+     0,
+     0,
+     false
+    ],
+    [
+     227017,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 42.4,
+   "y": 52.2,
+   "zone": "Ironforge"
+  },
+  "97448": {
+   "min": 58,
+   "rewards": [
+    [
+     227014,
+     0,
+     0,
+     false
+    ],
+    [
+     227010,
+     0,
+     0,
+     false
+    ],
+    [
+     227006,
+     0,
+     0,
+     false
+    ],
+    [
+     227008,
+     0,
+     0,
+     false
+    ],
+    [
+     227022,
+     0,
+     0,
+     false
+    ],
+    [
+     227018,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 42.4,
+   "y": 52.2,
+   "zone": "Ironforge"
+  },
+  "97449": {
+   "min": 58,
+   "rewards": [
+    [
+     227015,
+     0,
+     0,
+     false
+    ],
+    [
+     227012,
+     0,
+     0,
+     false
+    ],
+    [
+     227011,
+     0,
+     0,
+     false
+    ],
+    [
+     227007,
+     0,
+     0,
+     false
+    ],
+    [
+     227005,
+     0,
+     0,
+     false
+    ],
+    [
+     227003,
+     0,
+     0,
+     false
+    ],
+    [
+     227023,
+     0,
+     0,
+     false
+    ],
+    [
+     227020,
+     0,
+     0,
+     false
+    ],
+    [
+     227019,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 42.4,
+   "y": 52.2,
+   "zone": "Ironforge"
+  },
+  "97450": {
+   "min": 58,
+   "rewards": [
+    [
+     227013,
+     0,
+     0,
+     false
+    ],
+    [
+     227016,
+     0,
+     0,
+     false
+    ],
+    [
+     227002,
+     0,
+     0,
+     false
+    ],
+    [
+     227004,
+     0,
+     0,
+     false
+    ],
+    [
+     227021,
+     0,
+     0,
+     false
+    ],
+    [
+     227024,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 42.4,
+   "y": 52.2,
+   "zone": "Ironforge"
+  },
+  "97490": {
+   "giver": "Umaron Stragarelm",
+   "min": 56,
+   "rewards": [
+    [
+     281279,
+     0,
+     60,
+     false
+    ],
+    [
+     281280,
+     0,
+     60,
+     false
+    ]
+   ],
+   "x": 61.8,
+   "y": 38.2,
+   "zone": "Winterspring"
+  },
+  "98028": {
+   "min": 17,
+   "rewards": [
+    [
+     281291,
+     0,
+     21,
+     false
+    ],
+    [
+     281292,
+     0,
+     21,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 59.01,
+   "y": 22.91,
+   "zone": "Darkshore"
+  },
+  "98156": {
+   "giver": "Kristy Grant",
+   "min": 27,
+   "prev": 98155,
+   "rewards": [
+    [
+     281295,
+     0,
+     29,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 89.4,
+   "y": 46.2,
+   "zone": "Feralas"
+  },
+  "98203": {
+   "min": 45,
+   "rewards": [
+    [
+     281298,
+     0,
+     49,
+     false
+    ],
+    [
+     281299,
+     0,
+     49,
+     false
+    ],
+    [
+     281301,
+     0,
+     49,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 77.8,
+   "y": 78,
+   "zone": "The Hinterlands"
+  },
+  "98205": {
+   "min": 39,
+   "rewards": [
+    [
+     281303,
+     0,
+     44,
+     false
+    ]
+   ],
+   "x": 41,
+   "y": 75.8,
+   "zone": "Dustwallow Marsh"
+  },
+  "98223": {
+   "min": 23,
+   "rewards": [
+    [
+     281306,
+     0,
+     31,
+     false
+    ],
+    [
+     281307,
+     0,
+     31,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 53.5,
+   "y": 54.5,
+   "zone": "Wetlands"
+  },
+  "98233": {
+   "min": 36,
+   "rewards": [
+    [
+     281308,
+     0,
+     42,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 65.6,
+   "y": 45.4,
+   "zone": "Dustwallow Marsh"
+  },
+  "98297": {
+   "min": 24,
+   "prev": 98291,
+   "rewards": [
+    [
+     281312,
+     0,
+     32,
+     false
+    ],
+    [
+     281313,
+     0,
+     32,
+     false
+    ],
+    [
+     281314,
+     0,
+     32,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 49.3,
+   "y": 42.1,
+   "zone": "Wetlands"
+  },
+  "98310": {
+   "giver": "Prospector Whelgar",
+   "min": 24,
+   "prev": 98216,
+   "rewards": [
+    [
+     281319,
+     0,
+     32,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 38.8,
+   "y": 52.2,
+   "zone": "Wetlands"
+  },
+  "98326": {
+   "giver": "Gretta Ganter",
+   "min": 5,
+   "rewards": [
+    [
+     281322,
+     0,
+     9,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 31.5,
+   "y": 44.6,
+   "zone": "Dun Morogh"
+  },
   "98403": {
    "level": 1,
    "min": 1,
@@ -2784,6 +6497,56 @@
     ]
    ],
    "title": "Twisted Hatred"
+  },
+  "99053": {
+   "min": 4,
+   "rewards": [
+    [
+     286735,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 44.6,
+   "y": 58.9,
+   "zone": "Teldrassil"
+  },
+  "99130": {
+   "giver": "Remy \"Two Times\"",
+   "min": 4,
+   "prev": 99129,
+   "rewards": [
+    [
+     286733,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "A",
+   "x": 42.2,
+   "y": 67.2,
+   "zone": "Elwynn Forest"
+  },
+  "99187": {
+   "classes": 2,
+   "min": 50,
+   "prev": 93030,
+   "races": 16,
+   "rewards": [
+    [
+     286408,
+     0,
+     0,
+     false
+    ]
+   ],
+   "side": "H",
+   "x": 17.6,
+   "y": 67.4,
+   "zone": "Tirisfal Glades"
   }
  }
 }

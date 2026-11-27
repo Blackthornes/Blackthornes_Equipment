@@ -60,9 +60,9 @@ def classic(lua):
 def clean(raw):
     """One quest record, checked field by field; None when it is unusable."""
     try:
-        if not raw["title"]:
-            return None
-        rec = {"title": str(raw["title"])}
+        rec = {}
+        if raw["title"]:
+            rec["title"] = str(raw["title"])
         for key in ("level", "min"):
             if raw[key] is not None:
                 rec[key] = int(raw[key])
@@ -77,6 +77,9 @@ def clean(raw):
             rec["side"] = str(raw["side"])
         if raw["prev"] is not None and int(raw["prev"]) > 0:
             rec["prev"] = int(raw["prev"])
+        for key in ("classes", "races"):
+            if raw[key] is not None and int(raw[key]) > 0:
+                rec[key] = int(raw[key])
         rewards = []
         for i in sorted((raw["rewards"] or {}).keys()):
             r = raw["rewards"][i]
@@ -93,6 +96,10 @@ def clean(raw):
         for key in ("money", "xp"):
             if raw[key] is not None and int(raw[key]) > 0:
                 rec[key] = int(raw[key])
+        # A quest with no title is kept only for its gear or the quest
+        # before it; the game names it as it loads (Logic/QuestLearn.lua).
+        if "title" not in rec and not rewards and "prev" not in rec:
+            return None
         return rec
     except (TypeError, ValueError, KeyError):
         return None
@@ -146,7 +153,7 @@ def shipped(lua):
 def merge(old, new):
     """Add a newer reading of a quest to an older one."""
     rec = dict(old)
-    for key in ("title", "level", "giver", "zone", "x", "y", "prev"):
+    for key in ("title", "level", "giver", "zone", "x", "y", "prev", "classes", "races"):
         if key in new and (key not in rec or key == "level"):
             rec[key] = new[key]
     if "min" in new:
@@ -188,7 +195,7 @@ def facts():
             continue
         row = {key: rec.get(key) for key in (
             "title", "level", "min", "giver", "zone", "x", "y", "side", "prev",
-            "money", "xp")}
+            "classes", "races", "money", "xp")}
         row["rewards"] = {i + 1: {j + 1: v for j, v in enumerate(r)}
                           for i, r in enumerate(rec.get("rewards") or [])
                           if isinstance(r, list) and len(r) == 4}
@@ -265,7 +272,9 @@ def render(records):
         "-- given }, ... }, money, xp }, as Logic/QuestLearn.lua keeps them. side",
         "-- is \"A\", \"H\" or \"AH\", the sides it was offered to. items, money and",
         "-- xp are the rewards that are not gear, for quests the Classic data lacks.",
-        "-- prev is the quest to do before this one.",
+        "-- prev is the quest to do before this one. classes and races, when",
+        "-- given, are the game's class and race bits of who may take it. A quest",
+        "-- with no title is named by the game as it loads.",
         "",
         "local _, ns = ...",
         "",
@@ -273,7 +282,7 @@ def render(records):
     ]
     for quest_id in sorted(records):
         rec = records[quest_id]
-        parts = [f"title = {lua_string(rec['title'])}"]
+        parts = [f"title = {lua_string(rec['title'])}"] if "title" in rec else []
         for key in ("level", "min"):
             if key in rec:
                 parts.append(f"{key} = {rec[key]}")
@@ -287,6 +296,9 @@ def render(records):
             parts.append(f"side = {lua_string(rec['side'])}")
         if "prev" in rec:
             parts.append(f"prev = {rec['prev']}")
+        for key in ("classes", "races"):
+            if key in rec:
+                parts.append(f"{key} = {rec[key]}")
         rewards = ", ".join(
             "{ %d, %d, %d, %s }" % (i, req, ilvl, "true" if given else "false")
             for i, req, ilvl, given in rec["rewards"]

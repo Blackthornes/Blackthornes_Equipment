@@ -346,6 +346,9 @@ function DQ:TitleOf(quest)
     local title = Plain(Read(log and log.GetTitleForQuestID, id))
     if title then
         self.titles[id] = title
+        if ns.QuestLearn and ns.QuestLearn.NameFromGame then
+            pcall(ns.QuestLearn.NameFromGame, id, title)
+        end
         return title
     end
     if not self.asked[id] and log and type(log.RequestLoadQuestByID) == "function" then

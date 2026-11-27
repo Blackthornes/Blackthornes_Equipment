@@ -135,26 +135,53 @@ function QuestLearn.SideOf(questID, rec)
     return type(rec.zone) == "string" and QuestLearn.HOME_SIDES[rec.zone] or nil
 end
 
+--- The game's own title for a quest, or nil while it has not loaded one.
+function QuestLearn.GameTitle(questID)
+    local log = _G.C_QuestLog
+    return Plain(Read(log and log.GetTitleForQuestID, questID))
+end
+
+--- A quest the data names no title for gets the game's, once the game has
+--- it (Logic/DungeonQuests.lua asks as the quest is shown).
+function QuestLearn.NameFromGame(questID, title)
+    local S = ns.Sources
+    local row = type(S) == "table" and type(S.QUESTS) == "table" and S.QUESTS[questID]
+    if type(row) ~= "table" or not row.fromGame or row[1] ~= "" then return false end
+    if type(title) ~= "string" or title == "" then return false end
+    row[1] = title
+    return true
+end
+
 --- Lay one quest record over the data. Returns true when it added anything.
+--- A shipped record may have no title: the game names it as it loads.
 function QuestLearn:Lay(questID, rec)
     local S = ns.Sources
     if type(S) ~= "table" or type(S.QUESTS) ~= "table" or type(S.ITEMS) ~= "table" then return false end
-    if type(questID) ~= "number" or type(rec) ~= "table" or type(rec.title) ~= "string" then return false end
+    if type(questID) ~= "number" or type(rec) ~= "table" then return false end
+    if rec.title ~= nil and type(rec.title) ~= "string" then return false end
     local added = false
 
     if not S.QUESTS[questID] then
         local level = tonumber(rec.level) or tonumber(rec.min) or 1
         local min = tonumber(rec.min) or level
+        local title = rec.title or QuestLearn.GameTitle(questID)
         S.QUESTS[questID] = {
-            rec.title, min, level, 0, 0, type(rec.giver) == "string" and rec.giver or "",
+            title or "", min, level, 0, tonumber(rec.classes) or 0,
+            type(rec.giver) == "string" and rec.giver or "",
             ZoneID(rec.zone), tonumber(rec.x) or 0, tonumber(rec.y) or 0, "",
-            learned = true,
+            learned = true, fromGame = (not title) or nil,
         }
         added = true
     end
-    -- A learned quest is kept to the side that was offered it.
+    -- A learned quest is kept to the side that was offered it, or to the
+    -- races the record names.
     local row = S.QUESTS[questID]
-    local side = row.learned and QuestLearn.SideOf(questID, rec)
+    if rec.title and rec.title ~= "" and QuestLearn.NameFromGame(questID, rec.title) then added = true end
+    local races = row.learned and tonumber(rec.races)
+    if races and races > 0 then
+        if row[4] ~= races then row[4] = races; added = true end
+    end
+    local side = row.learned and not races and QuestLearn.SideOf(questID, rec)
     if side then
         local races = SideRaces(side)
         if row[4] ~= races then row[4] = races; added = true end

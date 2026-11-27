@@ -192,4 +192,28 @@ suite.check("a Classic quest takes the quest before it from Forever", S.QUESTS[9
 Learn:Lay(90061, { title = "Classic Second", prev = 90059, rewards = {} })
 suite.check("but a quest before it that Classic names stays", S.QUESTS[90061].p == 90062)
 
+-- A shipped quest the data has no title for is named by the game
+local gameTitles = {}
+_G.C_QuestLog.GetTitleForQuestID = function(id) return gameTitles[id] end
+Learn:Lay(90070, { min = 47, zone = "Azshara", x = 41.4, y = 20, rewards = { { 2070, 0, 0, false } } })
+suite.check("a quest with no title is still laid, with its gear",
+    S.QUESTS[90070] and S.QUESTS[90070][1] == "" and S.ITEMS[2070] and S.ITEMS[2070].q[1] == 90070)
+suite.check("a title that is not text turns the record away", Learn:Lay(90071, { title = 5, rewards = {} }) == false)
+gameTitles[90070] = "Named Later"
+suite.check("the game's title fills it once the game has it",
+    ns.DungeonQuests:TitleOf({ questID = 90070, title = "" }) == "Named Later" and S.QUESTS[90070][1] == "Named Later")
+suite.check("and the game's title never replaces a title the data has",
+    Learn.NameFromGame(90050, "Other") == false and S.QUESTS[90050][1] == "Second Step")
+gameTitles[90072] = "Known Now"
+Learn:Lay(90072, { min = 10, rewards = {} , prev = 90070 })
+suite.check("a title the game already has is used at once", S.QUESTS[90072][1] == "Known Now")
+Learn:Lay(90073, { min = 10, prev = 90070, rewards = {} })
+Learn:Lay(90073, { title = "Seen In Game", rewards = {} })
+suite.check("a quest seen in game names a quest shipped without a title", S.QUESTS[90073][1] == "Seen In Game")
+
+-- Class and race quests stay with their classes and races
+Learn:Lay(90080, { title = "Paladin Test", min = 20, classes = 2, races = 5, side = "A", rewards = {} })
+suite.check("a class quest keeps its classes", S.QUESTS[90080][5] == 2)
+suite.check("and the races it names win over its side", S.QUESTS[90080][4] == 5)
+
 suite.done()
