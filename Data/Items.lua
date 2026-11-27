@@ -374,6 +374,12 @@ function Items:Equipped(slot)
     if as then
         local stand = as[slot]
         if stand ~= nil then return stand or nil end
+    else
+        -- With the Off Spec's gear on: the Main Spec's own piece
+        -- (Logic/OffSpec.lua, OffSpec:MainStandIns).
+        local standIns = Items.mainStandIns and Items.mainStandIns()
+        local stand = standIns and standIns[slot]
+        if stand ~= nil then return stand or nil end
     end
     local link = self:WornNow(slot)
     if slot ~= MAIN_HAND and slot ~= OFF_HAND then return link end

@@ -3303,8 +3303,7 @@ lists show upgrades for both.
   pair, two-handers left out for a shield tank). So Off Spec gains are
   measured against that, and a piece carried is never offered again.
   `Weights:MainSpec` is the Main Spec whatever is judged. `Leave` puts all
-  back. `Run`/`RunReal` wrap one call (RunReal keeps the real gear, for a
-  carried outfit piece's gain over what is worn). The worker calls
+  back. `Run` wraps one call. The worker calls
   `OffSpec:Settle` after every slice, so an error mid-scan leaves nothing
   entered.
 - **The finder**: `Finder:SwapJudging` swaps the kept verdicts and what
@@ -3345,6 +3344,24 @@ lists show upgrades for both.
     piece and not put on. Before, the next look dropped it with "you're
     already wearing something as good", since the Main Spec had no use for
     it. A quest the upgrade quest picks by itself is still the Main Spec's.
+- **Fixed 2026-11-27** (a Discord report on 2.0.2: "+186%" on Resto
+  shoulders in the bags over the Enhancement ones worn, and nine Main Spec
+  upgrades in the bags with the Off Spec's gear on):
+  - A carried outfit piece is judged against the outfit like anything
+    else, so the Off Spec's set in the bags shows no blue arrow and no
+    tooltip line (`RunReal` is gone). The mockup said so too: "a shield
+    you already carry is not shown again".
+  - With the Off Spec's gear on, the Main Spec is judged against its own
+    gear: `OffSpec:MainStandIns` gives, for each slot where an outfit piece
+    is worn and the Main Spec wants another, the piece Switch Gear noted
+    in `swapBack` (while carried), else the Main Spec outfit's.
+    `Items:Equipped` answers with it when `Items.wornAs` is not set, like
+    the weapons under a fishing pole, and `OutfitHit` counts its hit. The
+    finder sees it through `LookAtWorn`. Outfits and stand-ins are made
+    with `making` set, so they read the gear really worn. Without a note,
+    a better Main Spec piece that lands in the bags joins the Main Spec
+    outfit and shows no arrow until the Main Spec's gear is back on.
+  - Tested in `tools/test_offspecworn.lua`.
 - Tested in `tools/test_offspec.lua` and `tools/test_ratingsandcap.lua`.
   Not yet seen in game.
 
