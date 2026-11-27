@@ -23,6 +23,13 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 2.2.1
+
+Fixes and changes:
+- With your Off Spec gear on, My Gear and Ready Now follow the Off Spec.
+- Ready Now no longer tells you to swap a ring that both specs share.
+- Upgrades Only no longer sits on top of Find on the Dungeons tab.
+
 ## 2.2.0
 
 - My Gear shows your backup weapon set in a strip under the figure or the list. It is off unless ticked.
