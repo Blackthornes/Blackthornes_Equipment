@@ -229,6 +229,45 @@ suite.check("unticked, it clears the saved choice", ns.db.dungeonQuestsHideDone 
     and LineRow("Serpentbloom") ~= nil)
 suite.check("the boxes started no scan and judged nothing", scans == 0 and judges == 0, scans .. " " .. judges)
 
+-- The bar never lays one piece on another (a player's report, 2026-11-27:
+-- Upgrades Only sat on the Find box, so it could not be ticked). Each
+-- piece's span on its row, from where it is anchored and how wide it is.
+local function Spans()
+    local spans = {}
+    for _, group in ipairs(Tab.barGroups) do
+        local first = group.lead or group.item
+        local _, _, _, x = first:GetPoint()
+        spans[#spans + 1] = { x = x, y = group.row, right = x + group.width }
+    end
+    return spans
+end
+local function Overlaps(spans)
+    for i = 1, #spans do
+        for j = i + 1, #spans do
+            local a, b = spans[i], spans[j]
+            if a.y == b.y and a.x < b.right and b.x < a.right then return i .. " and " .. j end
+        end
+    end
+    return nil
+end
+local function Resize(width)
+    Tab.page._width = width
+    Tab.page:GetScript("OnSizeChanged")(Tab.page)
+end
+Resize(1040)
+local spans = Spans()
+suite.check("on a wide window nothing in the bar overlaps", Overlaps(spans) == nil, tostring(Overlaps(spans)))
+suite.check("Upgrades Only sits right of the Find box", spans[4].x >= spans[3].right, spans[4].x .. " " .. spans[3].right)
+suite.check("and it is all one row", Tab.barRows == 1 and Tab.bodyTop == 52, Tab.barRows .. " " .. Tab.bodyTop)
+Resize(560)
+spans = Spans()
+suite.check("on a narrow window the bar wraps, nothing overlaps", Overlaps(spans) == nil and Tab.barRows > 1,
+    tostring(Overlaps(spans)) .. " " .. Tab.barRows)
+suite.check("every piece stays inside the window", spans[5].right <= 560 - 18 and spans[4].right <= 560 - 18)
+suite.check("and the lists move down under it", Tab.bodyTop > 52, Tab.bodyTop)
+Resize(1040)
+suite.check("wide again, one row and the lists move back", Tab.barRows == 1 and Tab.bodyTop == 52)
+
 --------------------------------------------------------------------------------
 -- 5. Sorting, and picking another
 --------------------------------------------------------------------------------

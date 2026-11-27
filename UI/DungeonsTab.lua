@@ -57,6 +57,7 @@ local DROPS_WIDTH = 50
 local SLOT_WIDTH = 120
 local GAP = 8
 local FIND_WIDTH = 150
+local BAR_ROW = 28
 
 local BOSS_ICON = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01"
 local DONE_ICON = [[Interface\RaidFrame\ReadyCheck-Ready]]
@@ -479,13 +480,11 @@ end
 function Dungeons:BuildBar(page)
     local FinderUI = ns.FinderUI
     local judge = Theme.CreateLabel(page, "small", "muted")
-    judge:SetPoint("TOPLEFT", PAD, -14)
     judge:SetText(L["Main Spec:"])
     local spec = FinderUI.MainSpecChoice(page, 150)
     spec:SetPoint("LEFT", judge, "RIGHT", 8, 0)
     self.specChoice = spec
     local offLabel = Theme.CreateLabel(page, "small", "muted")
-    offLabel:SetPoint("LEFT", spec, "RIGHT", 16, 0)
     offLabel:SetText(L["Off Spec:"])
     local off = FinderUI.OffSpecChoice(page, 120)
     off:SetPoint("LEFT", offLabel, "RIGHT", 8, 0)
@@ -494,7 +493,6 @@ function Dungeons:BuildBar(page)
     local hide = Widgets.CreateCheckbox(page, L["Hide Finished Quests"], function(checked)
         ns.DungeonQuests:SetHideDone(checked)
     end, ns.DungeonQuests.HideDone())
-    hide:SetPoint("TOPRIGHT", -PAD - Theme.TextWidth("small", L["Hide Finished Quests"]) - 8, -12)
     self.hideBox = hide
 
     local only = Widgets.CreateCheckbox(page, L["Upgrades Only"], function(checked)
@@ -502,14 +500,12 @@ function Dungeons:BuildBar(page)
         Dungeons.offset = 0
         Dungeons:Draw()
     end, false)
-    only:SetPoint("RIGHT", hide, "LEFT", -Theme.TextWidth("small", L["Upgrades Only"]) - 30, 0)
     Tip(only, L["Upgrades Only"], L["Shows only the drops that are better than what you wear."])
     self.onlyBox = only
 
     -- Find: narrows the dungeon picked to the drops and quests that
     -- match, as you type.
     local findLabel = Theme.CreateLabel(page, "small", "muted")
-    findLabel:SetPoint("LEFT", off, "RIGHT", 16, 0)
     findLabel:SetText(L["Find:"])
     local box = Widgets.CreateSearchBox(page, L["Item or place"], function(text)
         local find = type(text) == "string" and text:lower():gsub("^%s+", ""):gsub("%s+$", "") or nil
@@ -521,10 +517,62 @@ function Dungeons:BuildBar(page)
     box:SetPoint("LEFT", findLabel, "RIGHT", 8, 0)
     self.findBox = box
 
-    local rule = Theme.CreateDivider(page, "border")
-    rule:SetPoint("TOPLEFT", PAD, -44)
-    rule:SetPoint("TOPRIGHT", -PAD, -44)
-    return 52
+    self.rule = Theme.CreateDivider(page, "border")
+    -- Each piece of the bar, with the labels that lead it, laid out by
+    -- PlaceBar so nothing sits on top of another in any language.
+    self.barGroups = {
+        { lead = judge, text = L["Main Spec:"], item = spec },
+        { lead = offLabel, text = L["Off Spec:"], item = off },
+        { lead = findLabel, text = L["Find:"], item = box },
+        { item = only },
+        { item = hide, right = true },
+    }
+    return self:PlaceBar()
+end
+
+local function Width(frame, fallback)
+    local ok, width = pcall(frame.GetWidth, frame)
+    if ok and type(width) == "number" and width > 0 then return width end
+    return fallback
+end
+
+--- Lays the bar out left to right, the next piece on a new row when it
+--- would not fit, Hide Finished Quests at the right of its row. Returns
+--- how far down the lists start.
+function Dungeons:PlaceBar()
+    local page, groups = self.page, self.barGroups
+    if not (page and groups) then return BAR_ROW + 24 end
+    local room = Width(page, WIDTH) - PAD * 2
+    local x, row = 0, 0
+    for _, group in ipairs(groups) do
+        local lead = group.lead and (Theme.TextWidth("small", group.text) + 8) or 0
+        local width = lead + Width(group.item, 120)
+        -- A box's words can measure short before the font loads.
+        local label = rawget(group.item, "label")
+        local ok, words = pcall(function() return label:GetText() end)
+        if ok and type(words) == "string" then
+            width = math.max(width, Theme.TextWidth("small", words) + 24)
+        end
+        if x > 0 and x + width > room then x, row = 0, row + 1 end
+        local left = x
+        if group.right then left = math.max(x, room - width) end
+        local y = -14 - row * BAR_ROW
+        local first = group.lead or group.item
+        first:ClearAllPoints()
+        first:SetPoint("TOPLEFT", page, "TOPLEFT", PAD + left, group.lead and y or y + 2)
+        if group.lead then
+            group.item:ClearAllPoints()
+            group.item:SetPoint("LEFT", group.lead, "RIGHT", 8, 0)
+        end
+        group.left, group.row, group.width = left, row, width
+        x = left + width + 16
+    end
+    local below = 44 + row * BAR_ROW
+    self.rule:ClearAllPoints()
+    self.rule:SetPoint("TOPLEFT", PAD, -below)
+    self.rule:SetPoint("TOPRIGHT", -PAD, -below)
+    self.barRows = row + 1
+    return below + 8
 end
 
 function Dungeons:SyncSpec()
@@ -765,6 +813,17 @@ function Dungeons:Build(area)
     body:SetPoint("TOPLEFT", PAD, -top)
     body:SetPoint("BOTTOMRIGHT", -PAD, 12)
     self.body, self.bodyTop = body, top
+    -- A narrower window or longer words: the bar wraps, and the lists
+    -- move down under it.
+    page:SetScript("OnSizeChanged", function()
+        local now = Dungeons:PlaceBar()
+        if now == Dungeons.bodyTop then return end
+        Dungeons.bodyTop = now
+        body:ClearAllPoints()
+        body:SetPoint("TOPLEFT", PAD, -now)
+        body:SetPoint("BOTTOMRIGHT", -PAD, 12)
+        if page:IsShown() then Dungeons:Draw() end
+    end)
     local left = math.floor((WIDTH - PAD * 2) * LEFT_SHARE)
     self:BuildLeft(body, left)
     self:BuildRight(body, left)
