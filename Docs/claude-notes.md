@@ -92,6 +92,10 @@ otherwise a table:
   dual wield ever); never for mail or plate learned later, Best Armor
   Only or a hidden untrained weapon. Butler sells soulbound green gear
   on it (2026-11-10, a player's report). Tested in `tools/test_butler.lua`.
+- `backup`: true for a piece of the backup weapon set (`Backup:InSet`,
+  the owner, 2026-11-27: Butler said Disenchant for his backup off hand).
+  Butler keeps it: never sell, auction, disenchant or mail, and `alt` is
+  never set with it. Also `sell` is false.
 - `tool`: true for gathering and profession tools (`BagIcons.IsTool`,
   `BagIcons.TOOLS`) and fishing poles; a tool is never `sell`.
   Gear that is a tool only by its tooltip counts while this class
@@ -3745,3 +3749,17 @@ beats their staff. `Logic/BackupWeapons.lua` (a new file, full restart).
   wins for now. The pair stays in your bags." Tested in
   `tools/test_backupdual.lua`. Not yet seen in game; half is classic's rule,
   not yet checked on Forever.
+- **Shown on My Gear and marked in the bags** (the owner said build it from
+  `equipment-backup-set-shown`, 2026-11-27; his tap covers the mockup's
+  words). With "Backup Weapon Set:" ticked: a strip under the figure or the
+  list whatever slot is picked (`MyGear:BuildStrip`, `PaintStrip`,
+  `StripTop`; hidden on the road or with no room under the figure), "Backup
+  Set:", "Your two-hander wins for now." or "Beats your two-hander by %s"
+  (pair words when a pair is worn), both scores or Put Them On, the pieces
+  with where they are; a click picks the main hand. With nothing to switch
+  to, `Backup:Missing` gives "You carry no main hand and off hand to switch
+  to yet." The game's bag squares of the pieces wear blue crossed swords
+  (`BagIcons:Swords`, `BagIcons.IsBackup`) when no arrow or coin shows.
+  Butler hears `backup = true` (see "What Butler calls here") and keeps
+  them, with its own swords mark. Tested in `tools/test_backupshown.lua`.
+  Not yet seen in game.
