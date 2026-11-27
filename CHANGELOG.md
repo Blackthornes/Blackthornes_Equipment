@@ -4,6 +4,14 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 2.1.1
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Fix.** A worn pair of one-handers counts the off hand at half damage when it is weighed against a two-hander.
+- **Fix.** Hunters and warriors always keep their best pair of one-handers for the backup set.
+- **Fix.** The tooltip says "Kept for your backup set." on a piece held for that set.
+
 ## 2.1.0
 
 For WoW: Forever (interface 16001). A full restart is needed after updating.

@@ -23,6 +23,11 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 2.1.1
+
+- Off hand damage counts at half when a pair of one-handers is weighed against a two-hander.
+- Hunters and warriors always keep their best pair of one-handers for the backup set.
+
 ## 2.1.0
 
 - Backup Weapon Set shows the best one-hander and off hand beside a worn two-hander.

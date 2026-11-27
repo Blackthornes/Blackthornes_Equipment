@@ -5,6 +5,10 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "2.1.1", lines = {
+        "Off hand damage counts at half when a pair of one-handers is weighed against a two-hander.",
+        "Hunters and warriors always keep their best pair of one-handers for the backup set.",
+    } },
     { version = "2.1.0", lines = {
         "Backup Weapon Set shows the best one-hander and off hand beside a worn two-hander.",
         "Show My Character puts your character in My Gear and lets you try an upgrade on.",
@@ -18,8 +22,5 @@ ns.WHATS_NEW = {
         "Find Upgrades has a column for each spec, and you can show both or just one.",
         "My Gear marks a slot blue when only your Off Spec has something to get.",
         "Tooltips and arrows show your Off Spec gains in blue.",
-    } },
-    { version = "1.23.0", lines = {
-        "The Upgrade Quest for Warsong Boots lists the Deadly Blunderbuss that Pixel asks for.",
     } },
 }
