@@ -23,6 +23,23 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 2.1.0
+
+- Backup Weapon Set shows the best one-hander and off hand beside a worn two-hander.
+- Show My Character puts your character in My Gear and lets you try an upgrade on.
+- A new Gear Road view shows the best gear each level opens from now to 60.
+- A Level Up card shows what to wear and train after each level.
+- One button switches to your Off Spec's gear and back.
+- Find Upgrades shows auction house gear and says why a piece is better.
+
+Fixes and changes:
+- The Off Spec's set in your bags no longer shows blue arrows.
+- The Main Spec is judged against its own gear while the Off Spec's gear is on.
+- A new main hand or off hand is weighed with the best partner you own.
+- The rating ring is big again with Show My Character on.
+- The minimap button stays where a button drawer puts it.
+- Shift tooltip lines sit at the bottom of the tooltip.
+
 ## 2.0.3
 
 Fixes and changes:

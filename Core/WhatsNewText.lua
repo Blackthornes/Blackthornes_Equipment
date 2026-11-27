@@ -5,6 +5,14 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "2.1.0", lines = {
+        "Backup Weapon Set shows the best one-hander and off hand beside a worn two-hander.",
+        "Show My Character puts your character in My Gear and lets you try an upgrade on.",
+        "A new Gear Road view shows the best gear each level opens from now to 60.",
+        "A Level Up card shows what to wear and train after each level.",
+        "One button switches to your Off Spec's gear and back.",
+        "Find Upgrades shows auction house gear and says why a piece is better.",
+    } },
     { version = "2.0.0", lines = {
         "You can pick an Off Spec as well as your Main Spec. The lists show upgrades for both.",
         "Find Upgrades has a column for each spec, and you can show both or just one.",
@@ -13,8 +21,5 @@ ns.WHATS_NEW = {
     } },
     { version = "1.23.0", lines = {
         "The Upgrade Quest for Warsong Boots lists the Deadly Blunderbuss that Pixel asks for.",
-    } },
-    { version = "1.22.0", lines = {
-        "Your Way There is now a small see-through box with only your current step and a dial that points the way. It hangs under the small panel.",
     } },
 }

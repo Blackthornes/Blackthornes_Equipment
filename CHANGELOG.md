@@ -4,6 +4,27 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 2.1.0
+
+For WoW: Forever (interface 16001). A full restart is needed after updating.
+
+- **Backup Weapon Set.** My Gear shows the best one-hander and off hand you own beside a worn two-hander, or the best two-hander beside a worn pair. Put Them On shows once the set wins, and a banner says when it starts to win. Turn it on with Backup Weapon Set on the Gear page. It is off unless ticked.
+- **Try It On.** Show My Character on the Gear page puts your character in the middle of My Gear. Now and With Upgrade switch between worn gear and the upgrade. Click a side row to try that piece on, and drag to turn.
+- **Gear Road.** A third view on My Gear lists the levels ahead from now to 60, with the best pieces each stop opens.
+- **Level Up card.** One card after each level shows what you can wear now, upgrades in your bags, new upgrades the level opened and spells to train. It has its own switch on the Gear page.
+- **Switch Gear.** One button puts on the Off Spec's gear and back.
+- **Why It's Better.** Find Upgrades and the tooltip show stat bars and a plain line.
+- **Find Upgrades.** It adds auction house gear from Tradeskills' last scan with gain bars, a Reputation box, the crafting skill needed to wear a piece and Find on Dungeons.
+- **Other Players' Gear.** Open it on the Gear page to list the pieces a player of your class wears that beat yours.
+- **First Time Setup.** New players see a welcome card.
+- **Look.** The All Addons page has Font, Colors and Fold Gem rows, picked once for all five addons.
+- **Tooltips.** Lines that show only while Shift is held go at the bottom of the block.
+- **Fix.** The Off Spec's set in your bags no longer shows blue arrows.
+- **Fix.** The Main Spec is judged against its own gear while the Off Spec's gear is on.
+- **Fix.** A new main hand or off hand is weighed with the best partner you own while a two-hander is worn.
+- **Fix.** The rating ring is big again with Show My Character on.
+- **Fix.** The minimap button stays where a button drawer puts it.
+
 ## 2.0.3
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
