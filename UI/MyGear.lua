@@ -1316,6 +1316,7 @@ function MyGear:PaintView()
     self.figure:SetShown(view == "figure")
     self.list:SetShown(view == "list")
     self.side:SetShown(not road)
+    if road and self.strip then self.strip:Hide() end
     self.hint:SetText(road and L["Click a stop to see every piece it opens."] or L["Click a slot"])
     self.hint:ClearAllPoints()
     if road then
@@ -1793,6 +1794,179 @@ function MyGear:PaintBackup()
     return set
 end
 
+--------------------------------------------------------------------------------
+-- The backup set strip (the owner said build it from the mockup,
+-- 2026-11-27): under the figure or the list whatever slot is picked, while
+-- "Backup Weapon Set:" is ticked. A click picks the main hand, which opens
+-- the full card on the slot's side.
+--------------------------------------------------------------------------------
+
+local STRIP_HEAD = 24
+local STRIP_ROW = 28
+local STRIP_HEIGHT = STRIP_HEAD + STRIP_ROW + 2
+MyGear.STRIP_HEIGHT = STRIP_HEIGHT
+
+local function StripPiece(parent)
+    local piece = CreateFrame("Frame", nil, parent)
+    piece:SetHeight(STRIP_ROW)
+    local icon = Theme.CreateItemIcon(piece, 20)
+    icon:SetPoint("LEFT", 10, 0)
+    piece.icon = icon
+    local name = Theme.CreateLabel(piece, "small", "text")
+    name:SetPoint("LEFT", 36, 0)
+    name:SetPoint("RIGHT", piece, "RIGHT", -6, 0)
+    name:SetWordWrap(true)
+    piece.name = name
+    return piece
+end
+
+function MyGear:BuildStrip()
+    local strip = CreateFrame("Button", nil, self.left)
+    strip:SetHeight(STRIP_HEIGHT)
+    strip.background = Theme.Fill(strip, "glass")
+    local line = strip:CreateTexture(nil, "BACKGROUND", nil, 1)
+    line:SetPoint("BOTTOMLEFT")
+    line:SetPoint("BOTTOMRIGHT")
+    line:SetHeight(1)
+    line:SetColorTexture(Theme.Unpack("border", 0.6))
+    local split = strip:CreateTexture(nil, "BACKGROUND", nil, 1)
+    split:SetPoint("TOPLEFT", 0, -STRIP_HEAD)
+    split:SetPoint("TOPRIGHT", 0, -STRIP_HEAD)
+    split:SetHeight(1)
+    split:SetColorTexture(Theme.Unpack("border", 0.6))
+    local edge = strip:CreateTexture(nil, "ARTWORK")
+    edge:SetPoint("TOPLEFT")
+    edge:SetPoint("BOTTOMLEFT")
+    edge:SetWidth(3)
+    edge:SetColorTexture(Theme.Unpack("accent"))
+    edge:Hide()
+    strip.edge = edge
+
+    local label = Theme.CreateLabel(strip, "small", "gilt")
+    label:SetPoint("TOPLEFT", 10, -6)
+    label:SetText(L["Backup Set:"])
+    strip.label = label
+    local status = Theme.CreateLabel(strip, "small", "muted")
+    status:SetPoint("LEFT", label, "RIGHT", 8, 0)
+    strip.status = status
+
+    local words = L["Put Them On"]
+    local button = Widgets.CreateButton(strip, words, function()
+        if ns.BackupWeapons then ns.BackupWeapons:PutOn() end
+    end, { width = math.max(100, Theme.TextWidth("normal", words) + 28), height = 20, primary = true })
+    button:SetPoint("TOPRIGHT", -6, -2)
+    strip.button = button
+    local scores = Theme.CreateLabel(strip, "tiny", "muted", "RIGHT")
+    scores:SetPoint("TOPRIGHT", -10, -7)
+    strip.scores = scores
+    status:SetPoint("RIGHT", scores, "LEFT", -8, 0)
+
+    strip.pieces = { StripPiece(strip), StripPiece(strip) }
+    strip.pieces[1]:SetPoint("TOPLEFT", 0, -STRIP_HEAD)
+    strip.pieces[1]:SetPoint("RIGHT", strip, "CENTER", 0, 0)
+    strip.pieces[2]:SetPoint("TOPLEFT", strip, "TOP", 0, -STRIP_HEAD)
+    strip.pieces[2]:SetPoint("RIGHT", strip, "RIGHT", 0, 0)
+
+    strip:SetScript("OnEnter", function(frame)
+        frame.background:SetColorTexture(Theme.Unpack("glassHover"))
+        frame.edge:Show()
+    end)
+    strip:SetScript("OnLeave", function(frame)
+        frame.background:SetColorTexture(Theme.Unpack("glass"))
+        frame.edge:Hide()
+    end)
+    strip:SetScript("OnClick", function() MyGear:PickSlot(MAIN_HAND) end)
+    strip:Hide()
+    self.strip = strip
+    return strip
+end
+
+--- How far down the left side the figure or the list reaches.
+function MyGear:StripTop()
+    if self:View() == "list" then
+        return VIEW_ROW + LIST_HEAD + #Slots() * LIST_ROW + 4 + 8
+    end
+    if self:CharacterOn() then
+        -- Main Spec and Off Spec sit under the foot slots.
+        return VIEW_ROW + #LEFT_SLOTS * SLOT_HEIGHT + 8 + SLOT_HEIGHT + 12 + 4 + 24 + 8
+    end
+    return VIEW_ROW + #LEFT_SLOTS * SLOT_HEIGHT + 8 + SLOT_HEIGHT + 10
+end
+
+--- Fill the strip; hidden with the switch off, on the road, or with no
+--- room left under the figure.
+function MyGear:PaintStrip()
+    local strip = self.strip
+    if not strip then return nil end
+    local Backup = ns.BackupWeapons
+    if not (Backup and Backup.On()) or self:View() == "road" then
+        strip:Hide()
+        return nil
+    end
+    local okSet, set = pcall(Backup.Set, Backup)
+    if not okSet then set = nil end
+    local missing
+    if not set then
+        local okMissing, mode = pcall(Backup.Missing, Backup)
+        missing = okMissing and mode or nil
+        if not missing then
+            strip:Hide()
+            return nil
+        end
+    end
+    local top = self:StripTop()
+    local okHeight, height = pcall(self.left.GetHeight, self.left)
+    if okHeight and type(height) == "number" and height > 0 and top + STRIP_HEIGHT > height then
+        strip:Hide()
+        return nil
+    end
+    strip:ClearAllPoints()
+    strip:SetPoint("TOPLEFT", self.left, "TOPLEFT", 0, -top)
+    strip:SetPoint("TOPRIGHT", self.left, "TOPRIGHT", 0, -top)
+
+    if not set then
+        strip.status:SetText(missing == "pair" and L["You carry no main hand and off hand to switch to yet."]
+            or L["You carry no two-hander to switch to yet."])
+        strip.scores:SetText("")
+        strip.button:Hide()
+        for _, piece in ipairs(strip.pieces) do piece:Hide() end
+        strip:SetHeight(STRIP_HEAD)
+        strip:Show()
+        return nil
+    end
+
+    strip:SetHeight(STRIP_HEIGHT)
+    local pair = set.mode == "pair"
+    if set.beats then
+        local how = set.percent and ("%+d%%"):format(math.floor(set.percent + 0.5)) or L["better stats"]
+        strip.status:SetText(Colored("good", L.Format(pair and "Beats your two-hander by %s" or "Beats your pair by %s", how)))
+    else
+        strip.status:SetText(pair and L["Your two-hander wins for now."] or L["Your pair wins for now."])
+    end
+    local putOn = set.beats and Backup.Carried(set) and true or false
+    strip.button:SetShown(putOn)
+    if putOn then
+        strip.scores:SetText("")
+    else
+        strip.scores:SetText(("%s %d   %s %d"):format(pair and L["Your two-hander:"] or L["Your pair:"],
+            math.floor(set.against + 0.5), L["Backup set:"], math.floor(set.score + 0.5)))
+    end
+    local pieces = pair and { set.main, set.off } or { set.two }
+    for index, frame in ipairs(strip.pieces) do
+        local piece = pieces[index]
+        if piece then
+            Theme.SetItemIcon(frame.icon, piece.link)
+            frame.name:SetText((ns.Items.ShowLink(piece.link) or "") .. "  "
+                .. Colored("muted", Backup.WhereWords(piece.where)))
+            frame:Show()
+        else
+            frame:Hide()
+        end
+    end
+    strip:Show()
+    return set
+end
+
 --- The slot picked, on the right: what is worn, then its lines.
 function MyGear:PaintSide(state)
     local info = state.slots[self.slot]
@@ -1815,6 +1989,7 @@ function MyGear:PaintSide(state)
     -- The backup weapon set's card takes the foot of the side; the rows
     -- stop above it.
     local backup = self:PaintBackup()
+    self:PaintStrip()
     local room = math.huge
     if backup then
         local okHeight, height = pcall(side.GetHeight, side)
@@ -1941,6 +2116,7 @@ function MyGear:Build(area)
     self:BuildList()
     self:BuildSide()
     self:BuildBackup()
+    self:BuildStrip()
     if ns.GearRoad then ns.GearRoad:Build(body, VIEW_ROW) end
 
     -- The footer: how much waits on the left, the version on the right.

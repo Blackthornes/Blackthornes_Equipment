@@ -77,8 +77,14 @@ local function Read(item, bag, slot)
     if BagIcons.NeverWears(result) then advice.never = true end
     if not tool then
         advice.sell = BagIcons:Sells(bag, slot, link, result) == true
+        -- A piece of the backup weapon set (Logic/BackupWeapons.lua): kept,
+        -- never sold, broken or mailed away (the owner, 2026-11-27).
+        local Backup = ns.BackupWeapons
+        if Backup and not advice.upgrade and Backup:InSet(link) then
+            advice.backup, advice.sell = true, false
+        end
         -- No use to the character playing: is it an upgrade for another?
-        if not advice.upgrade and type(result) == "table" and ns.Alts then
+        if not advice.upgrade and not advice.backup and type(result) == "table" and ns.Alts then
             local alt = ns.Alts:BestFor(link, bag, slot)
             if alt then advice.alt = { key = alt.key, gain = alt.gain, level = alt.level } end
         end
@@ -100,6 +106,8 @@ end
 --   tool     true for gathering and profession tools and fishing poles,
 --            kept to use and never sold; gear that is a tool only by its
 --            tooltip counts while this class could wear it
+--   backup   true for a piece of the backup weapon set (Backup:InSet):
+--            keep it; never sold, broken or mailed away; never with `alt`
 --   alt      when it is no upgrade here but is for another of the player's
 --            characters on this realm and side (Alts:BestFor): { key (that
 --            character's GUID), gain (whole percent, nil for an empty

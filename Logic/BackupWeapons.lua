@@ -243,6 +243,20 @@ function Backup:Set()
     return set
 end
 
+--- With no backup set: "pair" when a two-hander is worn and no main hand
+--- and off hand can stand in, "two" when a pair is worn and no two-hander
+--- can. Nil when there is a set, or none is wanted (a shield tank, a
+--- fishing pole, nothing in hand), for My Gear's strip (2026-11-27).
+function Backup:Missing()
+    if self:Set() then return nil end
+    local weights, spec = Weights:ForPlayer()
+    if not weights then return nil end
+    if Weights:ShieldTank(Weights:PlayerClass(), spec) then return nil end
+    if Items.PoleInHand and Items:PoleInHand() then return nil end
+    local worn = Worn(weights)
+    return worn and worn.mode or nil
+end
+
 local WEAPON_LOCS = { INVTYPE_WEAPON = true, INVTYPE_WEAPONMAINHAND = true, INVTYPE_WEAPONOFFHAND = true }
 
 --- Is this link a piece of the backup set? Kept, never sold, while the

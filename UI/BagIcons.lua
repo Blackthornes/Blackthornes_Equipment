@@ -37,6 +37,7 @@ local FALLBACK_TEXTURE = [[Interface\Buttons\UI-MicroStream-Green]]
 
 local arrows = setmetatable({}, { __mode = "k" })
 local coins = setmetatable({}, { __mode = "k" })
+local swords = setmetatable({}, { __mode = "k" })
 
 -- Items in the bags or worn whose details the client had not loaded at the
 -- last look, by item ID. Only one of these arriving is worth another look:
@@ -55,6 +56,12 @@ local function WaitIfUnknown(link)
     local id = ItemID(link)
     if id and not Items:Info(link) then waiting[id] = true end
 end
+
+-- The backup set's mark: crossed swords, tinted blue (the owner said build
+-- it from the mockup, 2026-11-27). The cursor's sword if the sheet is missing.
+local SWORDS_TEXTURE = [[Interface\WorldStateFrame\CombatSwords]]
+local SWORDS_FALLBACK = [[Interface\CURSOR\Attack]]
+BagIcons.SWORDS_COLOR = { 0.43, 0.7, 1 }
 
 -- The quest reward coin's look (UI/QuestRewards.lua).
 local COIN_TEXTURE = "Interface\\MoneyFrame\\UI-GoldIcon"
@@ -452,10 +459,47 @@ function BagIcons:Sells(bag, slot, link, result)
     local price = SellPrice(link)
     return type(price) == "number" and price > 0
 end
+--- The backup set's swords already made for a button, or nil.
+function BagIcons:ExistingSwords(button)
+    return swords[button]
+end
+
+--- The backup set's swords for a button, made the first time it is asked for.
+function BagIcons:Swords(button)
+    local mark = swords[button]
+    if mark then return mark end
+    local create = Field(button, "CreateTexture")
+    if type(create) ~= "function" then return nil end
+    local ok, texture = pcall(create, button, nil, "OVERLAY", nil, 7)
+    if not ok or not texture then return nil end
+    texture:SetSize(16, 16)
+    texture:SetPoint("TOPLEFT", button, "TOPLEFT", 1, -1)
+    local set = pcall(texture.SetTexture, texture, SWORDS_TEXTURE)
+    if set then
+        pcall(texture.SetTexCoord, texture, 0, 0.5, 0, 0.5)
+    else
+        texture:SetTexture(SWORDS_FALLBACK)
+    end
+    pcall(texture.SetDesaturated, texture, true)
+    local c = BagIcons.SWORDS_COLOR
+    pcall(texture.SetVertexColor, texture, c[1], c[2], c[3])
+    texture:Hide()
+    swords[button] = texture
+    return texture
+end
+
+--- Is this carried link a piece of the backup set to mark? Only while
+--- "Backup Weapon Set:" is ticked.
+function BagIcons.IsBackup(link)
+    local Backup = ns.BackupWeapons
+    if not (Backup and Backup.On() and link) then return false end
+    local ok, inSet = pcall(Backup.InSet, Backup, link)
+    return ok and inSet == true
+end
 
 --- Show or hide the arrow and the coin on one button.
 function BagIcons:UpdateButton(button, frame)
-    local show, sell, percentOf, off = false, false, nil, false
+    local show, sell, percentOf, off, backup = false, false, nil, false, false
     if self:IsEnabled() or self:CoinsEnabled() then
         local bag, slot = self:Location(button, frame)
         local link = bag and Items:InBag(bag, slot)
@@ -474,6 +518,7 @@ function BagIcons:UpdateButton(button, frame)
                 if offResult then show, off, percentOf = true, true, offResult end
             end
             if not show and not offPiece then sell = self:Sells(bag, slot, link, result) end
+            backup = not show and not sell and BagIcons.IsBackup(link)
         end
     end
 
@@ -491,6 +536,12 @@ function BagIcons:UpdateButton(button, frame)
         if coin then coin:Show() end
     elseif coins[button] then
         coins[button]:Hide()
+    end
+    if backup then
+        local mark = self:Swords(button)
+        if mark then mark:Show() end
+    elseif swords[button] then
+        swords[button]:Hide()
     end
     return show
 end
