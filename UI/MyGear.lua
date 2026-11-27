@@ -1781,6 +1781,9 @@ function MyGear:PaintBackup()
         card.line:SetText(set.mode == "pair" and L.Format("Your backup set now beats your two-hander by %s", how)
             or L.Format("Your backup set now beats your pair by %s", how))
         card.line:Show()
+    elseif set.mode == "pair" and Backup.Carried(set) then
+        card.line:SetText(Colored("muted", L["Your two-hander wins for now. The pair stays in your bags."]))
+        card.line:Show()
     else
         card.line:SetText("")
         card.line:Hide()

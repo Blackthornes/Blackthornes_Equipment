@@ -1275,7 +1275,11 @@ function Finder.NotePair(notes, itemID, best, result, dualWield)
     if not loc then return end
     local entry = { itemID = itemID, link = link, result = result, score = result.score }
     if MAIN_LOCS[loc] then notes.mains[#notes.mains + 1] = entry end
-    if OFF_LOCS[loc] or (loc == "INVTYPE_WEAPON" and dualWield) then notes.offs[#notes.offs + 1] = entry end
+    if OFF_LOCS[loc] or (loc == "INVTYPE_WEAPON" and dualWield) then
+        -- In the off hand a weapon deals half its damage.
+        local cut = notes.weights and Compare:OffHandCut(link, notes.weights) or 0
+        notes.offs[#notes.offs + 1] = { itemID = itemID, link = link, result = result, score = result.score - cut }
+    end
 end
 
 local function ByScore(a, b)
@@ -1483,7 +1487,7 @@ function Finder:Build(only, ahead, pause, wide)
     if not self.offPass and not wide and reach == level then
         local against = self:PairAgainst(weights)
         if against then
-            pairNotes = { against = against, mains = {}, offs = {},
+            pairNotes = { against = against, mains = {}, offs = {}, weights = weights,
                 dual = Weights:CanDualWield(Weights:PlayerClass(), level) }
             -- The best main hands and off hands you own already, to pair a
             -- new piece with (Logic/BackupWeapons.lua).

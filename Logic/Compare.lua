@@ -110,6 +110,34 @@ function Compare:ScoreOf(link, weights)
     return score, hit, hitValue
 end
 
+--- A weapon in the off hand deals half its damage, as in classic. Its
+--- other stats count in full. Used wherever a pair of one-handers meets a
+--- two-hander (here and in Logic/BackupWeapons.lua, Logic/Finder.lua).
+Compare.OFF_HAND_DAMAGE = 0.5
+local OFF_HAND_WEAPONS = { INVTYPE_WEAPON = true, INVTYPE_WEAPONOFFHAND = true }
+
+--- How much less a weapon is worth held in the off hand: the half of its
+--- damage the game does not deal. 0 for a shield, a book or an orb.
+function Compare:OffHandCut(link, weights)
+    if type(link) ~= "string" or type(weights) ~= "table" then return 0 end
+    local info = Items:Info(link)
+    if not (info and OFF_HAND_WEAPONS[info.equipLoc]) then return 0 end
+    local raw = Items:Stats(link)
+    if not raw then return 0 end
+    local dps = Weights:Normalize(raw).dps
+    local weight = Weights.WeightOf("dps", weights, false)
+    if type(dps) ~= "number" or type(weight) ~= "number" then return 0 end
+    local factor = Weights:FactorFor(weights, info.classID, info.subclassID) or 1
+    return dps * weight * factor * (1 - Compare.OFF_HAND_DAMAGE)
+end
+
+--- A piece's score held in the off hand (Compare:ScoreOf less the cut).
+function Compare:OffHandScore(link, weights)
+    local score = self:ScoreOf(link, weights)
+    if type(score) ~= "number" then return nil end
+    return score - self:OffHandCut(link, weights)
+end
+
 --- Forget every kept score: what rating gives moves with the level.
 function Compare:ForgetScores()
     scores = setmetatable({}, { __mode = "k" })
@@ -307,13 +335,15 @@ function Compare:Against(link, equipLoc, weights, shieldTank, only)
         end
     end
 
-    -- A two-hander replaces the off hand too.
+    -- A two-hander replaces the off hand too. A weapon there deals half
+    -- its damage, so it counts for that much.
     if equipLoc == "INVTYPE_2HWEAPON" then
         local offHand = Items:Equipped(17)
         if offHand then
             empty = false
             local score, hit, value = self:ScoreOf(offHand, weights)
             if not score then return nil end
+            score = score - self:OffHandCut(offHand, weights)
             weakest = weakest + score
             wornHit, wornValue = wornHit + (hit or 0), wornValue + (value or 0)
         end

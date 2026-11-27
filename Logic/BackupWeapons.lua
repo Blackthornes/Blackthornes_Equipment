@@ -147,7 +147,11 @@ function Backup:Pieces(weights)
                 seen[key] = copy
                 local entry = { link = piece.link, where = piece.where, score = score, key = key, copy = copy }
                 if isMain then mains[#mains + 1] = entry end
-                if isOff then offs[#offs + 1] = entry end
+                -- In the off hand a weapon deals half its damage.
+                if isOff then
+                    offs[#offs + 1] = { link = piece.link, where = piece.where, key = key, copy = copy,
+                        score = score - Compare:OffHandCut(piece.link, weights) }
+                end
                 if isTwo then twos[#twos + 1] = entry end
             end
         end
@@ -156,7 +160,7 @@ function Backup:Pieces(weights)
         table.sort(list, ByScore)
         for i = #list, KEEP + 1, -1 do list[i] = nil end
     end
-    kept = { mains = mains, offs = offs, twos = twos, weights = weights, generation = generation }
+    kept = { mains = mains, offs = offs, twos = twos, weights = weights, generation = generation, dual = dual }
     self.kept = kept
     return kept
 end
@@ -190,7 +194,7 @@ local function Worn(weights)
     if not MAIN_LOCS[info.equipLoc] then return nil end
     local off = Items:Equipped(OFF_HAND)
     if off then
-        local offScore = Compare:ScoreOf(off, weights)
+        local offScore = Compare:OffHandScore(off, weights)
         if type(offScore) ~= "number" then return nil end
         score = score + offScore
     end
@@ -239,17 +243,26 @@ function Backup:Set()
     return set
 end
 
+local WEAPON_LOCS = { INVTYPE_WEAPON = true, INVTYPE_WEAPONMAINHAND = true, INVTYPE_WEAPONOFFHAND = true }
+
 --- Is this link a piece of the backup set? Kept, never sold, while the
 --- switch is on or while the set beats what is worn (a warrior's spare
---- shield beside a big axe still sells with the switch off).
+--- shield beside a big axe still sells with the switch off). Someone who
+--- swings two weapons always keeps the best pair of one-handers (the
+--- owner asked, 2026-11-27).
 function Backup:InSet(link)
     local key = type(link) == "string" and Key(link)
     if not key then return false end
     local ok, set = pcall(self.Set, self)
     if not (ok and set) then return false end
-    if not (Backup.On() or set.beats) then return false end
+    local always = Backup.On() or set.beats
+    local pair = set.mode == "pair" and self.kept and self.kept.dual
     for _, piece in ipairs({ set.main, set.off, set.two }) do
-        if piece and piece.key == key then return true end
+        if piece and piece.key == key then
+            if always then return true end
+            local info = pair and Items:Info(link)
+            return info and WEAPON_LOCS[info.equipLoc] and true or false
+        end
     end
     return false
 end
@@ -285,19 +298,27 @@ function Backup:WithPartner(link, result)
     if not loc then return nil end
     local pieces = self:Pieces(weights)
     if not pieces then return nil end
-    local partner
-    if result.slot == MAIN_HAND and MAIN_LOCS[loc] then
-        partner = BestBut(pieces.offs, link)
-    elseif result.slot == OFF_HAND or OFF_LOCS[loc] then
-        partner = BestBut(pieces.mains, link)
+    local full = Compare:ScoreOf(link, weights)
+    if type(full) ~= "number" then return nil end
+    -- In the off hand a weapon deals half its damage. A one-hander for
+    -- someone who swings two goes in whichever hand makes the better pair.
+    local partner, total
+    local asMain = MAIN_LOCS[loc] and (result.slot == MAIN_HAND or loc == "INVTYPE_WEAPON")
+    local asOff = OFF_LOCS[loc] or (pieces.dual and loc == "INVTYPE_WEAPON")
+    if asMain then
+        local off = BestBut(pieces.offs, link)
+        if off then partner, total = off, full + off.score end
+    end
+    if asOff then
+        local main = BestBut(pieces.mains, link)
+        local sum = main and main.score + full - Compare:OffHandCut(link, weights)
+        if sum and (not total or sum > total) then partner, total = main, sum end
     end
     if not partner then return nil end
-    local mine = Compare:ScoreOf(link, weights)
-    if type(mine) ~= "number" then return nil end
 
     local out = {}
     for key, value in pairs(result) do out[key] = value end
-    out.score = mine + partner.score
+    out.score = total
     out.against = worn.score
     out.empty = false
     out.partner = { link = partner.link, where = partner.where }
@@ -334,7 +355,8 @@ function Backup:BeatsPiece(link)
     local piece
     if MAIN_LOCS[loc] then piece = set.main elseif OFF_LOCS[loc] then piece = set.off end
     if not piece or piece.score <= 0 then return nil end
-    local score = Compare:ScoreOf(link, (Weights:ForPlayer()))
+    local weights = Weights:ForPlayer()
+    local score = piece == set.off and Compare:OffHandScore(link, weights) or Compare:ScoreOf(link, weights)
     if type(score) ~= "number" then return nil end
     local percent = (score - piece.score) / piece.score * 100
     if percent < SAME_WITHIN then return nil end
