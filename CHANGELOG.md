@@ -4,6 +4,14 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 2.1.2
+
+For WoW: Forever (interface 16001). `/reload` is enough after updating.
+
+- **Gear quests.** 153 more Forever quests that give gear show as upgrade sources.
+- **Quests you need first.** Upgrade Quest names the quests you need first for 27 more quests.
+- **Quest names.** A quest with no name in the addon takes its name from the game once the game sends it.
+
 ## 2.1.1
 
 For WoW: Forever (interface 16001). `/reload` is enough after updating.
