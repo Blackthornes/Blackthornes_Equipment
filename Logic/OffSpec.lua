@@ -422,7 +422,12 @@ function OffSpec:MainStandIns()
         local note = type(db) == "table" and type(db.swapBack) == "table" and db.swapBack or nil
         local key = StandInKey(off, main, note)
         if standIn and standIn.key == key then return standIn.slots end
-        local made = MakeStandIns(off, main, note)
+        -- Only while the Off Spec's gear counts as on: with the Main Spec's
+        -- gear on and one Off Spec piece swapped in by hand, what is worn
+        -- is what the Main Spec is judged against.
+        local switch = ns.SwitchGear
+        local state = switch and switch:State()
+        local made = state and state.on == "off" and MakeStandIns(off, main, note) or nil
         standIn = { key = key, slots = made }
         return made
     end)

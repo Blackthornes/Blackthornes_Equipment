@@ -680,6 +680,11 @@ end
 function Compare:JudgeCarried(link)
     local result = self:Judge(link)
     if not (result and result.verdict == "equipped") then return result end
+    -- Not really worn: it stands in for what is worn (the Main Spec's
+    -- piece over the Off Spec's gear, or the outfit's piece), so this is
+    -- that piece, not a second copy (a Discord report on 2.1.1: the Feral
+    -- ring standing in was offered over the other ring, round and round).
+    if Items:WornNow(result.slot) ~= link then return result end
 
     -- A second copy of the one-hander held in one hand can go in the other,
     -- for a character holding two weapons. Judged for that hand alone;

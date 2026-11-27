@@ -163,17 +163,24 @@ function SwitchGear:MainTarget()
 end
 
 --- Where things stand: { on = "main" or "off", go = "off" or "main" or
---- nil, steps = { ... } }, or nil with Off Spec on None.
+--- nil, steps = { ... }, fill = { ... } }, or nil with Off Spec on None.
+--- The gear on is the spec's whose gear is fewer pieces away, so one piece
+--- swapped by hand never flips it (a Discord report on 2.1.1). With the
+--- Off Spec's gear on, `fill` holds the steps to its last pieces.
 function SwitchGear:State()
     local off = self:OffTarget()
     if not off then return nil end
     local toOff = SwitchGear.Steps(off)
-    if #toOff > 0 then return { on = "main", go = "off", steps = toOff } end
     local target, only = self:MainTarget()
     local toMain = SwitchGear.Steps(target, only)
-    if #toMain > 0 then return { on = "off", go = "main", steps = toMain } end
-    -- Both specs wear the same pieces: nothing to switch.
-    return { on = "main", steps = {} }
+    if #toOff == 0 and #toMain == 0 then
+        -- Both specs wear the same pieces: nothing to switch.
+        return { on = "main", steps = {} }
+    end
+    if #toOff < #toMain then
+        return { on = "off", go = "main", steps = toMain, fill = toOff }
+    end
+    return { on = "main", go = "off", steps = toOff }
 end
 
 --- Is a swap under way, or waiting for the fight to end?
@@ -198,8 +205,9 @@ function SwitchGear:Go(want)
     if want and want ~= state.go then
         -- A swap cut short by a fight goes on the way it was going, even
         -- though half the pieces are on. Asked by name otherwise, the way
-        -- already worn does nothing.
-        if not self.resuming then return false end
+        -- already worn does nothing, but for the Off Spec's last pieces
+        -- (`fill`), so My Gear's Ready Now can put them on.
+        if not self.resuming and not (want == "off" and state.on == "off") then return false end
         if want == "off" then
             steps = SwitchGear.Steps(self:OffTarget())
         else
