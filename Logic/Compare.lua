@@ -194,14 +194,17 @@ function Compare.HitThatCounts(hit, base, cap, dualCap, past)
 end
 
 -- While gear is judged for the Off Spec (Logic/OffSpec.lua), Items:Equipped
--- answers with its outfit, but the client's hit is that of the gear really
+-- answers with its outfit (or, with the Off Spec's gear on, the Main
+-- Spec's pieces), but the client's hit is that of the gear really
 -- worn. How much more hit (less, when negative) the outfit has than that
 -- gear, for these weights; 0 when the Off Spec is not being judged. Kept
 -- for the outfit, the weights and the hit the client gave.
 local outfitHit = setmetatable({}, { __mode = "k" })
 
 local function OutfitHit(self, weights, current)
-    local as = Items.wornAs
+    -- The Main Spec's pieces standing in for the Off Spec's gear worn count
+    -- the same way (OffSpec:MainStandIns).
+    local as = Items.wornAs or (Items.mainStandIns and Items.mainStandIns())
     if type(as) ~= "table" then return 0 end
     local kept = outfitHit[as]
     if kept and kept.weights == weights and kept.current == current then return kept.more end

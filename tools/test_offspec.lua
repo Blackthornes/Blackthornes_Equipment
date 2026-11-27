@@ -114,7 +114,7 @@ local carried = OffSpec:Judge("item:4")
 suite.check("the shield already carried is no Off Spec upgrade from a vendor", Verdict(carried) == "equipped",
     Verdict(carried))
 local inBags = OffSpec:Judge("item:4", true)
-suite.check("in the bags it is an Off Spec piece over what is worn", Verdict(inBags) == "upgrade", Verdict(inBags))
+suite.check("in the bags it is the Off Spec's own piece, no upgrade", Verdict(inBags) ~= "upgrade", Verdict(inBags))
 suite.check("an outfit piece is known as one", OffSpec:InOutfit("item:4") and not OffSpec:InOutfit("item:11"))
 
 -- 4.
@@ -223,8 +223,9 @@ suite.check("the tooltip says Main Spec: no upgrade and the Off Spec's gain",
     tipLines and tipLines[2].answer)
 suite.check("no spec lines when neither gains", ns.Tooltip.SpecLines("item:10", false, Compare:Judge("item:10")) == nil)
 
--- 11. The tank set in the bags gets the blue arrow, not a sell coin.
-suite.check("the shield in the bags gets the blue arrow", OffSpec:OnlyUpgrade("item:4", true) ~= nil)
+-- 11. The tank set in the bags gets no arrow (it is the set) and no sell
+-- coin.
+suite.check("the shield in the bags gets no blue arrow", OffSpec:OnlyUpgrade("item:4", true) == nil)
 -- Butler asks the same sell rule the bags use (Butler:Advise), so it must
 -- not say Sell for the tank set either. White gear a vendor pays for:
 local oldInfo, oldTip = _G.C_Container.GetContainerItemInfo, _G.C_TooltipInfo

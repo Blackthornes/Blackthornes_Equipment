@@ -40,6 +40,9 @@ local PARTIAL_WAIT = 2
 
 local depth = 0
 local saved = {}
+-- True while an outfit or the Main Spec's stand-ins are made: they read
+-- the gear really worn (Items:Equipped asks OffSpec:MainStandIns).
+local making = false
 -- Kept outfits by spec, the Off Spec's and the Main Spec's (for Switch
 -- Gear, Logic/SwitchGear.lua):
 -- [spec] = { key, slots = { [slot] = link or false }, owned = { [link] = true }, partial, at }
@@ -101,6 +104,7 @@ end
 --- Forget the outfit (bags, gear worn, level or weights changed).
 function OffSpec:Forget()
     outfits = {}
+    standIn = nil
 end
 
 local function Score(link, weights)
@@ -249,7 +253,7 @@ end
 
 --- The outfit for the spec judged as now (Weights.judgeAs set), kept until
 --- something it was made from changes.
-local function Outfit(spec)
+local function OutfitNow(spec)
     local outfit = outfits[spec]
     local now = Now()
     -- With no clock (the tests) every call checks the key; in the game one
@@ -267,6 +271,15 @@ local function Outfit(spec)
         at = now, checkedAt = now }
     outfits[spec] = outfit
     return outfit
+end
+
+local function Outfit(spec)
+    local was = making
+    making = true
+    local ok, made = pcall(OutfitNow, spec)
+    making = was
+    if not ok then error(made, 0) end
+    return made
 end
 
 --- The outfit's piece in each slot, { [slot] = link or false }, or nil for
@@ -306,6 +319,124 @@ function OffSpec:InOutfit(link)
     local outfit = outfits[self:Key()]
     return outfit ~= nil and outfit.owned ~= nil and plain ~= nil and outfit.owned[plain] == true
 end
+
+--------------------------------------------------------------------------------
+-- The Main Spec's gear while the Off Spec's is on
+--------------------------------------------------------------------------------
+-- With the Off Spec's gear on, the Main Spec is judged against its own
+-- gear, not the gear worn (a Discord report on 2.0.2: the Main Spec's set
+-- in the bags showed as nine upgrades). In each slot where a piece of the
+-- Off Spec's outfit is worn and the Main Spec wants another, Items:Equipped
+-- answers with the Main Spec's piece: the one Switch Gear noted on the way
+-- there while still carried, else the Main Spec's outfit's. Like a fishing
+-- pole in hand, the weapons from before stand in. Nothing is saved.
+
+local PAIRED = { [11] = 12, [12] = 11, [13] = 14, [14] = 13 }
+local standIn  -- { key, slots = { [slot] = link or false } or nil }
+
+local function Carried(link)
+    return ns.Wear and ns.Wear.Find and ns.Wear.Find(link) ~= nil
+end
+
+--- What the stand-ins are made from: the pick, the note and the outfits'.
+local function StandInKey(off, main, note)
+    local parts = { off, main, OutfitKey(off) }
+    if type(note) == "table" then
+        for slot = 1, 19 do parts[#parts + 1] = tostring(note[slot]) end
+    end
+    return table.concat(parts, ";")
+end
+
+--- The outfit for `spec` (the Off Spec's or "main:" .. the Main Spec's),
+--- made as Enter would make it but without swapping the finder.
+local function OutfitFor(spec, judgeAs)
+    local keptJudge, keptWorn = Weights.judgeAs, Items.wornAs
+    Weights.judgeAs, Items.wornAs = judgeAs, nil
+    local ok, made = pcall(Outfit, spec)
+    Weights.judgeAs, Items.wornAs = keptJudge, keptWorn
+    if not ok then
+        ns.Debug("offspec:", tostring(made))
+        return nil
+    end
+    return made
+end
+
+local function MakeStandIns(off, main, note)
+    local offOutfit = OutfitFor(off, off)
+    local mainOutfit = OutfitFor("main:" .. main, nil)
+    if not (offOutfit and mainOutfit and offOutfit.owned) then return nil end
+    -- The Main Spec's piece in each slot: noted, else its outfit's.
+    local want = {}
+    for slot = 1, 19 do
+        local noted = type(note) == "table" and note[slot] or nil
+        if type(noted) == "string" and (Carried(noted) or noted == Items:WornNow(slot)) then
+            want[slot] = noted
+        elseif noted == false then
+            want[slot] = false
+        else
+            want[slot] = mainOutfit.slots[slot]
+        end
+    end
+    -- A two-hander wanted leaves the off hand empty.
+    local mainHand = want[16] and Items:Info(want[16])
+    if mainHand and mainHand.equipLoc == "INVTYPE_2HWEAPON" then want[17] = false end
+
+    local slots, any = {}, false
+    for slot = 1, 19 do
+        local worn = Items:WornNow(slot)
+        local partner = PAIRED[slot]
+        if worn and offOutfit.owned[worn] then
+            if partner then
+                -- A ring or trinket: stands in only when neither of the
+                -- Main Spec's two is this one; then the one not worn.
+                local a, b = want[slot], want[partner]
+                if worn ~= a and worn ~= b then
+                    local other = Items:WornNow(partner)
+                    local pick = (a and a ~= other) and a or ((b and b ~= other) and b or nil)
+                    if pick then slots[slot], any = pick, true end
+                end
+            elseif want[slot] ~= nil and want[slot] ~= worn then
+                slots[slot], any = want[slot], true
+            end
+        end
+    end
+    -- The off hand follows the main hand: a two-hander standing in empties it.
+    if slots[16] and want[17] == false and Items:WornNow(17) then slots[17], any = false, true end
+    return any and slots or nil
+end
+
+--- The Main Spec's pieces that stand in for the Off Spec's gear worn,
+--- { [slot] = link or false }, or nil when the Main Spec's gear is on, the
+--- Off Spec is None, or the Off Spec is being judged.
+function OffSpec:MainStandIns()
+    if making or depth > 0 then return nil end
+    local off = self:Key()
+    if not off then return nil end
+    local main = Weights:MainSpec()
+    if not main then return nil end
+    local now = Now()
+    if standIn and now > 0 and standIn.checkedAt == now then return standIn.slots end
+    making = true
+    local ok, slots = pcall(function()
+        local db = ns.charDB
+        local note = type(db) == "table" and type(db.swapBack) == "table" and db.swapBack or nil
+        local key = StandInKey(off, main, note)
+        if standIn and standIn.key == key then return standIn.slots end
+        local made = MakeStandIns(off, main, note)
+        standIn = { key = key, slots = made }
+        return made
+    end)
+    making = false
+    if not ok then
+        ns.Debug("offspec:", tostring(slots))
+        standIn = nil
+        return nil
+    end
+    if standIn then standIn.checkedAt = now end
+    return slots
+end
+
+Items.mainStandIns = function() return OffSpec:MainStandIns() end
 
 --------------------------------------------------------------------------------
 -- Entering and leaving
@@ -364,13 +495,6 @@ function OffSpec:Run(fn, ...)
     return Finish(self:LeaveWith(pcall(fn, ...)))
 end
 
---- Same as Run, but against what is really worn, not the outfit: for a
---- carried outfit piece, to say how much it beats the gear on now.
-function OffSpec:RunReal(fn, ...)
-    self:Enter(nil, true)
-    return Finish(self:LeaveWith(pcall(fn, ...)))
-end
-
 --- Leave, and hand back what was given.
 function OffSpec:LeaveWith(...)
     self:Leave()
@@ -381,16 +505,13 @@ end
 -- Answers
 --------------------------------------------------------------------------------
 
---- An item's verdict for the Off Spec, or nil with None. A carried piece
---- of the outfit is measured against what is worn now (so the tank set in
---- the bags shows its arrow); anything else against the outfit.
+--- An item's verdict for the Off Spec, or nil with None. Measured against
+--- the outfit, so a piece of it in the bags is no upgrade: it is the set
+--- (a Discord report on 2.0.2: the whole set showed blue arrows).
 function OffSpec:Judge(link, carried)
     if not (link and self:On()) then return nil end
     local Compare = ns.Compare
     local judge = carried and Compare.JudgeCarried or Compare.Judge
-    if carried and self:InOutfit(link) then
-        return self:RunReal(judge, Compare, link)
-    end
     return self:Run(judge, Compare, link)
 end
 
