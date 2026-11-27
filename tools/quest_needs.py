@@ -90,6 +90,21 @@ def held():
     return out
 
 
+def firsts():
+    """The "first" lists in the "needs" part of tools/forever_facts.json:
+    {quest: [every quest Forever asks to hand in first]}."""
+    if not os.path.exists(FACTS):
+        return {}
+    with open(FACTS, encoding="utf-8") as f:
+        raw = (json.load(f) or {}).get("needs") or {}
+    out = {}
+    for quest_id, rec in raw.items():
+        first = isinstance(rec, dict) and rec.get("first")
+        if isinstance(first, list):
+            out[int(quest_id)] = [int(r) for r in first if isinstance(r, int) and r > 0]
+    return out
+
+
 def main(argv):
     args = [a for a in argv if not a.startswith("--")]
     if len(args) < 2:
@@ -159,25 +174,54 @@ def main(argv):
                 return name, 0, 0, 0
         return None
 
+    facts_first = firsts()
+
+    def with_facts(qid, kept, p):
+        """The facts' quests, with the quest database's when it lists more
+        than one or agrees. The facts list every quest Forever asks for
+        first, so Sources.lua's one before it counts only when they name it
+        too; a quest kept to other races or classes is left out."""
+        first = facts_first.get(qid)
+        if not first:
+            return kept
+        if len(kept) == 1 and kept[0] not in first:
+            kept = []  # a lone quest the facts do not name
+        out = list(kept)
+        known = ours.get(qid)
+        pq = pf_quests[qid] or Table()
+        races = known["races"] if known else int(pq["race"] or 0)
+        classes = known["classes"] if known else int(pq["class"] or 0)
+        row = quest_db[qid]
+        anyone = {abs(int(row[13][i])) for i in sorted(row[13] or {})} if row else set()
+        for r in first:
+            if r in out or r == qid:
+                continue
+            if r in anyone and len(anyone) > 1:
+                continue  # the quest database says any one of these will do
+            if pf_quests[r] and title(r) and not open_to(r, races, classes):
+                continue
+            out.append(r)
+        return out
+
     needs, needed = {}, {}
-    todo = [(q, 0) for q in sorted(ours)]
+    todo = [(q, 0) for q in sorted(set(ours) | set(facts_first))]
     seen = set()
     while todo:
         qid, depth = todo.pop(0)
         if qid in seen or depth > DEPTH:
             continue
         seen.add(qid)
-        kept = before(qid)
         p = known_p(qid)
+        kept = with_facts(qid, before(qid), p)
         if not kept or kept == [p]:
             continue
-        if p and len(kept) == 1:
+        if p and len(kept) == 1 and qid not in facts_first:
             continue  # the two disagree; Sources.lua's word stands
         needs[qid] = kept
         for r in kept:
             if r not in ours and not forever_giver.get(r) and r not in needed:
                 pq = pf_quests[r]
-                start = giver(r)
+                start = pq and title(r) and giver(r)
                 if not start:
                     continue
                 pre = before(r)

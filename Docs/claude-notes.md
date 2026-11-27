@@ -3393,6 +3393,28 @@ quest has a prerequisite quest that needs to be said first."
 - `make_sources.py`'s `load_spawn_db` reads the spawn database as data
   (`tools/lua_literal.py`) and never runs it.
 - Tested in `tools/test_questneeds.lua`. Not yet seen in game.
+- 2026-11-27: the "needs" part of `tools/forever_facts.json` also takes
+  `first`, every quest Forever asks to hand in first (lead-in quests that
+  aren't needed, and quests that stand in for each other, are left out).
+  `quest_needs.py` puts them in `Sources.NEEDS` with the quest database's
+  list when it names more than one or agrees; Sources.lua's `p` then counts
+  only when `first` names it too. A hand-checked `hold` is never given a
+  `first`.
+
+## Quests the game names (2026-11-27)
+
+The owner asked for every gear-reward quest the Forever client has that
+the data lacked (153 added to the "rewards" part of
+`tools/forever_facts.json`; event, profession and reputation quests left
+out, as `make_sources.py` does). Most have no title in any data we hold, so
+a record in `Data/ForeverQuests.lua` may leave `title` out (it then needs
+gear or a `prev`). `QuestLearn:Lay` gives such a quest the game's title
+(`QuestLearn.GameTitle`, `C_QuestLog.GetTitleForQuestID`) or "" and marks
+the row `fromGame`; `DQ:TitleOf` asks the game as the quest is shown and
+`QuestLearn.NameFromGame` fills the row once it answers, as does a reading
+of the quest in game. A record's `classes` and `races` (the game's bits)
+go on the row; `races` wins over `side`. Tested in
+`tools/test_questlearn.lua` and `tools/test_forever_quests.py`.
 
 ## Owned gear is no upgrade to go get (2026-11-25)
 

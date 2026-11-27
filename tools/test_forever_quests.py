@@ -133,5 +133,27 @@ expect("the file writes the quest before", "prev = 77" in text)
 lua.execute(text.replace("local _, ns = ...", ""))
 expect("and it loads", lua.eval("ns.ForeverQuests[90020].prev") == 77)
 
+# A fact with no title (the game names it) and a class quest's bits
+from forever_quests import clean  # noqa: E402
+untitled = clean({"title": None, "level": None, "min": 47, "giver": None, "zone": "Azshara",
+                  "x": 41.4, "y": 20, "side": None, "prev": None, "classes": None, "races": None,
+                  "money": None, "xp": None, "items": None,
+                  "rewards": {1: {1: 2070, 2: 0, 3: 0, 4: False}}})
+expect("a fact with gear and no title is kept", untitled and "title" not in untitled and untitled["min"] == 47)
+bare = clean({"title": None, "level": 5, "min": 5, "giver": None, "zone": None, "x": None, "y": None,
+              "side": None, "prev": None, "classes": None, "races": None, "money": None, "xp": None,
+              "items": None, "rewards": {}})
+expect("one with no title, no gear and no quest before is not", bare is None)
+classy = clean({"title": "Paladin Test", "level": 22, "min": 20, "giver": None, "zone": None, "x": None,
+                "y": None, "side": "A", "prev": None, "classes": 2, "races": 5, "money": None, "xp": None,
+                "items": None, "rewards": {}})
+expect("a class quest keeps its class and race bits", classy["classes"] == 2 and classy["races"] == 5)
+text = render({90070: untitled, 90080: classy})
+expect("the file leaves the title out and writes the bits",
+       "[90070] = { min = 47" in text and "classes = 2, races = 5" in text)
+lua.execute(text.replace("local _, ns = ...", ""))
+expect("and it loads", lua.eval("ns.ForeverQuests[90070].title") is None
+       and lua.eval("ns.ForeverQuests[90080].classes") == 2)
+
 print(f"{checks - failures}/{checks} checks passed")
 sys.exit(1 if failures else 0)
