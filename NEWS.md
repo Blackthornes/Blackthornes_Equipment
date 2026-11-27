@@ -23,6 +23,12 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 2.1.2
+
+Fixes and changes:
+- 153 more Forever quests that give gear show as upgrades.
+- Upgrade Quest names the quests you need first for 27 more quests.
+
 ## 2.1.1
 
 - Off hand damage counts at half when a pair of one-handers is weighed against a two-hander.
